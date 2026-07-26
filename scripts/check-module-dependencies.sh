@@ -53,9 +53,11 @@ for module_dir in "$packages_dir"/*; do
                 violations=1
             fi
         done < <(
-            rg --no-filename --only-matching \
-                '^[[:space:]]*(?:@testable[[:space:]]+)?import[[:space:]]+(Analytics|DesignSystem|DocumentStore|Handwriting|InkCore|Intelligence)[[:space:]]*$' \
-                "$source_file" | awk '{ print $NF }'
+            awk '
+                /^[[:space:]]*(@testable[[:space:]]+)?import[[:space:]]+(Analytics|DesignSystem|DocumentStore|Handwriting|InkCore|Intelligence)[[:space:]]*$/ {
+                    print $NF
+                }
+            ' "$source_file"
         )
     done < <(find "$module_dir/Sources" -type f -name '*.swift' | sort)
 done
