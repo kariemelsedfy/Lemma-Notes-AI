@@ -2,6 +2,10 @@ import XCTest
 
 @testable import InkCore
 
+#if os(iOS)
+    import PencilKit
+#endif
+
 final class InkCoreTests: XCTestCase {
     @MainActor
     func testEngineContractSupportsDrawingEditingAndExportingWithoutPencilKit() throws {
@@ -43,6 +47,33 @@ final class InkCoreTests: XCTestCase {
             ]
         )
     }
+
+    #if os(iOS)
+        @MainActor
+        func testPencilKitEngineInsertsKnownPolylineAsPencilStroke() {
+            let canvas = PKCanvasView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+            let engine = PencilKitInkEngine(canvasView: canvas)
+            let stroke = InkStroke(
+                points: [
+                    InkPoint(
+                        location: CGPoint(x: 10, y: 10), timeOffset: 0, force: 0.4, altitude: 1, azimuth: 0
+                    ),
+                    InkPoint(location: CGPoint(x: 50, y: 25), timeOffset: 0.1, force: 0.7, altitude: 0.9, azimuth: 0.2),
+                ]
+            )
+
+            engine.insertProgrammatic(strokes: [stroke])
+
+            XCTAssertEqual(canvas.drawing.strokes.count, 1)
+            let points = Array(canvas.drawing.strokes[0].path)
+            XCTAssertEqual(points.count, 2)
+            XCTAssertEqual(points[0].location.x, 10)
+            XCTAssertEqual(points[0].location.y, 10)
+            XCTAssertEqual(points[1].location.x, 50)
+            XCTAssertEqual(points[1].location.y, 25)
+            XCTAssertEqual(engine.strokes[0].points.map(\.force), [0.4, 0.7])
+        }
+    #endif
 }
 
 @MainActor
