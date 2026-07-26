@@ -4,6 +4,7 @@
 
 # Xcode build products
 DerivedData/
+Derived/
 .build/
 
 # Local configuration and credentials

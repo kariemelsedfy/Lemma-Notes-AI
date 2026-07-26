@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! command -v brew >/dev/null 2>&1; then
-    echo "Homebrew is required to install development tools: https://brew.sh" >&2
-    exit 1
+mise_bin="$(command -v mise || true)"
+if [[ -z "$mise_bin" ]]; then
+    curl https://mise.jdx.dev/install.sh | sh
+    mise_bin="${HOME}/.local/bin/mise"
 fi
 
-if ! command -v tuist >/dev/null 2>&1; then
-    brew install tuist
+"$mise_bin" install
+
+if ! command -v brew >/dev/null 2>&1; then
+    echo "Homebrew is required to install SwiftLint: https://brew.sh" >&2
+    exit 1
 fi
 
 if ! command -v swiftlint >/dev/null 2>&1; then
@@ -19,6 +23,6 @@ if ! xcrun --find swift-format >/dev/null 2>&1; then
     exit 1
 fi
 
-tuist version
+"$mise_bin" exec -- tuist version
 swiftlint version
 xcrun swift-format --version

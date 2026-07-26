@@ -12,5 +12,5 @@ done
 xcodebuild build \
     -workspace Margin.xcworkspace \
     -scheme Margin \
-    -destination 'generic/platform=iOS' \
+    -destination 'generic/platform=iOS Simulator' \
     CODE_SIGNING_ALLOWED=NO

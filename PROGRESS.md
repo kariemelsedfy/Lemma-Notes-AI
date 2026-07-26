@@ -25,14 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-01 — Repo scaffolding and Tuist project
-status: In progress · claimed: Codex · 2026-07-25 · refs: ARCHITECTURE.md §7 · estimate: M
-Acceptance:
-- [ ] `Project.swift` generates an iPad-only app target, deployment target iPadOS 26.0
-- [ ] Empty SPM packages exist for all six modules with correct dependency edges
-- [ ] `.gitignore` excludes `*.xcodeproj`, `*.xcworkspace`, `.env*`, DerivedData
-- [ ] `scripts/bootstrap.sh`, `generate.sh`, `test.sh`, `lint.sh` exist and work from a clean clone
-- [ ] App launches to a blank white view on the simulator
+_(empty)_
 
 ## Review
 
@@ -219,4 +212,12 @@ Audio recording + sync · cross-notebook Q&A · flashcard generation · Mac app 
 
 ## Done
 
-_(empty — first entry goes here, most recent at top)_
+### M0-01 — Repo scaffolding and Tuist project
+status: Done · completed: Codex · 2026-07-26
+refs: ARCHITECTURE.md §7 · estimate: M
+Acceptance:
+- [x] `Project.swift` generates an iPad-only app target, deployment target iPadOS 26.0
+- [x] Empty SPM packages exist for all six modules with correct dependency edges
+- [x] `.gitignore` excludes `*.xcodeproj`, `*.xcworkspace`, `.env*`, DerivedData
+- [x] `scripts/bootstrap.sh`, `generate.sh`, `test.sh`, `lint.sh` exist and work from a clean clone
+- [x] App launches to a blank white view on the iPad Pro 13-inch (M5) simulator
