@@ -4,7 +4,8 @@ import SwiftUI
 struct MarginApp: App {
     var body: some Scene {
         WindowGroup {
-            Color.white
+            Rectangle()
+                .fill(.background)
                 .ignoresSafeArea()
         }
     }
