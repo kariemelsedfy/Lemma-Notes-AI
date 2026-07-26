@@ -1,0 +1,222 @@
+# PROGRESS — task board
+
+The work queue. Agents claim tasks here (`AGENTS.md` §1) and this file is the lock.
+
+**Statuses:** `Ready` → `In progress` → `Review` → `Done` · `Blocked` · `Icebox`
+
+**Task format:**
+
+```
+### M2-04 — Lasso selection from a closed loop
+status: Ready
+claimed: —
+refs: ARCHITECTURE.md §4, AI_PIPELINE.md §1
+parallel-safe: false
+estimate: M
+Acceptance:
+- [ ] Closed-ish loop (≥70% closure) over ink produces a selection
+- [ ] Strokes ≥60% inside the polygon are included; partial strokes are clipped
+- [ ] Unit tests cover point-in-polygon, clipping, and the closure heuristic
+```
+
+Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sessions (split if you can).
+
+---
+
+## In progress
+
+### M0-01 — Repo scaffolding and Tuist project
+status: In progress · claimed: Codex · 2026-07-25 · refs: ARCHITECTURE.md §7 · estimate: M
+Acceptance:
+- [ ] `Project.swift` generates an iPad-only app target, deployment target iPadOS 26.0
+- [ ] Empty SPM packages exist for all six modules with correct dependency edges
+- [ ] `.gitignore` excludes `*.xcodeproj`, `*.xcworkspace`, `.env*`, DerivedData
+- [ ] `scripts/bootstrap.sh`, `generate.sh`, `test.sh`, `lint.sh` exist and work from a clean clone
+- [ ] App launches to a blank white view on the simulator
+
+## Review
+
+_(empty)_
+
+## Blocked
+
+_(empty)_
+
+---
+
+## Ready — M0: Foundations
+
+### M0-02 — Lint, format, and pre-commit hooks
+status: Ready · estimate: S
+Acceptance:
+- [ ] SwiftLint + swift-format configured, one shared config
+- [ ] Pre-commit hook runs lint on staged Swift files
+- [ ] `scripts/lint.sh --fix` works
+
+### M0-03 — CI pipeline
+status: Ready · refs: ARCHITECTURE.md §7.2 · estimate: M
+Acceptance:
+- [ ] GitHub Actions on macOS: lint → generate → build → package tests → app tests
+- [ ] Runs on PR and on main; green on the empty project
+- [ ] Caches Tuist and SPM artifacts; full run under 10 minutes
+
+### M0-04 — Module dependency rule enforcement
+status: Ready · refs: ARCHITECTURE.md §2 · estimate: S
+Acceptance:
+- [ ] A script fails CI if any package imports outside its allowed set
+- [ ] Test proves it fails on a deliberately bad edge
+
+### M0-05 — DesignSystem skeleton
+status: Ready · estimate: M
+Acceptance:
+- [ ] Color, typography, spacing, and icon tokens defined in one place
+- [ ] Light and dark variants; no hardcoded colors anywhere else in the codebase (lint rule)
+- [ ] A gallery preview screen listing every token and component
+
+### M0-06 — Analytics event schema
+status: Ready · refs: PROJECT_PLAN.md §8 · estimate: S
+Acceptance:
+- [ ] Typed event enum covering: app open, note created, stroke session, AI invoked (with intent + tier), AI accepted/rejected, paywall shown, purchase
+- [ ] Opt-out respected at the transport layer
+- [ ] No PII, no note content, ever — enforced by the type system where possible
+
+### M0-07 — Apple Developer setup and TestFlight proof
+status: Ready · owner: human · estimate: M
+Acceptance:
+- [ ] Developer Program enrolled; **Small Business Program enrolled** (BUSINESS.md §3.2)
+- [ ] Bundle ID, App Store Connect record, capabilities (iCloud, Push if needed)
+- [ ] A hello-world build reaches TestFlight and installs on a real iPad
+- [ ] Age-rating questionnaire drafted (not submitted)
+
+---
+
+## Ready — M1: Canvas
+
+### M1-01 — InkEngine protocol + PencilKit adapter
+status: Ready · refs: ARCHITECTURE.md §1.1, §4 · estimate: L
+Acceptance:
+- [ ] `InkEngine` protocol covers: draw, erase, undo/redo, selection, export image, stroke enumeration, programmatic stroke insertion
+- [ ] `PencilKitInkEngine` implements it; no PencilKit types leak above the protocol
+- [ ] Programmatic `PKStroke` insertion demonstrated with a test that draws a known polyline
+
+### M1-02 — Document package format
+status: Ready · refs: ARCHITECTURE.md §3 · estimate: L
+Acceptance:
+- [ ] `.margin` package reads/writes per the spec, including manifest and per-page metadata
+- [ ] `UIDocument` subclass with autosave and conflict handling
+- [ ] Round-trip tests; a v1→v1 migration no-op exists to prove the migration harness works
+- [ ] Stroke fingerprinting and index repair implemented and tested
+
+### M1-03 — Page rendering and scrolling
+status: Ready · estimate: L
+Acceptance:
+- [ ] Paged vertical scroll, page recycling, off-screen pages render to cached images
+- [ ] Paper styles: blank, ruled, grid, dotted
+- [ ] 60fps floor with a 100-page fixture document; measured and recorded
+
+### M1-04 — Tool palette
+status: Ready · estimate: M
+### M1-05 — Notebook library and organization
+status: Ready · estimate: L
+### M1-06 — iCloud sync
+status: Ready · estimate: L
+### M1-07 — Export to PDF and PNG
+status: Ready · estimate: M
+### M1-08 — Occupancy grid
+status: Ready · refs: ARCHITECTURE.md §4.1 · estimate: M
+Acceptance:
+- [ ] Incremental update on stroke add/remove
+- [ ] `isFree(rect)` and `nearestFree(size:from:direction:)` with tests
+- [ ] No measurable frame impact on a dense page
+
+### M1-09 — Handwriting-to-text (Vision, on-device)
+status: Ready · estimate: M
+
+---
+
+## Ready — M2: Selection and the mocked pipeline
+
+### M2-01 — Selection model and rendering
+status: Ready · estimate: M
+### M2-02 — Toolbar + keyboard Ask path
+status: Ready · estimate: S
+Note: build this **first** so every later task is testable without a Pencil.
+
+### M2-03 — Loop-and-dwell gesture
+status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: L · needs-device-verification
+Acceptance:
+- [ ] Closure ≥70% + dwell ≥350ms converts the loop to a selection
+- [ ] The loop's ink is removed, not left on the page
+- [ ] A 300ms "revert to ink" affordance appears
+- [ ] False-positive rate measured on 30 minutes of real note-taking; recorded in SESSIONS.md
+
+### M2-04 — Pencil squeeze and double-tap
+status: Ready · estimate: M · needs-device-verification
+Acceptance:
+- [ ] `UIPencilInteraction` squeeze arms the Ask lasso (Pencil Pro)
+- [ ] Double-tap respects the system preference by default; opt-in override in onboarding
+- [ ] Graceful no-op on Pencil 1 / no Pencil
+
+### M2-05 — SelectionContext extraction
+status: Ready · refs: AI_PIPELINE.md §1 · estimate: L
+Acceptance:
+- [ ] Crop, neighborhood, normalized strokes, style stats, anchor all produced
+- [ ] Crop capped at 1.5MP; deterministic given the same page and selection
+- [ ] Snapshot tests over fixture pages
+
+### M2-06 — Spec schema, decoder, and validator
+status: Ready · refs: AI_PIPELINE.md §3 · estimate: M
+Acceptance:
+- [ ] Codable types for every block type
+- [ ] Validation fails closed on: missing fields, over-long content, unparseable LaTeX, low confidence
+- [ ] Fuzz test: no malformed input crashes or renders ink
+
+### M2-07 — MockProvider
+status: Ready · estimate: S
+Acceptance:
+- [ ] Returns canned specs keyed by fixture name, with configurable latency and failure injection
+- [ ] Used by CI for all pipeline tests
+
+### M2-08 — Placement engine
+status: Ready · refs: AI_PIPELINE.md §4 · estimate: L
+### M2-09 — Suggestion layer, accept/reject/undo
+status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
+### M2-10 — Ask bar UI
+status: Ready · estimate: M
+### M2-11 — Request state machine
+status: Ready · refs: ARCHITECTURE.md §5 · estimate: M
+### M2-12 — End-to-end demo with mock
+status: Ready · estimate: S
+Acceptance:
+- [ ] Circle `2+2=` on a real iPad → canned "4" renders as ink at the anchor → accept → undo
+- [ ] Record the screen. This is the first real signal that the product feels right.
+
+---
+
+## Outline — M3 to M8
+
+Expand each into tasks at the start of its milestone, not before. Writing 200 speculative tasks now guarantees 150 of them are wrong.
+
+**M3 Handwriting synthesis v1** — calibration UI, segmentation + alignment, glyph bank storage, style statistics, synthesizer, kerning and connections, dynamics, line breaking, OCR round-trip test harness, blind similarity panel, "neat" and "typeset" fallback styles.
+
+**M4 Real intelligence** — Foundation Models provider (T0), PCC provider (T1), cloud proxy + provider (T2), routing policy, prompts v1, streaming, speculative execution, cache, failure states, golden set capture (200 samples, 15 writers), `evalrunner`, metrics dashboard.
+
+**M5 Plots, math layout, check** — LaTeX parser, box model, fractions/radicals/scripts/big operators/matrices, stretchy delimiters, plot sampler and hand-drawn renderer, correction marks, margin notes.
+
+**M6 Monetization and compliance** — StoreKit 2, server entitlement verification, credit metering, paywall, BYOK, 5.1.2(i) consent flow, Private Mode, Exam Mode, privacy manifest, nutrition labels.
+
+**M7 Polish and beta** — onboarding, accessibility pass, error copy, empty states, performance pass, crash reporting, TestFlight cohort, retention instrumentation, the demo video.
+
+**M8 Submission** — review notes, demo account and sample document, screenshots, marketing site, submit.
+
+---
+
+## Icebox
+
+Audio recording + sync · cross-notebook Q&A · flashcard generation · Mac app · shared notebooks · LaTeX export · GoodNotes/Notability import · learned trajectory handwriting model (`HANDWRITING.md` §6) · hand-drawn diagram generation · non-English handwriting
+
+---
+
+## Done
+
+_(empty — first entry goes here, most recent at top)_
