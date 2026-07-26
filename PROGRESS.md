@@ -62,7 +62,7 @@ Acceptance:
 - [x] A gallery preview screen listing every token and component
 
 ### M0-06 — Analytics event schema
-status: Ready · refs: PROJECT_PLAN.md §8 · estimate: S
+status: In progress · claimed: Codex · 2026-07-26 · refs: PROJECT_PLAN.md §8 · estimate: S
 Acceptance:
 - [ ] Typed event enum covering: app open, note created, stroke session, AI invoked (with intent + tier), AI accepted/rejected, paywall shown, purchase
 - [ ] Opt-out respected at the transport layer
