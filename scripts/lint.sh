@@ -11,7 +11,7 @@ fi
 
 if [[ "${1:-}" == "--fix" ]]; then
     swiftlint --fix --config .swiftlint.yml
-    xcrun swift-format format --in-place Apps/Margin/Sources Packages/*/Sources Packages/*/Tests \
+    xcrun swift-format format --in-place --recursive Apps/Margin/Sources Packages/*/Sources Packages/*/Tests \
         Packages/*/Package.swift Project.swift Tuist.swift
 fi
 

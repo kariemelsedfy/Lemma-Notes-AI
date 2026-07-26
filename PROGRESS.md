@@ -25,12 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-02 — Lint, format, and pre-commit hooks
-status: In progress · claimed: Codex · 2026-07-26 · estimate: S
-Acceptance:
-- [ ] SwiftLint + swift-format configured, one shared config
-- [ ] Pre-commit hook runs lint on staged Swift files
-- [ ] `scripts/lint.sh --fix` works
+_(empty)_
 
 ## Review
 
@@ -209,6 +204,13 @@ Audio recording + sync · cross-notebook Q&A · flashcard generation · Mac app 
 ---
 
 ## Done
+
+### M0-02 — Lint, format, and pre-commit hooks
+status: Done · completed: Codex · 2026-07-26 · estimate: S
+Acceptance:
+- [x] SwiftLint + swift-format configured, one shared config
+- [x] Pre-commit hook runs lint on staged Swift files
+- [x] `scripts/lint.sh --fix` works
 
 ### M0-01 — Repo scaffolding and Tuist project
 status: Done · completed: Codex · 2026-07-26

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import InkCore
 
 final class InkCoreTests: XCTestCase {
