@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M0-02
+
+**Goal:** configure shared lint/format tooling and a staged-Swift pre-commit hook.
+
+**Done:**
+- Added the checked-in `.githooks/pre-commit` hook and bootstrap activation.
+- Verified the hook against a temporary staged Swift fixture; it ran SwiftLint and swift-format only for that file.
+- Fixed `scripts/lint.sh --fix` so its formatter recurses through source/test directories.
+
+**Not done / left open:**
+- CI enforcement remains M0-03; this hook is a local fast-feedback guard.
+
+**Surprises and gotchas:**
+- SwiftLint’s automatic-fix mode scans generated SwiftPM `.build` files even when the normal lint command is restricted. Those files are ignored; the final regular lint remains source-only.
+
+**Decisions made:** none.
+
+**Next:** M0-03 — add the GitHub Actions pipeline.
+
+**Verification:** tests ✅ · lint ✅ · device tested: no
+
 ## 2026-07-26 · Codex · M0-01
 
 **Goal:** scaffold the Tuist iPad application and module packages.

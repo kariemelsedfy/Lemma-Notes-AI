@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import DocumentStore
 
 final class DocumentStoreTests: XCTestCase {

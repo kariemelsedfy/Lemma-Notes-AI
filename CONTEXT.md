@@ -10,9 +10,9 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 ## 1. Where we are
 
-M0-01 is complete: the repository has a Tuist-generated iPad app scaffold and six independent Swift packages. Package tests, lint, Tuist generation, an iPad simulator build, and a simulator launch have passed.
+M0-01 and M0-02 are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, and enforced local lint/format tooling. Package tests, lint, Tuist generation, an iPad simulator build, and a simulator launch have passed.
 
-Next action: **M0-02** in `PROGRESS.md` (lint, format, and pre-commit hooks).
+Next action: **M0-03** in `PROGRESS.md` (CI pipeline).
 
 ## 2. What exists
 
@@ -40,7 +40,7 @@ Next action: **M0-02** in `PROGRESS.md` (lint, format, and pre-commit hooks).
 
 ## 4. Environment notes
 
-Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run.
+Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run.
 
 ## 5. Open questions
 

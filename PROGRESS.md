@@ -39,13 +39,6 @@ _(empty)_
 
 ## Ready — M0: Foundations
 
-### M0-02 — Lint, format, and pre-commit hooks
-status: Ready · estimate: S
-Acceptance:
-- [ ] SwiftLint + swift-format configured, one shared config
-- [ ] Pre-commit hook runs lint on staged Swift files
-- [ ] `scripts/lint.sh --fix` works
-
 ### M0-03 — CI pipeline
 status: Ready · refs: ARCHITECTURE.md §7.2 · estimate: M
 Acceptance:
@@ -211,6 +204,13 @@ Audio recording + sync · cross-notebook Q&A · flashcard generation · Mac app 
 ---
 
 ## Done
+
+### M0-02 — Lint, format, and pre-commit hooks
+status: Done · completed: Codex · 2026-07-26 · estimate: S
+Acceptance:
+- [x] SwiftLint + swift-format configured, one shared config
+- [x] Pre-commit hook runs lint on staged Swift files
+- [x] `scripts/lint.sh --fix` works
 
 ### M0-01 — Repo scaffolding and Tuist project
 status: Done · completed: Codex · 2026-07-26

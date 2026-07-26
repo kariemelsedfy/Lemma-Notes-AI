@@ -26,3 +26,4 @@ fi
 "$mise_bin" exec -- tuist version
 swiftlint version
 xcrun swift-format --version
+git config core.hooksPath .githooks
