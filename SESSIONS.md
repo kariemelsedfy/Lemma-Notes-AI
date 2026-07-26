@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M1-01B
+
+**Goal:** supply the iPad PencilKit implementation of the ink engine contract.
+
+**Done:**
+- Added the iOS-only, main-actor `PencilKitInkEngine` around `PKCanvasView`.
+- Preserved neutral stroke dynamics when constructing `PKStrokePoint` and used `PKDrawing(strokes:)` for programmatic insertion and editing.
+- Added app-owned stable stroke IDs and selection state because the selected SDK does not expose the newer PencilKit stroke-ID/selection APIs.
+- Added a known-polyline test that checks generated PencilKit control points and force values.
+
+**Not done / left open:**
+- The package's macOS test runner has PencilKit stroke values but not `PKCanvasView`, so it skips the iOS-only adapter test. The adapter source was type-checked directly against the iOS 26.5 simulator SDK; an iOS test-bundle target should run this test when app/package integration is added.
+
+**Surprises and gotchas:**
+- Apple’s current web documentation includes beta `PKStroke` and `PKCanvasView` selection identities that are absent from the selected SDK. Do not reintroduce them without raising the deployment baseline.
+
+**Decisions made:** none.
+
+**Next:** M1-02 — define the `.margin` document package format and migration harness.
+
+**Verification:** lint ✅ · iOS SDK type-check ✅ · macOS package tests: adapter test intentionally skipped; device tested: no
+
 ## 2026-07-26 · Codex · M1-01A
 
 **Goal:** define the renderer-independent ink engine boundary.
