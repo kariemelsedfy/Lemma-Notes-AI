@@ -55,11 +55,11 @@ Acceptance:
 - [x] Test proves it fails on a deliberately bad edge
 
 ### M0-05 — DesignSystem skeleton
-status: In progress · claimed: Codex · 2026-07-26 · estimate: M
+status: Done · completed: Codex · 2026-07-26 · estimate: M
 Acceptance:
-- [ ] Color, typography, spacing, and icon tokens defined in one place
-- [ ] Light and dark variants; no hardcoded colors anywhere else in the codebase (lint rule)
-- [ ] A gallery preview screen listing every token and component
+- [x] Color, typography, spacing, and icon tokens defined in one place
+- [x] Light and dark variants; no hardcoded colors anywhere else in the codebase (lint rule)
+- [x] A gallery preview screen listing every token and component
 
 ### M0-06 — Analytics event schema
 status: Ready · refs: PROJECT_PLAN.md §8 · estimate: S

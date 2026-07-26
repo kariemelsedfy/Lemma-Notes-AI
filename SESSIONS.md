@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M0-05
+
+**Goal:** establish the DesignSystem visual-token skeleton and gallery.
+
+**Done:**
+- Added adaptive semantic colors, typography, spacing, and icon tokens in the dependency-free DesignSystem package.
+- Added a gallery that lists every current token category and component.
+- Added portable local/CI enforcement rejecting direct `Color` construction outside DesignSystem.
+- Confirmed hosted CI passes in 3m36s.
+
+**Not done / left open:**
+- The app will adopt the exported package directly when the Tuist package-linking configuration is introduced by a later app-shell task.
+
+**Surprises and gotchas:**
+- The package tests run on macOS as well as iOS, so adaptive colors require both UIKit and AppKit implementations.
+
+**Decisions made:** none.
+
+**Next:** M0-06 — add the privacy-safe typed analytics schema and transport opt-out.
+
+**Verification:** tests ✅ · lint ✅ · device tested: simulator only — GitHub-hosted macOS 26
+
 ## 2026-07-26 · Codex · M0-04
 
 **Goal:** enforce the architecture's internal module dependency direction.
