@@ -87,10 +87,10 @@ Acceptance:
 - [x] Public primitives contain no PencilKit types
 
 ### M1-01B — PencilKitInkEngine adapter
-status: In progress · claimed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
+status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
 Acceptance:
-- [ ] `PencilKitInkEngine` implements `InkEngine`; PencilKit remains below the protocol boundary
-- [ ] Programmatic `PKStroke` insertion is demonstrated with a known-polyline test
+- [x] `PencilKitInkEngine` implements `InkEngine`; PencilKit remains below the protocol boundary
+- [x] Programmatic `PKStroke` insertion is demonstrated with a known-polyline test
 
 ### M1-02 — Document package format
 status: Ready · refs: ARCHITECTURE.md §3 · estimate: L
