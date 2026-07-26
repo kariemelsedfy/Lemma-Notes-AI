@@ -80,12 +80,17 @@ Acceptance:
 
 ## Ready — M1: Canvas
 
-### M1-01 — InkEngine protocol + PencilKit adapter
-status: Ready · refs: ARCHITECTURE.md §1.1, §4 · estimate: L
+### M1-01A — InkEngine protocol and platform-neutral primitives
+status: In progress · claimed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
 Acceptance:
 - [ ] `InkEngine` protocol covers: draw, erase, undo/redo, selection, export image, stroke enumeration, programmatic stroke insertion
-- [ ] `PencilKitInkEngine` implements it; no PencilKit types leak above the protocol
-- [ ] Programmatic `PKStroke` insertion demonstrated with a test that draws a known polyline
+- [ ] Public primitives contain no PencilKit types
+
+### M1-01B — PencilKitInkEngine adapter
+status: Ready · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
+Acceptance:
+- [ ] `PencilKitInkEngine` implements `InkEngine`; PencilKit remains below the protocol boundary
+- [ ] Programmatic `PKStroke` insertion is demonstrated with a known-polyline test
 
 ### M1-02 — Document package format
 status: Ready · refs: ARCHITECTURE.md §3 · estimate: L
