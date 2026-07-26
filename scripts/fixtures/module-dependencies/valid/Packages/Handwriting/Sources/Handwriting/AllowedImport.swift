@@ -1,0 +1,3 @@
+import InkCore
+
+enum AllowedImport {}

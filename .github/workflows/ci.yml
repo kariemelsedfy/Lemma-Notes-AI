@@ -23,6 +23,8 @@ jobs:
         run: ./scripts/lint.sh
       - name: Generate project
         run: ./scripts/generate.sh
+      - name: Verify module dependency boundaries
+        run: ./scripts/check-module-dependencies.sh
       - name: Run package tests and app build
         run: ./scripts/test.sh
       - name: Run app tests
