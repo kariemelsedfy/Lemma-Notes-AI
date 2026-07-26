@@ -25,6 +25,8 @@ jobs:
         run: ./scripts/generate.sh
       - name: Verify module dependency boundaries
         run: ./scripts/check-module-dependencies.sh
+      - name: Verify color token usage
+        run: ./scripts/check-color-tokens.sh
       - name: Run package tests and app build
         run: ./scripts/test.sh
       - name: Run app tests

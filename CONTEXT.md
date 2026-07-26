@@ -10,9 +10,9 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 ## 1. Where we are
 
-M0-01 through M0-04 are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, a GitHub Actions verification workflow, and CI-enforced internal module boundaries. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
+M0-01 through M0-05 are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, and a dependency-free adaptive DesignSystem with an exported token gallery. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
 
-Next action: **M0-05** in `PROGRESS.md` (DesignSystem skeleton).
+Next action: **M0-06** in `PROGRESS.md` (analytics event schema).
 
 ## 2. What exists
 
@@ -21,6 +21,7 @@ Next action: **M0-05** in `PROGRESS.md` (DesignSystem skeleton).
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Packages | Six scaffolded SPM packages under `Packages/` |
+| Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
 | Golden eval set | Does not exist (M2) |
