@@ -49,10 +49,10 @@ _(empty)_
 ## Ready — M0: Foundations
 
 ### M0-04 — Module dependency rule enforcement
-status: Ready · refs: ARCHITECTURE.md §2 · estimate: S
+status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S
 Acceptance:
-- [ ] A script fails CI if any package imports outside its allowed set
-- [ ] Test proves it fails on a deliberately bad edge
+- [x] A script fails CI if any package imports outside its allowed set
+- [x] Test proves it fails on a deliberately bad edge
 
 ### M0-05 — DesignSystem skeleton
 status: Ready · estimate: M

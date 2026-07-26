@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M0-04
+
+**Goal:** enforce the architecture's internal module dependency direction.
+
+**Done:**
+- Added a portable source-import checker with the architecture's allow-list.
+- Added valid and deliberately invalid fixtures; `InkCore → Intelligence` is proven to fail.
+- Added the check to local tests and the GitHub Actions workflow.
+- Confirmed hosted CI passes in 5m09s.
+
+**Not done / left open:**
+- New internal modules must be added to the checker allow-list alongside their architecture-approved imports.
+
+**Surprises and gotchas:**
+- GitHub's macOS runner does not provide `rg`; the checker uses `awk` so it has no extra CI tool dependency.
+
+**Decisions made:** none.
+
+**Next:** M0-05 — establish visual tokens and a gallery without adding dependencies.
+
+**Verification:** tests ✅ · lint ✅ · device tested: simulator only — GitHub-hosted macOS 26
+
 ## 2026-07-26 · Codex · M0-03
 
 **Goal:** add a GitHub Actions macOS verification pipeline.
