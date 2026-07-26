@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M0-03
+
+**Goal:** add a GitHub Actions macOS verification pipeline.
+
+**Done:**
+- Added a workflow for pull requests and `main` that installs pinned tooling, lints, generates the project, builds/tests packages, and runs the app unit tests on an iPad simulator.
+- Cached SwiftPM build artifacts and used the Mise action to cache the pinned Tuist installation.
+- Added the `MarginTests` target and one app-module smoke test so CI verifies an app test bundle rather than only building the app.
+- Confirmed the first hosted run passed in 7m44s.
+
+**Not done / left open:**
+- M0-04 remains responsible for enforcing package dependency boundaries; CI now provides the execution point for that future check.
+
+**Surprises and gotchas:**
+- The hosted iPad simulator test takes substantially longer than the local smoke test, but the complete initial workflow still finished below its 10-minute budget.
+
+**Decisions made:** none.
+
+**Next:** M0-04 — implement a module-import boundary check and a deliberately invalid-edge test fixture.
+
+**Verification:** tests ✅ · lint ✅ · device tested: simulator only — GitHub-hosted macOS 26 and local iPad Pro 13-inch (M5), iOS 26.5
+
 ## 2026-07-26 · Codex · M0-02
 
 **Goal:** configure shared lint/format tooling and a staged-Swift pre-commit hook.
