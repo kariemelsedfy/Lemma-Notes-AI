@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M1-01A
+
+**Goal:** define the renderer-independent ink engine boundary.
+
+**Done:**
+- Added `InkEngine`, its platform-neutral strokes, sampled stylus dynamics, selection, and raster export primitives.
+- Marked the full protocol `@MainActor`, keeping all ink mutation on the UI-safe actor.
+- Added an in-memory conformer test covering drawing, programmatic insertion, selection, erase, undo/redo, stroke enumeration, and export.
+
+**Not done / left open:**
+- M1-01B will provide the PencilKit adapter and validate actual `PKStroke` insertion.
+
+**Surprises and gotchas:**
+- CoreGraphics geometry does not synthesize `Equatable` in the package's macOS build, so the public value types compare their scalar geometry explicitly.
+
+**Decisions made:** none.
+
+**Next:** M1-01B — implement `PencilKitInkEngine` below this protocol boundary.
+
+**Verification:** tests ✅ · lint ✅ · device tested: simulator build only — no Pencil input validation yet
+
 ## 2026-07-26 · Codex · M0-06
 
 **Goal:** establish the typed, privacy-safe analytics schema.

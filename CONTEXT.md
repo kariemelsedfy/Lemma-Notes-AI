@@ -4,15 +4,15 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-26 · by: Codex · Milestone: **M0 foundations in progress**
+**Last updated:** 2026-07-26 · by: Codex · Milestone: **M1 canvas in progress**
 
 ---
 
 ## 1. Where we are
 
-M0-01 through M0-06 are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, and a privacy-safe analytics event schema. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
+M0-01 through M0-06 and M1-01A are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, and a main-actor, PencilKit-free `InkEngine` contract. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
 
-Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-01 can proceed in parallel.
+Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-01B can proceed in parallel.
 
 ## 2. What exists
 

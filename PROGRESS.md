@@ -81,10 +81,10 @@ Acceptance:
 ## Ready — M1: Canvas
 
 ### M1-01A — InkEngine protocol and platform-neutral primitives
-status: In progress · claimed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
+status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
 Acceptance:
-- [ ] `InkEngine` protocol covers: draw, erase, undo/redo, selection, export image, stroke enumeration, programmatic stroke insertion
-- [ ] Public primitives contain no PencilKit types
+- [x] `InkEngine` protocol covers: draw, erase, undo/redo, selection, export image, stroke enumeration, programmatic stroke insertion
+- [x] Public primitives contain no PencilKit types
 
 ### M1-01B — PencilKitInkEngine adapter
 status: Ready · refs: ARCHITECTURE.md §1.1, §4 · estimate: M
