@@ -25,7 +25,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-02 — Lint, format, and pre-commit hooks
+status: In progress · claimed: Codex · 2026-07-26 · estimate: S
+Acceptance:
+- [ ] SwiftLint + swift-format configured, one shared config
+- [ ] Pre-commit hook runs lint on staged Swift files
+- [ ] `scripts/lint.sh --fix` works
 
 ## Review
 
@@ -38,13 +43,6 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
-
-### M0-02 — Lint, format, and pre-commit hooks
-status: Ready · estimate: S
-Acceptance:
-- [ ] SwiftLint + swift-format configured, one shared config
-- [ ] Pre-commit hook runs lint on staged Swift files
-- [ ] `scripts/lint.sh --fix` works
 
 ### M0-03 — CI pipeline
 status: Ready · refs: ARCHITECTURE.md §7.2 · estimate: M
