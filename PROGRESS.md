@@ -25,7 +25,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-03 — CI pipeline
+status: In progress · claimed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §7.2 · estimate: M
+Acceptance:
+- [ ] GitHub Actions on macOS: lint → generate → build → package tests → app tests
+- [ ] Runs on PR and on main; green on the empty project
+- [ ] Caches Tuist and SPM artifacts; full run under 10 minutes
 
 ## Review
 
@@ -38,13 +43,6 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
-
-### M0-03 — CI pipeline
-status: Ready · refs: ARCHITECTURE.md §7.2 · estimate: M
-Acceptance:
-- [ ] GitHub Actions on macOS: lint → generate → build → package tests → app tests
-- [ ] Runs on PR and on main; green on the empty project
-- [ ] Caches Tuist and SPM artifacts; full run under 10 minutes
 
 ### M0-04 — Module dependency rule enforcement
 status: Ready · refs: ARCHITECTURE.md §2 · estimate: S
