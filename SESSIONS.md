@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-26 · Codex · M0-06
+
+**Goal:** establish the typed, privacy-safe analytics schema.
+
+**Done:**
+- Added a closed event vocabulary for app, note, stroke, AI, paywall, and purchase events.
+- Represented AI intent and routing tier as typed enums; no arbitrary metadata, user identifiers, or note-content fields exist.
+- Added an actor-backed client that applies tracking opt-out before any transport call.
+- Confirmed focused package tests and hosted CI pass.
+
+**Not done / left open:**
+- A concrete analytics backend transport is intentionally deferred; it must preserve this schema and opt-out boundary.
+
+**Surprises and gotchas:**
+- XCTest assertions cannot await actor-isolated state directly; tests read the recording transport state before asserting.
+
+**Decisions made:** none.
+
+**Next:** M0-07 is human-owned; begin M1-01's InkEngine protocol and PencilKit adapter in parallel.
+
+**Verification:** tests ✅ · lint ✅ · device tested: simulator only — GitHub-hosted macOS 26
+
 ## 2026-07-26 · Codex · M0-05
 
 **Goal:** establish the DesignSystem visual-token skeleton and gallery.
