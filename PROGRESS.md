@@ -92,13 +92,23 @@ Acceptance:
 - [x] `PencilKitInkEngine` implements `InkEngine`; PencilKit remains below the protocol boundary
 - [x] Programmatic `PKStroke` insertion is demonstrated with a known-polyline test
 
-### M1-02 — Document package format
-status: Ready · refs: ARCHITECTURE.md §3 · estimate: L
+### M1-02A — Document package schema and stroke-index repair
+status: Done · completed: Codex · 2026-07-27 · refs: ARCHITECTURE.md §3, §3.1 · estimate: M
 Acceptance:
-- [ ] `.margin` package reads/writes per the spec, including manifest and per-page metadata
-- [ ] `UIDocument` subclass with autosave and conflict handling
-- [ ] Round-trip tests; a v1→v1 migration no-op exists to prove the migration harness works
-- [ ] Stroke fingerprinting and index repair implemented and tested
+- [x] Codable manifest and page metadata define the v1 `.margin` package schema
+- [x] Stroke fingerprints revalidate and repair element stroke indices after drawing mutation
+- [x] Unit tests cover schema coding and repair behavior
+
+### M1-02B — Document migration harness and package I/O
+status: Ready · refs: ARCHITECTURE.md §3, §3.2 · estimate: M
+Acceptance:
+- [ ] `.margin` package reads and writes manifest, page metadata, ink, assets, style, and thumbnails at their specified paths
+- [ ] Pure migration harness has a v1→v1 no-op fixture test
+
+### M1-02C — UIDocument lifecycle and conflict handling
+status: Ready · refs: ARCHITECTURE.md §3 · estimate: M
+Acceptance:
+- [ ] `UIDocument` subclass integrates package I/O with autosave and conflict handling
 
 ### M1-03 — Page rendering and scrolling
 status: Ready · estimate: L
