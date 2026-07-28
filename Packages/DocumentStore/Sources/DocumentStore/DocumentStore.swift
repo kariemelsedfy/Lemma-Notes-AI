@@ -230,3 +230,58 @@ private struct FNV1a64 {
         }
     }
 }
+
+/// The serializable contents of a `.margin` package, excluding UIKit document lifecycle.
+public struct StoredDocument: Equatable, Sendable {
+    public let manifest: MarginManifest
+    public let pages: [StoredPage]
+    public let assets: [DocumentAsset]
+    public let glyphBankData: Data?
+    public let thumbnails: [UUID: Data]
+
+    public init(
+        manifest: MarginManifest,
+        pages: [StoredPage],
+        assets: [DocumentAsset] = [],
+        glyphBankData: Data? = nil,
+        thumbnails: [UUID: Data] = [:]
+    ) {
+        self.manifest = manifest
+        self.pages = pages
+        self.assets = assets
+        self.glyphBankData = glyphBankData
+        self.thumbnails = thumbnails
+    }
+}
+
+/// A page's metadata paired with its opaque PencilKit drawing representation.
+public struct StoredPage: Equatable, Sendable {
+    public let metadata: PageMetadata
+    public let inkData: Data
+
+    public init(metadata: PageMetadata, inkData: Data) {
+        self.metadata = metadata
+        self.inkData = inkData
+    }
+}
+
+/// An imported asset that is stored in the package's `assets` directory.
+public struct DocumentAsset: Equatable, Sendable {
+    public let id: UUID
+    public let fileExtension: String
+    public let data: Data
+
+    public init(id: UUID, fileExtension: String, data: Data) {
+        self.id = id
+        self.fileExtension = fileExtension
+        self.data = data
+    }
+}
+
+/// Errors emitted while reading or writing a package whose layout is owned by the app.
+public enum DocumentPackageError: Error, Equatable, Sendable {
+    case invalidAssetExtension(String)
+    case missingPageMetadata(UUID)
+    case missingPageInk(UUID)
+    case malformedAssetFilename(String)
+}

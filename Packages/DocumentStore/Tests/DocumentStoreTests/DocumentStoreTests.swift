@@ -80,6 +80,52 @@ final class DocumentStoreTests: XCTestCase {
         XCTAssertTrue(repaired.elements[0].strokeReferences.isEmpty)
     }
 
+    func testPackageStoreRoundTripsDocumentAtSpecifiedPaths() throws {
+        let packageURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".margin")
+        defer { try? FileManager.default.removeItem(at: packageURL) }
+
+        let pageID = UUID()
+        let document = StoredDocument(
+            manifest: MarginManifest(
+                id: UUID(),
+                title: "Physics",
+                createdAt: Date(timeIntervalSince1970: 100),
+                modifiedAt: Date(timeIntervalSince1970: 200),
+                pageOrder: [pageID],
+                settings: DocumentSettings(defaultPaper: .ruled)
+            ),
+            pages: [StoredPage(metadata: pageMetadata(id: pageID), inkData: Data([1, 2, 3]))],
+            assets: [DocumentAsset(id: UUID(), fileExtension: "png", data: Data([4, 5]))],
+            glyphBankData: Data([6]),
+            thumbnails: [pageID: Data([7, 8])]
+        )
+
+        let store = DocumentPackageStore()
+        try store.write(document, to: packageURL)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: packageURL.appendingPathComponent("manifest.json").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: packageURL.appendingPathComponent("pages/\(pageID.uuidString).ink").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: packageURL.appendingPathComponent("pages/\(pageID.uuidString).json").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: packageURL.appendingPathComponent("style/glyphbank.json").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: packageURL.appendingPathComponent("thumbnails/\(pageID.uuidString).heic").path))
+
+        let loaded = try store.read(from: packageURL)
+        XCTAssertEqual(loaded, document)
+    }
+
+    func testMigrationReturnsV1DataUnchanged() throws {
+        let data = Data("{\"schemaVersion\":1}".utf8)
+
+        XCTAssertEqual(try DocumentMigration.migrate(data, from: 1, to: 1), data)
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [
@@ -91,5 +137,9 @@ final class DocumentStoreTests: XCTestCase {
 
     private func fingerprint(for offset: Double) -> StrokeFingerprint {
         StrokeFingerprint(stroke: sampleStroke(at: offset))
+    }
+
+    private func pageMetadata(id: UUID) -> PageMetadata {
+        PageMetadata(pageID: id, size: PageSize(width: 100, height: 100), paper: .ruled, elements: [])
     }
 }
