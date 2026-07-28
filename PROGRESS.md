@@ -93,11 +93,11 @@ Acceptance:
 - [x] Programmatic `PKStroke` insertion is demonstrated with a known-polyline test
 
 ### M1-02A — Document package schema and stroke-index repair
-status: In progress · claimed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §3, §3.1 · estimate: M
+status: Done · completed: Codex · 2026-07-27 · refs: ARCHITECTURE.md §3, §3.1 · estimate: M
 Acceptance:
-- [ ] Codable manifest and page metadata define the v1 `.margin` package schema
-- [ ] Stroke fingerprints revalidate and repair element stroke indices after drawing mutation
-- [ ] Unit tests cover schema coding and repair behavior
+- [x] Codable manifest and page metadata define the v1 `.margin` package schema
+- [x] Stroke fingerprints revalidate and repair element stroke indices after drawing mutation
+- [x] Unit tests cover schema coding and repair behavior
 
 ### M1-02B — Document migration harness and package I/O
 status: Ready · refs: ARCHITECTURE.md §3, §3.2 · estimate: M

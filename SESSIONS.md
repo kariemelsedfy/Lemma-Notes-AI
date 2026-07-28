@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-27 · Codex · M1-02A
+
+**Goal:** define the v1 document metadata schema and protect semantic ink provenance after edits.
+
+**Done:**
+- Added Codable manifest, page metadata, paper, semantic-element, and bounds types for the v1 `.margin` schema.
+- Added a deterministic FNV-1a fingerprint over each stroke's first/last points and point count.
+- Repaired stale stroke indices only when the fingerprint maps uniquely; missing or ambiguous references are removed rather than misattributed.
+
+**Not done / left open:**
+- M1-02B will write these values into a `.margin` package and supply the migration harness; M1-02C owns `UIDocument` lifecycle behavior.
+
+**Surprises and gotchas:**
+- Persisted JSON retains the architecture's `x` and `y` bounds keys, while Swift properties use descriptive names to satisfy linting.
+
+**Decisions made:** none; the persisted format follows the existing architecture specification.
+
+**Next:** M1-02B — package I/O and the pure migration harness.
+
+**Verification:** focused package tests ✅ · repository tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-26 · Codex · M1-01B
 
 **Goal:** supply the iPad PencilKit implementation of the ink engine contract.
