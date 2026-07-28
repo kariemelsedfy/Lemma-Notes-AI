@@ -100,7 +100,7 @@ Acceptance:
 - [x] Unit tests cover schema coding and repair behavior
 
 ### M1-02B — Document migration harness and package I/O
-status: Ready · refs: ARCHITECTURE.md §3, §3.2 · estimate: M
+status: In progress · claimed: Codex · 2026-07-27 · refs: ARCHITECTURE.md §3, §3.2 · estimate: M
 Acceptance:
 - [ ] `.margin` package reads and writes manifest, page metadata, ink, assets, style, and thumbnails at their specified paths
 - [ ] Pure migration harness has a v1→v1 no-op fixture test
