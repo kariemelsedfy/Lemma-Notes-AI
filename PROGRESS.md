@@ -106,7 +106,7 @@ Acceptance:
 - [x] Pure migration harness has a v1→v1 no-op fixture test
 
 ### M1-02C — UIDocument lifecycle and conflict handling
-status: Ready · refs: ARCHITECTURE.md §3 · estimate: M
+status: In progress · claimed: Codex · 2026-07-28 · refs: ARCHITECTURE.md §3 · estimate: M
 Acceptance:
 - [ ] `UIDocument` subclass integrates package I/O with autosave and conflict handling
 
