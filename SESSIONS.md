@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-28 · Codex · M1-02B
+
+**Goal:** persist and reload the `.margin` package layout with a pure migration seam.
+
+**Done:**
+- Added package I/O for manifest, page metadata and ink blobs, PNG/PDF assets, optional glyph-bank data, and HEIC thumbnails.
+- Added round-trip coverage against the architecture's exact directory paths.
+- Added the v1→v1 pure migration no-op as the first protected migration fixture.
+
+**Not done / left open:**
+- M1-02C owns the UIKit `UIDocument` lifecycle, autosave, and conflict coordination layer.
+
+**Surprises and gotchas:**
+- `FileManager` is not `Sendable`; the synchronous package store intentionally does not claim cross-task transferability.
+
+**Decisions made:** none; the package paths follow the existing architecture specification.
+
+**Next:** M1-02C — integrate the package store with `UIDocument` lifecycle handling.
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-27 · Codex · M1-02A
 
 **Goal:** define the v1 document metadata schema and protect semantic ink provenance after edits.
