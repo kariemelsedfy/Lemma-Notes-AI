@@ -10,3 +10,9 @@
 "library.default-title" = "Untitled notebook";
 "library.page-count %@" = "%@ page";
 "library.selection.title" = "Choose a notebook";
+"library.rename" = "Rename";
+"library.rename.placeholder" = "Notebook title";
+"library.rename.save" = "Save";
+"library.delete" = "Delete notebook";
+"library.delete.confirmation" = "Delete this notebook?";
+"library.cancel" = "Cancel";
