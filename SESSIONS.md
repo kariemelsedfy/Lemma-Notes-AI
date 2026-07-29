@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-03A
+
+**Goal:** render notebook paper as a reusable app-layer component.
+
+**Done:**
+- Added deterministic blank, ruled, grid, and dotted `Canvas` paper styles.
+- Replaced the blank launch view with ruled notebook paper.
+- Added pure line-position tests and completed the local repository build/lint gates.
+
+**Not done / left open:**
+- M1-03B will mount live pages/canvases in a virtualized scroll view; M1-03C owns the 100-page performance measurement.
+
+**Surprises and gotchas:**
+- The app target is not yet linked to packages, so the paper enum remains app-local until the page/document composition layer is introduced.
+
+**Decisions made:** none.
+
+**Next:** M1-03B — paged scrolling and live-page virtualization.
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · app-test command started locally; hosted CI pending · device tested: no
+
 ## 2026-07-28 · Codex · M1-02C
 
 **Goal:** connect the `.margin` package store to UIKit document lifecycle behavior.
