@@ -10,9 +10,9 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 ## 1. Where we are
 
-M0-01 through M0-06, M1-01, and M1-02A/B are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, and a versioned `.margin` schema with package I/O, conservative stroke-reference repair, and a migration seam. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
+M0-01 through M0-06, M1-01, and M1-02 are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, and a versioned `.margin` format with package I/O, conservative stroke-reference repair, migration seam, and `UIDocument` lifecycle adapter. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
 
-Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-02C can proceed in parallel.
+Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-03 can proceed in parallel.
 
 ## 2. What exists
 

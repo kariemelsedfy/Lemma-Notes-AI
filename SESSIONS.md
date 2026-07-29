@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-28 · Codex · M1-02C
+
+**Goal:** connect the `.margin` package store to UIKit document lifecycle behavior.
+
+**Done:**
+- Added an iOS-only `UIDocument` adapter that delegates package reads and writes to the framework-independent store.
+- Change replacement calls `updateChangeCount(.done)`, making UIKit autosave eligible.
+- Observes document-state changes and surfaces unresolved conflict state without attempting an unsafe automatic merge.
+
+**Not done / left open:**
+- The adapter needs an iOS document-browser integration and physical/iCloud conflict test once M1 app UI work reaches it.
+
+**Surprises and gotchas:**
+- UIKit's `UIDocument` I/O overrides are nonisolated because writes may run off the main queue; the adapter must not force them onto `@MainActor`.
+
+**Decisions made:** none.
+
+**Next:** M1-03 — paged rendering, recycling, paper layers, and measured scrolling performance.
+
+**Verification:** tests ✅ · lint ✅ · iOS SDK type-check ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-28 · Codex · M1-02B
 
 **Goal:** persist and reload the `.margin` package layout with a pure migration seam.
