@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-08
+
+**Goal:** supply the incremental page-ink occupancy primitive needed by placement.
+
+**Done:** added an 8pt configurable, reference-counted occupancy grid with incremental stroke add/remove, free-rectangle checks, and below/right nearest-placement searches.
+
+**Not done / left open:** the future placement engine must feed actual stroke bounds into this pure primitive.
+
+**Surprises and gotchas:** reference counts are required because overlapping strokes must remain occupied when one is removed; the format and lint rules also require position generation outside long loop declarations.
+
+**Decisions made:** none.
+
+**Next:** M1-09 — handwriting-to-text.
+
+**Verification:** focused InkCore tests ✅ · `./scripts/lint.sh` ✅ · full repository tests pending final post-docs gate · device tested: no
+
 ## 2026-07-29 · Codex · M1-07B
 
 **Goal:** expose persisted notebook exports through accessible PDF/PNG actions and the system share sheet.

@@ -7,6 +7,25 @@ import XCTest
 #endif
 
 final class InkCoreTests: XCTestCase {
+    func testOccupancyGridUpdatesIncrementallyAndPreservesOverlappingInk() {
+        var grid = OccupancyGrid(pageBounds: CGRect(x: 0, y: 0, width: 64, height: 64))
+        let first = makeStroke(at: CGPoint(x: 10, y: 10))
+        let second = makeStroke(at: CGPoint(x: 12, y: 12))
+        grid.add(stroke: first)
+        grid.add(stroke: second)
+        XCTAssertFalse(grid.isFree(CGRect(x: 8, y: 8, width: 8, height: 8)))
+        grid.remove(strokeID: first.id)
+        XCTAssertFalse(grid.isFree(CGRect(x: 8, y: 8, width: 8, height: 8)))
+        grid.remove(strokeID: second.id)
+        XCTAssertTrue(grid.isFree(CGRect(x: 8, y: 8, width: 8, height: 8)))
+    }
+
+    func testOccupancyGridFindsNearestFreeRectangleBelowAnchor() {
+        var grid = OccupancyGrid(pageBounds: CGRect(x: 0, y: 0, width: 48, height: 48))
+        grid.add(stroke: makeStroke(at: CGPoint(x: 0, y: 0)))
+        let placement = grid.nearestFree(size: CGSize(width: 8, height: 8), from: .zero, direction: .below)
+        XCTAssertEqual(placement?.origin.y, 8)
+    }
     @MainActor
     func testEngineContractSupportsDrawingEditingAndExportingWithoutPencilKit() throws {
         let engine = InMemoryInkEngine()
@@ -46,6 +65,10 @@ final class InkCoreTests: XCTestCase {
                 )
             ]
         )
+    }
+
+    private func makeStroke(at location: CGPoint) -> InkStroke {
+        InkStroke(points: [InkPoint(location: location, timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0)])
     }
 
     #if os(iOS)
