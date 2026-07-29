@@ -38,6 +38,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 **Verification:** repository tests ✅ · lint ✅ · exact app-test command ✅ · hosted CI pending
 
+## 2026-07-29 · Codex · M1-06 decomposition
+
+**Goal:** turn the oversized iCloud sync milestone into independently verifiable work.
+
+**Done:** separated Apple-account provisioning, ubiquitous package discovery, coordinated refresh/conflict surfacing, and required two-device validation.
+
+**Not done / left open:** M1-06A cannot be verified until M0-07 establishes the approved ubiquity container; M1-06D requires two physical signed-in iPads.
+
+**Surprises and gotchas:** ADR-002 deliberately makes conflicts document-level rather than attempting field-level merges.
+
+**Decisions made:** none.
+
+**Next:** M1-06B — ubiquitous notebook discovery, while the human completes M1-06A.
+
+**Verification:** repository tests ✅ · lint ✅ · documentation-only task
+
 ## 2026-07-29 · Codex · M1-05B
 
 **Goal:** provide the notebook library presentation and first-notebook flow.
