@@ -152,7 +152,7 @@ Acceptance:
 - [x] Rename and delete are reachable and accessible from the library
 - [x] Destructive deletion requires confirmation
 ### M1-06 — iCloud sync
-status: Ready · estimate: L
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §1, §3, PROJECT_PLAN.md §4.1 · estimate: L
 ### M1-07 — Export to PDF and PNG
 status: Ready · estimate: M
 ### M1-08 — Occupancy grid
