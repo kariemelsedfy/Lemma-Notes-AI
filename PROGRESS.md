@@ -110,12 +110,23 @@ status: Done · completed: Codex · 2026-07-28 · refs: ARCHITECTURE.md §3 · e
 Acceptance:
 - [x] `UIDocument` subclass integrates package I/O with autosave and conflict handling
 
-### M1-03 — Page rendering and scrolling
-status: Ready · estimate: L
+### M1-03A — Paper layer rendering
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4 · estimate: M
 Acceptance:
-- [ ] Paged vertical scroll, page recycling, off-screen pages render to cached images
-- [ ] Paper styles: blank, ruled, grid, dotted
-- [ ] 60fps floor with a 100-page fixture document; measured and recorded
+- [ ] Reusable paper layer renders blank, ruled, grid, and dotted styles
+- [ ] Rendering is deterministic and unit-tested where geometry is platform-neutral
+
+### M1-03B — Paged scrolling and page virtualization
+status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
+Acceptance:
+- [ ] Paged vertical scroll recycles live canvas pages and caches off-screen page images
+- [ ] Only pages within ±1 viewport keep a live `PKCanvasView`
+
+### M1-03C — Rendering performance fixture
+status: Ready · refs: ARCHITECTURE.md §6 · estimate: M
+Acceptance:
+- [ ] 100-page fixture exercises page turning and scrolling
+- [ ] ≥60fps floor is measured and recorded
 
 ### M1-04 — Tool palette
 status: Ready · estimate: M
