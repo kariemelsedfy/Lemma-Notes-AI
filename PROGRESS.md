@@ -123,7 +123,7 @@ Acceptance:
 - [x] Only pages within ±1 viewport keep a live `PKCanvasView`
 
 ### M1-03C — Rendering performance fixture
-status: Ready · refs: ARCHITECTURE.md §6 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §6 · estimate: M
 Acceptance:
 - [ ] 100-page fixture exercises page turning and scrolling
 - [ ] ≥60fps floor is measured and recorded
