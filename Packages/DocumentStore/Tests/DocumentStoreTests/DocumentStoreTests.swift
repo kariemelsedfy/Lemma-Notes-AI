@@ -155,6 +155,27 @@ final class DocumentStoreTests: XCTestCase {
         XCTAssertEqual(summaries, [NotebookPackageSummary(packageURL: packageURL, manifest: manifest)])
     }
 
+    func testDocumentRefreshStateRequiresReloadAfterAnExternalChange() {
+        var state = DocumentRefreshStateMachine()
+
+        state.apply(.externalChange)
+
+        XCTAssertEqual(state.state, .refreshRequired)
+        state.apply(.reloadCompleted)
+        XCTAssertEqual(state.state, .current)
+    }
+
+    func testDocumentRefreshStateNeverAutomaticallyResolvesAConflict() {
+        var state = DocumentRefreshStateMachine()
+
+        state.apply(.conflictDetected)
+        state.apply(.externalChange)
+
+        XCTAssertEqual(state.state, .conflict)
+        state.apply(.conflictResolvedByUser)
+        XCTAssertEqual(state.state, .refreshRequired)
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [

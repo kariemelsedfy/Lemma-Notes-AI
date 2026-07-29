@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-06C
+
+**Goal:** expose safe external-refresh and document-conflict states for iCloud-backed notebook packages.
+
+**Done:** added a pure refresh-state machine, transition tests, and `UIDocument` file-presenter/state-notification wiring. Conflicts remain surfaced until the system reports that a user-selected resolution completed; no ink or metadata merge is attempted automatically.
+
+**Not done / left open:** user-facing version selection and physical two-device validation remain M1-06D.
+
+**Surprises and gotchas:** `UIDocument` is already an `NSFilePresenter`; forwarding `presentedItemDidChange()` to `super` preserves UIKit’s coordinated document behavior while the model records a refresh requirement.
+
+**Decisions made:** none.
+
+**Next:** M1-06D — two-device sync and conflict validation (needs physical signed-in iPads).
+
+**Verification:** focused DocumentStore tests ✅ · repository tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-05C
 
 **Goal:** make notebook rename and deletion accessible from the library.

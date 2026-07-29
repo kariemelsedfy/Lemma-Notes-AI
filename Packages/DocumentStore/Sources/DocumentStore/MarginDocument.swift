@@ -8,9 +8,11 @@
     public final class MarginDocument: UIDocument {
         public private(set) var content: StoredDocument?
         public private(set) var hasUnresolvedConflict = false
+        public private(set) var refreshState: DocumentRefreshState = .current
 
         private let store: DocumentPackageStore
         private var stateObserver: NSObjectProtocol?
+        private var refreshStateMachine = DocumentRefreshStateMachine()
 
         public init(fileURL: URL, store: DocumentPackageStore = DocumentPackageStore()) {
             self.store = store
@@ -20,7 +22,7 @@
                 object: self,
                 queue: .main
             ) { [weak self] _ in
-                self?.refreshConflictState()
+                self?.refreshDocumentState()
             }
         }
 
@@ -38,7 +40,13 @@
 
         public override func read(from url: URL) throws {
             content = try store.read(from: url)
-            refreshConflictState()
+            refreshDocumentState(reloadCompleted: true)
+        }
+
+        /// Receives file-presenter changes from coordinated external writers, including iCloud.
+        public override func presentedItemDidChange() {
+            super.presentedItemDidChange()
+            applyRefreshEvent(.externalChange)
         }
 
         public override func contents(forType typeName: String) throws -> Any {
@@ -57,8 +65,25 @@
             try store.write(content, to: url)
         }
 
-        private func refreshConflictState() {
-            hasUnresolvedConflict = documentState.contains(.inConflict)
+        private func refreshDocumentState(reloadCompleted: Bool = false) {
+            if documentState.contains(.inConflict) {
+                hasUnresolvedConflict = true
+                applyRefreshEvent(.conflictDetected)
+                return
+            }
+
+            if hasUnresolvedConflict {
+                hasUnresolvedConflict = false
+                applyRefreshEvent(.conflictResolvedByUser)
+            }
+            if reloadCompleted {
+                applyRefreshEvent(.reloadCompleted)
+            }
+        }
+
+        private func applyRefreshEvent(_ event: DocumentRefreshEvent) {
+            refreshStateMachine.apply(event)
+            refreshState = refreshStateMachine.state
         }
     }
 #endif
