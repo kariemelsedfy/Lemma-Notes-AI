@@ -169,7 +169,7 @@ Acceptance:
 - [ ] A signed build can resolve the ubiquity container on a physical iPad
 
 ### M1-06B — Ubiquitous notebook discovery
-status: Ready · refs: ARCHITECTURE.md §1, §3, DECISIONS.md ADR-002 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §1, §3, DECISIONS.md ADR-002 · estimate: M
 Acceptance:
 - [ ] DocumentStore exposes a testable repository for `.margin` packages in the ubiquity container
 - [ ] Discovery reports available notebooks without reading whole document contents
