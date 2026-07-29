@@ -9,7 +9,8 @@ final class MarginTests: XCTestCase {
 
     func testRuledPaperLinePositionsRespectInsetsAndSpacing() {
         let positions = PaperLineLayout.positions(
-            in: CGRect(x: 0, y: 0, width: 300, height: 200),
+            from: 0,
+            to: 200,
             inset: 20,
             spacing: 40
         )
@@ -19,7 +20,8 @@ final class MarginTests: XCTestCase {
 
     func testPaperLineLayoutRejectsNonPositiveSpacing() {
         let positions = PaperLineLayout.positions(
-            in: CGRect(x: 0, y: 0, width: 100, height: 100),
+            from: 0,
+            to: 100,
             inset: 10,
             spacing: 0
         )
