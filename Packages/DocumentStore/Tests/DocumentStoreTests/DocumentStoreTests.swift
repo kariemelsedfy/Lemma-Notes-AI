@@ -176,6 +176,33 @@ final class DocumentStoreTests: XCTestCase {
         XCTAssertEqual(state.state, .refreshRequired)
     }
 
+    func testNotebookPageExportRequestUsesStoredPageDimensions() throws {
+        let page = StoredPage(
+            metadata: PageMetadata(
+                pageID: UUID(), size: PageSize(width: 612, height: 792), paper: .grid5Millimeters,
+                elements: []),
+            inkData: Data()
+        )
+
+        let request = try NotebookPageExportRequest(page: page)
+
+        XCTAssertEqual(request.bounds.width, 612)
+        XCTAssertEqual(request.bounds.height, 792)
+        XCTAssertEqual(request.paper, .grid5Millimeters)
+    }
+
+    func testNotebookPageExportRequestRejectsInvalidPageDimensions() {
+        let page = StoredPage(
+            metadata: PageMetadata(
+                pageID: UUID(), size: PageSize(width: 0, height: 792), paper: .blank, elements: []),
+            inkData: Data()
+        )
+
+        XCTAssertThrowsError(try NotebookPageExportRequest(page: page)) { error in
+            XCTAssertEqual(error as? NotebookExportError, .invalidPageSize)
+        }
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [
