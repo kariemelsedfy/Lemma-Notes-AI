@@ -2,3 +2,11 @@
 "tool.pen" = "Pen";
 "tool.eraser" = "Eraser";
 "tool.lasso" = "Selection lasso";
+
+"library.title" = "Notebooks";
+"library.empty.title" = "Create your first notebook";
+"library.empty.description" = "Start a notebook, then write or ask a question from any page.";
+"library.create" = "New notebook";
+"library.default-title" = "Untitled notebook";
+"library.page-count %@" = "%@ page";
+"library.selection.title" = "Choose a notebook";

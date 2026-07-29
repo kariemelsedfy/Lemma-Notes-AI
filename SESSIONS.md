@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-05B
+
+**Goal:** provide the notebook library presentation and first-notebook flow.
+
+**Done:** added a notebook library root with an accessible empty state, new-notebook action, selection list, and a selected notebook’s paged canvas.
+
+**Not done / left open:** M1-05C owns rename and delete controls; notebook data remains in-memory pending persistence work.
+
+**Surprises and gotchas:** the library view owns selection state, keeping page virtualization scoped to the open notebook.
+
+**Decisions made:** none.
+
+**Next:** M1-05C — notebook organization controls.
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-05A
 
 **Goal:** provide an independently testable notebook library model.
