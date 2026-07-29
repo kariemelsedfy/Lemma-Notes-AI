@@ -60,4 +60,34 @@ final class MarginTests: XCTestCase {
     func testCanvasToolsHaveUniqueSymbols() {
         XCTAssertEqual(Set(CanvasTool.allCases.map(\.symbolName)).count, CanvasTool.allCases.count)
     }
+
+    @MainActor
+    func testNotebookLibraryCreatesStableNotebookSummary() {
+        let library = NotebookLibrary()
+        let now = Date(timeIntervalSinceReferenceDate: 1_000)
+
+        let notebook = library.create(title: "Calculus", now: now)
+
+        XCTAssertEqual(library.notebooks, [notebook])
+        XCTAssertEqual(notebook.title, "Calculus")
+        XCTAssertEqual(notebook.createdAt, now)
+        XCTAssertEqual(notebook.modifiedAt, now)
+        XCTAssertEqual(notebook.pageCount, 1)
+    }
+
+    @MainActor
+    func testNotebookLibraryRenamesAndDeletesNotebook() {
+        let library = NotebookLibrary()
+        let notebook = library.create(title: "Draft", now: .distantPast)
+        let renamedAt = Date(timeIntervalSinceReferenceDate: 2_000)
+
+        library.rename(id: notebook.id, to: "Linear Algebra", now: renamedAt)
+
+        XCTAssertEqual(library.notebooks.first?.title, "Linear Algebra")
+        XCTAssertEqual(library.notebooks.first?.modifiedAt, renamedAt)
+
+        library.delete(id: notebook.id)
+
+        XCTAssertTrue(library.notebooks.isEmpty)
+    }
 }
