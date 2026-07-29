@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-07B prerequisite
+
+**Goal:** validate that the planned sharing UI can export a selected notebook’s real persisted content.
+
+**Done:** identified and documented M1-05D, which binds the summary-only in-memory library to `DocumentStore` before export actions can access a `StoredPage`.
+
+**Not done / left open:** M1-07B remains blocked until M1-05D provides selected persisted content; no placeholder share action was added.
+
+**Surprises and gotchas:** library UI and document storage were deliberately decoupled during the initial canvas milestone, so summaries alone cannot be safely converted into export data.
+
+**Decisions made:** none.
+
+**Next:** M1-05D — persisted notebook library binding.
+
+**Verification:** documentation-only prerequisite; no production code changed.
+
 ## 2026-07-29 · Codex · M1-07A
 
 **Goal:** render persisted notebook pages to PDF and PNG without mutating their source package data.
