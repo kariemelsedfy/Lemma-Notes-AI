@@ -2,6 +2,9 @@ import ProjectDescription
 
 let project = Project(
     name: "Margin",
+    packages: [
+        .local(path: "Packages/DocumentStore")
+    ],
     targets: [
         .target(
             name: "Margin",
@@ -14,6 +17,9 @@ let project = Project(
             ]),
             sources: ["Apps/Margin/Sources/**"],
             resources: ["Apps/Margin/Resources/**"],
+            dependencies: [
+                .package(product: "DocumentStore")
+            ],
             settings: .settings(base: [
                 "TARGETED_DEVICE_FAMILY": "2"
             ])
@@ -26,7 +32,10 @@ let project = Project(
             deploymentTargets: .iOS("26.0"),
             infoPlist: .default,
             sources: ["Apps/Margin/Tests/**"],
-            dependencies: [.target(name: "Margin")]
+            dependencies: [
+                .target(name: "Margin"),
+                .package(product: "DocumentStore"),
+            ]
         ),
     ]
 )

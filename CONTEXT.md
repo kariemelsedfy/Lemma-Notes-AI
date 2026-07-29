@@ -4,13 +4,13 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-29 · by: Codex · Milestone: **M1 canvas in progress**
+**Last updated:** 2026-07-29 · by: Codex · Milestone: **M1 persisted library binding complete**
 
 ---
 
 ## 1. Where we are
 
-M0-01 through M0-06, M1-01 through M1-04 (except the device-only M1-03C FPS trace) are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, and an accessible pen/eraser/lasso palette. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
+M0-01 through M0-06, M1-01 through M1-05D (except the device-only M1-03C FPS trace) are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, and a persisted notebook library backed by `DocumentStore`. Package tests, lint, Tuist generation, and simulator app builds pass.
 
 Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-03C can proceed in parallel.
 
@@ -20,7 +20,8 @@ Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight se
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | 12-page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory |
+| Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Packages | Six scaffolded SPM packages under `Packages/` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |

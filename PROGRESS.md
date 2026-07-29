@@ -153,11 +153,11 @@ Acceptance:
 - [x] Destructive deletion requires confirmation
 
 ### M1-05D — Persisted notebook library binding
-status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §2, §3 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §2, §3 · estimate: M
 Acceptance:
-- [ ] Library summaries are sourced from `DocumentStore` package metadata rather than in-memory fixtures
-- [ ] Opening a notebook supplies its persisted page and ink data to the canvas and export flow
-- [ ] Create, rename, and delete persist package changes and are covered by unit tests
+- [x] Library summaries are sourced from `DocumentStore` package metadata rather than in-memory fixtures
+- [x] Opening a notebook supplies its persisted page and ink data to the canvas and export flow
+- [x] Create, rename, and delete persist package changes and are covered by unit tests
 
 ### M1-06 — iCloud sync
 status: Done · completed: Codex · 2026-07-29 · note: decomposed into M1-06A through M1-06D before implementation. · refs: ARCHITECTURE.md §1, §3, PROJECT_PLAN.md §4.1 · estimate: L
@@ -200,7 +200,7 @@ Acceptance:
 - [x] Rendering failures are explicit and covered where framework-independent
 
 ### M1-07B — Export action and sharing UI
-status: Blocked · blocker: M1-05D must supply the selected notebook's persisted `StoredPage` data; the current library intentionally retains summaries only. · refs: PROJECT_PLAN.md §4.1 · estimate: S
+status: Ready · refs: PROJECT_PLAN.md §4.1 · estimate: S
 Acceptance:
 - [ ] The selected notebook exposes accessible PDF and PNG export actions
 - [ ] Successful exports open the system share sheet with a temporary output file

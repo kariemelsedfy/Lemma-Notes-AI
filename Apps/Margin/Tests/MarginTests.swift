@@ -62,11 +62,13 @@ final class MarginTests: XCTestCase {
     }
 
     @MainActor
-    func testNotebookLibraryCreatesStableNotebookSummary() {
-        let library = NotebookLibrary()
+    func testNotebookLibraryCreatesStableNotebookSummary() throws {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let library = NotebookLibrary(rootURL: rootURL)
         let now = Date(timeIntervalSinceReferenceDate: 1_000)
 
-        let notebook = library.create(title: "Calculus", now: now)
+        let notebook = try XCTUnwrap(library.create(title: "Calculus", now: now))
 
         XCTAssertEqual(library.notebooks, [notebook])
         XCTAssertEqual(notebook.title, "Calculus")
@@ -76,9 +78,11 @@ final class MarginTests: XCTestCase {
     }
 
     @MainActor
-    func testNotebookLibraryRenamesAndDeletesNotebook() {
-        let library = NotebookLibrary()
-        let notebook = library.create(title: "Draft", now: .distantPast)
+    func testNotebookLibraryRenamesAndDeletesNotebook() throws {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let library = NotebookLibrary(rootURL: rootURL)
+        let notebook = try XCTUnwrap(library.create(title: "Draft", now: .distantPast))
         let renamedAt = Date(timeIntervalSinceReferenceDate: 2_000)
 
         library.rename(id: notebook.id, to: "Linear Algebra", now: renamedAt)

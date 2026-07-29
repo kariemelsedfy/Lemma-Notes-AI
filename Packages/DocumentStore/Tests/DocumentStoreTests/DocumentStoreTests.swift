@@ -203,6 +203,26 @@ final class DocumentStoreTests: XCTestCase {
         }
     }
 
+    func testNotebookPackageLibraryPersistsCreateRenameAndDelete() throws {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let library = NotebookPackageLibrary(rootURL: rootURL)
+        let createdAt = Date(timeIntervalSinceReferenceDate: 1_000)
+
+        let created = try library.create(title: "Calculus", now: createdAt)
+
+        XCTAssertEqual(try library.notebooks(), [created])
+        XCTAssertEqual(try library.document(id: created.id).manifest.title, "Calculus")
+
+        let renamedAt = Date(timeIntervalSinceReferenceDate: 2_000)
+        let renamed = try library.rename(id: created.id, to: "Linear Algebra", now: renamedAt)
+        XCTAssertEqual(renamed.title, "Linear Algebra")
+        XCTAssertEqual(renamed.modifiedAt, renamedAt)
+
+        try library.delete(id: created.id)
+        XCTAssertEqual(try library.notebooks(), [])
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [
