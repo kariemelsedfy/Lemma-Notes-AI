@@ -130,8 +130,23 @@ Acceptance:
 
 ### M1-04 — Tool palette
 status: Done · completed: Codex · 2026-07-29 · estimate: M
-### M1-05 — Notebook library and organization
-status: Ready · estimate: L
+### M1-05A — Notebook library model
+status: Ready · estimate: M
+Acceptance:
+- [ ] Notebook summaries have stable IDs, titles, timestamps, and page counts
+- [ ] Create, rename, and delete operations are unit-tested
+
+### M1-05B — Notebook library UI
+status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Acceptance:
+- [ ] Library lists notebooks and opens a selected notebook
+- [ ] Empty state creates the first notebook without Pencil input
+
+### M1-05C — Notebook organization controls
+status: Ready · estimate: M
+Acceptance:
+- [ ] Rename and delete are reachable and accessible from the library
+- [ ] Destructive deletion requires confirmation
 ### M1-06 — iCloud sync
 status: Ready · estimate: L
 ### M1-07 — Export to PDF and PNG
