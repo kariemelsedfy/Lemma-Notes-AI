@@ -25,7 +25,11 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-03R — CI app-test reliability
+status: Done · completed: Codex · 2026-07-29 · refs: .github/workflows/ci.yml · estimate: S
+Acceptance:
+- [x] Hosted app tests use a deterministically available simulator destination
+- [x] A stalled simulator test cannot consume the full job budget without diagnostics
 
 ## Review
 

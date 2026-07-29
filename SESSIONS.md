@@ -22,6 +22,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 **Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
 
+## 2026-07-29 · Codex · M0-03R
+
+**Goal:** make hosted app-test CI failures bounded and diagnosable.
+
+**Done:** replaced the unstable `OS=latest` selector with the supported iPad device name, bounded destination resolution to 60 seconds, disabled unnecessary parallel test orchestration, logged simulator inventory, and limited the app-test step to four minutes.
+
+**Not done / left open:** a successful hosted rerun is still required to prove runner behavior; local app tests passed with the exact hardened command.
+
+**Surprises and gotchas:** the hanging feature runs all completed their package/build work and stalled only during the separate simulator test step.
+
+**Decisions made:** none.
+
+**Next:** rerun the notebook PR checks, merge the ordered chain, then split M1-06.
+
+**Verification:** repository tests ✅ · lint ✅ · exact app-test command ✅ · hosted CI pending
+
 ## 2026-07-29 · Codex · M1-05B
 
 **Goal:** provide the notebook library presentation and first-notebook flow.
@@ -37,6 +53,7 @@ Write for the agent who picks this up next week with none of your context. The d
 **Next:** M1-05C — notebook organization controls.
 
 **Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 
 ## 2026-07-29 · Codex · M1-05A
 
