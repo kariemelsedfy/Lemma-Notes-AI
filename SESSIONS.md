@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-04
+
+**Goal:** provide accessible in-app drawing tool switching.
+
+**Done:** added a floating pen, vector eraser, and lasso palette with 44pt controls, localized VoiceOver labels, and public PencilKit tool wiring.
+
+**Not done / left open:** none.
+
+**Surprises and gotchas:** inactive pages stay as previews and apply the selected tool when they return to the live window.
+
+**Decisions made:** none.
+
+**Next:** M1-05 — notebook library and organization.
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-03C (checkpoint)
 
 **Goal:** provide a deterministic 100-page scenario and measure scrolling performance.
