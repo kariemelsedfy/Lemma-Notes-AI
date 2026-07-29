@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-05D
+
+**Goal:** bind the notebook library and page canvas to real `.margin` packages.
+
+**Done:** added `NotebookPackageLibrary` for persisted create, discover, rename, delete, and document reads; made the app library source summaries and selected documents from it; and passed stored page dimensions and PencilKit ink into the virtualized canvas. The Margin target now declares its architecture-approved local dependency on `DocumentStore`.
+
+**Not done / left open:** edits in an open canvas remain session-local; durable ink writes belong to a dedicated document-editing task. M1-07B now has the selected `StoredDocument` data it needs for sharing UI.
+
+**Surprises and gotchas:** an existing export renderer used a Core Graphics color API that only compiled once `DocumentStore` was linked into the iOS target; the renderer now uses `CGColor` explicitly. SwiftUI's `StateObject` initializer must receive a local value rather than capture a view property during initialization.
+
+**Decisions made:** none; the app-to-`DocumentStore` edge is permitted by the architecture and introduces no dependency.
+
+**Next:** M1-07B — export action and sharing UI.
+
+**Verification:** `./scripts/test.sh` ✅ · `./scripts/lint.sh` ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-07B prerequisite
 
 **Goal:** validate that the planned sharing UI can export a selected notebook’s real persisted content.
