@@ -3,6 +3,9 @@ import SwiftUI
 struct NotebookLibraryView: View {
     @StateObject private var library = NotebookLibrary()
     @State private var selectedNotebookID: UUID?
+    @State private var notebookPendingRename: NotebookSummary?
+    @State private var notebookPendingDeletion: NotebookSummary?
+    @State private var renameTitle = ""
 
     var body: some View {
         NavigationSplitView {
@@ -23,6 +26,15 @@ struct NotebookLibraryView: View {
                             .foregroundStyle(.secondary)
                     }
                     .tag(notebook.id)
+                    .contextMenu {
+                        Button("library.rename", systemImage: "pencil") {
+                            notebookPendingRename = notebook
+                            renameTitle = notebook.title
+                        }
+                        Button("library.delete", systemImage: "trash", role: .destructive) {
+                            notebookPendingDeletion = notebook
+                        }
+                    }
                 }
                 .navigationTitle("library.title")
                 .toolbar {
@@ -36,10 +48,58 @@ struct NotebookLibraryView: View {
                 ContentUnavailableView("library.selection.title", systemImage: "doc")
             }
         }
+        .alert("library.rename", isPresented: renamePresented) {
+            TextField("library.rename.placeholder", text: $renameTitle)
+            Button("library.rename.save") {
+                guard let notebook = notebookPendingRename else {
+                    return
+                }
+                library.rename(id: notebook.id, to: renameTitle)
+            }
+            Button("library.cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "library.delete.confirmation",
+            isPresented: deletionPresented,
+            titleVisibility: .visible
+        ) {
+            Button("library.delete", role: .destructive) {
+                guard let notebook = notebookPendingDeletion else {
+                    return
+                }
+                library.delete(id: notebook.id)
+                if selectedNotebookID == notebook.id {
+                    selectedNotebookID = nil
+                }
+            }
+            Button("library.cancel", role: .cancel) {}
+        }
     }
 
     private func createNotebook() {
         let notebook = library.create(title: String(localized: "library.default-title"))
         selectedNotebookID = notebook.id
+    }
+
+    private var renamePresented: Binding<Bool> {
+        Binding(
+            get: { notebookPendingRename != nil },
+            set: { isPresented in
+                if !isPresented {
+                    notebookPendingRename = nil
+                }
+            }
+        )
+    }
+
+    private var deletionPresented: Binding<Bool> {
+        Binding(
+            get: { notebookPendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    notebookPendingDeletion = nil
+                }
+            }
+        )
     }
 }

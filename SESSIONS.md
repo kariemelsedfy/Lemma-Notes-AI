@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-05C
+
+**Goal:** make notebook rename and deletion accessible from the library.
+
+**Done:** added rename and deletion actions to each notebook’s context menu, with a text-entry alert and destructive confirmation before deletion.
+
+**Not done / left open:** organization state is in-memory; persistence and sync belong to later milestones.
+
+**Surprises and gotchas:** clearing a deleted notebook’s selection avoids presenting a stale page stack.
+
+**Decisions made:** none.
+
+**Next:** M1-06 — iCloud sync (split before implementation).
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-05B
 
 **Goal:** provide the notebook library presentation and first-notebook flow.
