@@ -123,9 +123,9 @@ Acceptance:
 - [x] Only pages within ±1 viewport keep a live `PKCanvasView`
 
 ### M1-03C — Rendering performance fixture
-status: Ready · refs: ARCHITECTURE.md §6 · estimate: M
+status: Ready · needs-device-verification · note: deterministic 100-page fixture and bounded-live-page tests are implemented; record an on-device animation trace before marking Done. · refs: ARCHITECTURE.md §6 · estimate: M
 Acceptance:
-- [ ] 100-page fixture exercises page turning and scrolling
+- [x] 100-page fixture exercises page turning and scrolling
 - [ ] ≥60fps floor is measured and recorded
 
 ### M1-04 — Tool palette

@@ -13,3 +13,11 @@ enum PageLiveWindow {
         return Set(lowerBound...upperBound)
     }
 }
+
+enum PagePerformanceFixture {
+    static let pageCount = 100
+
+    static var pageTurnSequence: [Int] {
+        Array(0..<pageCount)
+    }
+}

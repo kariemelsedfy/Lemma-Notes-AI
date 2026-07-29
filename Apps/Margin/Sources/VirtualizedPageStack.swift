@@ -2,15 +2,23 @@ import PencilKit
 import SwiftUI
 
 struct VirtualizedPageStack: View {
-    private let pageIDs = Array(0..<12)
+    private let pageIDs: [Int]
     private let pageSize = CGSize(width: 768, height: 1_024)
 
     @State private var visiblePageID: Int?
     @StateObject private var drawingStore = PageDrawingStore()
 
+    init(pageIDs: [Int] = PagePerformanceFixture.pageTurnSequence) {
+        self.pageIDs = pageIDs
+    }
+
     private var livePageIDs: Set<Int> {
-        PageLiveWindow.pageIndices(
-            around: visiblePageID ?? pageIDs[0],
+        guard let firstPageID = pageIDs.first else {
+            return []
+        }
+
+        return PageLiveWindow.pageIndices(
+            around: visiblePageID ?? firstPageID,
             pageCount: pageIDs.count
         )
     }
@@ -33,7 +41,7 @@ struct VirtualizedPageStack: View {
         .scrollIndicators(.hidden)
         .background(.background)
         .onAppear {
-            visiblePageID = pageIDs[0]
+            visiblePageID = pageIDs.first
         }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else {
