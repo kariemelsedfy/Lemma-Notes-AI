@@ -38,6 +38,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 **Verification:** repository tests ✅ · lint ✅ · exact app-test command ✅ · hosted CI pending
 
+## 2026-07-29 · Codex · M1-06B
+
+**Goal:** discover notebook packages without loading their ink.
+
+**Done:** added an injected-storage repository that reports unavailable storage or enumerates only `.margin` directories and decodes each manifest into library metadata.
+
+**Not done / left open:** resolving a real ubiquity container waits on M1-06A; coordinated refresh and device validation remain M1-06C/D.
+
+**Surprises and gotchas:** normalize package URLs by resolving symlinks; temporary roots otherwise produce distinct `/var` and `/private/var` URL identities.
+
+**Decisions made:** none.
+
+**Next:** M1-06C — coordinated document refresh and conflict surfacing.
+
+**Verification:** DocumentStore tests ✅ · repository tests ✅ · lint ✅
+
 ## 2026-07-29 · Codex · M1-06 decomposition
 
 **Goal:** turn the oversized iCloud sync milestone into independently verifiable work.
