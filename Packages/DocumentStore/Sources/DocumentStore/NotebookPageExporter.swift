@@ -65,15 +65,15 @@ public enum NotebookExportError: Error, Equatable, Sendable {
         }
 
         private static func draw(_ request: NotebookPageExportRequest, drawing: PKDrawing, in context: CGContext) {
-            context.setGrayFillColor(1, alpha: 1)
+            context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(request.bounds)
             drawPaper(request.paper, in: request.bounds, context: context)
             drawing.image(from: request.bounds, scale: 2).draw(in: request.bounds)
         }
 
         private static func drawPaper(_ paper: PaperStyle, in bounds: CGRect, context: CGContext) {
-            context.setGrayStrokeColor(0.6, alpha: 0.38)
-            context.setGrayFillColor(0.6, alpha: 0.5)
+            context.setStrokeColor(CGColor(gray: 0.6, alpha: 0.38))
+            context.setFillColor(CGColor(gray: 0.6, alpha: 0.5))
             context.setLineWidth(1)
 
             switch paper {
