@@ -169,7 +169,7 @@ Acceptance:
 - [x] Local fallback behavior and unavailable-iCloud state are unit-tested
 
 ### M1-06C — Coordinated document refresh and conflict surfacing
-status: Ready · refs: ARCHITECTURE.md §3, DECISIONS.md ADR-002 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §3, DECISIONS.md ADR-002 · estimate: M
 Acceptance:
 - [ ] File presenters/coordinators refresh changed package metadata without corrupting open documents
 - [ ] Conflicting document versions surface a recoverable state; no unsafe automatic merge occurs
