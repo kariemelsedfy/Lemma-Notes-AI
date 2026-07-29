@@ -111,10 +111,10 @@ Acceptance:
 - [x] `UIDocument` subclass integrates package I/O with autosave and conflict handling
 
 ### M1-03A — Paper layer rendering
-status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4 · estimate: M
 Acceptance:
-- [ ] Reusable paper layer renders blank, ruled, grid, and dotted styles
-- [ ] Rendering is deterministic and unit-tested where geometry is platform-neutral
+- [x] Reusable paper layer renders blank, ruled, grid, and dotted styles
+- [x] Rendering is deterministic and unit-tested where geometry is platform-neutral
 
 ### M1-03B — Paged scrolling and page virtualization
 status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
