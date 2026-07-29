@@ -56,4 +56,8 @@ final class MarginTests: XCTestCase {
             XCTAssertTrue(livePages.contains(pageID))
         }
     }
+
+    func testCanvasToolsHaveUniqueSymbols() {
+        XCTAssertEqual(Set(CanvasTool.allCases.map(\.symbolName)).count, CanvasTool.allCases.count)
+    }
 }

@@ -1,1 +1,4 @@
-/* The scaffold intentionally has no user-facing copy yet. */
+"tool.palette" = "Drawing tools";
+"tool.pen" = "Pen";
+"tool.eraser" = "Eraser";
+"tool.lasso" = "Selection lasso";

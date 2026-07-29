@@ -7,6 +7,7 @@ struct VirtualizedPageStack: View {
 
     @State private var visiblePageID: Int?
     @StateObject private var drawingStore = PageDrawingStore()
+    @State private var selectedTool: CanvasTool = .pen
 
     init(pageIDs: [Int] = PagePerformanceFixture.pageTurnSequence) {
         self.pageIDs = pageIDs
@@ -24,21 +25,26 @@ struct VirtualizedPageStack: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
-                ForEach(pageIDs, id: \.self) { pageID in
-                    pageView(for: pageID)
-                        .frame(width: pageSize.width, height: pageSize.height)
-                        .id(pageID)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    ForEach(pageIDs, id: \.self) { pageID in
+                        pageView(for: pageID)
+                            .frame(width: pageSize.width, height: pageSize.height)
+                            .id(pageID)
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .scrollTargetLayout()
+                .padding(.vertical, 24)
             }
-            .frame(maxWidth: .infinity)
-            .scrollTargetLayout()
-            .padding(.vertical, 24)
+            .scrollPosition(id: $visiblePageID)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollIndicators(.hidden)
+
+            ToolPalette(selectedTool: $selectedTool)
+                .padding(.bottom, 20)
         }
-        .scrollPosition(id: $visiblePageID)
-        .scrollTargetBehavior(.viewAligned)
-        .scrollIndicators(.hidden)
         .background(.background)
         .onAppear {
             visiblePageID = pageIDs.first
@@ -55,7 +61,12 @@ struct VirtualizedPageStack: View {
     @ViewBuilder
     private func pageView(for pageID: Int) -> some View {
         if livePageIDs.contains(pageID) {
-            LivePageView(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+            LivePageView(
+                pageID: pageID,
+                pageSize: pageSize,
+                drawingStore: drawingStore,
+                selectedTool: selectedTool
+            )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
         }
@@ -73,11 +84,17 @@ private struct LivePageView: View {
     let pageID: Int
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    let selectedTool: CanvasTool
 
     var body: some View {
         ZStack {
             PaperCanvas(style: .ruled)
-            LiveInkCanvas(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+            LiveInkCanvas(
+                pageID: pageID,
+                pageSize: pageSize,
+                drawingStore: drawingStore,
+                selectedTool: selectedTool
+            )
         }
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
@@ -108,6 +125,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
     let pageID: Int
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    let selectedTool: CanvasTool
 
     func makeCoordinator() -> Coordinator {
         Coordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
@@ -118,14 +136,27 @@ private struct LiveInkCanvas: UIViewRepresentable {
         canvasView.backgroundColor = .clear
         canvasView.drawing = drawingStore.drawing(for: pageID)
         canvasView.drawingPolicy = .anyInput
+        apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
         return canvasView
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
+        apply(selectedTool, to: canvasView)
         let savedDrawing = drawingStore.drawing(for: pageID)
         if canvasView.drawing.dataRepresentation() != savedDrawing.dataRepresentation() {
             canvasView.drawing = savedDrawing
+        }
+    }
+
+    private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
+        switch tool {
+        case .pen:
+            canvasView.tool = PKInkingTool(.pen, color: .label, width: 5)
+        case .eraser:
+            canvasView.tool = PKEraserTool(.vector)
+        case .lasso:
+            canvasView.tool = PKLassoTool()
         }
     }
 
