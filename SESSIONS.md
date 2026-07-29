@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-03B
+
+**Goal:** mount virtualized paged scrolling with a bounded number of live PencilKit canvases.
+
+**Done:**
+- Replaced the single paper launch view with a 12-page vertical, view-aligned scroll stack.
+- Added a pure live-window model, covered at normal and document-edge positions, which admits only the visible page and its immediate neighbors.
+- Wrapped `PKCanvasView` in a main-actor SwiftUI coordinator; drawing changes persist in an app-local store and render to cached page previews after a page leaves the live window.
+
+**Not done / left open:**
+- This first app-layer composition uses an in-memory drawing store. M1 document UI work must connect it to `MarginDocument` rather than treating it as persistence.
+- M1-03C owns the 100-page fixture and performance measurement.
+
+**Surprises and gotchas:**
+- `scrollPosition(id:)` supplies a view-aligned page identity, not raw scroll geometry. Keeping the live window derived from that identity makes the bounded-canvas invariant testable without simulating scroll pixels.
+
+**Decisions made:** none.
+
+**Next:** M1-03C — rendering performance fixture.
+
+**Verification:** repository tests ✅ · lint ✅ · iPad simulator unit tests ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-03A
 
 **Goal:** render notebook paper as a reusable app-layer component.

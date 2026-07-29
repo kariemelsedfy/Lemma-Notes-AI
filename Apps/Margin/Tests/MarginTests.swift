@@ -28,4 +28,15 @@ final class MarginTests: XCTestCase {
 
         XCTAssertTrue(positions.isEmpty)
     }
+
+    func testLiveWindowContainsOnlyTheVisiblePageAndImmediateNeighbors() {
+        let pageIDs = PageLiveWindow.pageIndices(around: 5, pageCount: 12)
+
+        XCTAssertEqual(pageIDs, [4, 5, 6])
+    }
+
+    func testLiveWindowClampsToDocumentBounds() {
+        XCTAssertEqual(PageLiveWindow.pageIndices(around: -4, pageCount: 3), [0, 1])
+        XCTAssertEqual(PageLiveWindow.pageIndices(around: 9, pageCount: 3), [1, 2])
+    }
 }

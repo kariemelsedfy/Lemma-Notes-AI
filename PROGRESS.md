@@ -117,10 +117,10 @@ Acceptance:
 - [x] Rendering is deterministic and unit-tested where geometry is platform-neutral
 
 ### M1-03B — Paged scrolling and page virtualization
-status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4 · estimate: M
 Acceptance:
-- [ ] Paged vertical scroll recycles live canvas pages and caches off-screen page images
-- [ ] Only pages within ±1 viewport keep a live `PKCanvasView`
+- [x] Paged vertical scroll recycles live canvas pages and caches off-screen page images
+- [x] Only pages within ±1 viewport keep a live `PKCanvasView`
 
 ### M1-03C — Rendering performance fixture
 status: Ready · refs: ARCHITECTURE.md §6 · estimate: M
