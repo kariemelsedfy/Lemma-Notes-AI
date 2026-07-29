@@ -30,4 +30,13 @@ jobs:
       - name: Run package tests and app build
         run: ./scripts/test.sh
       - name: Run app tests
-        run: xcodebuild test -workspace Margin.xcworkspace -scheme Margin -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=latest' CODE_SIGNING_ALLOWED=NO
+        timeout-minutes: 4
+        run: |
+          xcrun simctl list devices available
+          xcodebuild test \
+            -workspace Margin.xcworkspace \
+            -scheme Margin \
+            -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' \
+            -destination-timeout 60 \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO
