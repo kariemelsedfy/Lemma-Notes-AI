@@ -185,7 +185,7 @@ Acceptance:
 status: Done · completed: Codex · 2026-07-29 · note: decomposed into M1-07A and M1-07B before implementation. · estimate: M
 
 ### M1-07A — Notebook PDF and PNG rendering
-status: Ready · refs: ARCHITECTURE.md §3, PROJECT_PLAN.md §4.1 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §3, PROJECT_PLAN.md §4.1 · estimate: M
 Acceptance:
 - [ ] A selected notebook page renders to PDF and PNG without modifying source ink
 - [ ] Page dimensions, paper, and stored ink are represented in exported output
