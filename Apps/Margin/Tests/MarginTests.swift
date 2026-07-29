@@ -39,4 +39,21 @@ final class MarginTests: XCTestCase {
         XCTAssertEqual(PageLiveWindow.pageIndices(around: -4, pageCount: 3), [0, 1])
         XCTAssertEqual(PageLiveWindow.pageIndices(around: 9, pageCount: 3), [1, 2])
     }
+
+    func testPerformanceFixtureVisitsEveryPageInAOneHundredPageDocument() {
+        XCTAssertEqual(PagePerformanceFixture.pageTurnSequence.count, 100)
+        XCTAssertEqual(PagePerformanceFixture.pageTurnSequence, Array(0..<100))
+    }
+
+    func testPerformanceFixtureNeverKeepsMoreThanThreePagesLiveDuringPageTurns() {
+        for pageID in PagePerformanceFixture.pageTurnSequence {
+            let livePages = PageLiveWindow.pageIndices(
+                around: pageID,
+                pageCount: PagePerformanceFixture.pageCount
+            )
+
+            XCTAssertLessThanOrEqual(livePages.count, 3)
+            XCTAssertTrue(livePages.contains(pageID))
+        }
+    }
 }
