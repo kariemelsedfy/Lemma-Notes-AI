@@ -129,7 +129,7 @@ Acceptance:
 - [ ] ≥60fps floor is measured and recorded
 
 ### M1-04 — Tool palette
-status: Ready · estimate: M
+status: Done · completed: Codex · 2026-07-29 · estimate: M
 ### M1-05 — Notebook library and organization
 status: Ready · estimate: L
 ### M1-06 — iCloud sync
