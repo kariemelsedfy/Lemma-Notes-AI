@@ -8,7 +8,8 @@ struct VirtualizedPageStack: View {
     @State private var visiblePageID: Int?
     @StateObject private var drawingStore = PageDrawingStore()
 
-    init(pageIDs: [Int] = PagePerformanceFixture.pageTurnSequence) {
+    /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
+    init(pageIDs: [Int] = Array(0..<12)) {
         self.pageIDs = pageIDs
     }
 
