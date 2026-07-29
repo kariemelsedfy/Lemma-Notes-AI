@@ -143,7 +143,7 @@ Acceptance:
 - [x] Empty state creates the first notebook without Pencil input
 
 ### M1-05C — Notebook organization controls
-status: Ready · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · estimate: M
 Acceptance:
 - [ ] Rename and delete are reachable and accessible from the library
 - [ ] Destructive deletion requires confirmation
