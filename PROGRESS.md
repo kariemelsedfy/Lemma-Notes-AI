@@ -153,7 +153,7 @@ Acceptance:
 - [x] Destructive deletion requires confirmation
 
 ### M1-05D — Persisted notebook library binding
-status: Ready · refs: ARCHITECTURE.md §2, §3 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §2, §3 · estimate: M
 Acceptance:
 - [ ] Library summaries are sourced from `DocumentStore` package metadata rather than in-memory fixtures
 - [ ] Opening a notebook supplies its persisted page and ink data to the canvas and export flow
