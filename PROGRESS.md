@@ -206,11 +206,11 @@ Acceptance:
 - [x] Rendering failures are explicit and covered where framework-independent
 
 ### M1-07B — Export action and sharing UI
-status: In progress · claimed: Codex · 2026-07-29 · refs: PROJECT_PLAN.md §4.1 · estimate: S
+status: Done · completed: Codex · 2026-07-29 · refs: PROJECT_PLAN.md §4.1 · estimate: S
 Acceptance:
-- [ ] The selected notebook exposes accessible PDF and PNG export actions
-- [ ] Successful exports open the system share sheet with a temporary output file
-- [ ] Export failures display a localized, recoverable error
+- [x] The selected notebook exposes accessible PDF and PNG export actions
+- [x] Successful exports open the system share sheet with a temporary output file
+- [x] Export failures display a localized, recoverable error
 ### M1-08 — Occupancy grid
 status: Ready · refs: ARCHITECTURE.md §4.1 · estimate: M
 Acceptance:

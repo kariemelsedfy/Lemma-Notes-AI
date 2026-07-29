@@ -7,6 +7,8 @@ struct NotebookLibraryView: View {
     @State private var notebookPendingRename: NotebookSummary?
     @State private var notebookPendingDeletion: NotebookSummary?
     @State private var renameTitle = ""
+    @State private var shareFileURL: URL?
+    @State private var exportErrorPresented = false
 
     var body: some View {
         NavigationSplitView {
@@ -45,6 +47,12 @@ struct NotebookLibraryView: View {
         } detail: {
             if let selectedNotebookID, let document = library.document(id: selectedNotebookID) {
                 VirtualizedPageStack(document: document)
+                    .toolbar {
+                        Menu("library.export", systemImage: "square.and.arrow.up") {
+                            Button("library.export.pdf") { export(document, format: .pdf) }
+                            Button("library.export.png") { export(document, format: .png) }
+                        }
+                    }
             } else {
                 ContentUnavailableView("library.selection.title", systemImage: "doc")
             }
@@ -75,11 +83,29 @@ struct NotebookLibraryView: View {
             }
             Button("library.cancel", role: .cancel) {}
         }
+        .alert("library.export.failed.title", isPresented: $exportErrorPresented) {
+            Button("library.ok", role: .cancel) {}
+        } message: {
+            Text("library.export.failed.message")
+        }
+        .sheet(isPresented: sharePresented) {
+            if let shareFileURL {
+                ShareSheet(fileURL: shareFileURL)
+            }
+        }
     }
 
     private func createNotebook() {
         if let notebook = library.create(title: String(localized: "library.default-title")) {
             selectedNotebookID = notebook.id
+        }
+    }
+
+    private func export(_ document: StoredDocument, format: NotebookShareExporter.Format) {
+        do {
+            shareFileURL = try NotebookShareExporter.export(document, format: format)
+        } catch {
+            exportErrorPresented = true
         }
     }
 
@@ -100,6 +126,17 @@ struct NotebookLibraryView: View {
             set: { isPresented in
                 if !isPresented {
                     notebookPendingDeletion = nil
+                }
+            }
+        )
+    }
+
+    private var sharePresented: Binding<Bool> {
+        Binding(
+            get: { shareFileURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    shareFileURL = nil
                 }
             }
         )

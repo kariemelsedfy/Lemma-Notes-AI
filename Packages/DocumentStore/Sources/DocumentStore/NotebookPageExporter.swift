@@ -20,6 +20,7 @@ public struct NotebookPageExportRequest: Equatable, Sendable {
 
 /// Errors that prevent a notebook page from being exported faithfully.
 public enum NotebookExportError: Error, Equatable, Sendable {
+    case emptyNotebook
     case invalidPageSize
     case invalidInkData
     case pngEncodingFailed
@@ -32,6 +33,21 @@ public enum NotebookExportError: Error, Equatable, Sendable {
     /// Renders persisted notebook pages to shareable PDF and PNG data without modifying source ink.
     @MainActor
     public enum NotebookPageExporter {
+        public static func pdfData(for document: StoredDocument) throws -> Data {
+            let requests = try document.pages.map(NotebookPageExportRequest.init)
+            guard let firstRequest = requests.first else {
+                throw NotebookExportError.emptyNotebook
+            }
+            let drawings = try requests.map(drawing(from:))
+            let renderer = UIGraphicsPDFRenderer(bounds: firstRequest.bounds)
+            return renderer.pdfData { context in
+                for (request, drawing) in zip(requests, drawings) {
+                    context.beginPage(withBounds: request.bounds, pageInfo: [:])
+                    draw(request, drawing: drawing, in: context.cgContext)
+                }
+            }
+        }
+
         public static func pdfData(for request: NotebookPageExportRequest) throws -> Data {
             let renderer = UIGraphicsPDFRenderer(bounds: request.bounds)
             let drawing = try drawing(from: request)
