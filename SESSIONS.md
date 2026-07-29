@@ -22,6 +22,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 **Verification:** tests ✅ · lint ✅ · generated iPad app build ✅ · device tested: no
 
+## 2026-07-29 · Codex · M1-07A
+
+**Goal:** render persisted notebook pages to PDF and PNG without mutating their source package data.
+
+**Done:** added validated export requests and an iOS-only renderer that paints each page’s dimensions, paper pattern, and `PKDrawing` into PDF or PNG output.
+
+**Not done / left open:** system sharing and user-facing errors belong to M1-07B.
+
+**Surprises and gotchas:** the color-token check originally treated Core Graphics method names as direct SwiftUI `Color` construction; it now matches only the bare `Color` type, preserving the policy without blocking renderer APIs.
+
+**Decisions made:** none.
+
+**Next:** M1-07B — export action and sharing UI.
+
+**Verification:** focused DocumentStore tests ✅ · repository tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-07 decomposition
 
 **Goal:** split export rendering from the app sharing flow so each stays reviewable and testable.
