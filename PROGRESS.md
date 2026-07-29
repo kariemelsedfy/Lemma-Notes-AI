@@ -143,10 +143,10 @@ Acceptance:
 - [x] Empty state creates the first notebook without Pencil input
 
 ### M1-05C — Notebook organization controls
-status: In progress · claimed: Codex · 2026-07-29 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · estimate: M
 Acceptance:
-- [ ] Rename and delete are reachable and accessible from the library
-- [ ] Destructive deletion requires confirmation
+- [x] Rename and delete are reachable and accessible from the library
+- [x] Destructive deletion requires confirmation
 ### M1-06 — iCloud sync
 status: Ready · estimate: L
 ### M1-07 — Export to PDF and PNG
