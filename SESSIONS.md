@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-05A
+
+**Goal:** provide an independently testable notebook library model.
+
+**Done:** added stable summary metadata and main-actor create, rename, and delete operations with unit coverage.
+
+**Not done / left open:** M1-05B owns library presentation; the in-memory model is not persistence.
+
+**Surprises and gotchas:** timestamps are injectable, keeping tests deterministic.
+
+**Decisions made:** none.
+
+**Next:** M1-05B — notebook library UI.
+
+**Verification:** tests ✅ · lint ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-04
 
 **Goal:** provide accessible in-app drawing tool switching.

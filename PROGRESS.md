@@ -131,10 +131,10 @@ Acceptance:
 ### M1-04 — Tool palette
 status: Done · completed: Codex · 2026-07-29 · estimate: M
 ### M1-05A — Notebook library model
-status: In progress · claimed: Codex · 2026-07-29 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · estimate: M
 Acceptance:
-- [ ] Notebook summaries have stable IDs, titles, timestamps, and page counts
-- [ ] Create, rename, and delete operations are unit-tested
+- [x] Notebook summaries have stable IDs, titles, timestamps, and page counts
+- [x] Create, rename, and delete operations are unit-tested
 
 ### M1-05B — Notebook library UI
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: M
