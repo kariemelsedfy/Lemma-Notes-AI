@@ -137,7 +137,7 @@ Acceptance:
 - [x] Create, rename, and delete operations are unit-tested
 
 ### M1-05B — Notebook library UI
-status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: PROJECT_PLAN.md §3.1 · estimate: M
 Acceptance:
 - [ ] Library lists notebooks and opens a selected notebook
 - [ ] Empty state creates the first notebook without Pencil input
