@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-03C (checkpoint)
+
+**Goal:** provide a deterministic 100-page scenario and measure scrolling performance.
+
+**Done:**
+- Added a 100-page page-turn fixture that the app's virtualized stack uses by default.
+- Added tests exercising every fixture page and proving the live page window never exceeds three canvases.
+
+**Not done / left open:**
+- The ≥60fps threshold remains unmeasured. A headless simulator build and unit test cannot establish animation frame rate; record an on-device trace before marking M1-03C done.
+
+**Surprises and gotchas:**
+- The virtualization model itself is deterministic and testable without rendering, but that is not a substitute for GPU/compositing measurement.
+
+**Decisions made:** none.
+
+**Next:** M1-04 — tool palette; return to M1-03C when an iPad is available for the required trace.
+
+**Verification:** repository tests ✅ · lint ✅ · iPad simulator unit tests ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-03B
 
 **Goal:** mount virtualized paged scrolling with a bounded number of live PencilKit canvases.
