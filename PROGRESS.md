@@ -212,7 +212,7 @@ Acceptance:
 - [x] Successful exports open the system share sheet with a temporary output file
 - [x] Export failures display a localized, recoverable error
 ### M1-08 — Occupancy grid
-status: Ready · refs: ARCHITECTURE.md §4.1 · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4.1 · estimate: M
 Acceptance:
 - [ ] Incremental update on stroke add/remove
 - [ ] `isFree(rect)` and `nearestFree(size:from:direction:)` with tests
