@@ -16,3 +16,9 @@
 "library.delete" = "Delete notebook";
 "library.delete.confirmation" = "Delete this notebook?";
 "library.cancel" = "Cancel";
+"library.ok" = "OK";
+"library.export" = "Export";
+"library.export.pdf" = "Export PDF";
+"library.export.png" = "Export PNG";
+"library.export.failed.title" = "Couldn’t export notebook";
+"library.export.failed.message" = "Try again. Your notebook has not been changed.";

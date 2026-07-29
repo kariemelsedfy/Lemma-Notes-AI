@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-07B
+
+**Goal:** expose persisted notebook exports through accessible PDF/PNG actions and the system share sheet.
+
+**Done:** added a native activity-sheet bridge, localized export actions and recovery copy, atomic temporary-file output, and full-document PDF generation in persisted page order. PNG exports the first page because the current library does not expose a per-page selection state.
+
+**Not done / left open:** page-specific PNG export can follow when the canvas exposes its visible-page identity.
+
+**Surprises and gotchas:** `UIGraphicsPDFRenderer` supports page-specific bounds with `beginPage(withBounds:pageInfo:)`, allowing a notebook PDF to retain differently sized pages.
+
+**Decisions made:** none.
+
+**Next:** M1-08 — occupancy grid.
+
+**Verification:** `./scripts/test.sh` ✅ · `./scripts/lint.sh` ✅ · simulator build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-05D
 
 **Goal:** bind the notebook library and page canvas to real `.margin` packages.
