@@ -207,8 +207,12 @@ status: Ready · estimate: M
 ### M2-01 — Selection model and rendering
 status: Ready · estimate: M
 ### M2-02 — Toolbar + keyboard Ask path
-status: Ready · estimate: S
+status: Done · completed: Codex · 2026-07-30 · estimate: S
 Note: build this **first** so every later task is testable without a Pencil.
+Acceptance:
+- [x] Visible Ask control arms the selection lasso from the canvas chrome
+- [x] Command–Return invokes the same Ask path on a hardware keyboard
+- [x] The pre-selection path makes no model or network request
 
 ### M2-03 — Loop-and-dwell gesture
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: L · needs-device-verification

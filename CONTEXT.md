@@ -12,7 +12,7 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 M0-01 through M0-06, M1-01 through M1-04 (except the device-only M1-03C FPS trace) are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, and an accessible pen/eraser/lasso palette. Package tests, lint, Tuist generation, simulator app tests, and hosted CI have passed.
 
-Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight setup), while M1-03C can proceed in parallel.
+Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 remains the human Apple Developer/TestFlight prerequisite, while M1-03C requires an on-device performance trace.
 
 ## 2. What exists
 
@@ -21,6 +21,7 @@ Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight se
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | 12-page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory |
+| Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
 | Packages | Six scaffolded SPM packages under `Packages/` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |

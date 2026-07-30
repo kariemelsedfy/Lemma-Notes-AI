@@ -61,6 +61,25 @@ final class MarginTests: XCTestCase {
         XCTAssertEqual(Set(CanvasTool.allCases.map(\.symbolName)).count, CanvasTool.allCases.count)
     }
 
+    func testAskPathArmsTheSelectionLassoAndCountsInvocations() {
+        var path = AskPathState()
+
+        path.invoke()
+        path.invoke()
+
+        XCTAssertTrue(path.isArmed)
+        XCTAssertEqual(path.invocationCount, 2)
+    }
+
+    func testAskPathDisarmsAfterASelectionCompletes() {
+        var path = AskPathState()
+        path.invoke()
+
+        path.selectionDidComplete()
+
+        XCTAssertFalse(path.isArmed)
+    }
+
     @MainActor
     func testNotebookLibraryCreatesStableNotebookSummary() {
         let library = NotebookLibrary()

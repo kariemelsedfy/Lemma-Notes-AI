@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Codex · M2-02
+
+**Goal:** make Ask discoverable and operable without Pencil hardware.
+
+**Done:** added a localized Ask control alongside the floating drawing palette and a Command–Return shortcut. Both arm the selection lasso and show an accessible instruction; no model or network request is issued.
+
+**Not done / left open:** selection capture, the floating post-selection Ask bar, and pipeline dispatch belong to later M2 tasks.
+
+**Surprises and gotchas:** the repository’s planning references currently live in the user worktree rather than this branch, so they were read there without adding unrelated documentation files to the PR.
+
+**Decisions made:** none.
+
+**Next:** M2-01 — selection model and rendering.
+
+**Verification:** tests ✅ · lint ✅ · generated iPad app build ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-06C
 
 **Goal:** expose safe external-refresh and document-conflict states for iCloud-backed notebook packages.
