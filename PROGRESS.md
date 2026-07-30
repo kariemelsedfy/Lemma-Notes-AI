@@ -219,7 +219,7 @@ Acceptance:
 - [x] Pure grid queries perform bounded cell operations; no canvas frame work added
 
 ### M1-09 — Handwriting-to-text (Vision, on-device)
-status: Ready · estimate: M
+status: In progress · claimed: Codex · 2026-07-29 · estimate: M
 
 ---
 
