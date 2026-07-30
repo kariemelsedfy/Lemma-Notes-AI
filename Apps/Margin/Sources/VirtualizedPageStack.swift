@@ -8,6 +8,7 @@ struct VirtualizedPageStack: View {
     @State private var visiblePageID: Int?
     @StateObject private var drawingStore = PageDrawingStore()
     @State private var selectedTool: CanvasTool = .pen
+    @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
     init(pageIDs: [Int] = Array(0..<12)) {
@@ -43,8 +44,28 @@ struct VirtualizedPageStack: View {
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
 
-            ToolPalette(selectedTool: $selectedTool)
-                .padding(.bottom, 20)
+            VStack(spacing: 8) {
+                if askPath.isArmed {
+                    Text("ask.hint")
+                        .font(.footnote.weight(.medium))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.regularMaterial, in: Capsule())
+                        .accessibilityAddTraits(.isStaticText)
+                }
+
+                HStack(spacing: 12) {
+                    ToolPalette(selectedTool: $selectedTool)
+                    Button(action: invokeAsk) {
+                        Label("ask.action", systemImage: "sparkles")
+                            .frame(minHeight: 44)
+                    }
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .accessibilityHint("ask.hint")
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(.bottom, 20)
         }
         .background(.background)
         .onAppear {
@@ -78,6 +99,11 @@ struct VirtualizedPageStack: View {
         for pageID in pageIDs where !livePageIDs.contains(pageID) {
             drawingStore.cachePreview(for: pageID, pageSize: pageSize)
         }
+    }
+
+    private func invokeAsk() {
+        askPath.invoke()
+        selectedTool = .lasso
     }
 }
 

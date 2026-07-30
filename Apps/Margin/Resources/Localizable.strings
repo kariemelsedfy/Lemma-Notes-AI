@@ -3,6 +3,9 @@
 "tool.eraser" = "Eraser";
 "tool.lasso" = "Selection lasso";
 
+"ask.action" = "Ask";
+"ask.hint" = "Draw a lasso around the work you want help with.";
+
 "library.title" = "Notebooks";
 "library.empty.title" = "Create your first notebook";
 "library.empty.description" = "Start a notebook, then write or ask a question from any page.";
