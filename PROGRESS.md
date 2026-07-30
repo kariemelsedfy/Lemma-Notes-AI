@@ -220,7 +220,11 @@ Acceptance:
 - [x] Pure grid queries perform bounded cell operations; no canvas frame work added
 
 ### M1-09 — Handwriting-to-text (Vision, on-device)
-status: In progress · claimed: Codex · 2026-07-29 · estimate: M
+status: Done · completed: Codex · 2026-07-29 · estimate: M
+Acceptance:
+- [x] On-device Vision recognizer returns text, confidence, and normalized bounds without retaining page images
+- [x] Accurate recognition uses configured languages and language correction
+- [x] Reading-order transcript normalization is unit-tested
 
 ---
 

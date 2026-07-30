@@ -22,7 +22,7 @@ Next action: **M0-07** in `PROGRESS.md` (human Apple Developer and TestFlight se
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
-| Packages | Six scaffolded SPM packages under `Packages/` |
+| Packages | Six SPM packages under `Packages/`; Handwriting includes on-device Vision handwriting recognition and transcript normalization |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |
