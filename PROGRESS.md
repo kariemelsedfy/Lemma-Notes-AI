@@ -205,7 +205,11 @@ status: Ready · estimate: M
 ## Ready — M2: Selection and the mocked pipeline
 
 ### M2-01 — Selection model and rendering
-status: In progress · claimed: Codex · 2026-07-30 · estimate: M
+status: Done · completed: Codex · 2026-07-30 · estimate: M
+Acceptance:
+- [x] Page-scoped selection retains its lasso loop and derives its bounds
+- [x] Main-actor selection store has explicit select and clear transitions
+- [x] Live pages render a non-interactive selection overlay
 ### M2-02 — Toolbar + keyboard Ask path
 status: Done · completed: Codex · 2026-07-30 · estimate: S
 Note: build this **first** so every later task is testable without a Pencil.

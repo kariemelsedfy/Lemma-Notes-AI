@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Codex · M2-01
+
+**Goal:** establish a gesture-independent selection model and rendering layer.
+
+**Done:** added a page-scoped loop selection, explicit main-actor select/clear state, and an inert dashed overlay above live canvas pages.
+
+**Not done / left open:** M2-03 owns closed-loop detection and converting its ink to this model; M2-05 owns extracting selected content.
+
+**Surprises and gotchas:** the overlay deliberately never intercepts PencilKit input, so it cannot affect writing latency or gesture recognition.
+
+**Decisions made:** none.
+
+**Next:** M2-03 — loop-and-dwell gesture.
+
+**Verification:** simulator unit tests ✅ · repository tests ✅ · lint ✅ · device tested: no
+
 ## 2026-07-30 · Codex · M2-02
 
 **Goal:** make Ask discoverable and operable without Pencil hardware.
