@@ -8,7 +8,7 @@ on:
 jobs:
   verify:
     runs-on: macos-26
-    timeout-minutes: 10
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v6
       - uses: jdx/mise-action@v3
@@ -30,7 +30,7 @@ jobs:
       - name: Run package tests and app build
         run: ./scripts/test.sh
       - name: Run app tests
-        timeout-minutes: 4
+        timeout-minutes: 10
         run: |
           xcrun simctl list devices available
           xcodebuild test \

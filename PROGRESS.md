@@ -44,6 +44,13 @@ Acceptance:
 - [x] Runs on PR and on main; green on the empty project
 - [x] Caches Tuist and SPM artifacts; full run under 10 minutes (7m44s)
 
+### M0-03S — Simulator test stability
+status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §7.2 · estimate: S
+Acceptance:
+- [ ] App-test destination resolution is bounded and does not use `OS=latest`
+- [ ] The app-test timeout accommodates the observed build-before-test duration
+- [ ] Hosted CI rerun verifies the hardened workflow
+
 ## Blocked
 
 _(empty)_
