@@ -207,7 +207,7 @@ status: Ready · estimate: M
 ### M2-01 — Selection model and rendering
 status: Ready · estimate: M
 ### M2-02 — Toolbar + keyboard Ask path
-status: Ready · estimate: S
+status: In progress · claimed: Codex · 2026-07-30 · estimate: S
 Note: build this **first** so every later task is testable without a Pencil.
 
 ### M2-03 — Loop-and-dwell gesture
