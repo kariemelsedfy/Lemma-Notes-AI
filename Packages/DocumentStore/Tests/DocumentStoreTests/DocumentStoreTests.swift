@@ -126,6 +126,56 @@ final class DocumentStoreTests: XCTestCase {
         XCTAssertEqual(try DocumentMigration.migrate(data, from: 1, to: 1), data)
     }
 
+    func testNotebookRepositoryReturnsNilWhenStorageIsUnavailable() throws {
+        XCTAssertNil(try NotebookPackageRepository(location: .unavailable).discover())
+    }
+
+    func testNotebookRepositoryDiscoversOnlyMarginPackageManifests() throws {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+
+        let packageURL = rootURL.appendingPathComponent("Calculus.margin")
+        try FileManager.default.createDirectory(at: packageURL, withIntermediateDirectories: true)
+        let manifest = MarginManifest(
+            id: UUID(), title: "Calculus", createdAt: .distantPast,
+            modifiedAt: Date(timeIntervalSinceReferenceDate: 10), pageOrder: [UUID(), UUID()],
+            settings: DocumentSettings(defaultPaper: .ruled)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(manifest).write(to: packageURL.appendingPathComponent("manifest.json"))
+        try Data().write(to: packageURL.appendingPathComponent("pages.ink"))
+        try FileManager.default.createDirectory(
+            at: rootURL.appendingPathComponent("ignore.txt"), withIntermediateDirectories: true)
+
+        let summaries = try XCTUnwrap(
+            NotebookPackageRepository(location: .localFallback(rootURL)).discover())
+
+        XCTAssertEqual(summaries, [NotebookPackageSummary(packageURL: packageURL, manifest: manifest)])
+    }
+
+    func testDocumentRefreshStateRequiresReloadAfterAnExternalChange() {
+        var state = DocumentRefreshStateMachine()
+
+        state.apply(.externalChange)
+
+        XCTAssertEqual(state.state, .refreshRequired)
+        state.apply(.reloadCompleted)
+        XCTAssertEqual(state.state, .current)
+    }
+
+    func testDocumentRefreshStateNeverAutomaticallyResolvesAConflict() {
+        var state = DocumentRefreshStateMachine()
+
+        state.apply(.conflictDetected)
+        state.apply(.externalChange)
+
+        XCTAssertEqual(state.state, .conflict)
+        state.apply(.conflictResolvedByUser)
+        XCTAssertEqual(state.state, .refreshRequired)
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [
