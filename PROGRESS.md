@@ -159,7 +159,35 @@ Acceptance:
 - [x] Rename and delete are reachable and accessible from the library
 - [x] Destructive deletion requires confirmation
 ### M1-06 — iCloud sync
-status: Ready · estimate: L
+status: Done · completed: Codex · 2026-07-29 · note: decomposed into M1-06A through M1-06D before implementation. · refs: ARCHITECTURE.md §1, §3, PROJECT_PLAN.md §4.1 · estimate: L
+
+### M1-06A — iCloud document-container provisioning
+status: Blocked · owner: human · blocker: M0-07 Apple Developer setup must create and authorize the iCloud ubiquity container before the entitlement can be verified. · estimate: S
+Acceptance:
+- [ ] App ID and iCloud ubiquity container exist in Apple Developer / App Store Connect
+- [ ] Tuist entitlement configuration names the approved container without committing credentials
+- [ ] A signed build can resolve the ubiquity container on a physical iPad
+
+### M1-06B — Ubiquitous notebook discovery
+status: Ready · refs: ARCHITECTURE.md §1, §3, DECISIONS.md ADR-002 · estimate: M
+Acceptance:
+- [ ] DocumentStore exposes a testable repository for `.margin` packages in the ubiquity container
+- [ ] Discovery reports available notebooks without reading whole document contents
+- [ ] Local fallback behavior and unavailable-iCloud state are unit-tested
+
+### M1-06C — Coordinated document refresh and conflict surfacing
+status: Ready · refs: ARCHITECTURE.md §3, DECISIONS.md ADR-002 · estimate: M
+Acceptance:
+- [ ] File presenters/coordinators refresh changed package metadata without corrupting open documents
+- [ ] Conflicting document versions surface a recoverable state; no unsafe automatic merge occurs
+- [ ] Unit tests cover refresh state transitions and conflict presentation
+
+### M1-06D — Two-device sync and conflict validation
+status: Ready · needs-device-verification · refs: ARCHITECTURE.md §3, PROJECT_PLAN.md §4.1 · estimate: M
+Acceptance:
+- [ ] A notebook created and edited on one signed-in iPad appears on a second signed-in iPad
+- [ ] Simultaneous edits follow the documented document-level conflict behavior
+- [ ] Device results and any observed iCloud propagation timing are recorded in SESSIONS.md
 ### M1-07 — Export to PDF and PNG
 status: Ready · estimate: M
 ### M1-08 — Occupancy grid
