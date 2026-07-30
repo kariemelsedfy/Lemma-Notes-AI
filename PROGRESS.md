@@ -205,7 +205,7 @@ status: Ready · estimate: M
 ## Ready — M2: Selection and the mocked pipeline
 
 ### M2-01 — Selection model and rendering
-status: Ready · estimate: M
+status: In progress · claimed: Codex · 2026-07-30 · estimate: M
 ### M2-02 — Toolbar + keyboard Ask path
 status: Done · completed: Codex · 2026-07-30 · estimate: S
 Note: build this **first** so every later task is testable without a Pencil.
