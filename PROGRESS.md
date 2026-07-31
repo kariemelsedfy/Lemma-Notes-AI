@@ -343,7 +343,12 @@ status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
 ### M2-10 — Ask bar UI
 status: Ready · estimate: M
 ### M2-11 — Request state machine
-status: Ready · refs: ARCHITECTURE.md §5 · estimate: M
+status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §5, AI_PIPELINE.md §8 · estimate: M
+Acceptance:
+- [x] The lifecycle is one enum with associated values, not scattered booleans
+- [x] Cancellation applies at every in-flight stage
+- [x] Late and out-of-order events are ignored rather than corrupting state
+- [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
 status: Ready · estimate: S
 Acceptance:

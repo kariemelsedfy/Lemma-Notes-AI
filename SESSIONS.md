@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-11
+
+**Goal:** model the Ask lifecycle explicitly, so cancellation and the §8 failure states are structural rather than remembered.
+
+**Done:** `AskState`, `AskEvent`, `AskDiscardReason`, `AskFailure`, `AskTransition`, and `AskStateMachine` — a value type with a pure transition table. Cancellation and failure are handled before the ordered table, so every in-flight stage accepts them by construction rather than by a case someone remembered to add. 14 tests, including one that walks every in-flight stage and cancels it.
+
+**Not done / left open:** nothing drives it yet. M2-09 and M2-10 are the first callers; the app will wrap this value type in whatever observable object SwiftUI needs, since `Intelligence` should not import SwiftUI.
+
+**Surprises and gotchas:** an illegal event is *ignored*, not trapped. This looks lax and is deliberate: these events arrive from async work, so a response landing after the user already cancelled is a normal race, not a programmer error. `apply` returns false and records the rejected attempt so a stuck pipeline is still diagnosable.
+
+**Decisions made:** `AskTransition` stores `String` names rather than the states themselves. A transition log is the single most likely thing to be handed to a logger or an analytics payload, and the "no user content in logs" rule (`AGENTS.md` §7) is much easier to keep if the type physically cannot carry a crop or a transcription. There is a test that asserts the fixture's transcription and answer are not reconstructible from a transcript.
+
+A decline (`blocks == []`) becomes `failed(.unreadable)`, not a success with nothing to show. The user needs the confirm-the-read flow from §8, and that is a failure branch in the UI.
+
+**Next:** M2-09 — suggestion layer and accept/reject/undo.
+
+**Verification:** `swift test --package-path Packages/Intelligence` (83 tests) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-08
 
 **Goal:** turn a validated spec plus a selection context into page rectangles, without the model ever seeing a coordinate.
