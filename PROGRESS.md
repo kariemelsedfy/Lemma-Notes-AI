@@ -331,7 +331,13 @@ Acceptance:
 - [ ] No AI action is unreportable
 
 ### M2-08 — Placement engine
-status: Ready · refs: AI_PIPELINE.md §4 · estimate: L
+status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §4 · estimate: L
+Acceptance:
+- [x] Every `placement` slot resolves to a page rectangle; the model never sends coordinates
+- [x] Occupied slots fall back to a free-space search and report that they did
+- [x] Blocks of one response never overlap each other
+- [x] A block with nowhere to go is reported, not crammed
+- [x] Marks resolve to the ink they target, including stale stroke indices
 ### M2-09 — Suggestion layer, accept/reject/undo
 status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
 ### M2-10 — Ask bar UI

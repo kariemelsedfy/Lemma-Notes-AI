@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-08
+
+**Goal:** turn a validated spec plus a selection context into page rectangles, without the model ever seeing a coordinate.
+
+**Done:** `ContentMeasuring` + `NominalContentMeasurer`, `PlacementEngine`, `BlockPlacement`, `PlacementResult`, `PlacementSpacing`. All four slots resolve; occupied slots fall back to a search and say so; each placed frame is reserved so blocks of one response cannot collide; marks resolve to their target ink. Added `OccupancyGrid.reserve(_:)` to `InkCore` for that reservation, and split `OccupancyGrid` into its own file — `InkCore.swift` had crossed the 400-line lint ceiling. 12 tests.
+
+**Not done / left open:** no next-page overflow. A block that does not fit returns in `unplaced` and the caller decides between "make room" and "next page" (§8) — the engine deliberately will not move content somewhere the user is not looking. Width estimation is nominal; the real advance widths come from the glyph bank in M3.
+
+**Surprises and gotchas:** three things cost real time here.
+
+1. The measured box must be the **ink** box, not the line advance. Reserving a full line advance around a run makes it collide with the line above, and every `atAnchor` placement fell back. `NominalContentMeasurer` now separates `inkHeightRatio` from `lineHeightRatio` for exactly this.
+2. `OccupancyGrid.nearestFree(direction:.below)` scans every column of each row, so it returns the *leftmost* free cell on the nearest row. Used directly as the placement fallback, an answer whose line was full landed at the page margin beside the selection. The engine now searches column-first — exhaust the column the answer belongs in, then try another — and only widens to the raw grid search if no sensible column has room.
+3. The first version of the placement tests built an empty occupancy grid, so nothing ever collided and the tests were meaningless. The fixture now registers the selected strokes, which is what a caller does.
+
+**Decisions made:** the fallback prefers vertical travel in a meaningful column over horizontal travel to the nearest gap. A continuation that appears at the left margin because there happened to be space reads as a bug even when the geometry is defensible.
+
+**Next:** M2-11 — request state machine.
+
+**Verification:** `swift test` on InkCore (22) and Intelligence (69) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-30 · Claude · M2-07
 
 **Goal:** give CI a provider so every later pipeline stage is testable without a network, a key, or a device.
