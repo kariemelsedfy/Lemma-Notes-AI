@@ -339,7 +339,12 @@ Acceptance:
 - [x] A block with nowhere to go is reported, not crammed
 - [x] Marks resolve to the ink they target, including stale stroke indices
 ### M2-09 — Suggestion layer, accept/reject/undo
-status: Ready · refs: ARCHITECTURE.md §4 · estimate: M
+status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §4, §3.1 · estimate: M
+Acceptance:
+- [x] Generated ink lives in a separate drawing and is not on the page until accepted
+- [x] Accept appends in one undo group; one undo removes the whole generation
+- [x] Reject discards without touching the page
+- [x] Accept returns permanent provenance for the page metadata element
 ### M2-10 — Ask bar UI
 status: Ready · estimate: M
 ### M2-11 — Request state machine
