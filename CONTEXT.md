@@ -4,15 +4,15 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-29 · by: Codex · Milestone: **M1 persisted library binding complete**
+**Last updated:** 2026-07-30 · by: Claude · Milestone: **M1 complete except device verification; M2 spec contract landed**
 
 ---
 
 ## 1. Where we are
 
-M0-01 through M0-06, M1-01 through M1-05D (except the device-only M1-03C FPS trace) are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, and a persisted notebook library backed by `DocumentStore`. Package tests, lint, Tuist generation, and simulator app builds pass.
+M0-01 through M0-06 and all of M1 are complete except the two device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. In M2, the selection model, the Ask entry point, and the spec contract (M2-01, M2-02, M2-06) are done. The repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, a persisted notebook library backed by `DocumentStore`, PDF/PNG export with sharing, an incremental occupancy grid, on-device Vision recognition, and a validated spec schema. Package tests, lint, Tuist generation, and simulator app builds pass.
 
-Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 remains the human Apple Developer/TestFlight prerequisite, while M1-03C requires an on-device performance trace.
+Next action: **M2-07** in `PROGRESS.md` (MockProvider), then M2-05, M2-08, M2-11, M2-09, M2-10. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
 
 ## 2. What exists
 
@@ -24,7 +24,11 @@ Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 r
 | Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
 | Selection UI | Page-scoped lasso selection state renders as a non-interactive overlay; gesture recognition remains separate |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
-| Packages | Six SPM packages under `Packages/`; Handwriting includes on-device Vision handwriting recognition and transcript normalization |
+| Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
+| Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
+| Handwriting OCR | On-device Vision recognizer plus reading-order assembly; no caller yet |
+| Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
+| Packages | Six SPM packages under `Packages/` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |
