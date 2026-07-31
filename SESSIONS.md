@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-12A
+
+**Goal:** connect the M2 pieces into one runnable sequence, so what is left is only the canvas.
+
+**Done:** split M2-12 into the pipeline (this) and the canvas wiring (M2-12B). `AskPipeline` in the app target drives selection → context → provider → placement → rendered suggestion, with cancellation and a mapping from provider errors to the §8 failure states. 8 simulator tests: the answer reaches the suggestion layer without touching the page, lands inside the frame placement chose, commits in one undo group, a missing fixture reads as `transport`, an injected timeout reads as `timeout`, a low-confidence spec draws nothing, and no request is issued without a selection. The app suite is 38 and green.
+
+**Not done / left open:** **nothing is in the view hierarchy.** `AskBar` and `AskPipeline` both exist, are tested, and are unreachable from the running app. M2-12B connects them, renders the suggestion over the page at `previewAlpha`, and commits accepted strokes into the page's `PKDrawing` — which is where this stops being provable in the simulator and needs a device.
+
+**Surprises and gotchas:** `model.apply(...)` returns `Bool`, so `return model.apply(.fail(...))` inside a `Void` function is a compile error rather than the early-return it reads as. More usefully: guarding every stage on `model.apply(...)` returning true is what makes cancellation correct. If the user cancelled while the provider was in flight, the state machine rejects the later `.specValidated` and the pipeline stops on its own — there is no separate "am I still wanted?" flag to forget to check.
+
+Also: `catch is CancellationError` deliberately does nothing. Whoever cancelled already recorded *why* (`userResumedWriting`, `superseded`, plain `cancelled`), and reporting a generic cancellation on top would overwrite the reason that matters.
+
+**Decisions made:** the pipeline reports a render failure as `invalidSpec` rather than inventing a new failure state. From the user's side "we got an answer but cannot draw it" and "the answer was malformed" are the same event with the same recovery, and an extra state would need copy nobody has written.
+
+**Next:** M2-12B — canvas wiring and the demo recording, on a device.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) simulator — 38 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-14
 
 **Goal:** unblock the end-to-end demo. Everything else in M2 was done and nothing could draw an answer.
