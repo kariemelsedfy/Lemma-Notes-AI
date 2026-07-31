@@ -189,7 +189,21 @@ Acceptance:
 - [ ] Simultaneous edits follow the documented document-level conflict behavior
 - [ ] Device results and any observed iCloud propagation timing are recorded in SESSIONS.md
 ### M1-07 — Export to PDF and PNG
-status: Ready · estimate: M
+status: Done · completed: Codex · 2026-07-29 · note: decomposed into M1-07A and M1-07B before implementation. · estimate: M
+
+### M1-07A — Notebook PDF and PNG rendering
+status: Ready · refs: ARCHITECTURE.md §3, PROJECT_PLAN.md §4.1 · estimate: M
+Acceptance:
+- [ ] A selected notebook page renders to PDF and PNG without modifying source ink
+- [ ] Page dimensions, paper, and stored ink are represented in exported output
+- [ ] Rendering failures are explicit and covered where framework-independent
+
+### M1-07B — Export action and sharing UI
+status: Ready · refs: PROJECT_PLAN.md §4.1 · estimate: S
+Acceptance:
+- [ ] The selected notebook exposes accessible PDF and PNG export actions
+- [ ] Successful exports open the system share sheet with a temporary output file
+- [ ] Export failures display a localized, recoverable error
 ### M1-08 — Occupancy grid
 status: Ready · refs: ARCHITECTURE.md §4.1 · estimate: M
 Acceptance:

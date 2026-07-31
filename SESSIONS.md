@@ -22,6 +22,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 **Verification:** tests ✅ · lint ✅ · generated iPad app build ✅ · device tested: no
 
+## 2026-07-29 · Codex · M1-07 decomposition
+
+**Goal:** split export rendering from the app sharing flow so each stays reviewable and testable.
+
+**Done:** separated non-mutating PDF/PNG rendering from the user-facing export action and temporary-file share sheet.
+
+**Not done / left open:** M1-07A owns renderer implementation; M1-07B owns accessible app presentation and localized errors.
+
+**Surprises and gotchas:** rendering and sharing have different framework boundaries and failure modes, so keeping them together would exceed the repository’s small-PR limit.
+
+**Decisions made:** none.
+
+**Next:** M1-07A — notebook PDF and PNG rendering.
+
+**Verification:** documentation-only task; repository tests ✅ · lint ✅
+
 ## 2026-07-29 · Codex · M1-06C
 
 **Goal:** expose safe external-refresh and document-conflict states for iCloud-backed notebook packages.
