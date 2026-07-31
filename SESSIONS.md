@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Claude · M2-05A
+
+**Goal:** put the lasso rules where they can be tested exhaustively without a Pencil, ahead of the gesture that will drive them.
+
+**Done:** split M2-05 into geometry (this task), context assembly, and rasterization. Added `SelectionGeometry` to `InkCore`: even-odd point-in-polygon, a loop-closure ratio, length-weighted stroke coverage, threshold selection, and stroke clipping with interpolated dynamics at the cut. 19 tests.
+
+**Not done / left open:** nothing consumes this yet. The app's `PageSelection` (M2-01) still carries only a loop and its bounds; wiring it to `SelectionGeometry.select` belongs to M2-03, which owns the gesture.
+
+**Surprises and gotchas:** two things a later agent will get wrong otherwise. First, `closureRatio` expects a *dense gesture polyline*, not a corner list — a square given as four corners scores 0.67 and would fail the 70% gate, while the same square traced by a pen scores ~1. Second, coverage has to be length-weighted: PencilKit samples densely where the pen moves slowly, so a point-counting implementation reports ~0.15 for a stroke that is genuinely half inside. There is a test pinning exactly that case.
+
+**Decisions made:** clipped strokes get fresh identifiers rather than inheriting the original's. A clipped stroke is a different stroke, and reusing the ID would corrupt the `strokeIndices` provenance chain in page metadata (`ARCHITECTURE.md` §3.1).
+
+**Next:** M2-05B — SelectionContext assembly.
+
+**Verification:** `swift test --package-path Packages/InkCore` (22 tests) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-30 · Claude · merge queue cleanup (M1-08, M1-09)
 
 **Goal:** execute the merge queue Codex left in PR #38 before starting new work.
