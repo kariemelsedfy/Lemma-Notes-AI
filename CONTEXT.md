@@ -4,15 +4,17 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-30 · by: Claude · Milestone: **M1 complete except device verification; M2 spec contract landed**
+**Last updated:** 2026-07-31 · by: Claude · Milestone: **M2 pipeline assembled end to end except the renderer**
 
 ---
 
 ## 1. Where we are
 
-M0-01 through M0-06 and all of M1 are complete except the two device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. In M2, the selection model, the Ask entry point, and the spec contract (M2-01, M2-02, M2-06) are done. The repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, a persisted notebook library backed by `DocumentStore`, PDF/PNG export with sharing, an incremental occupancy grid, on-device Vision recognition, and a validated spec schema. Package tests, lint, Tuist generation, and simulator app builds pass.
+M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. **Every non-device M2 task is done**: selection model and geometry, the Ask entry point, selection context, the spec contract with fail-closed validation, the provider boundary and mock, the placement engine, the request state machine, the suggestion layer, and the Ask bar.
 
-Next action: **M2-07** in `PROGRESS.md` (MockProvider), then M2-05, M2-08, M2-11, M2-09, M2-10. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
+The pipeline exists as a set of pieces that each work and are tested, but **nothing has drawn an answer on a page yet**, for one reason: there is no renderer. Placement resolves a rectangle; turning a spec block into strokes needs the M3 synthesizer, or the throwaway stand-in filed as **M2-14**. Everything else is wired and waiting on that.
+
+Next action: **M2-14** (placeholder ink renderer), then **M2-12** (end-to-end demo, which also puts `AskBar` into the view hierarchy). **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
 
 ## 2. What exists
 
@@ -28,7 +30,15 @@ Next action: **M2-07** in `PROGRESS.md` (MockProvider), then M2-05, M2-08, M2-11
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
 | Handwriting OCR | On-device Vision recognizer plus reading-order assembly; no caller yet |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
-| Packages | Six SPM packages under `Packages/` |
+| Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
+| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster *requests*. Nothing rasterizes them yet (M2-05C) |
+| Provider boundary | `SpecProvider` returns `ValidatedSpec`, so no provider can skip validation. `MockProvider` supports latency, failure and corruption injection |
+| Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
+| Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
+| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. **Provenance is not persisted yet (M2-15)** |
+| Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12)** |
+| Ink renderer | ❌ Does not exist. This is the one thing between the pipeline and a working demo (M2-14 / M3) |
+| Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |

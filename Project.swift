@@ -3,7 +3,9 @@ import ProjectDescription
 let project = Project(
     name: "Margin",
     packages: [
-        .local(path: "Packages/DocumentStore")
+        .local(path: "Packages/DocumentStore"),
+        .local(path: "Packages/Intelligence"),
+        .local(path: "Packages/InkCore"),
     ],
     targets: [
         .target(
@@ -18,7 +20,9 @@ let project = Project(
             sources: ["Apps/Margin/Sources/**"],
             resources: ["Apps/Margin/Resources/**"],
             dependencies: [
-                .package(product: "DocumentStore")
+                .package(product: "DocumentStore"),
+                .package(product: "Intelligence"),
+                .package(product: "InkCore"),
             ],
             settings: .settings(base: [
                 "TARGETED_DEVICE_FAMILY": "2"
@@ -35,6 +39,8 @@ let project = Project(
             dependencies: [
                 .target(name: "Margin"),
                 .package(product: "DocumentStore"),
+                .package(product: "Intelligence"),
+                .package(product: "InkCore"),
             ]
         ),
     ]
