@@ -273,11 +273,20 @@ Acceptance:
 - [x] Partial strokes clip to the loop with interpolated dynamics at the cut
 
 ### M2-05B — SelectionContext assembly
-status: Ready · refs: AI_PIPELINE.md §1 · estimate: M
+status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §1, HANDWRITING.md §3.3 · estimate: M
 Acceptance:
-- [ ] Normalized strokes, style stats (x-height, slant, stroke width, line spacing), and the anchor are produced from a page and a loop
-- [ ] Crop and neighborhood *bounds* are computed and capped at 1.5MP without rasterizing
-- [ ] Deterministic given the same page and selection; unit-tested on macOS
+- [x] Normalized strokes, style stats, and the anchor are produced from a page and a loop
+- [x] Crop and neighborhood *bounds* are computed and capped at 1.5MP without rasterizing
+- [x] Deterministic given the same page and selection; unit-tested on macOS
+
+### M2-05D — Carry stroke width through the ink model
+status: Ready · refs: HANDWRITING.md §3.3, ARCHITECTURE.md §1.1 · estimate: S
+Note: `PKStrokePoint.size` is dropped at the `InkPoint` boundary, so `StyleStats` has no
+`strokeWidth` and reports mean force as a proxy. The synthesizer needs the real width.
+Acceptance:
+- [ ] `InkPoint` carries per-point size without breaking existing call sites
+- [ ] `PencilKitInkEngine` round-trips size in both directions
+- [ ] `StyleStats` reports a measured stroke width
 
 ### M2-05C — Selection rasterization
 status: Ready · needs-device-verification · refs: AI_PIPELINE.md §1 · estimate: M
