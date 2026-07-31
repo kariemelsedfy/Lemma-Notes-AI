@@ -348,7 +348,7 @@ Acceptance:
 ### M2-10 — Ask bar UI
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §8, ARCHITECTURE.md §10 · estimate: M
 Note: the bar and its state exist and are tested, but are **not yet in the view
-hierarchy** — M2-12 owns wiring them to a provider. Do not ship without that.
+hierarchy** — M2-12B owns wiring them to the canvas. Do not ship without that.
 Acceptance:
 - [x] The bar reflects the request state machine: verbs, working, decision, failure
 - [x] Accept, discard, cancel, retry and dismiss are reachable, 44pt, and VoiceOver-labelled
@@ -362,10 +362,25 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: Ready · needs-device-verification · note: unblocked — M2-14 landed, so a spec block can now become strokes. · estimate: M
+status: In progress · note: decomposed into M2-12A and M2-12B. · estimate: M
+
+### M2-12A — Ask pipeline
+status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §1, §8, ARCHITECTURE.md §5 · estimate: M
 Acceptance:
-- [ ] An `AskPipeline` drives selection → context → `MockProvider` → placement → suggestion → accept
-- [ ] `AskBar` is in the canvas view hierarchy and drives that pipeline
+- [x] `AskPipeline` drives selection → context → provider → placement → rendered suggestion
+- [x] Nothing reaches the page before accept; accept is one undo group
+- [x] Provider failures map onto the designed §8 failure states
+- [x] Cancellation clears the suggestion and records why
+
+### M2-12B — Canvas wiring and the demo recording
+status: Ready · needs-device-verification · refs: ARCHITECTURE.md §4 · estimate: M
+Note: `AskPipeline` and `AskBar` both exist and are tested, but neither is in the canvas
+view hierarchy. This task connects them and is the first time the product can be *seen*.
+Acceptance:
+- [ ] `AskBar` is in the canvas chrome and drives `AskPipeline` from the current page's ink and selection
+- [ ] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
+- [ ] Accept commits into the page's `PKDrawing`; one undo removes the whole answer
+- [ ] Drawing again while a request is in flight cancels it silently
 - [ ] Circle `2+2=` on a real iPad → canned "4" renders as ink at the anchor → accept → undo
 - [ ] Record the screen. This is the first real signal that the product feels right.
 

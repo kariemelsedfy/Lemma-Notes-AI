@@ -10,11 +10,11 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 ## 1. Where we are
 
-M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. **Every non-device M2 task is done**: selection model and geometry, the Ask entry point, selection context, the spec contract with fail-closed validation, the provider boundary and mock, the placement engine, the request state machine, the suggestion layer, and the Ask bar.
+M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. **Every non-device M2 task is done except the canvas wiring**: selection model and geometry, the Ask entry point, selection context, the spec contract with fail-closed validation, the provider boundary and mock, the placement engine, the request state machine, the suggestion layer, a throwaway ink renderer, the Ask bar, and the pipeline that drives them.
 
-The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. What is missing is the **assembly in the app**: `AskBar` is not in the view hierarchy and no `AskPipeline` connects it to a provider. That is M2-12, and it needs a device to judge.
+The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
 
-Next action: **M2-12** (wire the Ask bar to a pipeline, then record the demo on an iPad). **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
+Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record the demo on an iPad). **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12B need a physical iPad.
 
 ## 2. What exists
 
@@ -36,7 +36,8 @@ Next action: **M2-12** (wire the Ask bar to a pipeline, then record the demo on 
 | Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. **Provenance is not persisted yet (M2-15)** |
-| Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12)** |
+| Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12B)** |
+| Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Also not yet in the view hierarchy |
 | Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font, digits and operators only. Fails closed on letters, plots and marks. Deleted when M3 lands |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
