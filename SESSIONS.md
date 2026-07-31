@@ -6,6 +6,27 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-14
+
+**Goal:** unblock the end-to-end demo. Everything else in M2 was done and nothing could draw an answer.
+
+**Done:** `PlainStrokeFont` in `Handwriting` — a single-stroke skeletal font covering digits and `+ - = * / ( ) < > ^ . ,` — and `SuggestionInkRendering` + `PlainInkRenderer` in `Intelligence`, which turn a `BlockPlacement` into strokes. 18 tests, including one that runs the whole M2 loop minus the gesture and the canvas: page ink → lasso → context → canned spec → placement → ink that lands on the anchor's baseline, to the right of the work it answers.
+
+**Not done / left open:** **no letters** (M2-14B), so any `text` run fails closed with `unsupportedContent` and prose continuation cannot be demoed. Plots and marks also fail closed — a plot drawn as a row of characters would be worse than an honest error. All of this is deleted when M3 lands; do not invest in it.
+
+**Surprises and gotchas:** two things worth keeping when the real synthesizer replaces this.
+
+1. Lines need explicit leading. Giving each line the full advance as its box makes consecutive lines abut *exactly* — one line's baseline is the next line's cap height — and the block renders as a solid slab. `lineFillRatio` (0.75) is the fix, and there is a test that catches the regression.
+2. Slant has to shear about the **baseline**, not the box centre. Shearing about the centre swings the foot of a glyph out to the left, which reads as broken rather than italic. The test asserts the top moves and the foot does not.
+
+Dynamics are filled in properly — force follows a half-sine over each stroke, timestamps advance with distance — because `HANDWRITING.md` §4.1 is right that flat pressure reads as fake instantly, and because it means the M2 demo shows the real ink behaviour rather than a flat line that gets fixed later.
+
+**Decisions made:** the renderer fails closed on anything it cannot draw well, rather than approximating. A wrong-looking answer on someone's notes is worse than an error message, and this font exists to prove placement, not to be good.
+
+**Next:** M2-12 — wire `AskBar` to a pipeline and record the demo on a device.
+
+**Verification:** `swift test` — Handwriting 23, Intelligence 89 ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-10
 
 **Goal:** give the pipeline a face — the bar that turns a selection into an answer, and shows every failure state with copy a person can act on.
