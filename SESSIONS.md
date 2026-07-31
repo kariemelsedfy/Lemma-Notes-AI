@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · session close
+
+**Goal:** leave the board honest before stopping, so nothing reads as claimed by an agent that has gone.
+
+**Done:** released two stale locks. `M0-03S` had been sitting in **In progress** since its branch merged — verified against `ci.yml` on `main` (no `OS=latest`, 60s destination timeout, 10-minute app-test step in an 18-minute job) plus a dozen green hosted runs today, then closed it. `M2-05` and `M2-12` were parents I had marked *In progress · claimed: Claude*; both are now **Ready** with unclaimed subtasks, so the next agent is not blocked by a phantom lock. **In progress** is now empty, which is what it should say when nobody is working.
+
+Also pruned every merged branch, local and remote — the repo is `main` only — and removed the `/private/tmp` worktrees.
+
+**Not done / left open:** everything remaining in M2 needs a physical iPad: **M2-12B** (put `AskBar` and `AskPipeline` in the canvas, then record the demo), M2-03, M2-04, M2-05C. The pipeline is proven in the simulator but has never been *seen*, and M2-12B is the task that changes that. **M2-15** (persisting accepted-suggestion provenance) is the one item that must close before anything ships.
+
+**Surprises and gotchas:** the state this session started in is worth a warning. The primary OneDrive checkout was on a branch that had been superseded weeks of commits ago, `main` was checked out inside a `/private/tmp` worktree so it could not be checked out normally, and 14 worktrees were still registered. Reading `PROGRESS.md` from the working directory gave a picture of the project that was badly out of date. **Confirm which branch you are on and that it is current before believing any doc in the tree.**
+
+**Decisions made:** none of substance. Three that need a human are recorded as Q9–Q11 in `CONTEXT.md` §5, and Q9 — who runs the R-01 blind similarity panel — gates M3 entirely.
+
+**Next:** M2-12B, on a device.
+
+**Verification:** all package tests (159) and app tests (38) green on `main` · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-12A
 
 **Goal:** connect the M2 pieces into one runnable sequence, so what is left is only the canvas.
