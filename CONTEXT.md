@@ -24,7 +24,7 @@ Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 r
 | Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
 | Selection UI | Page-scoped lasso selection state renders as a non-interactive overlay; gesture recognition remains separate |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
-| Packages | Six scaffolded SPM packages under `Packages/` |
+| Packages | Six SPM packages under `Packages/`; Handwriting includes on-device Vision handwriting recognition and transcript normalization |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |

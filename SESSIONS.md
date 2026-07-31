@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-29 · Codex · M1-09
+
+**Goal:** provide an on-device handwriting-to-text boundary.
+
+**Done:** added a Vision-backed accurate recognizer that returns text, confidence, and normalized bounds from a supplied page image, plus deterministic transcript reading-order normalization.
+
+**Not done / left open:** no library UI action consumes recognition yet; later search and selection-context tasks own that integration.
+
+**Surprises and gotchas:** Vision results use a lower-left normalized coordinate system, so transcript ordering sorts higher `midY` values first; the adapter does not retain or log page images.
+
+**Decisions made:** none.
+
+**Next:** M2-02 — toolbar and keyboard Ask path.
+
+**Verification:** focused Handwriting tests ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-08
 
 **Goal:** supply the incremental page-ink occupancy primitive needed by placement.
