@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Claude · M2-05B
+
+**Goal:** turn a page and a lasso into the `SelectionContext` the model call needs, without touching a rasterizer.
+
+**Done:** `InkLineGrouping` in `InkCore` (strokes → lines by vertical overlap), `StyleStats` + `StyleStatsEstimator` in `Handwriting`, and `SelectionContext` + `SelectionContextBuilder` in `Intelligence`. The builder produces selected stroke IDs, crop and neighborhood `RasterRequest`s with their pixel caps already applied, unit-normalized strokes with rebased timestamps, style statistics, and the anchor. 22 tests.
+
+**Not done / left open:** no pixels. `RasterRequest` says *what* to render and at what scale; M2-05C renders it on iOS. `pageText` (§1's whole-page OCR field) is also absent — the Vision recognizer from M1-09 needs a rasterized page, so it joins in M2-05C. Filed **M2-05D**: `InkPoint` drops `PKStrokePoint.size`, so `StyleStats` cannot report a real `strokeWidth` and exposes mean force as a stand-in; the synthesizer will need the real number.
+
+**Surprises and gotchas:** every statistic here had to be a median or a length-weighted mean, not an average. One long underline or a crossed-out word otherwise swamps x-height, and horizontal strokes — the bar of a `t`, an equals sign — drag slant toward zero if you do not filter to near-vertical segments. Both cases have a test. The anchor deliberately survives an empty lasso: circling blank space and asking for something there is a legitimate request, and returning `nil` would make the Ask bar dead in exactly the situation where a user most expects it to work.
+
+**Decisions made:** `StyleStats` lives in `Handwriting`, not `Intelligence`, because the M3 synthesizer is its real consumer and `Handwriting` cannot depend upward. It carries only what stroke geometry can actually measure; the rest of the `HANDWRITING.md` §3.3 list needs the labelled calibration capture and is not guessed at.
+
+**Next:** M2-05C — rasterizing crop and neighborhood on iOS.
+
+**Verification:** `swift test` on InkCore, Handwriting, Intelligence ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-30 · Claude · M2-05A
 
 **Goal:** put the lasso rules where they can be tested exhaustively without a Pencil, ahead of the gesture that will drive them.
