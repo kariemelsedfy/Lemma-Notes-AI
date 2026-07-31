@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-09
+
+**Goal:** keep generated ink off the page until the user says yes, and make "one undo removes the whole generation" structural.
+
+**Done:** `SuggestionLayer` (main-actor) and `AcceptedSuggestion` in `InkCore`. Present, discard, accept. Accept makes exactly one `insertProgrammatic` call, which is one undo entry, and returns the provenance record the app writes into page metadata. 8 tests, one of which asserts the insertion count rather than the resulting strokes — that is the property that actually matters.
+
+**Not done / left open:** no rendering. The 70% preview alpha is exposed as `SuggestionLayer.previewAlpha` but drawing it, animating the strokes in (§7.3), and honouring Reduce Motion all belong to the canvas. Nothing writes `AcceptedSuggestion` into page metadata yet either — that is the `DocumentStore` side of accept and needs the element/strokeIndices repair path from M1-02A.
+
+**Surprises and gotchas:** `present` replaces rather than accumulates, and accepting twice returns nil instead of inserting again. Both are guards against the same class of bug: a double-tap or a late response producing two copies of the answer on the page, which is much worse than doing nothing.
+
+**Decisions made:** accept takes the engine as a parameter instead of the layer holding one. The layer then has no lifecycle relationship with the canvas, which keeps it testable and stops it from outliving the page it was drawing on.
+
+**Next:** M2-10 — Ask bar UI.
+
+**Verification:** `swift test --package-path Packages/InkCore` (30 tests) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-11
 
 **Goal:** model the Ask lifecycle explicitly, so cancellation and the §8 failure states are structural rather than remembered.
