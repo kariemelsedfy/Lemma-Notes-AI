@@ -266,11 +266,25 @@ Acceptance:
 - [ ] Snapshot tests over fixture pages
 
 ### M2-06 — Spec schema, decoder, and validator
-status: Ready · refs: AI_PIPELINE.md §3 · estimate: M
+status: In progress · claimed: Claude · 2026-07-30 · note: decomposed into M2-06A and M2-06B before implementation. · refs: AI_PIPELINE.md §3 · estimate: M
 Acceptance:
 - [ ] Codable types for every block type
 - [ ] Validation fails closed on: missing fields, over-long content, unparseable LaTeX, low confidence
 - [ ] Fuzz test: no malformed input crashes or renders ink
+
+### M2-06A — Spec schema and decoder
+status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §3, §3.1 · estimate: M
+Acceptance:
+- [x] Codable types cover every block type and its content payload
+- [x] Unknown fields are ignored; missing required fields fail decoding with an explicit error
+- [x] Round-trip and decoding-failure tests over fixture JSON
+
+### M2-06B — Spec validation and fuzz coverage
+status: Ready · refs: AI_PIPELINE.md §3.2 · estimate: M
+Acceptance:
+- [ ] A validated spec type can only be produced by the validator
+- [ ] Validation fails closed on over-long content, unparseable LaTeX, out-of-range values, and `readConfidence < 0.6`
+- [ ] Fuzz test: no malformed input crashes or yields a validated spec
 
 ### M2-07 — MockProvider
 status: Ready · estimate: S

@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Claude · M2-06A
+
+**Goal:** give `Intelligence` a decodable spec type covering every block type in `AI_PIPELINE.md` §3, so later pipeline work has a contract to build against.
+
+**Done:** split M2-06 into schema/decoder (this task) and validation/fuzz (M2-06B). Added `Spec`, `SpecBlock`, and the five content payloads with hand-written `Codable` conformances, plus 11 decoding tests including a round trip over a spec that uses all five block types.
+
+**Not done / left open:** nothing here enforces the §3.5 bounds or the `readConfidence` floor — decoding proves shape only. Until M2-06B lands, a decoded `Spec` must not reach a renderer.
+
+**Surprises and gotchas:** three wire shapes were underspecified in the doc and needed a decision (see below). Also: `continue` is a Swift keyword, so `SpecIntent` uses `continuation` with an explicit raw value — the wire spelling is still `continue`. SwiftLint's `identifier_name` minimum of 3 characters rules out `x`/`y` properties, hence `SpecRect.originX`.
+
+**Decisions made:** ranges are `[min, max]` arrays and rects are `[x, y, w, h]` arrays, matching the bounds format page metadata already uses (`ARCHITECTURE.md` §3.1). `SpecRun` collapses the wire's `latex`/`text` key pair into one `value` plus `kind`, so consumers never re-derive which key was populated. None of these are expensive to reverse; no ADR.
+
+**Next:** M2-06B — validation and fuzz coverage.
+
+**Verification:** `swift test --package-path Packages/Intelligence` ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-29 · Codex · M1-09
 
 **Goal:** provide an on-device handwriting-to-text boundary.
