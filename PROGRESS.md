@@ -317,10 +317,18 @@ Acceptance:
 - [x] Fuzz test: no malformed input crashes or yields an out-of-bounds validated spec
 
 ### M2-07 — MockProvider
-status: Ready · estimate: S
+status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §5, §7, §8 · estimate: S
 Acceptance:
-- [ ] Returns canned specs keyed by fixture name, with configurable latency and failure injection
-- [ ] Used by CI for all pipeline tests
+- [x] Returns canned specs keyed by the request's cache key, with configurable latency and failure injection
+- [x] Used by CI for all pipeline tests
+
+### M2-13 — Reconcile the analytics intent vocabulary with the spec contract
+status: Ready · refs: PROJECT_PLAN.md §8, AI_PIPELINE.md §3 · estimate: S
+Note: `Analytics.AIIntent` is `solve | explain | check | continueWork`; `SpecIntent` is
+`answer | continue | plot | check | ask`. Plots and asks currently cannot be reported.
+Acceptance:
+- [ ] One vocabulary, or an explicit documented mapping in the app layer
+- [ ] No AI action is unreportable
 
 ### M2-08 — Placement engine
 status: Ready · refs: AI_PIPELINE.md §4 · estimate: L

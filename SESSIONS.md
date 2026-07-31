@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Claude · M2-07
+
+**Goal:** give CI a provider so every later pipeline stage is testable without a network, a key, or a device.
+
+**Done:** `SpecProvider` (the one boundary to any model), `ModelTier`, `SpecRequest` with a deterministic `cacheKey`, `ProviderError`, and a `MockProvider` actor with configurable latency, failure injection, spec corruption, and a record of requested keys. 12 tests, including a cancellation test that proves an in-flight request dies when the task is cancelled.
+
+**Not done / left open:** no routing. `RoutingPolicy` is M4 and stays in one file when it arrives. Filed **M2-13**: `Analytics.AIIntent` (`solve | explain | check | continueWork`) and `SpecIntent` (`answer | continue | plot | check | ask`) are different vocabularies, so a plot or an ask currently cannot be reported at all.
+
+**Surprises and gotchas:** `SpecRequest.cacheKey` is a hand-rolled FNV-1a over quantized geometry, *not* `hashValue`. Swift seeds `Hasher` per process, so a `hashValue`-derived cache key would miss on every launch — the §7 cache would silently never hit and nobody would notice, because a cache miss is invisible. Coordinates are quantized to a hundredth of a point so sub-pixel jitter does not miss either.
+
+**Decisions made:** `SpecProvider` returns `ValidatedSpec`, not `Spec` or `Data`. A new provider therefore cannot skip validation, which is the property `ValidatedSpec` exists to give us. `ModelTier` is duplicated rather than shared with `Analytics.AIModelTier` because the dependency rule forbids the import; the app maps between them where it reports the event.
+
+**Next:** M2-08 — placement engine.
+
+**Verification:** `swift test --package-path Packages/Intelligence` (57 tests) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-30 · Claude · M2-05B
 
 **Goal:** turn a page and a lasso into the `SelectionContext` the model call needs, without touching a rasterizer.
