@@ -26,9 +26,7 @@ struct VirtualizedPageStack: View {
     }
 
     private var livePageIndices: Set<Int> {
-        guard let firstPageID = pageIDs.first,
-            let firstIndex = pageIDs.firstIndex(of: firstPageID)
-        else {
+        guard let firstPageID = pageIDs.first, let firstIndex = pageIDs.firstIndex(of: firstPageID) else {
             return []
         }
 
@@ -44,10 +42,10 @@ struct VirtualizedPageStack: View {
                 LazyVStack(spacing: 24) {
                     ForEach(pageIDs, id: \.self) { pageID in
                         pageView(for: pageID)
-                        .frame(
-                            width: pageSizes[pageID]?.width ?? pageSize.width,
-                            height: pageSizes[pageID]?.height ?? pageSize.height
-                        )
+                            .frame(
+                                width: pageSizes[pageID]?.width ?? pageSize.width,
+                                height: pageSizes[pageID]?.height ?? pageSize.height
+                            )
                             .id(pageID)
                     }
                 }
