@@ -25,17 +25,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-03R — CI app-test reliability
-status: Done · completed: Codex · 2026-07-29 · refs: .github/workflows/ci.yml · estimate: S
-Acceptance:
-- [x] Hosted app tests use a deterministically available simulator destination
-- [x] A stalled simulator test cannot consume the full job budget without diagnostics
+_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M0-03R — CI app-test reliability
+status: Done · completed: Codex · 2026-07-29 · refs: .github/workflows/ci.yml · estimate: S
+Acceptance:
+- [x] Hosted app tests use a deterministically available simulator destination
+- [x] A stalled simulator test cannot consume the full job budget without diagnostics
 
 ### M0-03 — CI pipeline
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §7.2 · estimate: M
@@ -45,11 +47,14 @@ Acceptance:
 - [x] Caches Tuist and SPM artifacts; full run under 10 minutes (7m44s)
 
 ### M0-03S — Simulator test stability
-status: In progress · claimed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §7.2 · estimate: S
+status: Done · completed: Codex · 2026-07-29 · closed-by: Claude · 2026-07-31 · refs: ARCHITECTURE.md §7.2 · estimate: S
+Note: the work merged but the status was never updated. Verified against `ci.yml` on
+`main`: no `OS=latest`, a 60s destination timeout, and a 10-minute app-test step inside an
+18-minute job. Roughly a dozen green hosted runs on 2026-07-31 cover the rerun criterion.
 Acceptance:
-- [ ] App-test destination resolution is bounded and does not use `OS=latest`
-- [ ] The app-test timeout accommodates the observed build-before-test duration
-- [ ] Hosted CI rerun verifies the hardened workflow
+- [x] App-test destination resolution is bounded and does not use `OS=latest`
+- [x] The app-test timeout accommodates the observed build-before-test duration
+- [x] Hosted CI rerun verifies the hardened workflow
 
 ## Blocked
 
@@ -259,7 +264,7 @@ Acceptance:
 - [ ] Graceful no-op on Pencil 1 / no Pencil
 
 ### M2-05 — SelectionContext extraction
-status: In progress · claimed: Claude · 2026-07-30 · note: decomposed into M2-05A/B/C before implementation. · refs: AI_PIPELINE.md §1 · estimate: L
+status: Ready · claimed: — · note: decomposed into M2-05A–D. A and B are Done; C (rasterization, iOS) and D (stroke width) are separately Ready. This parent closes when they do. · refs: AI_PIPELINE.md §1 · estimate: L
 Acceptance:
 - [ ] Crop, neighborhood, normalized strokes, style stats, anchor all produced
 - [ ] Crop capped at 1.5MP; deterministic given the same page and selection
@@ -362,7 +367,7 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: In progress · note: decomposed into M2-12A and M2-12B. · estimate: M
+status: Ready · claimed: — · note: decomposed into M2-12A (Done) and M2-12B (Ready, device). This parent closes when M2-12B does. · estimate: M
 
 ### M2-12A — Ask pipeline
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §1, §8, ARCHITECTURE.md §5 · estimate: M
