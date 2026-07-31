@@ -1,3 +1,4 @@
+import DocumentStore
 import SwiftUI
 
 struct NotebookLibraryView: View {
@@ -42,8 +43,8 @@ struct NotebookLibraryView: View {
                 }
             }
         } detail: {
-            if selectedNotebookID != nil {
-                VirtualizedPageStack()
+            if let selectedNotebookID, let document = library.document(id: selectedNotebookID) {
+                VirtualizedPageStack(document: document)
             } else {
                 ContentUnavailableView("library.selection.title", systemImage: "doc")
             }
@@ -77,8 +78,9 @@ struct NotebookLibraryView: View {
     }
 
     private func createNotebook() {
-        let notebook = library.create(title: String(localized: "library.default-title"))
-        selectedNotebookID = notebook.id
+        if let notebook = library.create(title: String(localized: "library.default-title")) {
+            selectedNotebookID = notebook.id
+        }
     }
 
     private var renamePresented: Binding<Bool> {

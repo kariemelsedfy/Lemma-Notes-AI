@@ -6,10 +6,10 @@ import SwiftUI
 /// stroke inclusion while this first milestone renders immediate visual feedback.
 struct PageSelection: Identifiable, Equatable {
     let id: UUID
-    let pageID: Int
+    let pageID: UUID
     let loop: [CGPoint]
 
-    init(id: UUID = UUID(), pageID: Int, loop: [CGPoint]) {
+    init(id: UUID = UUID(), pageID: UUID, loop: [CGPoint]) {
         self.id = id
         self.pageID = pageID
         self.loop = loop

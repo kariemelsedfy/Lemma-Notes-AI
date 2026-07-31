@@ -1,28 +1,37 @@
+import DocumentStore
 import PencilKit
 import SwiftUI
 
 struct VirtualizedPageStack: View {
-    private let pageIDs: [Int]
+    private let pageIDs: [UUID]
+    private let pageSizes: [UUID: CGSize]
     private let pageSize = CGSize(width: 768, height: 1_024)
 
-    @State private var visiblePageID: Int?
-    @StateObject private var drawingStore = PageDrawingStore()
+    @State private var visiblePageID: UUID?
+    @StateObject private var drawingStore: PageDrawingStore
     @StateObject private var selectionStore = PageSelectionStore()
     @State private var selectedTool: CanvasTool = .pen
     @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
-    init(pageIDs: [Int] = Array(0..<12)) {
-        self.pageIDs = pageIDs
+    init(document: StoredDocument? = nil) {
+        let pages = document?.pages ?? []
+        pageIDs = pages.map(\.metadata.pageID)
+        pageSizes = Dictionary(
+            uniqueKeysWithValues: pages.map {
+                ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
+            })
+        let inkData = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.inkData) })
+        _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData))
     }
 
-    private var livePageIDs: Set<Int> {
-        guard let firstPageID = pageIDs.first else {
+    private var livePageIndices: Set<Int> {
+        guard let firstPageID = pageIDs.first, let firstIndex = pageIDs.firstIndex(of: firstPageID) else {
             return []
         }
 
         return PageLiveWindow.pageIndices(
-            around: visiblePageID ?? firstPageID,
+            around: pageIDs.firstIndex(of: visiblePageID ?? firstPageID) ?? firstIndex,
             pageCount: pageIDs.count
         )
     }
@@ -33,7 +42,10 @@ struct VirtualizedPageStack: View {
                 LazyVStack(spacing: 24) {
                     ForEach(pageIDs, id: \.self) { pageID in
                         pageView(for: pageID)
-                            .frame(width: pageSize.width, height: pageSize.height)
+                            .frame(
+                                width: pageSizes[pageID]?.width ?? pageSize.width,
+                                height: pageSizes[pageID]?.height ?? pageSize.height
+                            )
                             .id(pageID)
                     }
                 }
@@ -82,11 +94,11 @@ struct VirtualizedPageStack: View {
     }
 
     @ViewBuilder
-    private func pageView(for pageID: Int) -> some View {
-        if livePageIDs.contains(pageID) {
+    private func pageView(for pageID: UUID) -> some View {
+        if let index = pageIDs.firstIndex(of: pageID), livePageIndices.contains(index) {
             LivePageView(
                 pageID: pageID,
-                pageSize: pageSize,
+                pageSize: pageSizes[pageID] ?? pageSize,
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
                 selection: selectionStore.selection(for: pageID)
@@ -96,10 +108,11 @@ struct VirtualizedPageStack: View {
         }
     }
 
-    private func cachePagesOutsideLiveWindow(around visiblePage: Int) {
-        let livePageIDs = PageLiveWindow.pageIndices(around: visiblePage, pageCount: pageIDs.count)
-        for pageID in pageIDs where !livePageIDs.contains(pageID) {
-            drawingStore.cachePreview(for: pageID, pageSize: pageSize)
+    private func cachePagesOutsideLiveWindow(around visiblePage: UUID) {
+        let liveIndices = PageLiveWindow.pageIndices(
+            around: pageIDs.firstIndex(of: visiblePage) ?? 0, pageCount: pageIDs.count)
+        for (index, pageID) in pageIDs.enumerated() where !liveIndices.contains(index) {
+            drawingStore.cachePreview(for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         }
     }
 
@@ -110,7 +123,7 @@ struct VirtualizedPageStack: View {
 }
 
 private struct LivePageView: View {
-    let pageID: Int
+    let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
@@ -131,12 +144,12 @@ private struct LivePageView: View {
         }
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
-        .accessibilityLabel("Editable page \(pageID + 1)")
+        .accessibilityLabel("Editable notebook page")
     }
 }
 
 private struct CachedPageView: View {
-    let pageID: Int
+    let pageID: UUID
     @ObservedObject var drawingStore: PageDrawingStore
 
     var body: some View {
@@ -150,12 +163,12 @@ private struct CachedPageView: View {
         }
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
-        .accessibilityLabel("Cached page \(pageID + 1)")
+        .accessibilityLabel("Cached notebook page")
     }
 }
 
 private struct LiveInkCanvas: UIViewRepresentable {
-    let pageID: Int
+    let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
@@ -195,11 +208,11 @@ private struct LiveInkCanvas: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, PKCanvasViewDelegate {
-        private let pageID: Int
+        private let pageID: UUID
         private let pageSize: CGSize
         private let drawingStore: PageDrawingStore
 
-        init(pageID: Int, pageSize: CGSize, drawingStore: PageDrawingStore) {
+        init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
             self.pageID = pageID
             self.pageSize = pageSize
             self.drawingStore = drawingStore
@@ -213,23 +226,31 @@ private struct LiveInkCanvas: UIViewRepresentable {
 
 @MainActor
 private final class PageDrawingStore: ObservableObject {
-    @Published private var drawings: [Int: PKDrawing] = [:]
-    @Published private var previews: [Int: UIImage] = [:]
+    @Published private var drawings: [UUID: PKDrawing] = [:]
+    @Published private var previews: [UUID: UIImage] = [:]
 
-    func drawing(for pageID: Int) -> PKDrawing {
+    init(inkData: [UUID: Data] = [:]) {
+        for (pageID, data) in inkData {
+            if let drawing = try? PKDrawing(data: data) {
+                drawings[pageID] = drawing
+            }
+        }
+    }
+
+    func drawing(for pageID: UUID) -> PKDrawing {
         drawings[pageID] ?? PKDrawing()
     }
 
-    func preview(for pageID: Int) -> UIImage? {
+    func preview(for pageID: UUID) -> UIImage? {
         previews[pageID]
     }
 
-    func save(_ drawing: PKDrawing, for pageID: Int, pageSize: CGSize) {
+    func save(_ drawing: PKDrawing, for pageID: UUID, pageSize: CGSize) {
         drawings[pageID] = drawing
         previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
     }
 
-    func cachePreview(for pageID: Int, pageSize: CGSize) {
+    func cachePreview(for pageID: UUID, pageSize: CGSize) {
         guard previews[pageID] == nil, let drawing = drawings[pageID] else {
             return
         }
@@ -239,7 +260,7 @@ private final class PageDrawingStore: ObservableObject {
 }
 
 extension PageSelectionStore {
-    fileprivate func selection(for pageID: Int) -> PageSelection? {
+    fileprivate func selection(for pageID: UUID) -> PageSelection? {
         guard selection?.pageID == pageID else {
             return nil
         }

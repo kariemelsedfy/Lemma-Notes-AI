@@ -158,6 +158,13 @@ status: Done · completed: Codex · 2026-07-29 · estimate: M
 Acceptance:
 - [x] Rename and delete are reachable and accessible from the library
 - [x] Destructive deletion requires confirmation
+### M1-05D — Persisted notebook library binding
+status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §2, §3 · estimate: M
+Acceptance:
+- [x] Library summaries are sourced from `DocumentStore` package metadata rather than in-memory fixtures
+- [x] Opening a notebook supplies its persisted page and ink data to the canvas and export flow
+- [x] Create, rename, and delete persist package changes and are covered by unit tests
+
 ### M1-06 — iCloud sync
 status: Done · completed: Codex · 2026-07-29 · note: decomposed into M1-06A through M1-06D before implementation. · refs: ARCHITECTURE.md §1, §3, PROJECT_PLAN.md §4.1 · estimate: L
 
