@@ -259,10 +259,31 @@ Acceptance:
 - [ ] Graceful no-op on Pencil 1 / no Pencil
 
 ### M2-05 — SelectionContext extraction
-status: Ready · refs: AI_PIPELINE.md §1 · estimate: L
+status: In progress · claimed: Claude · 2026-07-30 · note: decomposed into M2-05A/B/C before implementation. · refs: AI_PIPELINE.md §1 · estimate: L
 Acceptance:
 - [ ] Crop, neighborhood, normalized strokes, style stats, anchor all produced
 - [ ] Crop capped at 1.5MP; deterministic given the same page and selection
+- [ ] Snapshot tests over fixture pages
+
+### M2-05A — Selection geometry in InkCore
+status: Done · completed: Claude · 2026-07-30 · refs: ARCHITECTURE.md §2, PROJECT_PLAN.md §3.1 · estimate: M
+Acceptance:
+- [x] Point-in-polygon and loop closure are pure and unit-tested, including concave loops
+- [x] Stroke inclusion is length-weighted against a coverage threshold
+- [x] Partial strokes clip to the loop with interpolated dynamics at the cut
+
+### M2-05B — SelectionContext assembly
+status: Ready · refs: AI_PIPELINE.md §1 · estimate: M
+Acceptance:
+- [ ] Normalized strokes, style stats (x-height, slant, stroke width, line spacing), and the anchor are produced from a page and a loop
+- [ ] Crop and neighborhood *bounds* are computed and capped at 1.5MP without rasterizing
+- [ ] Deterministic given the same page and selection; unit-tested on macOS
+
+### M2-05C — Selection rasterization
+status: Ready · needs-device-verification · refs: AI_PIPELINE.md §1 · estimate: M
+Acceptance:
+- [ ] Crop and neighborhood PNGs are rendered on iOS at the bounds M2-05B computed
+- [ ] Ink is flattened on white at 2× device scale
 - [ ] Snapshot tests over fixture pages
 
 ### M2-06 — Spec schema, decoder, and validator
