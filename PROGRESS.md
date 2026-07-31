@@ -273,11 +273,11 @@ Acceptance:
 - [ ] Fuzz test: no malformed input crashes or renders ink
 
 ### M2-06A — Spec schema and decoder
-status: In progress · claimed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §3, §3.1 · estimate: M
+status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §3, §3.1 · estimate: M
 Acceptance:
-- [ ] Codable types cover every block type and its content payload
-- [ ] Unknown fields are ignored; missing required fields fail decoding with an explicit error
-- [ ] Round-trip and decoding-failure tests over fixture JSON
+- [x] Codable types cover every block type and its content payload
+- [x] Unknown fields are ignored; missing required fields fail decoding with an explicit error
+- [x] Round-trip and decoding-failure tests over fixture JSON
 
 ### M2-06B — Spec validation and fuzz coverage
 status: Ready · refs: AI_PIPELINE.md §3.2 · estimate: M
