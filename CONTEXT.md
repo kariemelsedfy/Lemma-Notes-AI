@@ -4,15 +4,23 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-29 · by: Codex · Milestone: **M1 persisted library binding complete**
+**Last updated:** 2026-07-31 · by: Codex · Milestone: **M1 export and M2 selection foundations merged**
 
 ---
 
 ## 1. Where we are
 
-M0-01 through M0-06, M1-01 through M1-05D (except the device-only M1-03C FPS trace) are complete: the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, and a persisted notebook library backed by `DocumentStore`. Package tests, lint, Tuist generation, and simulator app builds pass.
+M0-01 through M0-06, M1-01 through M1-07B, and M2-01/M2-02 are complete (except the device-only M1-03C FPS trace): the repository has a Tuist-generated iPad app scaffold, six independent Swift packages, enforced local lint/format tooling, CI checks, an adaptive DesignSystem, a privacy-safe analytics event schema, an iOS PencilKit adapter, a versioned `.margin` format, reusable SwiftUI paper, virtualized paged scrolling, an accessible pen/eraser/lasso palette, a persisted notebook library backed by `DocumentStore`, PDF/PNG export with sharing, and the initial Ask/selection UI. Package tests, lint, Tuist generation, and simulator app builds pass.
 
-Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 remains the human Apple Developer/TestFlight prerequisite, while M1-03C requires an on-device performance trace.
+Next action: merge **M1-08** once PR #30 passes its fresh hosted CI run, then rebase and merge **M1-09**. The next implementation task is **M2-03** (loop-and-dwell gesture). M0-07 remains the human Apple Developer/TestFlight prerequisite, while M1-03C requires an on-device performance trace.
+
+### Claude handoff · 2026-07-31
+
+- `main` is at `bd2d79c`: notebook canvas, iCloud discovery/refresh handling, PDF/PNG renderer, persisted library, system sharing UI, Ask entry, and selection model/overlay are merged.
+- PR #30 (`feat/M1-08-occupancy-grid`) is rebased directly on `main` and awaiting fresh hosted CI. Merge it when green.
+- PR #32 (`feat/M1-09-handwriting-recognition`) is still based on #30. After #30 merges, rebase #32 onto `main`, force-push, wait for CI, then merge.
+- M2-01 and M2-02 are merged. Claim M2-03 for the next implementation task.
+- Do not modify the original OneDrive worktree's uncommitted planning documents. Use `/private/tmp` worktrees and update the tracked root documents.
 
 ## 2. What exists
 
@@ -24,6 +32,7 @@ Next action: **M2-01** in `PROGRESS.md` (selection model and rendering). M0-07 r
 | Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
 | Selection UI | Page-scoped lasso selection state renders as a non-interactive overlay; gesture recognition remains separate |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
+| Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
 | Packages | Six scaffolded SPM packages under `Packages/` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |

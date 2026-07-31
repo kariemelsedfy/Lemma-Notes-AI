@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Codex · Claude handoff
+
+**Goal:** leave a durable resume point before the active usage window ends.
+
+**Done:** recorded the exact mainline state and merge queue in `CONTEXT.md`. Main includes export rendering, persisted notebooks, sharing UI, Ask entry, and the selection overlay.
+
+**Not done / left open:** occupancy PR #30 needs fresh hosted CI then merge; Vision handwriting PR #32 must rebase after it. M2-03 is the next implementation task.
+
+**Surprises and gotchas:** earlier feature PRs were stacked on staging branches; inspect each GitHub PR base and rebase directly onto `main` after its parent merges. A `gh` merge can report a local worktree cleanup failure even when the remote merge succeeded; verify with `gh pr view`.
+
+**Decisions made:** none.
+
+**Next:** merge #30, rebase/merge #32, then claim M2-03.
+
+**Verification:** documentation-only handoff
+
 ## 2026-07-29 · Codex · M1-07B
 
 **Goal:** expose persisted notebook exports through accessible PDF/PNG actions and the system share sheet.
