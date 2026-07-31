@@ -362,7 +362,7 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: Ready · needs-device-verification · note: blocked on M2-14; the pipeline can place an answer but cannot yet draw one. · estimate: M
+status: Ready · needs-device-verification · note: unblocked — M2-14 landed, so a spec block can now become strokes. · estimate: M
 Acceptance:
 - [ ] An `AskPipeline` drives selection → context → `MockProvider` → placement → suggestion → accept
 - [ ] `AskBar` is in the canvas view hierarchy and drives that pipeline
@@ -370,15 +370,24 @@ Acceptance:
 - [ ] Record the screen. This is the first real signal that the product feels right.
 
 ### M2-14 — Placeholder ink renderer for the mocked pipeline
-status: Ready · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
-Note: **M2-12 cannot happen without this.** The pipeline resolves a placement rectangle
-but nothing turns a spec block into strokes until the M3 synthesizer exists. A deliberately
-plain stroke font is enough to prove the loop, and is thrown away when M3 lands.
+status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
+Note: a stand-in, deleted when the M3 synthesizer lands. Digits and arithmetic operators
+only; letters are M2-14B.
 Acceptance:
-- [ ] A `SuggestionInkRendering` seam converts a `BlockPlacement` into `[InkStroke]`
-- [ ] A plain single-stroke-per-glyph renderer covers digits, `+ - = / ( )`, and ASCII letters
-- [ ] Strokes fill in force, altitude, azimuth and timestamps — flat dynamics look fake
-- [ ] Output is deterministic given the same text, frame, and seed
+- [x] A `SuggestionInkRendering` seam converts a `BlockPlacement` into `[InkStroke]`
+- [x] A plain single-stroke-per-glyph renderer covers digits and `+ - = * / ( ) < > ^ . ,`
+- [x] Strokes fill in force, altitude, azimuth and timestamps — flat dynamics look fake
+- [x] Output is deterministic given the same text, frame, and seed
+- [x] Unsupported characters and block types fail closed
+
+### M2-14B — Letters in the placeholder font
+status: Ready · refs: HANDWRITING.md §4 · estimate: S
+Note: `PlainStrokeFont` covers digits and operators, so any `text` run fails closed with
+`unsupportedContent`. Prose continuation cannot be demoed until this exists. Skip it
+entirely if M3 arrives first — this is throwaway work either way.
+Acceptance:
+- [ ] Upper and lower case ASCII letters render legibly at demo sizes
+- [ ] The existing "every advertised character renders" test still passes
 
 ### M2-15 — Persist accepted-suggestion provenance
 status: Ready · refs: ARCHITECTURE.md §3.1 · estimate: M

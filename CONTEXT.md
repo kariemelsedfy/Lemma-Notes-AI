@@ -12,9 +12,9 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. **Every non-device M2 task is done**: selection model and geometry, the Ask entry point, selection context, the spec contract with fail-closed validation, the provider boundary and mock, the placement engine, the request state machine, the suggestion layer, and the Ask bar.
 
-The pipeline exists as a set of pieces that each work and are tested, but **nothing has drawn an answer on a page yet**, for one reason: there is no renderer. Placement resolves a rectangle; turning a spec block into strokes needs the M3 synthesizer, or the throwaway stand-in filed as **M2-14**. Everything else is wired and waiting on that.
+The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. What is missing is the **assembly in the app**: `AskBar` is not in the view hierarchy and no `AskPipeline` connects it to a provider. That is M2-12, and it needs a device to judge.
 
-Next action: **M2-14** (placeholder ink renderer), then **M2-12** (end-to-end demo, which also puts `AskBar` into the view hierarchy). **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
+Next action: **M2-12** (wire the Ask bar to a pipeline, then record the demo on an iPad). **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12 need a physical iPad.
 
 ## 2. What exists
 
@@ -37,7 +37,7 @@ Next action: **M2-14** (placeholder ink renderer), then **M2-12** (end-to-end de
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. **Provenance is not persisted yet (M2-15)** |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12)** |
-| Ink renderer | ❌ Does not exist. This is the one thing between the pipeline and a working demo (M2-14 / M3) |
+| Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font, digits and operators only. Fails closed on letters, plots and marks. Deleted when M3 lands |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
@@ -76,6 +76,11 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
 | Q7 | Confirm current Apple Intelligence regional availability (EU / mainland China) — determines whether T2 must carry entire regions | agent research | M4 |
 | Q8 | Is loop-and-dwell reliable enough to be the primary gesture, or does it false-positive too often in real use? | needs device testing | M2 |
+| Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
+| Q10 | Does 1.0 attempt cursive connections, or ship print-only with the connection work deferred? `HANDWRITING.md` §1 flags cursive as much harder; §4.4 already allows a print fallback per join | human | M3 scope |
+| Q11 | Must calibration happen before the first Ask, or can a new user start on the "neat" fallback style and calibrate later? Trades onboarding drop-off against first-impression quality | human | M3 / M7 |
+
+Q1 has been answered in practice — M1 shipped a paged canvas — but was never recorded as a decision. Q2 (PDF import) is still untouched and still in scope-limbo.
 
 ## 6. Known risks being actively watched
 
