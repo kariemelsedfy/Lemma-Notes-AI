@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-10
+
+**Goal:** give the pipeline a face — the bar that turns a selection into an answer, and shows every failure state with copy a person can act on.
+
+**Done:** `AskBar` and `AskBarModel` in the app target, plus localized copy for all seven failure states. Added `Intelligence` and `InkCore` to the Margin target in `Project.swift`. 14 app tests; the simulator suite is now 30 and green.
+
+**Not done / left open — read this before assuming M2 is finished:** the bar is **not in the view hierarchy**. Tapping a verb would start the state machine and leave it in `working` forever, because nothing drives the request. That wiring is M2-12, whose acceptance now names it.
+
+Two gaps found while building this, both filed:
+- **M2-14** — there is no ink renderer. Placement resolves a rectangle; nothing turns a spec block into strokes. M2-12 is blocked on it. A deliberately plain stroke font is enough and gets thrown away when M3 lands.
+- **M2-15** — `SuggestionLayer.accept` returns an `AcceptedSuggestion` that nobody writes to page metadata, so accepted AI ink is indistinguishable from handwriting after a reload. That is the exact failure `ARCHITECTURE.md` §3.1 warns about; it must close before anything ships.
+
+**Surprises and gotchas:** the test target links packages independently of the app target. `MarginTests` importing `InkCore` failed to *link* even though the app target compiled fine, because `InkCore` was only a transitive dependency of `Intelligence`. Add the package to both target dependency lists in `Project.swift`, not just the app's. The error is a bare `ld: symbol(s) not found`, which does not point at the cause at all.
+
+**Decisions made:** `AskBarPhase` collapses five pipeline states into one `working` appearance. The user is meant to experience one wait (`AI_PIPELINE.md` §7), and keeping pipeline vocabulary out of the view means the pipeline can gain stages — speculative execution, streaming — without touching the UI.
+
+Only recoverable failures offer a retry button. Offering "try again" for `outOfCredits` or `unreadable` teaches people that the button does nothing.
+
+**Next:** M2-14, then M2-12.
+
+**Verification:** `swift test` on all packages ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) simulator — 30 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-09
 
 **Goal:** keep generated ink off the page until the user says yes, and make "one undo removes the whole generation" structural.

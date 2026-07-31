@@ -346,7 +346,14 @@ Acceptance:
 - [x] Reject discards without touching the page
 - [x] Accept returns permanent provenance for the page metadata element
 ### M2-10 — Ask bar UI
-status: Ready · estimate: M
+status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §8, ARCHITECTURE.md §10 · estimate: M
+Note: the bar and its state exist and are tested, but are **not yet in the view
+hierarchy** — M2-12 owns wiring them to a provider. Do not ship without that.
+Acceptance:
+- [x] The bar reflects the request state machine: verbs, working, decision, failure
+- [x] Accept, discard, cancel, retry and dismiss are reachable, 44pt, and VoiceOver-labelled
+- [x] Every failure state has localized recovery copy; only recoverable ones offer retry
+- [x] No request can start without a selection
 ### M2-11 — Request state machine
 status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §5, AI_PIPELINE.md §8 · estimate: M
 Acceptance:
@@ -355,10 +362,34 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: Ready · estimate: S
+status: Ready · needs-device-verification · note: blocked on M2-14; the pipeline can place an answer but cannot yet draw one. · estimate: M
 Acceptance:
+- [ ] An `AskPipeline` drives selection → context → `MockProvider` → placement → suggestion → accept
+- [ ] `AskBar` is in the canvas view hierarchy and drives that pipeline
 - [ ] Circle `2+2=` on a real iPad → canned "4" renders as ink at the anchor → accept → undo
 - [ ] Record the screen. This is the first real signal that the product feels right.
+
+### M2-14 — Placeholder ink renderer for the mocked pipeline
+status: Ready · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
+Note: **M2-12 cannot happen without this.** The pipeline resolves a placement rectangle
+but nothing turns a spec block into strokes until the M3 synthesizer exists. A deliberately
+plain stroke font is enough to prove the loop, and is thrown away when M3 lands.
+Acceptance:
+- [ ] A `SuggestionInkRendering` seam converts a `BlockPlacement` into `[InkStroke]`
+- [ ] A plain single-stroke-per-glyph renderer covers digits, `+ - = / ( )`, and ASCII letters
+- [ ] Strokes fill in force, altitude, azimuth and timestamps — flat dynamics look fake
+- [ ] Output is deterministic given the same text, frame, and seed
+
+### M2-15 — Persist accepted-suggestion provenance
+status: Ready · refs: ARCHITECTURE.md §3.1 · estimate: M
+Note: `SuggestionLayer.accept` returns an `AcceptedSuggestion`, but nothing writes it into
+page metadata, so accepted AI ink is currently indistinguishable from handwriting after a
+reload. This is exactly the "AI ink lost its provenance" failure §3.1 warns about, and it
+must be closed before anything ships.
+Acceptance:
+- [ ] Accepting writes a `generated` element with `requestId`, `strokeIndices`, and `acceptedAt`
+- [ ] Stroke fingerprints repair the indices after later editing
+- [ ] Round-trip test: save, edit around the generated ink, reload, provenance survives
 
 ---
 

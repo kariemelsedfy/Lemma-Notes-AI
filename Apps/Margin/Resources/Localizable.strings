@@ -25,3 +25,23 @@
 "library.export.png" = "Export PNG";
 "library.export.failed.title" = "Couldn’t export notebook";
 "library.export.failed.message" = "Try again. Your notebook has not been changed.";
+
+"ask.bar" = "Ask";
+"ask.verb.answer" = "Answer";
+"ask.verb.continuation" = "Continue";
+"ask.verb.plot" = "Plot";
+"ask.verb.check" = "Check";
+"ask.verb.ask" = "Ask a question";
+"ask.state.working" = "Working…";
+"ask.cancel" = "Cancel";
+"ask.keep" = "Keep";
+"ask.discard" = "Discard";
+"ask.retry" = "Try again";
+"ask.dismiss" = "Dismiss";
+"ask.failure.unreadable" = "Couldn’t read that clearly. Check what it says, then try again.";
+"ask.failure.invalidSpec" = "Something went wrong — try again.";
+"ask.failure.offline" = "You’re offline, so this needs a connection.";
+"ask.failure.outOfCredits" = "You’re out of AI actions for now.";
+"ask.failure.noRoom" = "No room on the page. Make room, or use the next page.";
+"ask.failure.timeout" = "That took too long. Your selection is still here.";
+"ask.failure.transport" = "Couldn’t reach the model — try again.";
