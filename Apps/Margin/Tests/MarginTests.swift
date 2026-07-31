@@ -80,6 +80,31 @@ final class MarginTests: XCTestCase {
         XCTAssertFalse(path.isArmed)
     }
 
+    func testPageSelectionComputesBoundsForItsLoop() {
+        let selection = PageSelection(
+            pageID: 2,
+            loop: [
+                CGPoint(x: 10, y: 20),
+                CGPoint(x: 60, y: 30),
+                CGPoint(x: 40, y: 90),
+            ]
+        )
+
+        XCTAssertEqual(selection.bounds, CGRect(x: 10, y: 20, width: 50, height: 70))
+    }
+
+    @MainActor
+    func testSelectionStorePublishesAndClearsPageSelection() {
+        let store = PageSelectionStore()
+        let selection = PageSelection(pageID: 1, loop: [CGPoint(x: 4, y: 8)])
+
+        store.select(selection)
+        XCTAssertEqual(store.selection, selection)
+
+        store.clear()
+        XCTAssertNil(store.selection)
+    }
+
     @MainActor
     func testNotebookLibraryCreatesStableNotebookSummary() {
         let library = NotebookLibrary()

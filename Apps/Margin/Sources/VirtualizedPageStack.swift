@@ -7,6 +7,7 @@ struct VirtualizedPageStack: View {
 
     @State private var visiblePageID: Int?
     @StateObject private var drawingStore = PageDrawingStore()
+    @StateObject private var selectionStore = PageSelectionStore()
     @State private var selectedTool: CanvasTool = .pen
     @State private var askPath = AskPathState()
 
@@ -87,7 +88,8 @@ struct VirtualizedPageStack: View {
                 pageID: pageID,
                 pageSize: pageSize,
                 drawingStore: drawingStore,
-                selectedTool: selectedTool
+                selectedTool: selectedTool,
+                selection: selectionStore.selection(for: pageID)
             )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
@@ -112,6 +114,7 @@ private struct LivePageView: View {
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
+    let selection: PageSelection?
 
     var body: some View {
         ZStack {
@@ -122,6 +125,9 @@ private struct LivePageView: View {
                 drawingStore: drawingStore,
                 selectedTool: selectedTool
             )
+            if let selection {
+                PageSelectionOverlay(selection: selection)
+            }
         }
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
@@ -229,5 +235,15 @@ private final class PageDrawingStore: ObservableObject {
         }
 
         previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
+    }
+}
+
+extension PageSelectionStore {
+    fileprivate func selection(for pageID: Int) -> PageSelection? {
+        guard selection?.pageID == pageID else {
+            return nil
+        }
+
+        return selection
     }
 }
