@@ -6,6 +6,38 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-30 · Claude · merge queue cleanup (M1-08, M1-09)
+
+**Goal:** execute the merge queue Codex left in PR #38 before starting new work.
+
+**Done:** merged #30 (M1-08 occupancy grid). Rebased M1-09 directly onto `main` and reopened it as #39, then merged. Removed 14 stale `/private/tmp` worktrees and returned the primary OneDrive checkout to `main` — it had been sitting on the long-superseded `fix/M0-03-ci-app-test-reliability`.
+
+**Not done / left open:** PR #38 itself was closed unmerged: it was a documentation-only handoff whose merge queue this entry records as executed, and it had picked up conflicts against the very merges it asked for. `fix/M0-03-ci-app-test-reliability` is abandoned — its only unique content lowers the CI timeouts that M0-03S deliberately raised and reverts a `check-color-tokens.sh` fix, so merging it would be a regression. M0-03S is still listed `In progress` in PROGRESS.md although its branch merged; left alone rather than silently reclassifying another agent's task.
+
+**Surprises and gotchas:** deleting a base branch on merge *closes* the stacked PR, and GitHub will not reopen it or let you retarget it — #32 had to be recreated as #39. `gh pr merge` reports "failed to run git: 'main' is already used by worktree" when it tries to clean up locally; the remote merge has already succeeded, so verify with `gh pr view` instead of retrying.
+
+**Decisions made:** none.
+
+**Next:** M2-06.
+
+**Verification:** hosted CI green on both merges · device tested: no
+
+## 2026-07-30 · Claude · M2-06B
+
+**Goal:** make "never render an unvalidated spec" impossible to get wrong, and prove it against malformed input.
+
+**Done:** added `SpecLimits` (the §3.5 bounds as data), `SpecValidationError` with one case per refusal reason, a `LaTeXSyntax` well-formedness gate, and `SpecValidator`. `ValidatedSpec`'s initializer is `fileprivate` to the validator's file, so the only way to get one is to pass validation. 24 new tests, including three fuzz tests: 2000 mutations of a valid spec, 2000 random byte strings, and truncation at every offset.
+
+**Not done / left open:** `LaTeXSyntax` is a balance/pairing check, not a parser — it rejects unbalanced grouping, orphaned `\left`, odd `$` counts and dangling backslashes, and accepts plenty of LaTeX the M5 box model will not be able to draw. Tighten it when the real parser lands rather than growing heuristics here.
+
+**Surprises and gotchas:** the mutation fuzzer is nearly vacuous by default — only 29 of 2000 mutations survive to the validator, and a careless refactor could take that to zero without failing anything. The test now asserts the survivor count is non-zero for exactly that reason. Also worth knowing: `JSONDecoder` rejects `NaN`/`Infinity` literals outright, so the finiteness checks in the validator only matter for specs built in code, not decoded ones — they are kept because `MockProvider` (M2-07) will build specs in code.
+
+**Decisions made:** an empty `blocks` array is a *decline*, not an error — an unreadable selection should produce `isDecline`, not a thrown error, so the Ask bar can show the confirm-read flow from §8 instead of a failure.
+
+**Next:** M2-07 — MockProvider, which is the first consumer of `ValidatedSpec`.
+
+**Verification:** `swift test --package-path Packages/Intelligence` (36 tests) ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-30 · Claude · M2-06A
 
 **Goal:** give `Intelligence` a decodable spec type covering every block type in `AI_PIPELINE.md` §3, so later pipeline work has a contract to build against.

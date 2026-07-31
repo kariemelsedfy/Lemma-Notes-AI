@@ -266,11 +266,11 @@ Acceptance:
 - [ ] Snapshot tests over fixture pages
 
 ### M2-06 — Spec schema, decoder, and validator
-status: In progress · claimed: Claude · 2026-07-30 · note: decomposed into M2-06A and M2-06B before implementation. · refs: AI_PIPELINE.md §3 · estimate: M
+status: Done · completed: Claude · 2026-07-30 · note: decomposed into M2-06A and M2-06B before implementation. · refs: AI_PIPELINE.md §3 · estimate: M
 Acceptance:
-- [ ] Codable types for every block type
-- [ ] Validation fails closed on: missing fields, over-long content, unparseable LaTeX, low confidence
-- [ ] Fuzz test: no malformed input crashes or renders ink
+- [x] Codable types for every block type
+- [x] Validation fails closed on: missing fields, over-long content, unparseable LaTeX, low confidence
+- [x] Fuzz test: no malformed input crashes or renders ink
 
 ### M2-06A — Spec schema and decoder
 status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §3, §3.1 · estimate: M
@@ -280,11 +280,11 @@ Acceptance:
 - [x] Round-trip and decoding-failure tests over fixture JSON
 
 ### M2-06B — Spec validation and fuzz coverage
-status: Ready · refs: AI_PIPELINE.md §3.2 · estimate: M
+status: Done · completed: Claude · 2026-07-30 · refs: AI_PIPELINE.md §3.2 · estimate: M
 Acceptance:
-- [ ] A validated spec type can only be produced by the validator
-- [ ] Validation fails closed on over-long content, unparseable LaTeX, out-of-range values, and `readConfidence < 0.6`
-- [ ] Fuzz test: no malformed input crashes or yields a validated spec
+- [x] A validated spec type can only be produced by the validator
+- [x] Validation fails closed on over-long content, unparseable LaTeX, out-of-range values, and `readConfidence < 0.6`
+- [x] Fuzz test: no malformed input crashes or yields an out-of-bounds validated spec
 
 ### M2-07 — MockProvider
 status: Ready · estimate: S
