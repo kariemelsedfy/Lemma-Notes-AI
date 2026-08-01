@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-05D
+
+**Goal:** stop dropping `PKStrokePoint.size` at the `InkPoint` boundary, so the synthesizer has a real stroke width to match instead of mean force standing in for it.
+
+**Done:** `InkPoint` gains `size`, defaulted to `InkPoint.defaultSize` (5×5, PencilKit's default pen) so all three non-test call sites kept compiling. `PencilKitInkEngine` reads it out and writes it back — the hardcoded 5×5 nib in `makePencilStroke` is gone. `SelectionGeometry.clip` interpolates it at the cut. `StyleStats` gains a median `strokeWidth`, and `PlainStrokeFont` draws at the writer's measured weight when there is one. 5 new tests; app suite 49, packages 145.
+
+**Not done / left open:** filed **M2-16**. `PencilKitInkEngine` sits behind `#if os(iOS)`, so `swift test` on macOS never compiles it, and the iOS-only tests already in `InkCoreTests` have **never run in CI**. I put the round-trip test in the app target instead, because that target actually runs in the simulator — but that is a workaround for a coverage hole, not a fix.
+
+**Surprises and gotchas:** **PencilKit does not store the nib size exactly.** A height of 3.25 comes back as 3.2475, about 0.1% low; 7.5 survived intact. Harmless for rendering, but any size that has been through a `PKStroke` must be compared within a tolerance, never for equality. The test names that tolerance and says why, because the natural instinct on seeing the failure is to assume the write path is broken.
+
+The `strokeWidth` estimator is a median for the same reason every other statistic here is: one highlighter stroke or a heavy underline would otherwise redefine the writer's line weight. There is a test with a 12pt outlier among 3–4pt strokes pinning that.
+
+**Decisions made:** `size` is defaulted rather than required. Making it required would have forced edits to a dozen test files for no gain, and the default is a real value — the pen PencilKit actually uses — not a placeholder.
+
+**Next:** M2-13, then M2-14B.
+
+**Verification:** `swift test` — InkCore 31, Handwriting 25, Intelligence 89 ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 49 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-15
 
 **Goal:** close the ship-blocker. Accepted AI ink was indistinguishable from handwriting after a reload.

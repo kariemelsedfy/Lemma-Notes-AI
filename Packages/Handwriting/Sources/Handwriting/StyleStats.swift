@@ -4,7 +4,7 @@ import InkCore
 /// Measurements of how someone writes, derived from their ink.
 ///
 /// `HANDWRITING.md` §3.3 lists the full set the synthesizer eventually wants. These are
-/// the ones recoverable from stroke geometry alone; the rest — cap height, ascender and
+/// the ones recoverable from a sample of ink alone; the rest — cap height, ascender and
 /// descender extents, inter-letter and inter-word gaps, roundness, pen tool — need the
 /// labelled calibration capture in M3 and are not guessed at here.
 public struct StyleStats: Equatable, Sendable {
@@ -18,8 +18,10 @@ public struct StyleStats: Equatable, Sendable {
     public let baselineDrift: CGFloat
     /// Mean pen speed in points per second, or zero when timing is unavailable.
     public let meanVelocity: CGFloat
-    /// Mean stylus force. A proxy for stroke width until the ink model carries width.
+    /// Mean stylus force, which drives width *modulation* within a stroke.
     public let meanForce: CGFloat
+    /// Median nib width across the sample: the writer's characteristic line weight.
+    public let strokeWidth: CGFloat
 
     public init(
         xHeight: CGFloat,
@@ -27,7 +29,8 @@ public struct StyleStats: Equatable, Sendable {
         lineSpacing: CGFloat,
         baselineDrift: CGFloat,
         meanVelocity: CGFloat,
-        meanForce: CGFloat
+        meanForce: CGFloat,
+        strokeWidth: CGFloat = 0
     ) {
         self.xHeight = xHeight
         self.slant = slant
@@ -35,6 +38,7 @@ public struct StyleStats: Equatable, Sendable {
         self.baselineDrift = baselineDrift
         self.meanVelocity = meanVelocity
         self.meanForce = meanForce
+        self.strokeWidth = strokeWidth
     }
 
     /// A neutral fallback for when there is not enough ink to measure anything.
@@ -44,7 +48,8 @@ public struct StyleStats: Equatable, Sendable {
         lineSpacing: 0,
         baselineDrift: 0,
         meanVelocity: 0,
-        meanForce: 0
+        meanForce: 0,
+        strokeWidth: 0
     )
 }
 
@@ -69,7 +74,8 @@ public enum StyleStatsEstimator {
             lineSpacing: lineSpacing(of: lines),
             baselineDrift: baselineDrift(of: lines),
             meanVelocity: meanVelocity(of: drawn),
-            meanForce: meanForce(of: drawn)
+            meanForce: meanForce(of: drawn),
+            strokeWidth: strokeWidth(of: drawn)
         )
     }
 
@@ -139,6 +145,12 @@ public enum StyleStatsEstimator {
         let forces = strokes.flatMap(\.points).map(\.force).filter { $0 > 0 }
         guard !forces.isEmpty else { return 0 }
         return forces.reduce(0, +) / CGFloat(forces.count)
+    }
+
+    /// The median nib width, which resists a single heavy flourish or a stray highlighter.
+    private static func strokeWidth(of strokes: [InkStroke]) -> CGFloat {
+        let widths = strokes.flatMap(\.points).map(\.size.width).filter { $0 > 0 }
+        return median(widths)
     }
 
     private static func median(_ values: [CGFloat]) -> CGFloat {

@@ -105,6 +105,10 @@ public enum PlainStrokeFont {
     ) -> InkStroke {
         let speed = style.meanVelocity > 0 ? style.meanVelocity : 320
         let baseForce = style.meanForce > 0 ? style.meanForce : 0.55
+        // Match the writer's measured line weight when there is one; otherwise fall back
+        // to PencilKit's default nib rather than inventing a number.
+        let nib =
+            style.strokeWidth > 0 ? CGSize(width: style.strokeWidth, height: style.strokeWidth) : InkPoint.defaultSize
         var samples: [InkPoint] = []
         samples.reserveCapacity(points.count)
 
@@ -122,7 +126,8 @@ public enum PlainStrokeFont {
                     timeOffset: clock,
                     force: min(1, baseForce * envelope + generator.symmetric(0.02)),
                     altitude: .pi / 4,
-                    azimuth: 0
+                    azimuth: 0,
+                    size: nib
                 )
             )
         }

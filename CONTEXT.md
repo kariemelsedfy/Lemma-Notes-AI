@@ -31,7 +31,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Handwriting OCR | On-device Vision recognizer plus reading-order assembly; no caller yet |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
 | Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
-| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster *requests*. Nothing rasterizes them yet (M2-05C) |
+| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats (including a measured stroke width), the anchor, and capped crop/neighborhood raster *requests*. Nothing rasterizes them yet (M2-05C) |
 | Provider boundary | `SpecProvider` returns `ValidatedSpec`, so no provider can skip validation. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |

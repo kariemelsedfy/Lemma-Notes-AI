@@ -144,6 +144,34 @@ final class SelectionGeometryTests: XCTestCase {
         XCTAssertEqual(last?.timeOffset ?? 0, 0.5, accuracy: 0.0001)
     }
 
+    func testClippingInterpolatesTheNibWidthAtTheCut() throws {
+        let stroke = InkStroke(points: [
+            InkPoint(
+                location: CGPoint(x: 50, y: 50),
+                timeOffset: 0,
+                force: 1,
+                altitude: 1,
+                azimuth: 0,
+                size: CGSize(width: 2, height: 2)
+            ),
+            InkPoint(
+                location: CGPoint(x: 50, y: 150),
+                timeOffset: 1,
+                force: 1,
+                altitude: 1,
+                azimuth: 0,
+                size: CGSize(width: 10, height: 10)
+            ),
+        ])
+
+        let clipped = SelectionGeometry.clip(stroke, to: square)
+
+        // Half way along a stroke that thickens from 2 to 10, so the cut is 6 wide.
+        // Snapping to the nearest sample instead would visibly step the line.
+        let last = try XCTUnwrap(clipped.first?.points.last)
+        XCTAssertEqual(last.size.width, 6, accuracy: 0.001)
+    }
+
     func testClippingSplitsAStrokeThatLeavesAndReenters() {
         let stroke = InkStroke(
             points: [

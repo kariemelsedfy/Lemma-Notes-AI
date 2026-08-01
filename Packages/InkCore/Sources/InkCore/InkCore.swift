@@ -13,24 +13,35 @@ public typealias InkStrokeID = UUID
 /// Keeping stylus dynamics in this value lets document and handwriting features work
 /// without importing PencilKit.
 public struct InkPoint: Equatable, Sendable {
+    /// The nib footprint used when no width was recorded, matching PencilKit's default pen.
+    public static let defaultSize = CGSize(width: 5, height: 5)
+
     public let location: CGPoint
     public let timeOffset: TimeInterval
     public let force: CGFloat
     public let altitude: CGFloat
     public let azimuth: CGFloat
+    /// The rendered nib footprint at this point.
+    ///
+    /// Carried because the synthesizer needs a measured stroke width to match a writer's
+    /// hand (`HANDWRITING.md` §3.3), and force alone does not give it: two people pressing
+    /// equally hard with different pens draw different lines.
+    public let size: CGSize
 
     public init(
         location: CGPoint,
         timeOffset: TimeInterval,
         force: CGFloat,
         altitude: CGFloat,
-        azimuth: CGFloat
+        azimuth: CGFloat,
+        size: CGSize = InkPoint.defaultSize
     ) {
         self.location = location
         self.timeOffset = timeOffset
         self.force = force
         self.altitude = altitude
         self.azimuth = azimuth
+        self.size = size
     }
 
     public static func == (lhs: InkPoint, rhs: InkPoint) -> Bool {
@@ -40,6 +51,8 @@ public struct InkPoint: Equatable, Sendable {
             && lhs.force == rhs.force
             && lhs.altitude == rhs.altitude
             && lhs.azimuth == rhs.azimuth
+            && lhs.size.width == rhs.size.width
+            && lhs.size.height == rhs.size.height
     }
 }
 
@@ -160,7 +173,8 @@ public protocol InkEngine: AnyObject {
                             timeOffset: point.timeOffset,
                             force: point.force,
                             altitude: point.altitude,
-                            azimuth: point.azimuth
+                            azimuth: point.azimuth,
+                            size: point.size
                         )
                     }
                 )
@@ -272,7 +286,7 @@ public protocol InkEngine: AnyObject {
                 PKStrokePoint(
                     location: point.location,
                     timeOffset: point.timeOffset,
-                    size: CGSize(width: 5, height: 5),
+                    size: point.size,
                     opacity: 1,
                     force: point.force,
                     azimuth: point.azimuth,
