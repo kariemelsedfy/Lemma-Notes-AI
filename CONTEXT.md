@@ -42,7 +42,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary matching the spec contract's five verbs; opt-out gate before transport; no content or identifier payloads. No concrete transport yet, and nothing reports events |
-| CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |
+| CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement. Package tests run on macOS, so anything `#if os(iOS)` must be tested from the app target instead |
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
 | Golden eval set | Does not exist (M2) |
 | Server proxy | Does not exist (M4) |

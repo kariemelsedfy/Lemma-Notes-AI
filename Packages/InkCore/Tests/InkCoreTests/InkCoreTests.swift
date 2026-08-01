@@ -2,10 +2,6 @@ import XCTest
 
 @testable import InkCore
 
-#if os(iOS)
-    import PencilKit
-#endif
-
 final class InkCoreTests: XCTestCase {
     func testOccupancyGridUpdatesIncrementallyAndPreservesOverlappingInk() {
         var grid = OccupancyGrid(pageBounds: CGRect(x: 0, y: 0, width: 64, height: 64))
@@ -71,32 +67,9 @@ final class InkCoreTests: XCTestCase {
         InkStroke(points: [InkPoint(location: location, timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0)])
     }
 
-    #if os(iOS)
-        @MainActor
-        func testPencilKitEngineInsertsKnownPolylineAsPencilStroke() {
-            let canvas = PKCanvasView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
-            let engine = PencilKitInkEngine(canvasView: canvas)
-            let stroke = InkStroke(
-                points: [
-                    InkPoint(
-                        location: CGPoint(x: 10, y: 10), timeOffset: 0, force: 0.4, altitude: 1, azimuth: 0
-                    ),
-                    InkPoint(location: CGPoint(x: 50, y: 25), timeOffset: 0.1, force: 0.7, altitude: 0.9, azimuth: 0.2),
-                ]
-            )
-
-            engine.insertProgrammatic(strokes: [stroke])
-
-            XCTAssertEqual(canvas.drawing.strokes.count, 1)
-            let points = Array(canvas.drawing.strokes[0].path)
-            XCTAssertEqual(points.count, 2)
-            XCTAssertEqual(points[0].location.x, 10)
-            XCTAssertEqual(points[0].location.y, 10)
-            XCTAssertEqual(points[1].location.x, 50)
-            XCTAssertEqual(points[1].location.y, 25)
-            XCTAssertEqual(engine.strokes[0].points.map(\.force), [0.4, 0.7])
-        }
-    #endif
+    // `PencilKitInkEngine` is `#if os(iOS)`, so this target — which runs on macOS —
+    // cannot compile it. Its tests live in `Apps/Margin/Tests/PencilKitInkEngineTests`,
+    // which runs in the simulator. Do not add adapter tests here; they will not run.
 }
 
 @MainActor
