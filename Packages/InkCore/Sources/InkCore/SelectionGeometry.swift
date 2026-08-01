@@ -188,7 +188,11 @@ public enum SelectionGeometry {
             timeOffset: start.timeOffset + (end.timeOffset - start.timeOffset) * parameter,
             force: start.force + (end.force - start.force) * ratio,
             altitude: start.altitude + (end.altitude - start.altitude) * ratio,
-            azimuth: start.azimuth + (end.azimuth - start.azimuth) * ratio
+            azimuth: start.azimuth + (end.azimuth - start.azimuth) * ratio,
+            size: CGSize(
+                width: start.size.width + (end.size.width - start.size.width) * ratio,
+                height: start.size.height + (end.size.height - start.size.height) * ratio
+            )
         )
     }
 

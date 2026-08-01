@@ -82,6 +82,43 @@ final class StyleStatsTests: XCTestCase {
         XCTAssertEqual(stats.meanForce, 0.5, accuracy: 0.001)
     }
 
+    func testStrokeWidthIsTheMedianNibWidth() {
+        let strokes = [3.0, 4.0, 4.0, 12.0].map { width in
+            InkStroke(points: [
+                InkPoint(
+                    location: .zero,
+                    timeOffset: 0,
+                    force: 0.5,
+                    altitude: 1,
+                    azimuth: 0,
+                    size: CGSize(width: width, height: width)
+                ),
+                InkPoint(
+                    location: CGPoint(x: 0, y: 20),
+                    timeOffset: 0,
+                    force: 0.5,
+                    altitude: 1,
+                    azimuth: 0,
+                    size: CGSize(width: width, height: width)
+                ),
+            ])
+        }
+
+        // Median, not mean: one thick flourish must not redefine the writer's line weight.
+        XCTAssertEqual(StyleStatsEstimator.estimate(from: strokes).strokeWidth, 4, accuracy: 0.001)
+    }
+
+    func testStrokeWidthFallsBackToTheDefaultNibWhenNothingWasRecorded() {
+        let strokes = [Self.verticalStroke(x: 0, top: 0, height: 20)]
+
+        // Points built without an explicit size carry PencilKit's default nib.
+        XCTAssertEqual(
+            StyleStatsEstimator.estimate(from: strokes).strokeWidth,
+            InkPoint.defaultSize.width,
+            accuracy: 0.001
+        )
+    }
+
     func testMissingTimingLeavesVelocityUnmeasured() {
         let stroke = Self.stroke(from: .zero, to: CGPoint(x: 100, y: 0))
 

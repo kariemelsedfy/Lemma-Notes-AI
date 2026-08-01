@@ -285,13 +285,22 @@ Acceptance:
 - [x] Deterministic given the same page and selection; unit-tested on macOS
 
 ### M2-05D — Carry stroke width through the ink model
-status: Ready · refs: HANDWRITING.md §3.3, ARCHITECTURE.md §1.1 · estimate: S
-Note: `PKStrokePoint.size` is dropped at the `InkPoint` boundary, so `StyleStats` has no
-`strokeWidth` and reports mean force as a proxy. The synthesizer needs the real width.
+status: Done · completed: Claude · 2026-07-31 · refs: HANDWRITING.md §3.3, ARCHITECTURE.md §1.1 · estimate: S
 Acceptance:
-- [ ] `InkPoint` carries per-point size without breaking existing call sites
-- [ ] `PencilKitInkEngine` round-trips size in both directions
-- [ ] `StyleStats` reports a measured stroke width
+- [x] `InkPoint` carries per-point size without breaking existing call sites
+- [x] `PencilKitInkEngine` round-trips size in both directions
+- [x] `StyleStats` reports a measured stroke width
+
+### M2-16 — Cover the PencilKit adapter in CI
+status: Ready · refs: ARCHITECTURE.md §9, §7.2 · estimate: S
+Note: `PencilKitInkEngine` is behind `#if os(iOS)`, so `swift test` on macOS never
+compiles it and the InkCore package suite cannot reach it. Its iOS-only tests in
+`InkCoreTests` have therefore **never run in CI**. M2-05D worked around this by putting
+its round-trip test in the app target, which does run in the simulator — but that is a
+workaround, not coverage.
+Acceptance:
+- [ ] The existing `#if os(iOS)` tests in `InkCoreTests` run somewhere in CI, or are moved somewhere they do
+- [ ] A deliberately broken adapter fails the pipeline
 
 ### M2-05C — Selection rasterization
 status: Ready · needs-device-verification · refs: AI_PIPELINE.md §1 · estimate: M
