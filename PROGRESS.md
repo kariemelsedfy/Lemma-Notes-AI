@@ -337,12 +337,11 @@ Acceptance:
 - [x] Used by CI for all pipeline tests
 
 ### M2-13 — Reconcile the analytics intent vocabulary with the spec contract
-status: Ready · refs: PROJECT_PLAN.md §8, AI_PIPELINE.md §3 · estimate: S
-Note: `Analytics.AIIntent` is `solve | explain | check | continueWork`; `SpecIntent` is
-`answer | continue | plot | check | ask`. Plots and asks currently cannot be reported.
+status: Done · completed: Claude · 2026-08-01 · refs: PROJECT_PLAN.md §8, AI_PIPELINE.md §3 · estimate: S
 Acceptance:
-- [ ] One vocabulary, or an explicit documented mapping in the app layer
-- [ ] No AI action is unreportable
+- [x] `Analytics.AIIntent` now mirrors `SpecIntent` case for case and raw value for raw value
+- [x] A total mapping lives in `Apps/Margin/AnalyticsMapping.swift`, with a test that fails if the two drift
+- [x] No AI action is unreportable; mock-tier actions are deliberately unreportable
 
 ### M2-08 — Placement engine
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §4 · estimate: L

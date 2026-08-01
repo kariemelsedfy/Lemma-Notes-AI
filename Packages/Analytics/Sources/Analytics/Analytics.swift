@@ -2,14 +2,25 @@
 public enum AnalyticsModule {}
 
 /// The only AI intents that can be recorded. User input is intentionally not representable.
+///
+/// These deliberately mirror the five verbs of the spec contract (`AI_PIPELINE.md` §3),
+/// case for case and raw value for raw value. The dependency rule stops `Analytics` from
+/// importing `Intelligence`, so the two enums cannot be one type — but they can be kept
+/// in step, and `Apps/Margin` has a test that fails if they drift.
 public enum AIIntent: String, Sendable, Equatable, CaseIterable {
-    case solve
-    case explain
+    case answer
+    /// Spelled `continue` on the wire; `continue` is a Swift keyword.
+    case continuation = "continue"
+    case plot
     case check
-    case continueWork
+    case ask
 }
 
 /// The model-routing tier used for an AI action.
+///
+/// There is deliberately no mock case. A mocked action is not a real one and must never
+/// reach analytics, so the type makes reporting one impossible rather than relying on a
+/// caller to remember.
 public enum AIModelTier: String, Sendable, Equatable, CaseIterable {
     case onDevice
     case privateCloudCompute
