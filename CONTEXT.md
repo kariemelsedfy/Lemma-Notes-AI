@@ -14,7 +14,7 @@ M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D tw
 
 The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
 
-Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record the demo on an iPad). Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12B need a physical iPad.
+Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record the demo on an iPad). Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12B need a physical iPad — that is now everything that is left in M2.
 
 ## 2. What exists
 
@@ -31,7 +31,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Handwriting OCR | On-device Vision recognizer plus reading-order assembly; no caller yet |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
 | Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
-| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats (including a measured stroke width), the anchor, and capped crop/neighborhood raster *requests*. Nothing rasterizes them yet (M2-05C) |
+| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster requests; `SelectionRasterizer` renders those to PNG flattened on white. `pageText` (whole-page OCR) is still absent |
 | Provider boundary | `SpecProvider` returns `ValidatedSpec`, so no provider can skip validation. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |

@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-01 · Claude · M2-05C
+
+**Goal:** actually produce the crop and neighborhood images, closing the last M2 task that does not need a device.
+
+**Done:** `SelectionRasterizer` and `RasterizedSelection` in `Intelligence`. It goes through `InkEngine.exportImage`, so no renderer type crosses the boundary, then flattens the transparent ink onto white with Core Graphics and re-encodes as PNG. 9 tests including pixel-level checks. Intelligence is now 99 tests.
+
+**Not done / left open:** `pageText` — the whole-page OCR field in `AI_PIPELINE.md` §1 — is still absent. The M1-09 Vision recognizer can now be fed a rasterized page, so it is finally *possible*; it just is not wired, and §1 marks it optional ("if fast enough"). Worth a task when someone measures it.
+
+**Surprises and gotchas:** I had labelled this `needs-device-verification` when I split M2-05, and **that was wrong**. Rasterization needs no PencilKit — `InkEngine.exportImage` is the seam, and Core Graphics runs on macOS — so the whole thing is covered by the package suite. What genuinely needs a device is judging whether a crop *reads well to a model*, and that is M4's golden set. The label is removed with a note. Worth checking the other `needs-device-verification` labels against the same question: does the code need a device, or does the *judgement* need one?
+
+The flattening is not cosmetic. Ink exports with a transparent background, and a model handed transparency sees whatever the receiving stack composites it against — black in more than one provider's pipeline, which turns dark ink invisible and would look exactly like a model that cannot read handwriting. There is a test asserting a transparent pixel comes back white.
+
+**Decisions made:** flatten with Core Graphics rather than UIKit, so the code and its tests run on macOS. The alternative — adding a background colour to `InkEngine.exportImage` — would avoid a decode/re-encode but changes a public protocol with several implementations to save work on a once-per-Ask operation.
+
+**Next:** M2-12B. Everything left in M2 needs a physical iPad.
+
+**Verification:** `swift test --package-path Packages/Intelligence` — 99 tests ✅ · `./scripts/lint.sh` ✅ · dependency check ✅ · device tested: no
+
 ## 2026-08-01 · Claude · M2-16
 
 **Goal:** the PencilKit adapter — the one piece of `InkCore` that touches Apple's ink API — had never been tested by CI. Fix that.
