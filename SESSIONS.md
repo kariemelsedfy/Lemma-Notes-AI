@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-01 · Claude · M2-16
+
+**Goal:** the PencilKit adapter — the one piece of `InkCore` that touches Apple's ink API — had never been tested by CI. Fix that.
+
+**Done:** moved the adapter's tests to `Apps/Margin/Tests/PencilKitInkEngineTests`, which runs in the simulator, and expanded them from 1 test to 13: programmatic insertion, empty-input guards, nib width round-trip, erase, selection, undo/redo, and export. Left a pointer comment in `InkCoreTests` so nobody adds an adapter test there again. App suite 66.
+
+**Not done / left open:** nothing. The package-level answer — running `InkCore`'s tests on an iOS destination — would need new CI machinery for one file's worth of code; moving the tests to the target that already runs there costs nothing and gives the same coverage.
+
+**Surprises and gotchas:** the shape of this hole is worth internalising. `swift test --package-path` runs on **macOS**, so every `#if os(iOS)` block in a package is invisible to the package suite — it is not skipped, it is not compiled. A test inside such a block reports nothing and passes nothing, and the suite still says green. `InkCore`'s single adapter test had been sitting there since M1-01B in that state. **Anything `#if os(iOS)` must be tested from the app target.** CONTEXT §2 now says so next to the CI row.
+
+**Decisions made:** none, but I did verify the second acceptance criterion rather than assert it — reverted M2-05D's nib fix, ran the suite, watched four assertions fail, and restored the file. A test that has never been seen to fail is not yet evidence of anything, which is the whole lesson of this task.
+
+**Next:** everything remaining in M2 needs a physical iPad. M2-12B first.
+
+**Verification:** `swift test --package-path Packages/InkCore` (31) ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 66 tests ✅ · deliberate regression fails as intended ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-01 · Claude · M2-14B
 
 **Goal:** let the placeholder font draw prose, so continuation can be demoed and not just arithmetic.

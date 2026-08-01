@@ -292,15 +292,10 @@ Acceptance:
 - [x] `StyleStats` reports a measured stroke width
 
 ### M2-16 — Cover the PencilKit adapter in CI
-status: Ready · refs: ARCHITECTURE.md §9, §7.2 · estimate: S
-Note: `PencilKitInkEngine` is behind `#if os(iOS)`, so `swift test` on macOS never
-compiles it and the InkCore package suite cannot reach it. Its iOS-only tests in
-`InkCoreTests` have therefore **never run in CI**. M2-05D worked around this by putting
-its round-trip test in the app target, which does run in the simulator — but that is a
-workaround, not coverage.
+status: Done · completed: Claude · 2026-08-01 · refs: ARCHITECTURE.md §9, §7.2 · estimate: S
 Acceptance:
-- [ ] The existing `#if os(iOS)` tests in `InkCoreTests` run somewhere in CI, or are moved somewhere they do
-- [ ] A deliberately broken adapter fails the pipeline
+- [x] The adapter's tests moved to `Apps/Margin/Tests/PencilKitInkEngineTests`, which runs in the simulator, and were expanded from 1 test to 13
+- [x] A deliberately broken adapter fails the pipeline — verified by reverting the M2-05D fix and watching four assertions fail
 
 ### M2-05C — Selection rasterization
 status: Ready · needs-device-verification · refs: AI_PIPELINE.md §1 · estimate: M
