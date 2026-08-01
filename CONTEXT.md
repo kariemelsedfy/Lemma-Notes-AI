@@ -14,7 +14,7 @@ M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D tw
 
 The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
 
-Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record the demo on an iPad). Nothing is claimed — **In progress** in `PROGRESS.md` is empty. **M2-15** — persisting accepted-suggestion provenance — must close before anything ships. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12B need a physical iPad.
+Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record the demo on an iPad). Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite; M1-03C, M1-06D, M2-03, M2-04, and M2-12B need a physical iPad.
 
 ## 2. What exists
 
@@ -35,7 +35,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Provider boundary | `SpecProvider` returns `ValidatedSpec`, so no provider can skip validation. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
-| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. **Provenance is not persisted yet (M2-15)** |
+| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12B)** |
 | Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Also not yet in the view hierarchy |
 | Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font, digits and operators only. Fails closed on letters, plots and marks. Deleted when M3 lands |
