@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-01 · Claude · M2-14B
+
+**Goal:** let the placeholder font draw prose, so continuation can be demoed and not just arithmetic.
+
+**Done:** all 52 ASCII letters plus `: ; ! ? ' [ ]`. Moved the whole glyph table into `PlainGlyphTable.swift` — `PlainStrokeFont.swift` was heading for the 400-line lint ceiling and the table is data, not logic. Handwriting 30 tests, Intelligence 90.
+
+**Not done / left open:** nothing new. This is still throwaway work that M3 deletes.
+
+**Surprises and gotchas:** two, both worth remembering.
+
+**Descenders broke the frame invariant.** `g j p q y` and `,` reach y ≈ 1.3 in the unit box, and the layout put the baseline on `frame.maxY` — so they drew *below* the rectangle the placement engine had reserved, straight into whatever was on the next line. The occupancy grid would have had no idea. Glyph height is now divided by the string's descent depth and the baseline is raised to match, so a line of `gyp` is drawn slightly smaller than a line of `abc` in the same box rather than overflowing it. Any future renderer has the same obligation: **whatever you draw must fit the frame you were given**, because that frame is what was reserved.
+
+**Two of my first tests were nonsense** and both passed review-by-intuition before failing: they compared `"no"` against `"np"`, and `"abcxyz"` against `"ABCXYZ"`, to check descent and cap height. Glyph height is fitted *per string*, so those compare two different type sizes and the numbers mean nothing. The tests now render one string and compare its left half against its right half.
+
+**Decisions made:** unsupported characters still throw rather than being skipped. `√` and `≈` are exactly what a real spec will contain, and a silently dropped glyph turns a correct answer into a wrong one on someone's page.
+
+**Next:** with M2-15, M2-05D, M2-13 and M2-14B done, everything left in M2 needs a physical iPad — M2-12B first.
+
+**Verification:** `swift test` — Handwriting 30, Intelligence 90 ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-01 · Claude · M2-13
 
 **Goal:** stop plots and asks from being unreportable, and make the two intent vocabularies unable to drift apart again.

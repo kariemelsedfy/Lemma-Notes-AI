@@ -400,8 +400,7 @@ Acceptance:
 
 ### M2-14 — Placeholder ink renderer for the mocked pipeline
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
-Note: a stand-in, deleted when the M3 synthesizer lands. Digits and arithmetic operators
-only; letters are M2-14B.
+Note: a stand-in, deleted when the M3 synthesizer lands. Letters arrived with M2-14B.
 Acceptance:
 - [x] A `SuggestionInkRendering` seam converts a `BlockPlacement` into `[InkStroke]`
 - [x] A plain single-stroke-per-glyph renderer covers digits and `+ - = * / ( ) < > ^ . ,`
@@ -410,13 +409,11 @@ Acceptance:
 - [x] Unsupported characters and block types fail closed
 
 ### M2-14B — Letters in the placeholder font
-status: Ready · refs: HANDWRITING.md §4 · estimate: S
-Note: `PlainStrokeFont` covers digits and operators, so any `text` run fails closed with
-`unsupportedContent`. Prose continuation cannot be demoed until this exists. Skip it
-entirely if M3 arrives first — this is throwaway work either way.
+status: Done · completed: Claude · 2026-08-01 · refs: HANDWRITING.md §4 · estimate: S
 Acceptance:
-- [ ] Upper and lower case ASCII letters render legibly at demo sizes
-- [ ] The existing "every advertised character renders" test still passes
+- [x] Upper and lower case ASCII letters render, plus sentence punctuation
+- [x] The existing "every advertised character renders" test still passes
+- [x] Descenders stay inside the placed frame rather than spilling onto the line below
 
 ### M2-15 — Persist accepted-suggestion provenance
 status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §3.1 · estimate: M

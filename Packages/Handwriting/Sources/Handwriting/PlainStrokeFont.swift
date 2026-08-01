@@ -8,11 +8,12 @@ import InkCore
 /// look handwritten; it exists so the rest of the pipeline can be exercised and demoed
 /// before M3, and so "does the answer land in the right place" can be judged by eye.
 ///
-/// Coverage is digits and the arithmetic operators, which is what the M2 demo needs.
-/// Anything else fails closed rather than drawing something wrong.
+/// Coverage is ASCII letters, digits, arithmetic operators and sentence punctuation —
+/// enough for the M2 demo and for prose continuation. Anything else fails closed rather
+/// than drawing something wrong. The outlines live in `PlainGlyphTable`.
 public enum PlainStrokeFont {
     /// Characters this font can draw.
-    public static var supportedCharacters: Set<Character> { Set(glyphs.keys).union([" "]) }
+    public static var supportedCharacters: Set<Character> { Set(PlainGlyphTable.glyphs.keys).union([" "]) }
 
     public enum RenderError: Error, Equatable, Sendable {
         case unsupportedCharacter(Character)
@@ -39,16 +40,20 @@ public enum PlainStrokeFont {
             throw RenderError.unsupportedCharacter(character)
         }
 
-        let height = fittingHeight(for: characters.count, in: frame)
+        // Descenders hang below the baseline, so the baseline cannot sit on the frame's
+        // bottom edge or `g`, `p` and `y` would spill out of the rectangle the placement
+        // engine reserved — straight into whatever is written on the next line.
+        let depth = descentDepth(of: characters)
+        let height = fittingHeight(for: characters.count, in: frame, depth: depth)
         let advance = height * advanceRatio
         var generator = SeededGenerator(seed: seed)
         var strokes: [InkStroke] = []
-        var pen = CGPoint(x: frame.minX, y: frame.maxY)
+        var pen = CGPoint(x: frame.minX, y: frame.maxY - height * (depth - 1))
         var clock: TimeInterval = 0
 
         for character in characters {
             defer { pen.x += advance }
-            guard let polylines = glyphs[character] else { continue }
+            guard let polylines = PlainGlyphTable.glyphs[character] else { continue }
             let box = GlyphBox(pen: pen, height: height, advance: advance)
             for polyline in polylines {
                 let points = polyline.map { unit in
@@ -63,9 +68,23 @@ public enum PlainStrokeFont {
     }
 
     /// The glyph height that fits `count` characters into the frame, honouring both axes.
-    private static func fittingHeight(for count: Int, in frame: CGRect) -> CGFloat {
+    ///
+    /// `depth` is how far past the baseline the tallest descender reaches, in glyph
+    /// heights, so a line of `gyp` is drawn smaller than a line of `abc` in the same box
+    /// rather than overflowing it.
+    private static func fittingHeight(for count: Int, in frame: CGRect, depth: CGFloat) -> CGFloat {
         guard count > 0 else { return frame.height }
-        return min(frame.height, frame.width / (CGFloat(count) * advanceRatio))
+        return min(frame.height / depth, frame.width / (CGFloat(count) * advanceRatio))
+    }
+
+    /// The lowest point any of these glyphs reaches, in glyph heights. Never less than 1,
+    /// which is the baseline itself.
+    private static func descentDepth(of characters: [Character]) -> CGFloat {
+        let lowest =
+            characters.compactMap { PlainGlyphTable.glyphs[$0] }
+            .flatMap { $0.flatMap { $0.map(\.y) } }
+            .max() ?? 1
+        return max(1, lowest)
     }
 
     /// Where one glyph sits: its pen position and the size it is drawn at.
@@ -134,59 +153,6 @@ public enum PlainStrokeFont {
         return InkStroke(points: samples)
     }
 
-    /// Glyph outlines in a unit box: x across the advance, y from cap height (0) to
-    /// baseline (1). Values above 1 descend below the baseline.
-    private static let glyphs: [Character: [[CGPoint]]] = [
-        "0": [[.p(0.5, 0), .p(0.15, 0.2), .p(0.15, 0.8), .p(0.5, 1), .p(0.85, 0.8), .p(0.85, 0.2), .p(0.5, 0)]],
-        "1": [[.p(0.25, 0.2), .p(0.5, 0), .p(0.5, 1)], [.p(0.25, 1), .p(0.78, 1)]],
-        "2": [[.p(0.15, 0.22), .p(0.5, 0), .p(0.85, 0.22), .p(0.8, 0.45), .p(0.15, 1), .p(0.87, 1)]],
-        "3": [
-            [.p(0.15, 0.1), .p(0.55, 0), .p(0.85, 0.22), .p(0.5, 0.48)],
-            [.p(0.5, 0.48), .p(0.87, 0.7), .p(0.6, 1), .p(0.15, 0.9)],
-        ],
-        "4": [[.p(0.72, 0), .p(0.12, 0.7), .p(0.92, 0.7)], [.p(0.72, 0.3), .p(0.72, 1)]],
-        "5": [
-            [.p(0.85, 0.02), .p(0.22, 0.02), .p(0.17, 0.45), .p(0.6, 0.4), .p(0.87, 0.68), .p(0.55, 1), .p(0.15, 0.9)]
-        ],
-        "6": [
-            [
-                .p(0.8, 0.05), .p(0.35, 0.12), .p(0.15, 0.5), .p(0.15, 0.85), .p(0.5, 1), .p(0.85, 0.82),
-                .p(0.82, 0.58),
-                .p(0.45, 0.48), .p(0.16, 0.62),
-            ]
-        ],
-        "7": [[.p(0.12, 0.02), .p(0.88, 0.02), .p(0.4, 1)]],
-        "8": [
-            [.p(0.5, 0.48), .p(0.16, 0.28), .p(0.5, 0), .p(0.84, 0.28), .p(0.5, 0.48)],
-            [.p(0.5, 0.48), .p(0.14, 0.74), .p(0.5, 1), .p(0.86, 0.74), .p(0.5, 0.48)],
-        ],
-        "9": [
-            [
-                .p(0.85, 0.42), .p(0.5, 0.55), .p(0.16, 0.4), .p(0.2, 0.12), .p(0.6, 0.0), .p(0.85, 0.25),
-                .p(0.84, 0.72),
-                .p(0.55, 1), .p(0.2, 0.95),
-            ]
-        ],
-        "+": [[.p(0.14, 0.5), .p(0.86, 0.5)], [.p(0.5, 0.18), .p(0.5, 0.82)]],
-        "-": [[.p(0.14, 0.55), .p(0.86, 0.55)]],
-        "=": [[.p(0.14, 0.38), .p(0.86, 0.38)], [.p(0.14, 0.7), .p(0.86, 0.7)]],
-        "*": [[.p(0.22, 0.3), .p(0.78, 0.72)], [.p(0.78, 0.3), .p(0.22, 0.72)]],
-        "/": [[.p(0.2, 1), .p(0.8, 0)]],
-        "(": [[.p(0.68, 0), .p(0.34, 0.5), .p(0.68, 1)]],
-        ")": [[.p(0.32, 0), .p(0.66, 0.5), .p(0.32, 1)]],
-        "<": [[.p(0.8, 0.22), .p(0.24, 0.55), .p(0.8, 0.88)]],
-        ">": [[.p(0.2, 0.22), .p(0.76, 0.55), .p(0.2, 0.88)]],
-        "^": [[.p(0.2, 0.36), .p(0.5, 0.08), .p(0.8, 0.36)]],
-        ".": [[.p(0.44, 0.94), .p(0.56, 1)]],
-        ",": [[.p(0.52, 0.9), .p(0.4, 1.16)]],
-    ]
-}
-
-extension CGPoint {
-    /// Shorthand so the glyph table stays readable.
-    fileprivate static func p(_ horizontal: CGFloat, _ vertical: CGFloat) -> CGPoint {
-        CGPoint(x: horizontal, y: vertical)
-    }
 }
 
 /// SplitMix64, so the same (text, frame, seed) always renders identically.

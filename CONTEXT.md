@@ -38,7 +38,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. **Not yet in the view hierarchy (M2-12B)** |
 | Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Also not yet in the view hierarchy |
-| Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font, digits and operators only. Fails closed on letters, plots and marks. Deleted when M3 lands |
+| Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font covering ASCII letters, digits, operators and sentence punctuation. Fails closed on anything else, and on plots and marks. Deleted when M3 lands |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary matching the spec contract's five verbs; opt-out gate before transport; no content or identifier payloads. No concrete transport yet, and nothing reports events |

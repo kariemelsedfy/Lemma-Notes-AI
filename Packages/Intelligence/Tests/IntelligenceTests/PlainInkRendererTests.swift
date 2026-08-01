@@ -70,8 +70,19 @@ final class PlainInkRendererTests: XCTestCase {
         }
     }
 
-    func testProseFailsClosedUntilTheFontHasLetters() {
+    func testProseRenders() throws {
         let placement = Self.placement(.inline(SpecRun(kind: .text, value: "four")), frame: frame)
+
+        let strokes = try PlainInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)
+
+        XCTAssertFalse(strokes.isEmpty)
+        XCTAssertTrue(frame.insetBy(dx: -2, dy: -2).contains(InkLineGrouping.bounds(of: strokes)))
+    }
+
+    func testContentOutsideTheFontStillFailsClosed() {
+        // The font covers ASCII; a square root sign has to be an honest error rather
+        // than a silently dropped glyph.
+        let placement = Self.placement(.inline(SpecRun(kind: .text, value: "√2 ≈ 1.41")), frame: frame)
 
         XCTAssertThrowsError(try PlainInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)) { error in
             XCTAssertEqual(error as? SuggestionRenderError, .unsupportedContent)
