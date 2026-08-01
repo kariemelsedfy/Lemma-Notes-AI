@@ -47,6 +47,38 @@ final class PlainStrokeFontTests: XCTestCase {
         )
     }
 
+    func testDescendersStayInsideTheFrame() throws {
+        // g, p and y all hang below the baseline. If they escaped the frame, they would
+        // land on whatever the placement engine put on the line below.
+        let strokes = try PlainStrokeFont.strokes(for: "gpy", in: frame)
+
+        let drawn = InkLineGrouping.bounds(of: strokes)
+        XCTAssertTrue(frame.insetBy(dx: -2, dy: -2).contains(drawn), "\(drawn) escaped \(frame)")
+    }
+
+    func testDescendersDropBelowTheirNeighbours() throws {
+        // Compared within one string: glyph height is fitted per string, so measuring
+        // "no" against "np" would be comparing two different type sizes.
+        let strokes = try PlainStrokeFont.strokes(for: "np", in: frame)
+
+        XCTAssertGreaterThan(Self.rightHalf(of: strokes).maxY, Self.leftHalf(of: strokes).maxY)
+    }
+
+    func testCapitalsReachHigherThanLowercaseBodies() throws {
+        let strokes = try PlainStrokeFont.strokes(for: "aA", in: frame)
+
+        XCTAssertLessThan(Self.rightHalf(of: strokes).minY, Self.leftHalf(of: strokes).minY)
+    }
+
+    func testLettersRenderInBothCases() throws {
+        XCTAssertFalse(try PlainStrokeFont.strokes(for: "abcxyz", in: frame).isEmpty)
+        XCTAssertFalse(try PlainStrokeFont.strokes(for: "ABCXYZ", in: frame).isEmpty)
+    }
+
+    func testAWholeSentenceRenders() throws {
+        XCTAssertNoThrow(try PlainStrokeFont.strokes(for: "Let u = x^2, then du = 2x dx.", in: frame))
+    }
+
     func testUnsupportedCharactersFailClosed() {
         XCTAssertThrowsError(try PlainStrokeFont.strokes(for: "√2", in: frame)) { error in
             XCTAssertEqual(error as? PlainStrokeFont.RenderError, .unsupportedCharacter("√"))
@@ -113,5 +145,25 @@ final class PlainStrokeFontTests: XCTestCase {
             let strokes = try PlainStrokeFont.strokes(for: String(character), in: frame)
             XCTAssertFalse(strokes.isEmpty, "\(character) advertised but drew nothing")
         }
+    }
+
+    // MARK: - Fixtures
+
+    private static func leftHalf(of strokes: [InkStroke]) -> CGRect {
+        half(of: strokes, keepingLeft: true)
+    }
+
+    private static func rightHalf(of strokes: [InkStroke]) -> CGRect {
+        half(of: strokes, keepingLeft: false)
+    }
+
+    /// The bounds of the strokes on one side of a two-glyph render.
+    private static func half(of strokes: [InkStroke], keepingLeft: Bool) -> CGRect {
+        let midpoint = InkLineGrouping.bounds(of: strokes).midX
+        let selected = strokes.filter { stroke in
+            let center = InkLineGrouping.bounds(of: stroke).midX
+            return keepingLeft ? center < midpoint : center > midpoint
+        }
+        return InkLineGrouping.bounds(of: selected)
     }
 }
