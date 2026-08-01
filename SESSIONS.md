@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-01 · Claude · environment traps and a false alarm
+
+**Goal:** record two things that cost time, and correct a wrong call I made in the process.
+
+**Done:** documented both traps in `CONTEXT.md` §4, and recorded on M2-12B that it is blocked by M2-03.
+
+**The false alarm, in full, because the reasoning is the useful part.** After OneDrive flipped the executable bit on ~90 tracked files, `swift test --package-path Packages/Intelligence` reported four `cannot infer type` errors in `PlainStrokeFont.descentDepth`. I concluded I had shipped a bug in M2-14B that CI had missed, told the user `main` was broken, opened a fix branch, and rewrote the chained `compactMap`/`flatMap`/`map(\.y)` as explicit loops. The rewrite did make it compile.
+
+Then I checked whether the failure reproduced from clean — and it did not. Zero errors. Testing properly: **with the old `.build` present, four errors; after `rm -rf .build`, the same unmodified commit passes 90 tests.** The source was never broken, CI was never wrong, and my fix fixed nothing. I discarded it rather than land a rewrite justified by a false premise — AGENTS §2 forbids refactoring outside a task's scope, and "I saw an error once" is not scope.
+
+**Two lessons worth keeping.** A compiler error that CI does not also show is a claim about your machine before it is a claim about the code — clear `.build` before believing it. And the fix that makes an error go away is not thereby the fix for the error; I had a working "fix" in hand well before I had a diagnosis, which is exactly when it is cheapest to stop and check.
+
+**Not done / left open:** everything remaining in M2 needs a physical iPad, and M2-12B needs M2-03 first.
+
+**Decisions made:** `git config core.fileMode false` is set locally on this checkout. It is local-only, reversible, and does not change committed modes.
+
+**Next:** M2-03, then M2-12B, both on a device.
+
+**Verification:** all package tests (165) green from clean on `main` ✅ · device tested: no
+
 ## 2026-08-01 · Claude · M2-05C
 
 **Goal:** actually produce the crop and neighborhood images, closing the last M2 task that does not need a device.

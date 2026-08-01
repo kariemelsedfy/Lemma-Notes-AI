@@ -386,9 +386,12 @@ Acceptance:
 - [x] Cancellation clears the suggestion and records why
 
 ### M2-12B — Canvas wiring and the demo recording
-status: Ready · needs-device-verification · refs: ARCHITECTURE.md §4 · estimate: M
+status: Ready · needs-device-verification · blocked-by: M2-03 · refs: ARCHITECTURE.md §4 · estimate: M
 Note: `AskPipeline` and `AskBar` both exist and are tested, but neither is in the canvas
 view hierarchy. This task connects them and is the first time the product can be *seen*.
+**Do M2-03 first.** Nothing currently creates a `PageSelection` — the lasso gesture is the
+only producer — so wiring the bar in without it leaves it permanently hidden and the
+pipeline unreachable. That is not obvious from the code and costs an hour to discover.
 Acceptance:
 - [ ] `AskBar` is in the canvas chrome and drives `AskPipeline` from the current page's ink and selection
 - [ ] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
