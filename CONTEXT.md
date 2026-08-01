@@ -61,6 +61,20 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 
 ## 4. Environment notes
 
+**Two traps in this working copy, both cost time on 2026-08-01:**
+
+1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
+   on tracked files, which makes `git status` show ~90 files modified with no content
+   change and blocks `git merge`/`rebase`. `git config core.fileMode false` is set locally
+   to ignore it; the committed modes are unaffected, so `scripts/*.sh` still arrive
+   executable in a fresh clone. If a clone elsewhere shows the same noise, set it there too.
+2. **A stale `Packages/*/.build` produces fake compiler errors.** After the mode churn
+   above, `swift test --package-path Packages/Intelligence` reported four
+   `cannot infer type` errors in `Handwriting`. The source was fine — `rm -rf` the
+   package's `.build` and the same commit builds clean and passes 90 tests. **Before
+   believing a type-inference error that CI does not also show, clear `.build` and retry.**
+
+
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.
 
 ## 5. Open questions
