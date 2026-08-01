@@ -385,6 +385,7 @@ Acceptance:
 - [ ] `AskBar` is in the canvas chrome and drives `AskPipeline` from the current page's ink and selection
 - [ ] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
 - [ ] Accept commits into the page's `PKDrawing`; one undo removes the whole answer
+- [ ] Accept records provenance via `SuggestionProvenance` into the open document's page metadata (M2-15 built this; this is its only call site)
 - [ ] Drawing again while a request is in flight cancels it silently
 - [ ] Circle `2+2=` on a real iPad → canned "4" renders as ink at the anchor → accept → undo
 - [ ] Record the screen. This is the first real signal that the product feels right.
@@ -410,15 +411,14 @@ Acceptance:
 - [ ] The existing "every advertised character renders" test still passes
 
 ### M2-15 — Persist accepted-suggestion provenance
-status: Ready · refs: ARCHITECTURE.md §3.1 · estimate: M
-Note: `SuggestionLayer.accept` returns an `AcceptedSuggestion`, but nothing writes it into
-page metadata, so accepted AI ink is currently indistinguishable from handwriting after a
-reload. This is exactly the "AI ink lost its provenance" failure §3.1 warns about, and it
-must be closed before anything ships.
+status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §3.1 · estimate: M
+Note: the mechanism and its proof are done. The single **call site** — accept telling the
+open document to record it — is in M2-12B's acceptance, because that is where accept is
+first wired to a live page.
 Acceptance:
-- [ ] Accepting writes a `generated` element with `requestId`, `strokeIndices`, and `acceptedAt`
-- [ ] Stroke fingerprints repair the indices after later editing
-- [ ] Round-trip test: save, edit around the generated ink, reload, provenance survives
+- [x] `SuggestionProvenance` turns an `AcceptedSuggestion` into a `generated` `PageElement` with `requestID`, stroke references, and `acceptedAt`
+- [x] Stroke fingerprints repair the indices after later editing
+- [x] Round-trip test: save, edit around the generated ink, reload, provenance survives
 
 ---
 

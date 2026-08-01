@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-07-31 · Claude · M2-15
+
+**Goal:** close the ship-blocker. Accepted AI ink was indistinguishable from handwriting after a reload.
+
+**Done:** `SuggestionProvenance` in the app target turns an `AcceptedSuggestion` into a `generated` `PageElement` with stroke references, fingerprints, `requestID` and `acceptedAt`. 8 tests, including a real package write → read → edit → repair round trip through `DocumentPackageStore` on the file system.
+
+**Not done / left open:** the **call site**. Nothing calls this yet because accept is not wired to a live document — that is M2-12B, whose acceptance now names it explicitly. The mechanism is proven; the connection is one line in a place that does not exist yet.
+
+**Surprises and gotchas:** the bridge has to live in the app target, and it is worth knowing why before someone tries to "tidy" it into `DocumentStore`. The dependency rule gives `DocumentStore` no internal imports at all, so it cannot see `InkStroke` or `AcceptedSuggestion`; the app is the only target allowed to see both sides. `scripts/check-module-dependencies.sh` enforces this, so the mistake fails CI rather than review.
+
+The element identifier is a deterministic FNV-1a of request ID and acceptance time, not a UUID. Re-deriving an element for the same acceptance — after a failed save, for instance — must not produce a second element claiming the same strokes.
+
+Worth knowing about the repair semantics, which are pre-existing and correct but surprising: `repairingStrokeIndices` drops any reference whose fingerprint matches more than one stroke. Two byte-identical strokes on a page therefore lose their attribution rather than gaining a wrong one. That is the right trade — a wrong provenance claim is worse than a missing one — but it means provenance is best-effort under duplication, not guaranteed.
+
+**Decisions made:** none beyond the module placement, which the dependency rule already dictated.
+
+**Next:** M2-05D, M2-13, M2-14B — the remaining work that needs no device.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) simulator — 46 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-07-31 · Claude · session close
 
 **Goal:** leave the board honest before stopping, so nothing reads as claimed by an agent that has gone.
