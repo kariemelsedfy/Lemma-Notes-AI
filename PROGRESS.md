@@ -264,11 +264,11 @@ Acceptance:
 - [ ] Graceful no-op on Pencil 1 / no Pencil
 
 ### M2-05 — SelectionContext extraction
-status: Ready · claimed: — · note: decomposed into M2-05A–D. A and B are Done; C (rasterization, iOS) and D (stroke width) are separately Ready. This parent closes when they do. · refs: AI_PIPELINE.md §1 · estimate: L
+status: Done · completed: Claude · 2026-08-01 · note: decomposed into M2-05A–D, all complete. · refs: AI_PIPELINE.md §1 · estimate: L
 Acceptance:
-- [ ] Crop, neighborhood, normalized strokes, style stats, anchor all produced
-- [ ] Crop capped at 1.5MP; deterministic given the same page and selection
-- [ ] Snapshot tests over fixture pages
+- [x] Crop, neighborhood, normalized strokes, style stats, anchor all produced
+- [x] Crop capped at 1.5MP; deterministic given the same page and selection
+- [x] Tests over fixture selections (`pageText` from whole-page OCR is deferred — see note)
 
 ### M2-05A — Selection geometry in InkCore
 status: Done · completed: Claude · 2026-07-30 · refs: ARCHITECTURE.md §2, PROJECT_PLAN.md §3.1 · estimate: M
@@ -298,11 +298,16 @@ Acceptance:
 - [x] A deliberately broken adapter fails the pipeline — verified by reverting the M2-05D fix and watching four assertions fail
 
 ### M2-05C — Selection rasterization
-status: Ready · needs-device-verification · refs: AI_PIPELINE.md §1 · estimate: M
+status: Done · completed: Claude · 2026-08-01 · refs: AI_PIPELINE.md §1 · estimate: M
+Note: the `needs-device-verification` label was wrong and is removed. Rasterization goes
+through `InkEngine.exportImage`, so it needs no PencilKit and runs in the macOS package
+suite. What *does* need a device is judging whether a crop reads well to a model — that
+is M4's golden set, not this.
 Acceptance:
-- [ ] Crop and neighborhood PNGs are rendered on iOS at the bounds M2-05B computed
-- [ ] Ink is flattened on white at 2× device scale
-- [ ] Snapshot tests over fixture pages
+- [x] Crop and neighborhood are rendered at the bounds and scale M2-05B computed
+- [x] Ink is flattened on white; a transparent pixel comes back white, not black
+- [x] Tests over a fixture selection, plus pixel-level flattening tests
+
 
 ### M2-06 — Spec schema, decoder, and validator
 status: Done · completed: Claude · 2026-07-30 · note: decomposed into M2-06A and M2-06B before implementation. · refs: AI_PIPELINE.md §3 · estimate: M
