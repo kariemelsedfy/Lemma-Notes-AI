@@ -6,6 +6,7 @@ let project = Project(
         .local(path: "Packages/DocumentStore"),
         .local(path: "Packages/Intelligence"),
         .local(path: "Packages/InkCore"),
+        .local(path: "Packages/Analytics"),
     ],
     targets: [
         .target(
@@ -23,6 +24,7 @@ let project = Project(
                 .package(product: "DocumentStore"),
                 .package(product: "Intelligence"),
                 .package(product: "InkCore"),
+                .package(product: "Analytics"),
             ],
             settings: .settings(base: [
                 "TARGETED_DEVICE_FAMILY": "2"
@@ -41,6 +43,7 @@ let project = Project(
                 .package(product: "DocumentStore"),
                 .package(product: "Intelligence"),
                 .package(product: "InkCore"),
+                .package(product: "Analytics"),
             ]
         ),
     ]

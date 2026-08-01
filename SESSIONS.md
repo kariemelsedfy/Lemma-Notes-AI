@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-01 · Claude · M2-13
+
+**Goal:** stop plots and asks from being unreportable, and make the two intent vocabularies unable to drift apart again.
+
+**Done:** rewrote `Analytics.AIIntent` from `solve | explain | check | continueWork` to mirror `SpecIntent` — `answer | continue | plot | check | ask` — case for case and raw value for raw value. Added `AnalyticsMapping.swift` in the app target with total conversions, and 7 tests. The app target now links `Analytics`.
+
+**Not done / left open:** nothing calls `AIInvocationReport` yet — there is still no concrete `AnalyticsTransport`, and no pipeline stage reports anything. M2-12B is where the first `aiInvoked` event will actually be sent.
+
+**Surprises and gotchas:** changing a shipped-looking analytics enum sounds risky and was not: `grep` found the old cases used only in `AnalyticsTests`. No concrete transport exists, so no recorded data depends on the old raw values, and no ADR was warranted. **Check that before assuming the same next time** — once a transport ships, renaming a case silently splits a metric in two.
+
+The mapping functions have no `default` case on purpose. Adding a verb to `SpecIntent` now fails to compile in `AnalyticsMapping.swift` rather than quietly falling through, and there is a separate test comparing the two `allCases` raw-value sets, so the drift is caught even if someone adds a `default` later.
+
+**Decisions made:** `AIModelTier(_ tier: ModelTier)` returns nil for `.mock`, and `AIInvocationReport.event` returns nil with it. Mocked actions must never be counted — they would corrupt the acceptance-rate and cost metrics in `PROJECT_PLAN.md` §8 with runs that never touched a model. The type makes reporting one impossible rather than trusting a caller to remember.
+
+**Next:** M2-14B — letters in the placeholder font.
+
+**Verification:** `swift test --package-path Packages/Analytics` ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 56 tests ✅ · `./scripts/lint.sh` ✅ · dependency check ✅ · device tested: no
+
 ## 2026-07-31 · Claude · M2-05D
 
 **Goal:** stop dropping `PKStrokePoint.size` at the `InkPoint` boundary, so the synthesizer has a real stroke width to match instead of mean force standing in for it.

@@ -41,7 +41,7 @@ Next action: **M2-12B** (put the Ask bar and pipeline in the canvas, then record
 | Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font, digits and operators only. Fails closed on letters, plots and marks. Deleted when M3 lands |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
-| Analytics | Closed typed event vocabulary; opt-out gate before transport; no content or identifier payloads |
+| Analytics | Closed typed event vocabulary matching the spec contract's five verbs; opt-out gate before transport; no content or identifier payloads. No concrete transport yet, and nothing reports events |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement |
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
 | Golden eval set | Does not exist (M2) |

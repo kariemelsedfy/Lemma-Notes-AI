@@ -8,7 +8,7 @@ final class AnalyticsTests: XCTestCase {
             .appOpened,
             .noteCreated,
             .strokeSessionEnded(strokeCount: 4),
-            .aiInvoked(intent: .solve, tier: .onDevice),
+            .aiInvoked(intent: .answer, tier: .onDevice),
             .aiAccepted,
             .aiRejected,
             .paywallShown,
@@ -31,7 +31,7 @@ final class AnalyticsTests: XCTestCase {
     func testEnabledTrackingForwardsTypedEvent() async {
         let transport = RecordingTransport()
         let client = AnalyticsClient(transport: transport)
-        let event = AnalyticsEvent.aiInvoked(intent: .explain, tier: .privateCloudCompute)
+        let event = AnalyticsEvent.aiInvoked(intent: .ask, tier: .privateCloudCompute)
 
         await client.record(event)
 
