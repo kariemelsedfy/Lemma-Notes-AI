@@ -270,7 +270,7 @@ Acceptance:
 - [x] The pre-selection path makes no model or network request
 
 ### M2-03 — Loop-and-dwell gesture
-status: In progress · claimed: Claude · 2026-08-02 · note: decomposed into M2-03A (recognizer, simulator) and M2-03B (device tuning). · refs: PROJECT_PLAN.md §3.1 · estimate: L
+status: Ready · claimed: — · note: decomposed into M2-03A (Done) and M2-03B (Ready, human). This parent closes when M2-03B does. · refs: PROJECT_PLAN.md §3.1 · estimate: L
 Acceptance:
 - [ ] Closure ≥70% + dwell ≥350ms converts the loop to a selection
 - [ ] The loop's ink is removed, not left on the page
@@ -298,11 +298,30 @@ Acceptance:
 - [ ] A judgement recorded on whether conversion should fire during the dwell rather than on pen lift
 
 ### M2-04 — Pencil squeeze and double-tap
-status: Ready · estimate: M · needs-device-verification
+status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Note: built against the current API only — `pencilInteractionDidTap:` has been deprecated
+since iOS 17.5. The gestures themselves **cannot fire in a simulator**; confirming they do
+on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-18.
 Acceptance:
-- [ ] `UIPencilInteraction` squeeze arms the Ask lasso (Pencil Pro)
-- [ ] Double-tap respects the system preference by default; opt-in override in onboarding
-- [ ] Graceful no-op on Pencil 1 / no Pencil
+- [x] `UIPencilInteraction` squeeze arms the Ask lasso, honouring an explicit `.ignore`
+- [x] Double-tap defers to the system preference unless the user opted in
+- [x] Graceful no-op on Pencil 1 / no Pencil — the interaction attaches and never fires
+
+### M2-04B — Confirm the Pencil gestures on hardware
+status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Acceptance:
+- [ ] Squeeze on a Pencil Pro arms the Ask lasso
+- [ ] Double-tap does what the system setting says, and nothing app-specific
+- [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
+
+### M2-18 — Onboarding toggle for the double-tap override
+status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Note: `PencilActionPolicy(overridesDoubleTap:)` exists and is tested but is always
+constructed with the default, so the override is currently unreachable. Onboarding does
+not exist yet (M7).
+Acceptance:
+- [ ] Onboarding offers "use double-tap for Ask?", defaulting to no
+- [ ] The choice persists and reaches `PencilActionPolicy`
 
 ### M2-05 — SelectionContext extraction
 status: Done · completed: Claude · 2026-08-01 · note: decomposed into M2-05A–D, all complete. · refs: AI_PIPELINE.md §1 · estimate: L
@@ -416,7 +435,7 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: Ready · claimed: — · note: decomposed into M2-12A/B (Done), M2-12C (Ready), M2-12D (Ready, device). This parent closes when M2-12D does. · estimate: M
+status: Ready · claimed: — · note: decomposed into M2-12A/B/C (Done) and M2-12D (Ready, human). This parent closes when M2-12D does. · estimate: M
 
 ### M2-12A — Ask pipeline
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §1, §8, ARCHITECTURE.md §5 · estimate: M
