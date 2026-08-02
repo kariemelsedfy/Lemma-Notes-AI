@@ -7,6 +7,9 @@ struct VirtualizedPageStack: View {
     private let pageIDs: [UUID]
     private let pageSizes: [UUID: CGSize]
     private let pageSize = CGSize(width: 768, height: 1_024)
+    private let notebookID: UUID?
+    private let autosave: PageAutosave?
+    private let pageMetadata: [UUID: PageMetadata]
 
     @State private var visiblePageID: UUID?
     @StateObject private var drawingStore: PageDrawingStore
@@ -17,7 +20,9 @@ struct VirtualizedPageStack: View {
     @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
-    init(document: StoredDocument? = nil) {
+    init(document: StoredDocument? = nil, autosave: PageAutosave? = nil) {
+        notebookID = document?.manifest.id
+        self.autosave = autosave
         let pages = document?.pages ?? []
         pageIDs = pages.map(\.metadata.pageID)
         pageSizes = Dictionary(
@@ -25,6 +30,7 @@ struct VirtualizedPageStack: View {
                 ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
             })
         let inkData = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.inkData) })
+        pageMetadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
         _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData))
     }
 
@@ -109,6 +115,9 @@ struct VirtualizedPageStack: View {
         .onAppear {
             visiblePageID = pageIDs.first
         }
+        .onChange(of: drawingStore.revision) { _, _ in
+            persistEditedPages()
+        }
         .onChange(of: loopSelection.selection) { _, newSelection in
             // The gesture is the only producer of a selection today, so this is what
             // makes the Ask bar reachable at all.
@@ -150,6 +159,22 @@ struct VirtualizedPageStack: View {
             around: pageIDs.firstIndex(of: visiblePage) ?? 0, pageCount: pageIDs.count)
         for (index, pageID) in pageIDs.enumerated() where !liveIndices.contains(index) {
             drawingStore.cachePreview(for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
+        }
+    }
+
+    /// Hands every dirty page to the autosave, which coalesces and writes off-main.
+    ///
+    /// Before this existed nothing in the app wrote ink to disk at all — closing a
+    /// notebook discarded every stroke in it.
+    private func persistEditedPages() {
+        guard let notebookID, let autosave else { return }
+        let dirty = drawingStore.takeDirtyPages()
+        guard !dirty.isEmpty else { return }
+
+        for (pageID, drawing) in dirty {
+            guard let metadata = pageMetadata[pageID] else { continue }
+            let page = StoredPage(metadata: metadata, inkData: drawing.dataRepresentation())
+            Task { await autosave.record(page, inNotebook: notebookID) }
         }
     }
 
@@ -302,53 +327,6 @@ private struct LiveInkCanvas: UIViewRepresentable {
             canvasView.drawing = PKDrawing(strokes: strokes.dropLast())
             drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
         }
-    }
-}
-
-@MainActor
-private final class PageDrawingStore: ObservableObject {
-    @Published private var drawings: [UUID: PKDrawing] = [:]
-    @Published private var previews: [UUID: UIImage] = [:]
-    private var snapshots: [UUID: PKDrawing] = [:]
-
-    init(inkData: [UUID: Data] = [:]) {
-        for (pageID, data) in inkData {
-            if let drawing = try? PKDrawing(data: data) {
-                drawings[pageID] = drawing
-            }
-        }
-    }
-
-    func drawing(for pageID: UUID) -> PKDrawing {
-        drawings[pageID] ?? PKDrawing()
-    }
-
-    func preview(for pageID: UUID) -> UIImage? {
-        previews[pageID]
-    }
-
-    func save(_ drawing: PKDrawing, for pageID: UUID, pageSize: CGSize) {
-        drawings[pageID] = drawing
-        previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
-    }
-
-    /// Keeps the drawing exactly as it was before a loop was consumed.
-    func snapshot(_ drawing: PKDrawing, for pageID: UUID) {
-        snapshots[pageID] = drawing
-    }
-
-    /// Restores that drawing, giving back the original stroke rather than a redraw.
-    func restoreSnapshot(for pageID: UUID, pageSize: CGSize) {
-        guard let drawing = snapshots.removeValue(forKey: pageID) else { return }
-        save(drawing, for: pageID, pageSize: pageSize)
-    }
-
-    func cachePreview(for pageID: UUID, pageSize: CGSize) {
-        guard previews[pageID] == nil, let drawing = drawings[pageID] else {
-            return
-        }
-
-        previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
     }
 }
 

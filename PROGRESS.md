@@ -223,6 +223,31 @@ Acceptance:
 - [x] `isFree(rect)` and `nearestFree(size:from:direction:)` with tests
 - [x] Pure grid queries perform bounded cell operations; no canvas frame work added
 
+### M1-10 — Durable ink writes
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §3, §6 · estimate: M
+Note: **this was total data loss.** `PageDrawingStore` held drawings in memory and nothing
+in the app ever wrote them back — every stroke was discarded when a notebook closed.
+`NotebookPackageLibrary` had no save API at all. M1-05D's session entry flagged that
+durable writes "belong to a dedicated document-editing task"; that task was never filed,
+so it fell through the gap between M1 and M2 and survived every milestone since.
+Acceptance:
+- [x] `NotebookPackageLibrary.savePage` writes a page's ink and metadata back to its package
+- [x] The canvas records every edit and an autosave actor coalesces and writes them
+- [x] Encoding and file I/O happen off the main actor (ARCHITECTURE §6 budgets ≤100ms main-thread)
+- [x] A failed write keeps the edit pending rather than dropping it
+- [x] Ink and page metadata both survive a write and reload
+
+### M1-11 — Flush autosave on notebook close and backgrounding
+status: Ready · refs: ARCHITECTURE.md §3, §6 · estimate: S
+Note: `PageAutosave.flush()` exists and is tested, but nothing calls it on the paths that
+matter — closing a notebook, backgrounding the app, or the scene going away. Up to one
+quiet period of work (800ms) can still be lost, which is much better than everything but
+is not zero.
+Acceptance:
+- [ ] Closing a notebook flushes before the view goes away
+- [ ] `scenePhase` leaving `.active` flushes
+- [ ] A test proves an edit made immediately before close is on disk
+
 ### M1-09 — Handwriting-to-text (Vision, on-device)
 status: Done · completed: Codex · 2026-07-29 · estimate: M
 Acceptance:

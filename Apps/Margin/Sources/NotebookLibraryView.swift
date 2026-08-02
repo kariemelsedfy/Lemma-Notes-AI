@@ -46,7 +46,7 @@ struct NotebookLibraryView: View {
             }
         } detail: {
             if let selectedNotebookID, let document = library.document(id: selectedNotebookID) {
-                VirtualizedPageStack(document: document)
+                VirtualizedPageStack(document: document, autosave: library.autosave)
                     .toolbar {
                         Menu("library.export", systemImage: "square.and.arrow.up") {
                             Button("library.export.pdf") { export(document, format: .pdf) }

@@ -14,7 +14,7 @@ M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D tw
 
 The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
 
-Next action: **M2-12C** (suggestion rendering and accept), then the device session. Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite. Everything else left in M2 needs a physical iPad and is collected in `DEVICE_SESSION.md`, which is written to be worked through in one sitting.
+Next action: **M2-12C** (suggestion rendering and accept), then the device session. **M1-11** — flushing autosave on close and backgrounding — should go first if anyone is about to use this for real notes. Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite. Everything else left in M2 needs a physical iPad and is collected in `DEVICE_SESSION.md`, which is written to be worked through in one sitting.
 
 ## 2. What exists
 
@@ -22,7 +22,7 @@ Next action: **M2-12C** (suggestion rendering and accept), then the device sessi
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period |
 | Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
 | Selection UI | Loop-and-dwell converts a held loop into a page selection and removes its ink, with an undo affordance. Thresholds unvalidated against real handwriting (Q8 / M2-03B) |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
