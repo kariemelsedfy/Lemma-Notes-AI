@@ -6,6 +6,30 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M2-12B
+
+**Goal:** make the gesture actually do something on the page, so the product exists outside its tests.
+
+**Done:** the canvas now classifies each newly finished stroke; a loop-and-dwell has its ink removed and becomes a page selection, which brings up the Ask bar. An "Undo selection" affordance restores the drawing exactly. Added `InkStroke(_ PKStroke)` to `InkCore` and made `PencilKitInkEngine` use it, so the canvas and the engine cannot drift apart on the conversion. Split the rest of M2-12 into **M2-12C** (suggestion rendering and accept) and **M2-12D** (the recording). App suite 80.
+
+Also wrote **`DEVICE_SESSION.md`** — every remaining hardware task in one ordered pass, with what to measure and what counts as a pass.
+
+**Not done / left open:** the Ask bar's verbs do not run the pipeline yet, and nothing renders suggestion ink. That is M2-12C. The revert affordance is a plain button in the chrome rather than the 300ms transient thing §3.1 describes; the window is 3 seconds because a 300ms button is not reachable for anyone who is not already looking at it. Worth a device opinion.
+
+**Surprises and gotchas:**
+
+**`tuist generate` before running app tests, always.** I added a test file, ran the suite, saw 75 passes and green — the same 75 as before, because the new file was not in the generated project and simply never ran. Nothing warns you. The count is the only signal, so check it moves.
+
+Re-entrancy is the subtle part of the canvas hook. `canvasViewDrawingDidChange` fires again when the loop's ink is removed, so classification has to be gated on "stroke count went up by exactly one" or the removal re-enters and reclassifies its own edit.
+
+**One of my tests was tautological and I nearly shipped it.** `testRevertRestoresTheDrawingByteForByte` did `let restored = before` and then asserted `restored == before`. It passed, it looked like coverage, and it asserted nothing. Replaced with a test that pins *which* stroke survives removal — taking the wrong one would be silent and unrecoverable.
+
+**Decisions made:** the coordinator returns a decision and the view owns the ink mutation, rather than handing the coordinator a canvas. Keeps every `PKDrawing` write on one path. Revert restores a snapshot of the whole drawing rather than re-inserting a rebuilt stroke, which is what makes it lossless.
+
+**Next:** M2-12C, then the device session.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) — 80 tests ✅ · `./scripts/lint.sh` ✅ · device tested: **no**
+
 ## 2026-08-02 · Claude · M2-03A
 
 **Goal:** build the signature gesture's recognizer, and get as close to answering Q8 as is possible without a Pencil.
