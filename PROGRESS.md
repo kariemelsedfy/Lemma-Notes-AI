@@ -437,12 +437,23 @@ Acceptance:
 - [x] A stroke that is not the gesture leaves the page untouched
 
 ### M2-12C — Suggestion rendering and accept
-status: Ready · refs: ARCHITECTURE.md §4, AI_PIPELINE.md §7.3 · estimate: M
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §4, AI_PIPELINE.md §7.3 · estimate: M
+Note: answers come from `CannedSpecProvider`, not `MockProvider` — a mock keys fixtures by
+the request's geometry, so it can never answer a real lasso. Delete it when M4 lands.
 Acceptance:
-- [ ] `AskPipeline` runs from the Ask bar's verbs against a seeded `MockProvider`
-- [ ] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
-- [ ] Accept commits into the page's `PKDrawing` in one undo group and records provenance via `SuggestionProvenance`
-- [ ] Reject and cancel leave the page untouched
+- [x] `AskPipeline` runs from the Ask bar's verbs against a provider
+- [x] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
+- [x] Accept commits into the page's `PKDrawing` and records provenance via `SuggestionProvenance`
+- [x] Reject and cancel leave the page untouched
+
+### M2-17 — Animate generated ink as it is written
+status: Ready · refs: AI_PIPELINE.md §7.3, ARCHITECTURE.md §10 · estimate: M
+Note: §7.3 calls the write-on animation "the single most delightful thing in the app" and
+says it makes 2 seconds feel like 0.5. Suggestion ink currently just appears. Reduce Motion
+must be respected.
+Acceptance:
+- [ ] Generated strokes draw in over ~250–400ms using the writer's own velocity profile
+- [ ] Reduce Motion renders the ink immediately instead
 
 ### M2-12D — The demo recording
 status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1 · estimate: S

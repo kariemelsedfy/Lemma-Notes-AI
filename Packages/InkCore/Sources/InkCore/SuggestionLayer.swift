@@ -63,6 +63,20 @@ public final class SuggestionLayer {
     /// no-op rather than a second copy of the answer.
     @discardableResult
     public func accept(into engine: any InkEngine, at acceptedAt: Date = Date()) -> AcceptedSuggestion? {
+        let pending = strokes
+        guard let accepted = acceptWithoutInserting(at: acceptedAt) else { return nil }
+        engine.insertProgrammatic(strokes: pending)
+        return accepted
+    }
+
+    /// Records the acceptance and clears the layer, leaving the insertion to the caller.
+    ///
+    /// `accept(into:)` is the right entry point when an `InkEngine` owns the page. The
+    /// canvas commits into a `PKDrawing` it holds directly, so it takes the record and
+    /// does the insertion itself — routing that through a throwaway engine would be a
+    /// fiction, and a fiction in the one place provenance is decided.
+    @discardableResult
+    public func acceptWithoutInserting(at acceptedAt: Date = Date()) -> AcceptedSuggestion? {
         guard let requestID, !strokes.isEmpty else { return nil }
 
         let accepted = AcceptedSuggestion(
@@ -71,7 +85,6 @@ public final class SuggestionLayer {
             bounds: bounds,
             acceptedAt: acceptedAt
         )
-        engine.insertProgrammatic(strokes: strokes)
         discard()
         return accepted
     }

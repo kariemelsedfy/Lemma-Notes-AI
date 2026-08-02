@@ -5,17 +5,19 @@ import SwiftUI
 
 struct VirtualizedPageStack: View {
     private let pageIDs: [UUID]
-    private let pageSizes: [UUID: CGSize]
-    private let pageSize = CGSize(width: 768, height: 1_024)
-    private let notebookID: UUID?
-    private let autosave: PageAutosave?
-    private let pageMetadata: [UUID: PageMetadata]
+    let pageSizes: [UUID: CGSize]
+    let pageSize = CGSize(width: 768, height: 1_024)
+    let notebookID: UUID?
+    let autosave: PageAutosave?
+    let pageMetadata: [UUID: PageMetadata]
 
     @State private var visiblePageID: UUID?
-    @StateObject private var drawingStore: PageDrawingStore
-    @StateObject private var selectionStore = PageSelectionStore()
-    @StateObject private var loopSelection = LoopSelectionCoordinator()
-    @StateObject private var askModel = AskBarModel()
+    @StateObject var drawingStore: PageDrawingStore
+    @StateObject var selectionStore = PageSelectionStore()
+    @StateObject var loopSelection = LoopSelectionCoordinator()
+    @StateObject var askModel = AskBarModel()
+    let suggestions = SuggestionLayer()
+    @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
     @State private var askPath = AskPathState()
 
@@ -80,10 +82,10 @@ struct VirtualizedPageStack: View {
                     AskBar(
                         phase: askModel.phase,
                         explanation: askModel.explanation,
-                        onVerb: { askModel.begin($0) },
-                        onCancel: { askModel.cancel() },
-                        onAccept: { askModel.accept() },
-                        onReject: { askModel.reject() },
+                        onVerb: { ask($0) },
+                        onCancel: { cancelAsk() },
+                        onAccept: { acceptSuggestion() },
+                        onReject: { rejectSuggestion() },
                         onRetry: { askModel.retry() },
                         onDismiss: { askModel.dismissFailure() }
                     )
@@ -147,7 +149,8 @@ struct VirtualizedPageStack: View {
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
                 selection: selectionStore.selection(for: pageID),
-                loopSelection: loopSelection
+                loopSelection: loopSelection,
+                suggestionInk: suggestionInk(for: pageID)
             )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
@@ -198,6 +201,7 @@ private struct LivePageView: View {
     let selectedTool: CanvasTool
     let selection: PageSelection?
     @ObservedObject var loopSelection: LoopSelectionCoordinator
+    let suggestionInk: [InkStroke]
 
     var body: some View {
         ZStack {
@@ -211,6 +215,9 @@ private struct LivePageView: View {
             )
             if let selection {
                 PageSelectionOverlay(selection: selection)
+            }
+            if !suggestionInk.isEmpty {
+                SuggestionOverlay(strokes: suggestionInk)
             }
         }
         .clipShape(.rect(cornerRadius: 12))
@@ -286,9 +293,9 @@ private struct LiveInkCanvas: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         private let pageID: UUID
-        private let pageSize: CGSize
-        private let drawingStore: PageDrawingStore
-        private let loopSelection: LoopSelectionCoordinator
+        let pageSize: CGSize
+        let drawingStore: PageDrawingStore
+        let loopSelection: LoopSelectionCoordinator
         /// Tracks stroke count so an append can be told apart from an erase or an undo.
         private var lastStrokeCount = 0
 
