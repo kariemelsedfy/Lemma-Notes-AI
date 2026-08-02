@@ -88,6 +88,35 @@ final class PageAutosaveTests: XCTestCase {
         XCTAssertEqual(writes, 1)
     }
 
+    func testAnEditMadeImmediatelyBeforeCloseIsOnDisk() async throws {
+        // A long quiet period stands in for "the user closed the notebook straight away".
+        // Closing must not wait for the timer, or that work is simply lost.
+        let library = NotebookPackageLibrary(rootURL: root)
+        let notebook = try library.create(title: "Calculus")
+        let autosave = PageAutosave(library: library, quietPeriod: .seconds(60))
+        let ink = Self.drawing()
+        let page = try Self.page(of: notebook.id, in: library, ink: ink)
+
+        await autosave.record(page, inNotebook: notebook.id)
+        await autosave.flush()
+
+        let reloaded = try library.document(id: notebook.id)
+        XCTAssertEqual(try XCTUnwrap(reloaded.pages.first).inkData, ink.dataRepresentation())
+    }
+
+    func testFlushingLeavesNothingBehind() async throws {
+        let library = NotebookPackageLibrary(rootURL: root)
+        let notebook = try library.create(title: "Calculus")
+        let autosave = PageAutosave(library: library, quietPeriod: .seconds(60))
+        let page = try Self.page(of: notebook.id, in: library, ink: Self.drawing())
+
+        await autosave.record(page, inNotebook: notebook.id)
+        await autosave.flush()
+
+        let pending = await autosave.hasPendingWork
+        XCTAssertFalse(pending)
+    }
+
     func testFlushingWithNothingPendingIsHarmless() async throws {
         let library = NotebookPackageLibrary(rootURL: root)
         let autosave = PageAutosave(library: library, quietPeriod: .milliseconds(1))

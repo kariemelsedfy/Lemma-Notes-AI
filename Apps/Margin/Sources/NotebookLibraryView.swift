@@ -2,7 +2,14 @@ import DocumentStore
 import SwiftUI
 
 struct NotebookLibraryView: View {
-    @StateObject private var library = NotebookLibrary()
+    @StateObject private var library: NotebookLibrary
+
+    /// Takes an optional rather than defaulting to `NotebookLibrary()`: a default argument
+    /// is evaluated in a nonisolated context, and the library is main-actor isolated.
+    @MainActor
+    init(library: NotebookLibrary? = nil) {
+        _library = StateObject(wrappedValue: library ?? NotebookLibrary())
+    }
     @State private var selectedNotebookID: UUID?
     @State private var notebookPendingRename: NotebookSummary?
     @State private var notebookPendingDeletion: NotebookSummary?
@@ -47,6 +54,8 @@ struct NotebookLibraryView: View {
         } detail: {
             if let selectedNotebookID, let document = library.document(id: selectedNotebookID) {
                 VirtualizedPageStack(document: document, autosave: library.autosave)
+                    .onDisappear { flushEdits() }
+                    .id(selectedNotebookID)
                     .toolbar {
                         Menu("library.export", systemImage: "square.and.arrow.up") {
                             Button("library.export.pdf") { export(document, format: .pdf) }
@@ -93,6 +102,11 @@ struct NotebookLibraryView: View {
                 ShareSheet(fileURL: shareFileURL)
             }
         }
+    }
+
+    /// Writes anything outstanding before the open notebook goes away.
+    private func flushEdits() {
+        Task { await library.autosave.flush() }
     }
 
     private func createNotebook() {
