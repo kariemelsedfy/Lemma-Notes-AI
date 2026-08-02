@@ -238,15 +238,11 @@ Acceptance:
 - [x] Ink and page metadata both survive a write and reload
 
 ### M1-11 — Flush autosave on notebook close and backgrounding
-status: Ready · refs: ARCHITECTURE.md §3, §6 · estimate: S
-Note: `PageAutosave.flush()` exists and is tested, but nothing calls it on the paths that
-matter — closing a notebook, backgrounding the app, or the scene going away. Up to one
-quiet period of work (800ms) can still be lost, which is much better than everything but
-is not zero.
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §3, §6 · estimate: S
 Acceptance:
-- [ ] Closing a notebook flushes before the view goes away
-- [ ] `scenePhase` leaving `.active` flushes
-- [ ] A test proves an edit made immediately before close is on disk
+- [x] Closing or switching a notebook flushes before the view goes away
+- [x] `scenePhase` leaving `.active` flushes
+- [x] A test proves an edit made immediately before close is on disk, without waiting for the quiet period
 
 ### M1-09 — Handwriting-to-text (Vision, on-device)
 status: Done · completed: Codex · 2026-07-29 · estimate: M

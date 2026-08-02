@@ -6,6 +6,22 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M1-11
+
+**Goal:** close the last window where a user's ink could still be lost.
+
+**Done:** the scene flushes the autosave whenever it leaves `.active`, and the open notebook flushes on disappear — which now also covers switching notebooks, since the detail view is keyed on the selection. Two tests, both using a 60-second quiet period so that a passing result can only mean the close path wrote, not that a timer happened to fire. App suite 90.
+
+**Not done / left open:** nothing for this task. The SwiftUI lifecycle hooks themselves (`scenePhase`, `onDisappear`) are not covered by a test — they are framework behaviour, and an XCUITest to prove `onDisappear` fires would test SwiftUI rather than us. What is covered is the part we own: flush writes everything pending, immediately, without waiting.
+
+**Surprises and gotchas:** `NotebookLibrary` is `@MainActor`, and a **default argument is evaluated in a nonisolated context** — so `init(library: NotebookLibrary = NotebookLibrary())` will not compile no matter how the initializer itself is annotated. An optional parameter defaulted inside the `@MainActor` body works. The error message points at the call site, not the default.
+
+**Decisions made:** the app now owns the `NotebookLibrary` and injects it, rather than the view creating its own. The scene needs a handle on the autosave to flush it, and two independently-created libraries would have written through two separate queues.
+
+**Next:** M2-12C — suggestion rendering and accept.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) — 90 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-02 · Claude · M1-10 — the app could not save
 
 **Goal:** I went looking for where accepted AI ink would be persisted, and found that *no* ink was.
