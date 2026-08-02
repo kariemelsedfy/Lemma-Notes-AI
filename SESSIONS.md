@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M2-03A
+
+**Goal:** build the signature gesture's recognizer, and get as close to answering Q8 as is possible without a Pencil.
+
+**Done:** `LoopAndDwell` in `InkCore` — a pure classifier from a finished stroke to ink-or-selection — and `LoopSelectionCoordinator` in the app, which owns the conversion and the revert. 20 detector tests, 9 coordinator tests. InkCore 48, app suite 75.
+
+**Not done / left open:** conversion fires **on pen lift**, not live during the dwell. The stroke's own timestamps still enforce the 350ms hold, so the rule is honoured exactly; what differs is the moment the ink disappears. That is a feel question and belongs to M2-03B. Also: the coordinator returns a decision rather than mutating the drawing, so nothing removes the loop ink from the page yet — M2-12B wires that.
+
+**Surprises and gotchas — the important one is a false positive my own tests caught.**
+
+**A crossed-out word fired the gesture.** Scribbling back and forth over a word, then pausing, was being converted to a selection: the zigzag accumulates plenty of shoelace area, and because the scribble starts and ends at the same edge its closure ratio reads ~0.99. Both of my first two gates passed it. That is the worst possible failure for this feature — striking something out is a *destructive* edit the user already committed to, and eating it plus selecting is unrecoverable-feeling.
+
+The fix is **compactness**, not area: `4π × area / perimeter²`, which is 1 for a circle, ~0.79 for a square, and under 0.01 for a scribbled ribbon. Raw area cannot separate them because a long enough ribbon encloses as much as a small circle. Default 0.25, with a test pinning both ends of the gap.
+
+**One of my negative tests was fake.** `testDriftingAwayDuringThePause` stretched the final sample's timestamp by 0.6s to simulate a pause — which is exactly what a *dwell* looks like, so it tested nothing and failed for the wrong reason. Real drift means many honestly-timed samples that keep moving. Corrected. General rule for this file: fake the sampling, never fake the clock.
+
+**Decisions made:** the revert path restores the *original stroke object*, not a redraw. This gesture destroys ink the user just made and will sometimes be wrong; giving back an approximation would be its own bug. There is a test asserting identity and dynamics both survive.
+
+**Next:** M2-12B — wire the coordinator to the canvas so the loop ink is actually removed and the Ask bar becomes reachable.
+
+**Verification:** `swift test --package-path Packages/InkCore` (48) ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 75 tests ✅ · `./scripts/lint.sh` ✅ · device tested: **no — and Q8 is unanswered until M2-03B**
+
 ## 2026-08-01 · Claude · environment traps and a false alarm
 
 **Goal:** record two things that cost time, and correct a wrong call I made in the process.

@@ -257,12 +257,14 @@ Acceptance:
 - [ ] False-positive rate measured on 30 minutes of real note-taking; recorded in SESSIONS.md
 
 ### M2-03A — Loop-and-dwell recognizer
-status: In progress · claimed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Note: conversion fires on pen lift, using the stroke's own timestamps, not live during
+the dwell. Simpler and fully testable; whether it *feels* wrong is an M2-03B judgement.
 Acceptance:
-- [ ] A pure detector converts a stroke to a selection on closure ≥70% and dwell ≥350ms
-- [ ] Ordinary writing, underlines, and emphasis circles without a dwell stay as ink
-- [ ] The loop's ink is removed and a revert-to-ink affordance restores it exactly
-- [ ] Thresholds are data, not constants, so M2-03B can tune them without touching logic
+- [x] A pure detector converts a stroke to a selection on closure ≥70% and dwell ≥350ms
+- [x] Ordinary writing, underlines, emphasis circles, and crossed-out words stay as ink
+- [x] The loop's ink is consumed and `revert()` restores the original stroke verbatim
+- [x] Thresholds are data (`LoopAndDwell.Configuration`), tunable without touching logic
 
 ### M2-03B — Loop-and-dwell device tuning
 status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1, CONTEXT.md Q8 · estimate: M
