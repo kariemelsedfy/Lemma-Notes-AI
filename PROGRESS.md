@@ -249,12 +249,30 @@ Acceptance:
 - [x] The pre-selection path makes no model or network request
 
 ### M2-03 — Loop-and-dwell gesture
-status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: L · needs-device-verification
+status: In progress · claimed: Claude · 2026-08-02 · note: decomposed into M2-03A (recognizer, simulator) and M2-03B (device tuning). · refs: PROJECT_PLAN.md §3.1 · estimate: L
 Acceptance:
 - [ ] Closure ≥70% + dwell ≥350ms converts the loop to a selection
 - [ ] The loop's ink is removed, not left on the page
 - [ ] A 300ms "revert to ink" affordance appears
 - [ ] False-positive rate measured on 30 minutes of real note-taking; recorded in SESSIONS.md
+
+### M2-03A — Loop-and-dwell recognizer
+status: In progress · claimed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Acceptance:
+- [ ] A pure detector converts a stroke to a selection on closure ≥70% and dwell ≥350ms
+- [ ] Ordinary writing, underlines, and emphasis circles without a dwell stay as ink
+- [ ] The loop's ink is removed and a revert-to-ink affordance restores it exactly
+- [ ] Thresholds are data, not constants, so M2-03B can tune them without touching logic
+
+### M2-03B — Loop-and-dwell device tuning
+status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1, CONTEXT.md Q8 · estimate: M
+Note: this is the task that answers **Q8** — whether loop-and-dwell can be the primary
+gesture at all. It cannot be done in a simulator: a mouse drag has none of the timing,
+tremor, or palm behaviour of a hand holding a Pencil.
+Acceptance:
+- [ ] False-positive rate measured over 30 minutes of real note-taking; recorded in SESSIONS.md
+- [ ] Thresholds tuned from that session if needed (`LoopAndDwell.Configuration`)
+- [ ] A judgement recorded on whether conversion should fire during the dwell rather than on pen lift
 
 ### M2-04 — Pencil squeeze and double-tap
 status: Ready · estimate: M · needs-device-verification
