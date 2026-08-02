@@ -249,12 +249,32 @@ Acceptance:
 - [x] The pre-selection path makes no model or network request
 
 ### M2-03 — Loop-and-dwell gesture
-status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: L · needs-device-verification
+status: In progress · claimed: Claude · 2026-08-02 · note: decomposed into M2-03A (recognizer, simulator) and M2-03B (device tuning). · refs: PROJECT_PLAN.md §3.1 · estimate: L
 Acceptance:
 - [ ] Closure ≥70% + dwell ≥350ms converts the loop to a selection
 - [ ] The loop's ink is removed, not left on the page
 - [ ] A 300ms "revert to ink" affordance appears
 - [ ] False-positive rate measured on 30 minutes of real note-taking; recorded in SESSIONS.md
+
+### M2-03A — Loop-and-dwell recognizer
+status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Note: conversion fires on pen lift, using the stroke's own timestamps, not live during
+the dwell. Simpler and fully testable; whether it *feels* wrong is an M2-03B judgement.
+Acceptance:
+- [x] A pure detector converts a stroke to a selection on closure ≥70% and dwell ≥350ms
+- [x] Ordinary writing, underlines, emphasis circles, and crossed-out words stay as ink
+- [x] The loop's ink is consumed and `revert()` restores the original stroke verbatim
+- [x] Thresholds are data (`LoopAndDwell.Configuration`), tunable without touching logic
+
+### M2-03B — Loop-and-dwell device tuning
+status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1, CONTEXT.md Q8 · estimate: M
+Note: this is the task that answers **Q8** — whether loop-and-dwell can be the primary
+gesture at all. It cannot be done in a simulator: a mouse drag has none of the timing,
+tremor, or palm behaviour of a hand holding a Pencil.
+Acceptance:
+- [ ] False-positive rate measured over 30 minutes of real note-taking; recorded in SESSIONS.md
+- [ ] Thresholds tuned from that session if needed (`LoopAndDwell.Configuration`)
+- [ ] A judgement recorded on whether conversion should fire during the dwell rather than on pen lift
 
 ### M2-04 — Pencil squeeze and double-tap
 status: Ready · estimate: M · needs-device-verification
