@@ -142,6 +142,29 @@ public protocol InkEngine: AnyObject {
 }
 
 #if os(iOS)
+    extension InkStroke {
+        /// Bridges one PencilKit stroke into the platform-neutral model.
+        ///
+        /// Exposed because the canvas has to classify a stroke the moment PencilKit
+        /// finishes it — before any engine owns it — and duplicating this conversion at
+        /// the call site is how the two drift apart.
+        public init(_ stroke: PKStroke, id: InkStrokeID = UUID()) {
+            self.init(
+                id: id,
+                points: stroke.path.map { point in
+                    InkPoint(
+                        location: point.location,
+                        timeOffset: point.timeOffset,
+                        force: point.force,
+                        altitude: point.altitude,
+                        azimuth: point.azimuth,
+                        size: point.size
+                    )
+                }
+            )
+        }
+    }
+
     /// A PencilKit-backed engine that keeps renderer types behind the `InkEngine` boundary.
     @MainActor
     public final class PencilKitInkEngine: InkEngine {
@@ -165,19 +188,7 @@ public protocol InkEngine: AnyObject {
         public var strokes: [InkStroke] {
             synchronizeStrokeIDs()
             return zip(canvasView.drawing.strokes, strokeIDs).map { stroke, id in
-                InkStroke(
-                    id: id,
-                    points: stroke.path.map { point in
-                        InkPoint(
-                            location: point.location,
-                            timeOffset: point.timeOffset,
-                            force: point.force,
-                            altitude: point.altitude,
-                            azimuth: point.azimuth,
-                            size: point.size
-                        )
-                    }
-                )
+                InkStroke(stroke, id: id)
             }
         }
 

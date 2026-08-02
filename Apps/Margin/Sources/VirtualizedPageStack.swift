@@ -1,4 +1,5 @@
 import DocumentStore
+import InkCore
 import PencilKit
 import SwiftUI
 
@@ -10,6 +11,8 @@ struct VirtualizedPageStack: View {
     @State private var visiblePageID: UUID?
     @StateObject private var drawingStore: PageDrawingStore
     @StateObject private var selectionStore = PageSelectionStore()
+    @StateObject private var loopSelection = LoopSelectionCoordinator()
+    @StateObject private var askModel = AskBarModel()
     @State private var selectedTool: CanvasTool = .pen
     @State private var askPath = AskPathState()
 
@@ -58,7 +61,29 @@ struct VirtualizedPageStack: View {
             .scrollIndicators(.hidden)
 
             VStack(spacing: 8) {
-                if askPath.isArmed {
+                if loopSelection.isOfferingRevert {
+                    Button("selection.revert", action: revertLoop)
+                        .font(.footnote.weight(.medium))
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 44)
+                        .background(.regularMaterial, in: Capsule())
+                        .accessibilityHint("selection.revert.hint")
+                }
+
+                if askModel.phase != .hidden {
+                    AskBar(
+                        phase: askModel.phase,
+                        explanation: askModel.explanation,
+                        onVerb: { askModel.begin($0) },
+                        onCancel: { askModel.cancel() },
+                        onAccept: { askModel.accept() },
+                        onReject: { askModel.reject() },
+                        onRetry: { askModel.retry() },
+                        onDismiss: { askModel.dismissFailure() }
+                    )
+                }
+
+                if askPath.isArmed && askModel.phase == .hidden {
                     Text("ask.hint")
                         .font(.footnote.weight(.medium))
                         .padding(.horizontal, 12)
@@ -84,6 +109,17 @@ struct VirtualizedPageStack: View {
         .onAppear {
             visiblePageID = pageIDs.first
         }
+        .onChange(of: loopSelection.selection) { _, newSelection in
+            // The gesture is the only producer of a selection today, so this is what
+            // makes the Ask bar reachable at all.
+            if let newSelection {
+                selectionStore.select(newSelection)
+                askPath.selectionDidComplete()
+            } else {
+                selectionStore.clear()
+            }
+            askModel.selectionChanged(hasSelection: newSelection != nil)
+        }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else {
                 return
@@ -101,7 +137,8 @@ struct VirtualizedPageStack: View {
                 pageSize: pageSizes[pageID] ?? pageSize,
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
-                selection: selectionStore.selection(for: pageID)
+                selection: selectionStore.selection(for: pageID),
+                loopSelection: loopSelection
             )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
@@ -120,6 +157,13 @@ struct VirtualizedPageStack: View {
         askPath.invoke()
         selectedTool = .lasso
     }
+
+    /// Puts the consumed loop back on the page and drops the selection it produced.
+    private func revertLoop() {
+        // Read the page first: `revert()` clears the selection this would otherwise ask.
+        guard let pageID = loopSelection.selection?.pageID, loopSelection.revert() != nil else { return }
+        drawingStore.restoreSnapshot(for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
+    }
 }
 
 private struct LivePageView: View {
@@ -128,6 +172,7 @@ private struct LivePageView: View {
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
     let selection: PageSelection?
+    @ObservedObject var loopSelection: LoopSelectionCoordinator
 
     var body: some View {
         ZStack {
@@ -136,7 +181,8 @@ private struct LivePageView: View {
                 pageID: pageID,
                 pageSize: pageSize,
                 drawingStore: drawingStore,
-                selectedTool: selectedTool
+                selectedTool: selectedTool,
+                loopSelection: loopSelection
             )
             if let selection {
                 PageSelectionOverlay(selection: selection)
@@ -172,9 +218,15 @@ private struct LiveInkCanvas: UIViewRepresentable {
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
+    @ObservedObject var loopSelection: LoopSelectionCoordinator
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+        Coordinator(
+            pageID: pageID,
+            pageSize: pageSize,
+            drawingStore: drawingStore,
+            loopSelection: loopSelection
+        )
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -211,14 +263,43 @@ private struct LiveInkCanvas: UIViewRepresentable {
         private let pageID: UUID
         private let pageSize: CGSize
         private let drawingStore: PageDrawingStore
+        private let loopSelection: LoopSelectionCoordinator
+        /// Tracks stroke count so an append can be told apart from an erase or an undo.
+        private var lastStrokeCount = 0
 
-        init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
+        init(
+            pageID: UUID,
+            pageSize: CGSize,
+            drawingStore: PageDrawingStore,
+            loopSelection: LoopSelectionCoordinator
+        ) {
             self.pageID = pageID
             self.pageSize = pageSize
             self.drawingStore = drawingStore
+            self.loopSelection = loopSelection
+            lastStrokeCount = drawingStore.drawing(for: pageID).strokes.count
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            let strokes = canvasView.drawing.strokes
+            defer { lastStrokeCount = canvasView.drawing.strokes.count }
+
+            // Only a freshly appended stroke can be the gesture. Without this guard the
+            // removal below re-enters here and the classification runs on its own edit.
+            guard strokes.count == lastStrokeCount + 1, let finished = strokes.last else {
+                drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
+                return
+            }
+
+            guard loopSelection.strokeDidComplete(InkStroke(finished), onPage: pageID) else {
+                drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
+                return
+            }
+
+            // The loop became a selection, so its ink must not stay on the page. The
+            // drawing as it stands is kept so `revert()` can restore it exactly.
+            drawingStore.snapshot(canvasView.drawing, for: pageID)
+            canvasView.drawing = PKDrawing(strokes: strokes.dropLast())
             drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
         }
     }
@@ -228,6 +309,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
 private final class PageDrawingStore: ObservableObject {
     @Published private var drawings: [UUID: PKDrawing] = [:]
     @Published private var previews: [UUID: UIImage] = [:]
+    private var snapshots: [UUID: PKDrawing] = [:]
 
     init(inkData: [UUID: Data] = [:]) {
         for (pageID, data) in inkData {
@@ -248,6 +330,17 @@ private final class PageDrawingStore: ObservableObject {
     func save(_ drawing: PKDrawing, for pageID: UUID, pageSize: CGSize) {
         drawings[pageID] = drawing
         previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
+    }
+
+    /// Keeps the drawing exactly as it was before a loop was consumed.
+    func snapshot(_ drawing: PKDrawing, for pageID: UUID) {
+        snapshots[pageID] = drawing
+    }
+
+    /// Restores that drawing, giving back the original stroke rather than a redraw.
+    func restoreSnapshot(for pageID: UUID, pageSize: CGSize) {
+        guard let drawing = snapshots.removeValue(forKey: pageID) else { return }
+        save(drawing, for: pageID, pageSize: pageSize)
     }
 
     func cachePreview(for pageID: UUID, pageSize: CGSize) {

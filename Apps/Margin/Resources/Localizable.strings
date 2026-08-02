@@ -45,3 +45,6 @@
 "ask.failure.noRoom" = "No room on the page. Make room, or use the next page.";
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t reach the model — try again.";
+
+"selection.revert" = "Undo selection";
+"selection.revert.hint" = "Put the loop back as ink.";

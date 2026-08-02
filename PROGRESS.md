@@ -381,7 +381,7 @@ Acceptance:
 ### M2-10 — Ask bar UI
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §8, ARCHITECTURE.md §10 · estimate: M
 Note: the bar and its state exist and are tested, but are **not yet in the view
-hierarchy** — M2-12B owns wiring them to the canvas. Do not ship without that.
+hierarchy until M2-12B, which wired them in.
 Acceptance:
 - [x] The bar reflects the request state machine: verbs, working, decision, failure
 - [x] Accept, discard, cancel, retry and dismiss are reachable, 44pt, and VoiceOver-labelled
@@ -395,7 +395,7 @@ Acceptance:
 - [x] Late and out-of-order events are ignored rather than corrupting state
 - [x] Every transition is recorded, and the record cannot carry page content
 ### M2-12 — End-to-end demo with mock
-status: Ready · claimed: — · note: decomposed into M2-12A (Done) and M2-12B (Ready, device). This parent closes when M2-12B does. · estimate: M
+status: Ready · claimed: — · note: decomposed into M2-12A/B (Done), M2-12C (Ready), M2-12D (Ready, device). This parent closes when M2-12D does. · estimate: M
 
 ### M2-12A — Ask pipeline
 status: Done · completed: Claude · 2026-07-31 · refs: AI_PIPELINE.md §1, §8, ARCHITECTURE.md §5 · estimate: M
@@ -405,8 +405,29 @@ Acceptance:
 - [x] Provider failures map onto the designed §8 failure states
 - [x] Cancellation clears the suggestion and records why
 
-### M2-12B — Canvas wiring and the demo recording
-status: Ready · needs-device-verification · blocked-by: M2-03 · refs: ARCHITECTURE.md §4 · estimate: M
+### M2-12B — Canvas wiring
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §4 · estimate: M
+Note: gesture → selection → Ask bar is wired and reachable. Suggestion rendering and
+accept-into-the-page are M2-12C; the recording is M2-12D.
+Acceptance:
+- [x] A completed loop-and-dwell removes its ink and produces a page selection
+- [x] The Ask bar appears with a selection and hides without one
+- [x] The revert affordance restores the drawing exactly as it was
+- [x] A stroke that is not the gesture leaves the page untouched
+
+### M2-12C — Suggestion rendering and accept
+status: Ready · refs: ARCHITECTURE.md §4, AI_PIPELINE.md §7.3 · estimate: M
+Acceptance:
+- [ ] `AskPipeline` runs from the Ask bar's verbs against a seeded `MockProvider`
+- [ ] Suggestion ink renders over the page at `SuggestionLayer.previewAlpha`, non-interactive
+- [ ] Accept commits into the page's `PKDrawing` in one undo group and records provenance via `SuggestionProvenance`
+- [ ] Reject and cancel leave the page untouched
+
+### M2-12D — The demo recording
+status: Ready · owner: human · needs-device-verification · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Acceptance:
+- [ ] Circle `2+2=` on a real iPad → canned "4" renders as ink at the anchor → accept → undo
+- [ ] Record the screen. This is the first real signal that the product feels right.
 Note: `AskPipeline` and `AskBar` both exist and are tested, but neither is in the canvas
 view hierarchy. This task connects them and is the first time the product can be *seen*.
 **Do M2-03 first.** Nothing currently creates a `PageSelection` — the lasso gesture is the
@@ -441,7 +462,7 @@ Acceptance:
 ### M2-15 — Persist accepted-suggestion provenance
 status: Done · completed: Claude · 2026-07-31 · refs: ARCHITECTURE.md §3.1 · estimate: M
 Note: the mechanism and its proof are done. The single **call site** — accept telling the
-open document to record it — is in M2-12B's acceptance, because that is where accept is
+open document to record it — is in M2-12C's acceptance, because that is where accept is
 first wired to a live page.
 Acceptance:
 - [x] `SuggestionProvenance` turns an `AcceptedSuggestion` into a `generated` `PageElement` with `requestID`, stroke references, and `acceptedAt`
