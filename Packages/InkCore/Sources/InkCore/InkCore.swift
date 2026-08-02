@@ -165,6 +165,31 @@ public protocol InkEngine: AnyObject {
         }
     }
 
+    extension PKStroke {
+        /// Builds a PencilKit stroke from the platform-neutral model.
+        ///
+        /// The mirror of `InkStroke(_ PKStroke)`. Both directions live here so the app can
+        /// commit generated ink to a drawing without reaching for a whole engine.
+        public init?(_ stroke: InkStroke, color: UIColor = .label) {
+            guard !stroke.points.isEmpty else { return nil }
+            let points = stroke.points.map { point in
+                PKStrokePoint(
+                    location: point.location,
+                    timeOffset: point.timeOffset,
+                    size: point.size,
+                    opacity: 1,
+                    force: point.force,
+                    azimuth: point.azimuth,
+                    altitude: point.altitude
+                )
+            }
+            self.init(
+                ink: PKInk(.pen, color: color),
+                path: PKStrokePath(controlPoints: points, creationDate: Date())
+            )
+        }
+    }
+
     /// A PencilKit-backed engine that keeps renderer types behind the `InkEngine` boundary.
     @MainActor
     public final class PencilKitInkEngine: InkEngine {
@@ -289,24 +314,7 @@ public protocol InkEngine: AnyObject {
         }
 
         private func makePencilStroke(from stroke: InkStroke) -> PKStroke? {
-            guard !stroke.points.isEmpty else {
-                return nil
-            }
-
-            let points = stroke.points.map { point in
-                PKStrokePoint(
-                    location: point.location,
-                    timeOffset: point.timeOffset,
-                    size: point.size,
-                    opacity: 1,
-                    force: point.force,
-                    azimuth: point.azimuth,
-                    altitude: point.altitude
-                )
-            }
-            let path = PKStrokePath(controlPoints: points, creationDate: Date())
-            let ink = PKInk(.pen, color: .label)
-            return PKStroke(ink: ink, path: path)
+            PKStroke(stroke)
         }
     }
 #endif

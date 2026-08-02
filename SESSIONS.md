@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M2-12C
+
+**Goal:** close the loop — make circling something actually produce ink on the page.
+
+**Done:** the Ask bar's verbs run `AskPipeline`; generated ink renders over the page at 70% via `SuggestionOverlay`; accept commits it into the page's `PKDrawing`, records provenance, and autosaves. Added `PKStroke(_ InkStroke)` to `InkCore` (mirror of the conversion added in M2-12B) and `SuggestionLayer.acceptWithoutInserting`. 9 tests, app suite 97.
+
+**The whole M2 loop now runs in the simulator**: circle ink, hold, pick a verb, an answer appears, accept puts it on the page with provenance, and it survives a reload.
+
+**Not done / left open:** filed **M2-17** — generated ink just appears rather than being drawn in. `AI_PIPELINE.md` §7.3 calls that animation "the single most delightful thing in the app" and it is genuinely missing, Reduce Motion included.
+
+**Surprises and gotchas:** two worth carrying forward.
+
+**`MockProvider` cannot drive the app.** It keys fixtures by `SpecRequest.cacheKey`, which is derived from the geometry the user drew — so no canned key can ever match a real lasso. That is correct for CI determinism and useless for a demo. Hence `CannedSpecProvider`, which answers anything and is loudly marked as not shippable. Worth knowing before someone tries to "just use the mock" in the app again.
+
+**The suggestion's stroke IDs are not the page's.** Provenance has to be re-derived against the *committed* drawing after the append: using the IDs the suggestion layer handed back produces an element that references nothing, and it fails silently — the element exists, looks right, and points at strokes that are not there. There is a test pinning that the reference resolves to the committed index.
+
+**Decisions made:** `acceptWithoutInserting` exists rather than routing the canvas through a throwaway `InkEngine`. The canvas owns a `PKDrawing` directly; faking an engine to satisfy an API would put a fiction in the one place provenance is decided.
+
+**Next:** the device session. Everything left in M2 needs hardware.
+
+**Verification:** `swift test --package-path Packages/InkCore` (48) ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 97 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-02 · Claude · M1-11
 
 **Goal:** close the last window where a user's ink could still be lost.

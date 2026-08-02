@@ -14,7 +14,7 @@ M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D tw
 
 The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
 
-Next action: **M2-12C** (suggestion rendering and accept), then the device session. Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite. Everything else left in M2 needs a physical iPad and is collected in `DEVICE_SESSION.md`, which is written to be worked through in one sitting.
+Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now works in the simulator: circle ink, hold, pick a verb, generated ink appears, accept commits it with provenance and it survives a reload. Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite. Everything else left in M2 needs a physical iPad and is collected in `DEVICE_SESSION.md`, which is written to be worked through in one sitting.
 
 ## 2. What exists
 
@@ -37,7 +37,7 @@ Next action: **M2-12C** (suggestion rendering and accept), then the device sessi
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. In the canvas chrome, driven by the loop-and-dwell selection |
-| Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. **Not yet driven by the Ask bar's verbs (M2-12C)** |
+| Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Driven by the Ask bar's verbs against a canned provider until M4 |
 | Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font covering ASCII letters, digits, operators and sentence punctuation. Fails closed on anything else, and on plots and marks. Deleted when M3 lands |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
