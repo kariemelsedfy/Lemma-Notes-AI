@@ -4,14 +4,20 @@ Everything left in M1 and M2 that cannot be done without hardware, ordered so on
 clears all of it. Budget ~45 minutes plus a 30-minute note-taking block that can happen
 whenever you would be taking notes anyway.
 
-**You need:** an iPad with an Apple Pencil. Two iPads and an iCloud account for the last
-item. A Pencil Pro for the squeeze test specifically.
+**You need:** an iPad with an Apple Pencil. Two iPads and an iCloud account for M1-06D.
+A Pencil Pro for the squeeze test specifically. M0-07 must be done before M1-06D.
 
 Record results by appending a `SESSIONS.md` entry per task and ticking the acceptance
 boxes in `PROGRESS.md`. Numbers matter more than impressions — write down what you
 measured, not how it felt, except where the task explicitly asks how it felt.
 
 ---
+
+## 0. Before you start
+
+Build and run from `main`. The whole loop works in the simulator, so if something is badly
+wrong you will see it before you pick up the Pencil: circle some ink, hold, pick a verb,
+an answer should appear and accept should commit it.
 
 ## 1. M2-03B — does loop-and-dwell survive contact with real handwriting? *(the important one)*
 
@@ -39,13 +45,21 @@ holding. The 350ms hold is enforced either way. Does waiting for the lift feel w
 it does, that is a real finding and worth a task — live conversion is more work and was
 deliberately deferred until someone had felt both.
 
-## 2. M2-04 — Pencil squeeze and double-tap
+## 2. M2-04B — Pencil squeeze and double-tap
 
-Cannot be tested in a simulator at all: `UIPencilInteraction` never fires there.
+Cannot be tested in a simulator at all: `UIPencilInteraction` never fires there. The
+decision logic is covered by tests; what is unverified is whether the hardware events
+arrive as expected.
 
-- **Squeeze** (Pencil Pro): arms the Ask lasso.
-- **Double-tap** (Pencil 2+): respects the system setting by default.
+- **Squeeze** (Pencil Pro): arms the Ask lasso. If your system squeeze setting is "off",
+  nothing should happen — that is deliberate, not a bug.
+- **Double-tap** (Pencil 2+): does whatever your system setting says, and nothing
+  app-specific. The opt-in override is not reachable yet (M2-18, needs onboarding).
 - **Pencil 1 or no Pencil**: nothing happens, nothing crashes.
+
+**Also worth a judgement:** squeeze is treated as Ask unless you explicitly set the system
+squeeze action to "off". There is no system preference value that means "Ask", so no app
+can map this perfectly. If that feels presumptuous in use, say so — it is one line.
 
 ## 3. M1-03C — the frame-rate floor
 
@@ -69,7 +83,7 @@ ubiquity container is real.
 
 ## 5. M2-12D — the demo recording
 
-Do this last, once M2-12C has landed so there is ink to see.
+Do this last. Everything it needs has landed.
 
 - Write `2+2=` on a page. Loop it and hold. The canned answer should appear as suggestion
   ink at the anchor. Accept it. Then one undo should remove the whole answer.

@@ -23,7 +23,7 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period, and flush immediately on notebook close or the app leaving the foreground |
-| Ask entry point | Floating Ask control and Command–Return arm the selection lasso; no request is sent before selection and pipeline milestones |
+| Ask entry point | Loop-and-dwell, a floating Ask control, Command–Return, and Pencil squeeze/double-tap all reach the same path. The Pencil gestures are untested on hardware |
 | Selection UI | Loop-and-dwell converts a held loop into a page selection and removes its ink, with an undo affordance. Thresholds unvalidated against real handwriting (Q8 / M2-03B) |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |

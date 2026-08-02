@@ -6,6 +6,24 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M2-04
+
+**Goal:** the two Pencil hardware gestures, built without being able to fire either of them.
+
+**Done:** `PencilActionPolicy` (pure, tested) and `PencilInteractionCoordinator` (the `UIPencilInteraction` delegate). 7 tests. App suite 104. Also released two stale claims on the M2-03 and M2-12 parents — the same trap as earlier in this session, and I made it again.
+
+**Not done / left open:** the gestures are unverified; filed **M2-04B** for the device. Filed **M2-18**: `overridesDoubleTap` exists and is tested but is always constructed with the default, so the double-tap override is unreachable until onboarding exists in M7.
+
+**Surprises and gotchas:** I checked the API against the **SDK header**, not Apple's docs page — which did not render — and it was worth doing. `pencilInteractionDidTap:` has been **deprecated since iOS 17.5**; the current surface is `pencilInteraction(_:didReceiveTap:)` and `pencilInteraction(_:didReceiveSqueeze:)`, and squeeze reports a *phase*. Acting on anything but `.ended` fires repeatedly through a single squeeze. Building from memory or from an old tutorial would have produced deprecated code that compiled with warnings and misbehaved on every squeeze. The header is at `$(xcrun --sdk iphoneos --show-sdk-path)/System/Library/Frameworks/UIKit.framework/Headers/`.
+
+The policy lives apart from the interaction for one reason: `UIPencilInteraction` cannot fire in a simulator, so the decision is the only testable part and it is kept somewhere a test can reach.
+
+**Decisions made:** double-tap defers to the system preference unless the user opts in — hijacking it by default overrides a choice made for every app, which the HIG asks against. Squeeze arms Ask *unless* the system squeeze action is `.ignore`, which is an explicit "do nothing" and worth honouring even though it costs the fastest entry point. There is no preference value meaning "Ask", so no app maps this perfectly; flagged on the device checklist for a judgement in use.
+
+**Next:** the device session. Everything left in M1 and M2 needs hardware.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) — 104 tests ✅ · no deprecation warnings ✅ · `./scripts/lint.sh` ✅ · device tested: **no, and cannot be**
+
 ## 2026-08-02 · Claude · M2-12C
 
 **Goal:** close the loop — make circling something actually produce ink on the page.
