@@ -61,6 +61,10 @@ final class NotebookLibrary: ObservableObject {
         }
     }
 
+    /// Writes edited pages back to their package. Shared, so every open notebook
+    /// coalesces through the same queue.
+    private(set) lazy var autosave = PageAutosave(library: packageLibrary)
+
     func document(id: UUID) -> StoredDocument? {
         do { return try packageLibrary.document(id: id) } catch {
             lastError = error

@@ -6,6 +6,28 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M1-10 — the app could not save
+
+**Goal:** I went looking for where accepted AI ink would be persisted, and found that *no* ink was.
+
+**What was wrong.** `PageDrawingStore.save()` wrote to two in-memory dictionaries and nothing else. `NotebookPackageLibrary` had `create`, `rename`, `delete` and `document(id:)` — and no way to write a document back. Nothing anywhere in the app called a write. **Every stroke a user drew was discarded when the notebook closed.** A note-taking app that does not save notes.
+
+It has been true since M1-05D, whose session entry says durable writes "belong to a dedicated document-editing task". That task was never filed. Nobody noticed, because the canvas keeps drawings in memory for as long as the app runs, so it looks completely correct until you relaunch — and no test relaunched.
+
+**Done:** `NotebookPackageLibrary.savePage`, a `PageAutosave` actor that coalesces edits and writes off-main, and the canvas wiring that feeds it. 8 tests, all asking the same question: after this, is the ink actually on disk? Split `PageDrawingStore` into its own file — `VirtualizedPageStack` hit 401 lines.
+
+**Not done / left open:** filed **M1-11**. `flush()` exists and is tested but nothing calls it on close or backgrounding, so up to one quiet period (800ms) of work can still be lost. Much better than everything; not zero. Do it before anyone takes real notes in this.
+
+**Surprises and gotchas:** the lesson is about the shape of the bug, not the fix. It was invisible to every test in the suite because **all of them ran inside one process lifetime**. In-memory state and persisted state are indistinguishable until something reloads, and nothing did. The autosave tests deliberately go through `library.document(id:)` after writing rather than checking the actor's own state, for exactly that reason.
+
+Also worth knowing: `savePage` reads the whole document, replaces one page and writes it back. A page-granular write would be faster, but the manifest carries `modifiedAt` and the page order, and letting those drift from the pages on disk is how a notebook becomes unopenable. There is a test that `createdAt` survives a save, because rewriting a whole manifest is exactly where an original timestamp gets clobbered.
+
+**Decisions made:** an 800ms quiet period — long enough that a continuous scribble does not write per stroke, short enough to lose little. A failed write puts the edit back in the pending set rather than dropping it; silently losing ink is the failure this type exists to prevent, and doing it in the error path would be perverse.
+
+**Next:** M1-11, then M2-12C.
+
+**Verification:** `swift test --package-path Packages/DocumentStore` (12) ✅ · `xcodebuild test` on iPad Pro 13-inch (M5) — 88 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-02 · Claude · M2-12B
 
 **Goal:** make the gesture actually do something on the page, so the product exists outside its tests.

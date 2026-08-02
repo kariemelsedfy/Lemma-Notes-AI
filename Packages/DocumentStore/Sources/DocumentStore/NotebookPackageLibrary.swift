@@ -59,6 +59,41 @@ public struct NotebookPackageLibrary {
         return try packageStore.read(from: summary.packageURL)
     }
 
+    /// Writes a page's ink and metadata back to its package.
+    ///
+    /// Reads the document, replaces the one page, and writes it whole. A page-granular
+    /// write would be faster, but the package's manifest carries `modifiedAt` and the
+    /// page order, and letting those drift from the pages on disk is how a notebook ends
+    /// up unopenable. Correctness first; `DocumentPackageStore` is where a smarter write
+    /// belongs if this ever shows up in a profile.
+    @discardableResult
+    public func savePage(
+        _ page: StoredPage,
+        inNotebook id: UUID,
+        now: Date = .now
+    ) throws -> NotebookPackageSummary {
+        let summary = try packageSummary(id: id)
+        let document = try packageStore.read(from: summary.packageURL)
+        guard let index = document.pages.firstIndex(where: { $0.metadata.pageID == page.metadata.pageID }) else {
+            throw DocumentPackageError.missingPageMetadata(page.metadata.pageID)
+        }
+
+        var pages = document.pages
+        pages[index] = page
+        var manifest = document.manifest
+        manifest.modifiedAt = now
+
+        let updated = StoredDocument(
+            manifest: manifest,
+            pages: pages,
+            assets: document.assets,
+            glyphBankData: document.glyphBankData,
+            thumbnails: document.thumbnails
+        )
+        try packageStore.write(updated, to: summary.packageURL)
+        return NotebookPackageSummary(packageURL: summary.packageURL, manifest: manifest)
+    }
+
     public func rename(id: UUID, to title: String, now: Date = .now) throws -> NotebookPackageSummary {
         let summary = try packageSummary(id: id)
         let document = try packageStore.read(from: summary.packageURL)
