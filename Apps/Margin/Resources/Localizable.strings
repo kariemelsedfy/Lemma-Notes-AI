@@ -48,3 +48,9 @@
 
 "selection.revert" = "Undo selection";
 "selection.revert.hint" = "Put the loop back as ink.";
+
+"pen.graphite" = "Graphite pen";
+"pen.blue" = "Blue pen";
+"pen.red" = "Red pen";
+"pen.green" = "Green pen";
+"ask.lasso.capture" = "Draw a lasso around the work you want help with";

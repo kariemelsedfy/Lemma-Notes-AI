@@ -1,3 +1,4 @@
+import DesignSystem
 import SwiftUI
 
 enum CanvasTool: CaseIterable, Identifiable {
@@ -24,8 +25,13 @@ enum CanvasTool: CaseIterable, Identifiable {
     }
 }
 
+extension MarginPen {
+    var accessibilityLabel: LocalizedStringKey { LocalizedStringKey("pen.\(rawValue)") }
+}
+
 struct ToolPalette: View {
     @Binding var selectedTool: CanvasTool
+    @Binding var selectedPen: MarginPen
 
     var body: some View {
         HStack(spacing: 8) {
@@ -40,6 +46,30 @@ struct ToolPalette: View {
                 .accessibilityAddTraits(selectedTool == tool ? .isSelected : [])
                 .buttonStyle(.borderedProminent)
                 .tint(selectedTool == tool ? .accentColor : .secondary)
+            }
+            // Only shown while the pen is selected: a colour has no meaning for the
+            // eraser or the lasso, and an always-visible row of swatches implies it does.
+            if selectedTool == .pen {
+                Divider().frame(height: 28)
+                ForEach(MarginPen.allCases) { pen in
+                    Button {
+                        selectedPen = pen
+                    } label: {
+                        Circle()
+                            .fill(pen.color)
+                            .frame(width: 22, height: 22)
+                            .overlay(
+                                Circle().strokeBorder(
+                                    MarginColor.primaryText.opacity(selectedPen == pen ? 0.9 : 0.15),
+                                    lineWidth: selectedPen == pen ? 2.5 : 1
+                                )
+                            )
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(pen.accessibilityLabel)
+                    .accessibilityAddTraits(selectedPen == pen ? .isSelected : [])
+                }
             }
         }
         .padding(8)

@@ -47,7 +47,7 @@ extension VirtualizedPageStack {
     /// Commits the suggestion to the page in one undo group and records its provenance.
     func acceptSuggestion() {
         guard let pageID = loopSelection.selection?.pageID else { return }
-        let pencilStrokes = suggestions.strokes.compactMap { PKStroke($0, color: MarginInk.color) }
+        let pencilStrokes = suggestions.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
         guard !pencilStrokes.isEmpty else {
             askModel.accept()
             return

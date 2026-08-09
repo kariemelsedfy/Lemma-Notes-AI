@@ -10,6 +10,7 @@ import SwiftUI
 /// interfere with — the real ink underneath it.
 struct SuggestionOverlay: View {
     let strokes: [InkStroke]
+    var pen: MarginPen = .graphite
 
     var body: some View {
         Canvas { context, _ in
@@ -22,7 +23,7 @@ struct SuggestionOverlay: View {
                 }
                 context.stroke(
                     path,
-                    with: .color(MarginColor.ink.opacity(SuggestionLayer.previewAlpha)),
+                    with: .color(pen.color.opacity(SuggestionLayer.previewAlpha)),
                     style: StrokeStyle(lineWidth: strokeWidth(of: stroke), lineCap: .round, lineJoin: .round)
                 )
             }
