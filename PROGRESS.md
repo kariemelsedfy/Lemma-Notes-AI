@@ -84,6 +84,16 @@ Acceptance:
 - [x] Opt-out respected at the transport layer
 - [x] No PII, no note content, ever — enforced by the type system where possible
 
+### M0-08 — Device signing configuration
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §7 · estimate: S
+Note: `Project.swift` had no `DEVELOPMENT_TEAM`, so no device build could sign — and
+setting one in Xcode's UI is wiped by the next `tuist generate`. Now read from
+`TUIST_DEVELOPMENT_TEAM`, with `TUIST_BUNDLE_ID_PREFIX` for free-provisioning ID clashes.
+Acceptance:
+- [x] A device build signs when the environment supplies a team
+- [x] Unset, the project generates byte-identically to before — CI is unaffected
+- [x] No team ID or personal bundle ID is committed
+
 ### M0-07 — Apple Developer setup and TestFlight proof
 status: Ready · owner: human · estimate: M
 Acceptance:

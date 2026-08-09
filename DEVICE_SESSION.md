@@ -4,8 +4,9 @@ Everything left in M1 and M2 that cannot be done without hardware, ordered so on
 clears all of it. Budget ~45 minutes plus a 30-minute note-taking block that can happen
 whenever you would be taking notes anyway.
 
-**You need:** an iPad with an Apple Pencil. Two iPads and an iCloud account for M1-06D.
-A Pencil Pro for the squeeze test specifically. M0-07 must be done before M1-06D.
+**You need:** an iPad with an Apple Pencil, and an Apple ID signed into Xcode (free is
+fine — see §0). A Pencil Pro for the squeeze test specifically. Two iPads, an iCloud
+account, and M0-07 done for M1-06D — skip that one until then.
 
 Record results by appending a `SESSIONS.md` entry per task and ticking the acceptance
 boxes in `PROGRESS.md`. Numbers matter more than impressions — write down what you
@@ -15,7 +16,30 @@ measured, not how it felt, except where the task explicitly asks how it felt.
 
 ## 0. Before you start
 
-Build and run from `main`. The whole loop works in the simulator, so if something is badly
+**Set a signing team, once.** A device build will not sign without one. Find your team ID
+in Xcode → Settings → Accounts → your Apple ID → the ID column beside your team (a free
+Apple ID shows a "Personal Team"). Then:
+
+```bash
+export TUIST_DEVELOPMENT_TEAM=ABCDE12345   # your ID, not this one
+./scripts/generate.sh
+```
+
+Put the `export` in your shell profile so it survives a new terminal. **Do not set the team
+in Xcode's UI** — the project is generated, so the next `generate.sh` throws it away.
+
+A free Apple ID is enough for everything in this list except item 4. It gives 7-day
+provisioning: the build stops launching after a week and you re-run it. TestFlight and
+iCloud need the paid programme, which is M0-07.
+
+If signing fails with a bundle-ID conflict, `edu.bowdoin.margin` is registered to someone
+else — free provisioning needs a globally unique ID. Override it:
+
+```bash
+export TUIST_BUNDLE_ID_PREFIX=com.yourname
+```
+
+**Then check the simulator first.** The whole loop works there, so if something is badly
 wrong you will see it before you pick up the Pencil: circle some ink, hold, pick a verb,
 an answer should appear and accept should commit it.
 

@@ -77,6 +77,10 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.
 
+Device builds need a signing team: `export TUIST_DEVELOPMENT_TEAM=<id>` before
+`./scripts/generate.sh`. A free Apple ID works (7-day provisioning). Setting the team in
+Xcode's UI does not survive regeneration. See `DEVICE_SESSION.md` §0.
+
 ## 5. Open questions
 
 Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
