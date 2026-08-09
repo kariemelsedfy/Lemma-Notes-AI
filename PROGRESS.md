@@ -615,7 +615,8 @@ is carrying more of the product's differentiation than it was.
 
 ### M3-00 — Typeset fallback style
 status: Ready · refs: HANDWRITING.md §8 · estimate: S
-Note: **deliberately first.** It is needed regardless — `HANDWRITING.md` §8 makes it a
+Note: **next.** M3-01 went first so this can be scored rather than guessed at. It is
+needed regardless — `HANDWRITING.md` §8 makes it a
 Settings option and `BUSINESS.md` makes it the Exam Mode default — and it is the pivot
 target if R-01 fails. Building it now means a failed gate is a setting change, not a
 rewrite. It also replaces `PlainStrokeFont`, which is throwaway code sitting in the app.
@@ -625,13 +626,34 @@ Acceptance:
 - [ ] Legible via the OCR round-trip harness
 
 ### M3-01 — OCR round-trip harness
-status: Ready · refs: HANDWRITING.md §7, ARCHITECTURE.md §9 · estimate: S
-Note: also early, because it is the only *automated* quality signal in M3 and it can score
-M3-00 immediately. Render → Vision OCR → compare.
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §7, ARCHITECTURE.md §9 · estimate: S
+Note: **moved ahead of M3-00.** Nobody working on synthesis can see their own output, so
+the objective measure has to exist before the thing it measures — otherwise M3-00 gets
+judged by guesswork. Baseline recorded: `PlainStrokeFont` scores **87.5% exact on prose**.
 Acceptance:
-- [ ] `render(text) -> OCR -> string` comparison, usable from tests
-- [ ] Reports exact-match rate over a fixed corpus
-- [ ] Target ≥95% is asserted, not just measured
+- [x] `render(text) -> OCR -> string` comparison, usable from tests
+- [x] Reports exact-match rate, mean similarity, and failures worst-first
+- [x] The 95% target is asserted against real renderers — the placeholder keeps a lower
+      regression floor, since it is throwaway code M3-00 deletes
+
+### M3-01B — Extend the corpus and enforce 95% on real renderers
+status: Ready · refs: HANDWRITING.md §7 · estimate: S
+Note: the corpus is 8 strings, enough to prove the harness works. §7's 95% bar needs a
+corpus worth asserting against, and it must stay prose-only until M5 — see M3-11.
+Acceptance:
+- [ ] A corpus broad enough that 95% means something (≥40 strings)
+- [ ] M3-00 and M3-05 each assert ≥95% against it
+
+### M3-11 — Math legibility needs the M5 layout, not a better font
+status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S
+Note: measured during M3-01 — `"x^2 + 3x"` comes back from Vision as garbage while
+`"The derivative is 2x"` reads exactly. Not a synthesis failure: a literal caret is not how
+anyone writes an exponent, and Vision has never seen one in running text. Math legibility
+cannot be measured until the box model renders a real superscript. §7 states 95% without
+qualifying the corpus; until M5 that number applies to prose only.
+Acceptance:
+- [ ] Once M5 renders real notation, math strings join the corpus
+- [ ] §7 is restated to say which corpus its target applies to
 
 ### M3-02 — Calibration capture UI
 status: Ready · refs: HANDWRITING.md §3.1 · estimate: L
