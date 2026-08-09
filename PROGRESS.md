@@ -279,15 +279,16 @@ Acceptance:
 - [ ] Export reflects the page the user actually sees
 
 ### M0-09 — Track the planning documents in git
-status: Ready · owner: human · refs: AGENTS.md §5 · estimate: S
+status: Done · completed: Claude · 2026-08-02 · refs: AGENTS.md §5 · estimate: S
 Note: `AGENTS.md`, `ARCHITECTURE.md`, `AI_PIPELINE.md`, `HANDWRITING.md`, `BUSINESS.md`,
 `PROJECT_PLAN.md`, `CLAUDE.md` and **`DECISIONS.md`** are untracked local files. Every
 agent reads them from a working copy nobody else has, and **there is nowhere to write an
 ADR** — M1-12 made a decision that qualifies under AGENTS §5 and had to record it in
 `SESSIONS.md` instead. A fresh clone gets none of this.
 Acceptance:
-- [ ] The planning documents are committed, or a deliberate decision not to is recorded
-- [ ] `README.md`'s `docs/` links resolve to where the files actually live
+- [x] The planning documents are committed
+- [x] Every `docs/…` reference resolves — 25 broken links across four files
+- [x] The two outstanding decisions are recorded as ADR-011 and ADR-012
 
 ### M1-09 — Handwriting-to-text (Vision, on-device)
 status: Done · completed: Codex · 2026-07-29 · estimate: M
@@ -588,7 +589,7 @@ Acceptance:
 
 Expand each into tasks at the start of its milestone, not before. Writing 200 speculative tasks now guarantees 150 of them are wrong.
 
-**M3 Handwriting synthesis v1** — calibration UI, segmentation + alignment, glyph bank storage, style statistics, synthesizer, kerning and connections, dynamics, line breaking, OCR round-trip test harness, blind similarity panel, "neat" and "typeset" fallback styles.
+**M3 Handwriting synthesis v1** — expanded below.
 
 **M4 Real intelligence** — Foundation Models provider (T0), PCC provider (T1), cloud proxy + provider (T2), routing policy, prompts v1, streaming, speculative execution, cache, failure states, golden set capture (200 samples, 15 writers), `evalrunner`, metrics dashboard.
 
@@ -599,6 +600,121 @@ Expand each into tasks at the start of its milestone, not before. Writing 200 sp
 **M7 Polish and beta** — onboarding, accessibility pass, error copy, empty states, performance pass, crash reporting, TestFlight cohort, retention instrumentation, the demo video.
 
 **M8 Submission** — review notes, demo account and sample document, screenshots, marketing site, submit.
+
+---
+
+## Ready — M3: Handwriting synthesis
+
+**The gate.** R-01 in `PROJECT_PLAN.md` §7: if a blind panel says "plausibly mine" <40%
+after two iterations, we pivot to typeset output and drop handwriting matching from the
+pitch. Everything here is sequenced to reach that verdict as early as possible — the worst
+outcome is building all of M3 and *then* discovering it does not convince anyone.
+
+ADR-011 raised the stakes: with loop-and-dwell gone, "the answer is in your handwriting"
+is carrying more of the product's differentiation than it was.
+
+### M3-00 — Typeset fallback style
+status: Ready · refs: HANDWRITING.md §8 · estimate: S
+Note: **deliberately first.** It is needed regardless — `HANDWRITING.md` §8 makes it a
+Settings option and `BUSINESS.md` makes it the Exam Mode default — and it is the pivot
+target if R-01 fails. Building it now means a failed gate is a setting change, not a
+rewrite. It also replaces `PlainStrokeFont`, which is throwaway code sitting in the app.
+Acceptance:
+- [ ] Clean vector text rendered as `PKStroke`s at matched size, colour and baseline
+- [ ] Replaces `PlainStrokeFont` and `PlainInkRenderer` at the `SuggestionInkRendering` seam
+- [ ] Legible via the OCR round-trip harness
+
+### M3-01 — OCR round-trip harness
+status: Ready · refs: HANDWRITING.md §7, ARCHITECTURE.md §9 · estimate: S
+Note: also early, because it is the only *automated* quality signal in M3 and it can score
+M3-00 immediately. Render → Vision OCR → compare.
+Acceptance:
+- [ ] `render(text) -> OCR -> string` comparison, usable from tests
+- [ ] Reports exact-match rate over a fixed corpus
+- [ ] Target ≥95% is asserted, not just measured
+
+### M3-02 — Calibration capture UI
+status: Ready · refs: HANDWRITING.md §3.1 · estimate: L
+Note: ~7 guided screens, target under 3 minutes. Per-character guide boxes for lines 1–5
+make segmentation trivial; the pangram is where the hard part lives (M3-03).
+Acceptance:
+- [ ] Guided sheets for lowercase, uppercase, digits, punctuation, math symbols, pangram ×2, arithmetic
+- [ ] Under 3 minutes for a cooperative user, measured
+- [ ] Skippable, with the typeset style as the consequence
+
+### M3-03 — Segmentation and alignment
+status: Ready · refs: HANDWRITING.md §3.2 · estimate: L
+Note: guide-box lines are trivial. The pangram needs pen-up gap splitting plus DP alignment
+to the known target string, and **must drop low-confidence alignments rather than store a
+bad glyph** — one wrong glyph is visible in every word that uses it.
+Acceptance:
+- [ ] Guide-box strokes assign to the box they mostly occupy
+- [ ] Pangram segments by gap threshold + dynamic-programming alignment
+- [ ] Low-confidence alignments are dropped, not stored
+- [ ] The user can see the segmentation and retap any glyph to rewrite it
+
+### M3-04 — Glyph bank storage
+status: Ready · refs: HANDWRITING.md §3.4, AGENTS.md §7 · estimate: M
+Note: **the glyph bank never leaves the device.** No upload path may exist in the code,
+even disabled — that is an invariant, not a preference.
+Acceptance:
+- [ ] Per glyph: normalized polylines with pressure/tilt/timestamps, advance width, bounds, entry/exit points, connection class
+- [ ] Stored in the app container; mirrored to iCloud only within the user's own account
+- [ ] A test asserts no network symbol is reachable from the glyph-bank module
+
+### M3-05 — Synthesizer core
+status: Ready · refs: HANDWRITING.md §4 · estimate: L
+Note: `synthesize(_ text:style:seed:) -> [PKStroke]`. Glyph selection, baseline placement,
+advance and kerning. Deterministic given the same seed — `HANDWRITING.md` §7 makes that a
+measured property, and it is what makes snapshot tests possible at all.
+Acceptance:
+- [ ] Never repeats the same glyph sample adjacently
+- [ ] Advance from measured glyph widths plus the writer's inter-letter gap
+- [ ] Same (text, style, seed) produces byte-identical strokes
+- [ ] ≤30ms for a 20-character line on device
+
+### M3-06 — Dynamics and the realism checklist
+status: Ready · refs: HANDWRITING.md §4.1 · estimate: M
+Note: the §4.1 list is where most of the "is this mine?" verdict lives. Flat pressure reads
+as fake instantly; excess jitter reads as shaky, which is a different tell.
+Acceptance:
+- [ ] Per-point force, altitude, azimuth and timing from the writer's velocity profile
+- [ ] Height variance from the writer's measured σ, not a fixed percentage
+- [ ] Baseline drift and slight word tilt
+- [ ] Pen-lift patterns preserved
+
+### M3-07 — Line breaking
+status: Ready · refs: HANDWRITING.md §4 step 7 · estimate: S
+Acceptance:
+- [ ] Greedy wrap to the target rect at the writer's measured line spacing
+- [ ] No hyphenation
+- [ ] Interacts correctly with the placement engine's reserved frame
+
+### M3-08 — Neat style
+status: Ready · refs: HANDWRITING.md §8 · estimate: S
+Note: the glyph bank with variance reduced ~60%. §8 expects several early testers to prefer
+this *over* their real hand for answers, which would itself be a finding worth recording.
+Acceptance:
+- [ ] Selectable in Settings alongside "My handwriting" and "Typeset"
+- [ ] Existing generated blocks re-render on switch, since we keep the spec
+
+### M3-09 — Automated style similarity
+status: Ready · refs: HANDWRITING.md §7 · estimate: M
+Note: writer-identification embedding, cosine similarity of generated-vs-real against
+real-vs-real. Target ≥0.80 of the intra-writer baseline. A cheap proxy for the human panel
+that can run every build.
+Acceptance:
+- [ ] Similarity score computed over a fixed sample set
+- [ ] Reported alongside the OCR legibility number
+
+### M3-10 — Blind similarity panel *(the gate)*
+status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
+Note: **this is the M3 kill-criterion review and only a human can run it.** 5 real lines,
+5 generated, "which are yours?" Needs recruiting people who are not you.
+Acceptance:
+- [ ] ≥60% "plausibly mine" at M3 (≥75% at 1.0)
+- [ ] Below 40% after two iterations → pivot to typeset per R-01, and say so out loud
+- [ ] Result recorded in SESSIONS.md whichever way it goes
 
 ---
 
