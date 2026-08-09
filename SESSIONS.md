@@ -11,6 +11,32 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-02 — calibration capture
+
+**Goal:** the seven guided sheets that build a glyph bank, and somewhere to keep it.
+
+**Done:** `CalibrationSheet` (the sheets from §3.1, plus responsive guide-box layout) and `CalibrationSession` (records ink per sheet, builds the bank, reports what it could not get) in `Packages/Handwriting` — 24 tests. `CalibrationView`, `CalibrationCanvas` and `HandwritingStyleStore` in the app — 6 tests. Handwriting 88, Margin 113.
+
+**The split is the point.** Everything except the drawing surface lives in the package, so the whole flow — sheet order, box layout, skipping, redoing, what ends up in the bank — is testable with `swift test` and no simulator. The app layer is a view and a file path.
+
+**Two things the tests found that I would not have:**
+
+*A session with no lowercase letters banked nothing at all.* x-height is measured from letters that define it (`acemnorsuvwxz`), everything is normalized against that number, and if the user skips the lowercase sheet there are none. The guard returned an empty bank and reported every character missing — silently throwing away a whole sheet of someone's time. Now it falls back to the median height of everything captured. Worse estimate, but a bank scaled slightly large is fixable and an empty one is not.
+
+*A letter rejected on the first pass but captured on the repeat pass was still reported as unclear.* Sending a user back for ink already banked is the kind of small insult that makes people abandon a three-minute chore. Both `rejected` and `missing` are now filtered against what actually landed in the bank.
+
+**Gotchas:** the app did not link `Handwriting` — it only had it transitively through `Intelligence`, and Swift needs the explicit product dependency. Added to `Project.swift`. The plain `xcodebuild build` passed anyway from a stale incremental build and only the test link surfaced it, so **do not trust a `build` that follows an edit to `Project.swift` without regenerating.**
+
+The boxes handed to the segmenter must be the boxes actually drawn on screen, so layout is computed once and shared rather than recomputed per view. If those ever diverge, letters get assigned to boxes the user never saw and nothing in the code would look wrong.
+
+**Left open:** the three-minute budget is the one acceptance criterion I cannot check — filed **M3-02B** for a timed pass on device, which also answers whether the boxes are comfortable to write in. The entry point is a toolbar menu in the library, which is the reachable minimum; **M3-13** is where the real question of when to offer calibration lives.
+
+**Next:** M3-08 (neat style), then the M3 gate — M3-10, the blind similarity panel, which is human-only.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 88 tests ✅ · `xcodebuild test` — 113 tests ✅ · `./scripts/lint.sh` ✅ · privacy/deps/colour checks ✅ · device tested: no
+
+---
+
 ## 2026-08-02 · Claude · M3-03, and two decisions
 
 **Goal:** turn calibration strokes into glyphs. Q10 and Q11 were answered first, and Q10 changed the shape of this task substantially.

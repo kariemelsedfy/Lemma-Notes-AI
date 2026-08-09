@@ -656,13 +656,24 @@ Acceptance:
 - [ ] §7 is restated to say which corpus its target applies to
 
 ### M3-02 — Calibration capture UI
-status: Ready · refs: HANDWRITING.md §3.1 · estimate: L
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §3.1, DECISIONS.md ADR-014 · estimate: L
 Note: ~7 guided screens, target under 3 minutes. Per-character guide boxes for lines 1–5
-make segmentation trivial; the pangram is where the hard part lives (M3-03).
+make segmentation trivial; the pangram is measured for spacing only (M3-03).
 Acceptance:
-- [ ] Guided sheets for lowercase, uppercase, digits, punctuation, math symbols, pangram ×2, arithmetic
-- [ ] Under 3 minutes for a cooperative user, measured
-- [ ] Skippable, with the typeset style as the consequence
+- [x] Guided sheets for lowercase, uppercase, digits, punctuation, math symbols, pangram ×2, arithmetic
+- [ ] Under 3 minutes for a cooperative user, measured — **needs-device-verification** (M3-02B)
+- [x] Skippable, per sheet and as a whole, with the typeset style as the consequence
+- [x] The §3.2 review step: unclear glyphs are listed and tappable to rewrite
+- [x] The bank is deletable in one tap — it is personal data (`BUSINESS.md`)
+
+### M3-02B — Time a real calibration pass
+status: Ready · owner: human · refs: HANDWRITING.md §3.1 · estimate: S
+Note: the three-minute budget is the acceptance criterion I cannot check. Needs an iPad and
+a Pencil: run calibration end to end, time it, and say which sheets dragged. Guide boxes are
+sized to the space available, so this also answers whether they are comfortable to write in.
+Acceptance:
+- [ ] A full pass is timed on device
+- [ ] Any sheet that feels long is named, so it can be cut or split
 
 ### M3-03 — Segmentation and alignment
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §3.2, DECISIONS.md ADR-013 · estimate: L
