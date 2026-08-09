@@ -52,3 +52,14 @@
 "pen.red" = "Red pen";
 "pen.green" = "Green pen";
 "ask.lasso.capture" = "Draw a lasso around the work you want help with";
+
+"calibration.title" = "Your handwriting";
+"calibration.start" = "Teach it your handwriting";
+"calibration.leave" = "Done for now";
+"calibration.clear" = "Clear";
+"calibration.skip" = "Skip this";
+"calibration.next" = "Next";
+"calibration.finish" = "Save";
+"calibration.summary.captured %lld" = "Captured %lld characters.";
+"calibration.summary.unclear" = "These came out unclear. Tap one to write it again.";
+"calibration.delete" = "Delete my handwriting";

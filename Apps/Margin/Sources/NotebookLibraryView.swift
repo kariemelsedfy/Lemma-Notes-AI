@@ -16,6 +16,8 @@ struct NotebookLibraryView: View {
     @State private var renameTitle = ""
     @State private var shareFileURL: URL?
     @State private var exportErrorPresented = false
+    @State private var calibrationPresented = false
+    @StateObject private var handwriting = HandwritingStyleStore()
 
     var body: some View {
         NavigationSplitView {
@@ -49,6 +51,15 @@ struct NotebookLibraryView: View {
                 .navigationTitle("library.title")
                 .toolbar {
                     Button("library.create", systemImage: "plus") { createNotebook() }
+                    // ADR-014: calibration is optional, so it lives here rather than in
+                    // front of a new user. M3-13 covers offering it at a better moment
+                    // than "buried in a toolbar" — this is the reachable minimum.
+                    Menu("calibration.title", systemImage: "hand.draw") {
+                        Button("calibration.start") { calibrationPresented = true }
+                        if handwriting.bank != nil {
+                            Button("calibration.delete", role: .destructive) { handwriting.delete() }
+                        }
+                    }
                 }
             }
         } detail: {
@@ -96,6 +107,9 @@ struct NotebookLibraryView: View {
             Button("library.ok", role: .cancel) {}
         } message: {
             Text("library.export.failed.message")
+        }
+        .sheet(isPresented: $calibrationPresented) {
+            CalibrationView(store: handwriting)
         }
         .sheet(isPresented: sharePresented) {
             if let shareFileURL {

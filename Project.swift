@@ -30,6 +30,7 @@ let project = Project(
     packages: [
         .local(path: "Packages/DocumentStore"),
         .local(path: "Packages/Intelligence"),
+        .local(path: "Packages/Handwriting"),
         .local(path: "Packages/InkCore"),
         .local(path: "Packages/Analytics"),
         .local(path: "Packages/DesignSystem"),
@@ -49,6 +50,7 @@ let project = Project(
             dependencies: [
                 .package(product: "DocumentStore"),
                 .package(product: "Intelligence"),
+                .package(product: "Handwriting"),
                 .package(product: "InkCore"),
                 .package(product: "Analytics"),
                 .package(product: "DesignSystem"),
@@ -69,6 +71,7 @@ let project = Project(
                 .target(name: "Margin"),
                 .package(product: "DocumentStore"),
                 .package(product: "Intelligence"),
+                .package(product: "Handwriting"),
                 .package(product: "InkCore"),
                 .package(product: "Analytics"),
                 .package(product: "DesignSystem"),
