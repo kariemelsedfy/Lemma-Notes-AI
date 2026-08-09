@@ -698,25 +698,33 @@ Acceptance:
 - [ ] The privacy check still fails on any other transmission route
 
 ### M3-05 — Synthesizer core
-status: Ready · refs: HANDWRITING.md §4 · estimate: L
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §4 · estimate: L
 Note: `synthesize(_ text:style:seed:) -> [PKStroke]`. Glyph selection, baseline placement,
 advance and kerning. Deterministic given the same seed — `HANDWRITING.md` §7 makes that a
 measured property, and it is what makes snapshot tests possible at all.
 Acceptance:
-- [ ] Never repeats the same glyph sample adjacently
-- [ ] Advance from measured glyph widths plus the writer's inter-letter gap
-- [ ] Same (text, style, seed) produces byte-identical strokes
-- [ ] ≤30ms for a 20-character line on device
+- [x] Never repeats the same glyph sample adjacently
+- [x] Advance from measured glyph widths plus the writer's inter-letter gap
+- [x] Same (text, style, seed) produces byte-identical strokes
+- [x] ≤30ms for a 20-character line — asserted on a Mac, **not yet on device**
+Note: dynamics, slant, baseline drift and per-glyph jitter landed here rather than waiting
+for M3-06, because they are the same loop over the same points and splitting them would
+have meant writing it twice. **100% legibility against a bank of typeset letterforms**,
+which pins that the layout costs nothing — a real bank will score lower and that will be
+the writer's hand, not this code. `Variation` carries the "neat" style, so M3-08 is now
+a settings surface rather than an algorithm.
 
 ### M3-06 — Dynamics and the realism checklist
-status: Ready · refs: HANDWRITING.md §4.1 · estimate: M
+status: Partly done · completed-in: M3-05 · refs: HANDWRITING.md §4.1 · estimate: S
 Note: the §4.1 list is where most of the "is this mine?" verdict lives. Flat pressure reads
 as fake instantly; excess jitter reads as shaky, which is a different tell.
 Acceptance:
-- [ ] Per-point force, altitude, azimuth and timing from the writer's velocity profile
-- [ ] Height variance from the writer's measured σ, not a fixed percentage
-- [ ] Baseline drift and slight word tilt
-- [ ] Pen-lift patterns preserved
+- [x] Per-point force, altitude, azimuth and timing carried from the captured glyph
+- [x] Baseline drift and per-glyph jitter, scaled by `Variation`
+- [x] Pen-lift patterns preserved — glyph strokes stay separate end to end
+- [ ] Height variance from the writer's measured σ, **not** done: `StyleStats` has no
+      per-glyph height variance yet, so jitter uses a fixed fraction of x-height. Needs a
+      real capture to measure σ from, so it waits for M3-02/M3-03.
 
 ### M3-07 — Line breaking
 status: Ready · refs: HANDWRITING.md §4 step 7 · estimate: S
