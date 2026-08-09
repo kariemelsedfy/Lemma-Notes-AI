@@ -160,3 +160,31 @@ Tracked in `CONTEXT.md` §5 (Q1–Q8). Promote each to an ADR here when resolved
 **Consequences.** Stored strokes can never invert, so a note written at night stays readable in the morning — the failure mode adaptive ink would have introduced. Export renders on white, so the screen matches the PDF. Costs a bright page at night, which is what GoodNotes and Notability also do. A real dark-paper mode (M1-13) is a user setting, and needs every stored drawing converted through `PKInkingTool.convertColor(_:fromUserInterfaceStyle:to:)` plus an export that agrees.
 
 **Revisit when.** Users ask for dark paper, or M1-13 is scheduled.
+
+---
+
+## ADR-013 — Print-only handwriting for 1.0
+**Status:** Accepted · 2026-08-02 · decided by: human
+
+**Context.** `HANDWRITING.md` §1 flags cursive as substantially harder than print, and §4 step 4 describes joining glyph exit points to entry points with curvature matched to the writer's connectors. §4 already permits falling back to print per join. The question was whether 1.0 attempts joins at all.
+
+**Decision.** Print-only. `ConnectionClass` stays on every stored glyph and every capture records full stroke geometry, so the data to add joins later is captured now — but nothing reads it in 1.0.
+
+**Consequences.** Removes the hardest part of synthesis from the critical path to the M3 gate, and removes the need to classify connection behaviour during segmentation. Many people write semi-cursive anyway, which §4 notes makes print output acceptable. The cost is that a strongly cursive writer will find output less like their hand — that is a real quality ceiling for that subset, and it is a risk the blind panel (M3-10) will surface if it matters. Because capture keeps the geometry, adding joins later does **not** require re-calibrating existing users.
+
+**Revisit when.** The panel shows cursive writers rating output materially worse than print writers, or 2.0 scope opens.
+
+---
+
+## ADR-014 — Calibration is optional and deferrable
+**Status:** Accepted · 2026-08-02 · decided by: human
+
+**Context.** `HANDWRITING.md` §3 targets a sub-3-minute calibration, and §8 ships a typeset fallback for users who never do it. The question was whether the first Ask should be gated on calibrating.
+
+**Decision.** No gate. A new user can Ask immediately and gets the typeset style; calibration is offered but can happen whenever they choose.
+
+**Consequences.** Nothing stands between install and the product's actual value, which matters most for the first session — the one where people decide whether to keep an app. It also means **the typeset style is the first impression for every user**, so its quality is a shipping concern rather than a fallback's, and M3-00 landing before the synthesizer turns out to have been the right order for a second reason.
+
+The cost: users who never calibrate never see the feature the product is named for, and "the AI writes in your handwriting" is not true for them until they do. That makes the prompt to calibrate — where it appears, how often — a real design problem rather than a settings row. Filed as M3-13.
+
+**Revisit when.** Telemetry shows a large share of users never calibrating, or first-session retention suggests the opposite gate would be better.
