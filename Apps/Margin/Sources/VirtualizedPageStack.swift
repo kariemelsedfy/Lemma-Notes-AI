@@ -15,12 +15,12 @@ struct VirtualizedPageStack: View {
     @State private var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
     @StateObject var selectionStore = PageSelectionStore()
-    @StateObject var loopSelection = LoopSelectionCoordinator()
+    @StateObject var askSelection = AskSelectionCoordinator()
     @StateObject var askModel = AskBarModel()
     let suggestions = SuggestionLayer()
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
-    @State var selectedPen: MarginPen = .graphite
+    @State var selectedPen: MarginPen = .black
     @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
@@ -71,15 +71,6 @@ struct VirtualizedPageStack: View {
             .scrollIndicators(.hidden)
 
             VStack(spacing: 8) {
-                if loopSelection.isOfferingRevert {
-                    Button("selection.revert", action: revertLoop)
-                        .font(.footnote.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 44)
-                        .background(.regularMaterial, in: Capsule())
-                        .accessibilityHint("selection.revert.hint")
-                }
-
                 if askModel.phase != .hidden {
                     AskBar(
                         phase: askModel.phase,
@@ -122,9 +113,9 @@ struct VirtualizedPageStack: View {
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
         }
-        .onChange(of: loopSelection.selection) { _, newSelection in
-            // The gesture is the only producer of a selection today, so this is what
-            // makes the Ask bar reachable at all.
+        .onChange(of: askSelection.selection) { _, newSelection in
+            // The lasso is the only producer of a selection, so this is what makes the
+            // Ask bar reachable at all.
             if let newSelection {
                 selectionStore.select(newSelection)
                 askPath.selectionDidComplete()
@@ -152,11 +143,11 @@ struct VirtualizedPageStack: View {
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
-                loopSelection: loopSelection,
+                askSelection: askSelection,
                 suggestionInk: suggestionInk(for: pageID),
                 isCapturingAskLasso: askPath.isArmed && pageID == visiblePageID,
                 onAskLasso: { loop in
-                    loopSelection.selectManually(loop: loop, onPage: pageID)
+                    askSelection.select(loop: loop, onPage: pageID)
                 }
             )
         } else {
@@ -194,15 +185,8 @@ struct VirtualizedPageStack: View {
     /// opaque, so choosing it made the Ask path a dead end — selection appeared to work
     /// and then nothing happened.
     private func invokeAsk() {
-        loopSelection.clearSelection()
+        askSelection.clearSelection()
         askPath.invoke()
-    }
-
-    /// Puts the consumed loop back on the page and drops the selection it produced.
-    private func revertLoop() {
-        // Read the page first: `revert()` clears the selection this would otherwise ask.
-        guard let pageID = loopSelection.selection?.pageID, loopSelection.revert() != nil else { return }
-        drawingStore.restoreSnapshot(for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
     }
 }
 
@@ -213,7 +197,7 @@ private struct LivePageView: View {
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     let selection: PageSelection?
-    @ObservedObject var loopSelection: LoopSelectionCoordinator
+    @ObservedObject var askSelection: AskSelectionCoordinator
     let suggestionInk: [InkStroke]
     let isCapturingAskLasso: Bool
     let onAskLasso: ([CGPoint]) -> Void
@@ -227,7 +211,7 @@ private struct LivePageView: View {
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
-                loopSelection: loopSelection
+                askSelection: askSelection
             )
             if let selection {
                 PageSelectionOverlay(selection: selection)
@@ -270,15 +254,10 @@ private struct LiveInkCanvas: UIViewRepresentable {
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
-    @ObservedObject var loopSelection: LoopSelectionCoordinator
+    @ObservedObject var askSelection: AskSelectionCoordinator
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(
-            pageID: pageID,
-            pageSize: pageSize,
-            drawingStore: drawingStore,
-            loopSelection: loopSelection
-        )
+        Coordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -313,45 +292,16 @@ private struct LiveInkCanvas: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         private let pageID: UUID
-        let pageSize: CGSize
-        let drawingStore: PageDrawingStore
-        let loopSelection: LoopSelectionCoordinator
-        /// Tracks stroke count so an append can be told apart from an erase or an undo.
-        private var lastStrokeCount = 0
+        private let pageSize: CGSize
+        private let drawingStore: PageDrawingStore
 
-        init(
-            pageID: UUID,
-            pageSize: CGSize,
-            drawingStore: PageDrawingStore,
-            loopSelection: LoopSelectionCoordinator
-        ) {
+        init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
             self.pageID = pageID
             self.pageSize = pageSize
             self.drawingStore = drawingStore
-            self.loopSelection = loopSelection
-            lastStrokeCount = drawingStore.drawing(for: pageID).strokes.count
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            let strokes = canvasView.drawing.strokes
-            defer { lastStrokeCount = canvasView.drawing.strokes.count }
-
-            // Only a freshly appended stroke can be the gesture. Without this guard the
-            // removal below re-enters here and the classification runs on its own edit.
-            guard strokes.count == lastStrokeCount + 1, let finished = strokes.last else {
-                drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
-                return
-            }
-
-            guard loopSelection.strokeDidComplete(InkStroke(finished), onPage: pageID) else {
-                drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
-                return
-            }
-
-            // The loop became a selection, so its ink must not stay on the page. The
-            // drawing as it stands is kept so `revert()` can restore it exactly.
-            drawingStore.snapshot(canvasView.drawing, for: pageID)
-            canvasView.drawing = PKDrawing(strokes: strokes.dropLast())
             drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
         }
     }

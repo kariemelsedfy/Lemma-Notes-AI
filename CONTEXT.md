@@ -23,8 +23,8 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period, and flush immediately on notebook close or the app leaving the foreground |
-| Ask entry point | Loop-and-dwell, a floating Ask control, Command–Return, and Pencil squeeze/double-tap all reach the same path. The Pencil gestures are untested on hardware |
-| Selection UI | Loop-and-dwell converts a held loop into a page selection and removes its ink, with an undo affordance. Thresholds unvalidated against real handwriting (Q8 / M2-03B) |
+| Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
+| Selection UI | Arming Ask captures a lasso in the app's own coordinate space and renders it as a non-interactive overlay. PencilKit's own lasso is unusable for this — it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
@@ -94,10 +94,14 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q5 | Final product name + trademark clearance | human | M7 |
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
 | Q7 | Confirm current Apple Intelligence regional availability (EU / mainland China) — determines whether T2 must carry entire regions | agent research | M4 |
-| Q8 | Is loop-and-dwell reliable enough to be the primary gesture, or does it false-positive too often in real use? | needs device testing | M2 |
 | Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
 | Q10 | Does 1.0 attempt cursive connections, or ship print-only with the connection work deferred? `HANDWRITING.md` §1 flags cursive as much harder; §4.4 already allows a print fallback per join | human | M3 scope |
 | Q11 | Must calibration happen before the first Ask, or can a new user start on the "neat" fallback style and calibrate later? Trades onboarding drop-off against first-impression quality | human | M3 / M7 |
+
+**Q8 is resolved (2026-08-02): loop-and-dwell is dropped.** On device it did not fire
+reliably, and with a working toolbar lasso it was a redundant second way to select — one
+that sometimes consumes ink. `PROJECT_PLAN.md` §3.1 still describes it as the signature
+interaction; that section is now wrong and cannot be corrected until M0-09.
 
 Q1 has been answered in practice — M1 shipped a paged canvas — but was never recorded as a decision. Q2 (PDF import) is still untouched and still in scope-limbo.
 

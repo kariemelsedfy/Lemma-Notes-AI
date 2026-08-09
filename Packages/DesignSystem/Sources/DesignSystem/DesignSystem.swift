@@ -35,7 +35,7 @@ public enum MarginColor {
     ///
     /// A proper dark-paper mode is M1-13.
     public static let paper = Color(light: 0xFDFDFB, dark: 0xFDFDFB)
-    public static let ink = Color(light: 0x1A1A1F, dark: 0x1A1A1F)
+    public static let ink = Color(light: 0x000000, dark: 0x000000)
     /// The ruling on the page. Light enough to sit under handwriting without competing.
     public static let paperRule = Color(light: 0xC8C9D2, dark: 0xC8C9D2)
 }
@@ -56,7 +56,7 @@ public enum MarginColor {
 /// treat accessibility as optional. Graphite is darkest, then green, blue, and red; each
 /// stays above 3.9:1 against paper, so every pen is legible on its own.
 public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
-    case graphite
+    case black
     case blue
     case red
     case green
@@ -65,10 +65,10 @@ public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
 
     public var color: Color {
         switch self {
-        case .graphite: MarginColor.ink
+        case .black: MarginColor.ink
         case .blue: Color(light: 0x2C63E0, dark: 0x2C63E0)
         case .red: Color(light: 0xE0484A, dark: 0xE0484A)
-        case .green: Color(light: 0x14603A, dark: 0x14603A)
+        case .green: Color(light: 0x0B5227, dark: 0x0B5227)
         }
     }
 
@@ -81,10 +81,10 @@ public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
         /// PencilKit needs a `UIColor`, and it must not be dynamic.
         public var uiColor: UIColor {
             switch self {
-            case .graphite: MarginInk.color
+            case .black: MarginInk.color
             case .blue: UIColor(red: 0x2C / 255, green: 0x63 / 255, blue: 0xE0 / 255, alpha: 1)
             case .red: UIColor(red: 0xE0 / 255, green: 0x48 / 255, blue: 0x4A / 255, alpha: 1)
-            case .green: UIColor(red: 0x14 / 255, green: 0x60 / 255, blue: 0x3A / 255, alpha: 1)
+            case .green: UIColor(red: 0x0B / 255, green: 0x52 / 255, blue: 0x27 / 255, alpha: 1)
             }
         }
     }
@@ -94,7 +94,7 @@ public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
         /// Never `UIColor.label`: that is dynamic, and PencilKit bakes whatever it resolves
         /// to at tool-construction time into the stroke. Resolved in a light context it is
         /// black, which is invisible on a dark page — the bug this token exists to prevent.
-        public static let color = UIColor(red: 0x1A / 255, green: 0x1A / 255, blue: 0x1F / 255, alpha: 1)
+        public static let color = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
     }
 #endif
 
