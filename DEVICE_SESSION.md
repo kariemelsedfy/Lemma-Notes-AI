@@ -102,6 +102,16 @@ Do this after §6, so the answer in the clip is in your own handwriting.
 The most important item in this document. Everything below §0 is verification; this is the
 first time anyone sees what the product is actually for.
 
+**First, thirty seconds on M1-12B.** Put the iPad in dark mode (Control Centre, or Settings →
+Display) and write a stroke on a page. It must be **dark ink on light paper**. Until
+2026-08-09 it was white-on-white and therefore invisible: PencilKit was lightening the stored
+black for a dark background that Margin's fixed-light page does not have. Fixed and tested,
+but the tests measure rendered pixels in a simulator and this is the report that closes it.
+
+While you are there, check two things that were broken by the same cause and are also fixed
+untested-on-device: a **page thumbnail** in the library shows dark ink, and a **notebook
+exported to PDF** from dark mode is readable rather than blank.
+
 **Calibrate.** Library toolbar → the hand icon → "Teach it your handwriting". Seven sheets.
 
 - **Time it.** §3.1 budgets under three minutes for a cooperative user. Start a timer and

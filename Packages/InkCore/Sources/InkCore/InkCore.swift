@@ -194,6 +194,41 @@ public protocol InkEngine: AnyObject {
         }
     }
 
+    /// The appearance ink is drawn in, which is not the appearance the app is in.
+    ///
+    /// PencilKit renders a *stored* colour through the *current* appearance: in a dark trait
+    /// environment it lightens dark ink so it stays visible on a dark background. That is the
+    /// right default for an app whose canvas follows the system, and the wrong one for Margin,
+    /// whose page is paper — `MarginColor.paper` is deliberately fixed light in both
+    /// appearances. Inverted there, black ink becomes white ink on a white page.
+    ///
+    /// Pinning the stored colour to a non-dynamic black is a separate fix and does not help:
+    /// that controls what gets *saved*, this controls what gets *drawn*. Every path that shows
+    /// or rasterises a `PKDrawing` needs to opt out, so they all go through here.
+    public enum InkAppearance {
+        /// Paper is light whatever the system is doing.
+        public static let paper = UITraitCollection(userInterfaceStyle: .light)
+
+        /// Runs `body` with `paper` as the current trait collection.
+        public static func onPaper<T>(_ body: () -> T) -> T {
+            var result: T?
+            // Synchronous, so `result` is always assigned by the time this returns.
+            paper.performAsCurrent { result = body() }
+            guard let result else {
+                preconditionFailure("performAsCurrent did not run its closure")
+            }
+            return result
+        }
+
+        /// Stops a view from inverting the ink it draws.
+        ///
+        /// Applies to subviews too, which is intended: everything inside a canvas — selection
+        /// outlines included — is sitting on the page.
+        public static func applyPaperAppearance(to view: UIView) {
+            view.overrideUserInterfaceStyle = .light
+        }
+    }
+
     /// A PencilKit-backed engine that keeps renderer types behind the `InkEngine` boundary.
     @MainActor
     public final class PencilKitInkEngine: InkEngine {
@@ -215,6 +250,7 @@ public protocol InkEngine: AnyObject {
 
         public init(canvasView: PKCanvasView) {
             self.canvasView = canvasView
+            InkAppearance.applyPaperAppearance(to: canvasView)
             synchronizeStrokeIDs()
         }
 
@@ -283,7 +319,9 @@ public protocol InkEngine: AnyObject {
                 throw InkExportError.invalidScale
             }
 
-            let image = canvasView.drawing.image(from: bounds, scale: scale)
+            let image = InkAppearance.onPaper {
+                canvasView.drawing.image(from: bounds, scale: scale)
+            }
             guard let data = image.pngData() else {
                 throw InkExportError.encodingFailed
             }

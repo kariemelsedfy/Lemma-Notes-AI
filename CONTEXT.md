@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-08 · by: Claude · Milestone: **M3 complete except the human gate**
+**Last updated:** 2026-08-09 · by: Claude · Milestone: **M3 complete except the human gate**
 
 ---
 
@@ -68,6 +68,10 @@ Device work is collected in `DEVICE_SESSION.md`; the newest item is **M3-02B**, 
 7. Entitlements and credits are **verified server-side**. The client is never trusted.
 8. Third-party AI consent (App Store 5.1.2(i)) is asserted **in the provider layer**, not the UI.
 9. `.xcodeproj` is generated. Never hand-edited, never committed.
+10. **Ink is drawn on paper, not in the system appearance.** Every `PKCanvasView` and every
+    `PKDrawing` rasterisation goes through `InkCore.InkAppearance`, or PencilKit inverts dark
+    ink for a dark background that Margin's fixed-light page does not have. Enforced by
+    `scripts/check-ink-appearance.sh` (M1-12B).
 
 ## 4. Environment notes
 

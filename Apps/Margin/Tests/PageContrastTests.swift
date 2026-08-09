@@ -1,4 +1,5 @@
 import DesignSystem
+import DocumentStore
 import InkCore
 import PencilKit
 import SwiftUI
@@ -102,6 +103,138 @@ final class PageContrastTests: XCTestCase {
 
         XCTAssertGreaterThan(relativeLuminance(ruling), relativeLuminance(ink))
         XCTAssertLessThan(relativeLuminance(ruling), relativeLuminance(paper))
+    }
+
+    /// The darkest opaque pixel in an image, as relative luminance.
+    private func darkestPixelLuminance(of image: UIImage) throws -> CGFloat {
+        let cgImage = try XCTUnwrap(image.cgImage)
+        let width = cgImage.width
+        let height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try XCTUnwrap(
+            CGContext(
+                data: &pixels,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ))
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var darkest = CGFloat.greatestFiniteMagnitude
+        for index in stride(from: 0, to: pixels.count, by: 4) where pixels[index + 3] > 200 {
+            let color = UIColor(
+                red: CGFloat(pixels[index]) / 255,
+                green: CGFloat(pixels[index + 1]) / 255,
+                blue: CGFloat(pixels[index + 2]) / 255,
+                alpha: 1
+            )
+            darkest = min(darkest, relativeLuminance(color))
+        }
+        return darkest
+    }
+
+    private static let pageSize = CGSize(width: 60, height: 60)
+
+    private func engineWithAStroke() -> PencilKitInkEngine {
+        let engine = PencilKitInkEngine()
+        engine.inkColor = MarginInk.color
+        engine.insertProgrammatic(strokes: [
+            InkStroke(
+                points: (0...20).map { step in
+                    InkPoint(
+                        location: CGPoint(x: 10 + CGFloat(step) * 2, y: 30),
+                        timeOffset: Double(step) * 0.01,
+                        force: 1,
+                        altitude: 1,
+                        azimuth: 0
+                    )
+                })
+        ])
+        return engine
+    }
+
+    /// Runs `body` as though the device were in dark mode.
+    private func inDarkAppearance<T>(_ body: () throws -> T) throws -> T {
+        var result: Result<T, Error>?
+        UITraitCollection(userInterfaceStyle: .dark).performAsCurrent {
+            result = Result { try body() }
+        }
+        return try XCTUnwrap(result).get()
+    }
+
+    // MARK: - Ink must not invert with the appearance
+
+    // PencilKit renders a *stored* colour through the *current* appearance, lightening dark
+    // ink so it stays visible on a dark background. Margin's page is paper — `MarginColor.paper`
+    // is fixed light in both appearances — so that inversion produces white ink on a white
+    // page. Pinning the token to a non-dynamic black (the tests above) fixes what gets
+    // *stored* and does nothing about what gets *drawn*, so every rendering path is covered
+    // separately here. These fail without the `InkAppearance` opt-out (M1-12B).
+
+    func testTheEngineCanvasDoesNotInvertInk() {
+        let engine = engineWithAStroke()
+
+        XCTAssertEqual(engine.canvasView.overrideUserInterfaceStyle, .light)
+    }
+
+    // The canvases the user actually writes on — `LiveInkCanvas` and `CalibrationCanvas` —
+    // build their own `PKCanvasView` rather than going through the engine, and a
+    // `UIViewRepresentable` cannot be handed a `Context` from a test. `scripts/check-ink-appearance.sh`
+    // covers those two instead, by refusing any `PKCanvasView()` that skips the opt-out.
+
+    func testRasterisedInkStaysDarkInADarkAppearance() throws {
+        let engine = engineWithAStroke()
+
+        let exported = try inDarkAppearance {
+            try engine.exportImage(in: CGRect(origin: .zero, size: Self.pageSize), scale: 1)
+        }
+        let image = try XCTUnwrap(UIImage(data: exported.data))
+
+        XCTAssertLessThan(
+            try darkestPixelLuminance(of: image), 0.1,
+            "Exported ink inverted to light ink, which is invisible on Margin's paper."
+        )
+    }
+
+    func testPagePreviewsStayDarkInADarkAppearance() throws {
+        let engine = engineWithAStroke()
+        let store = PageDrawingStore()
+        let pageID = UUID()
+
+        try inDarkAppearance {
+            store.save(engine.canvasView.drawing, for: pageID, pageSize: Self.pageSize)
+        }
+        let preview = try XCTUnwrap(store.preview(for: pageID))
+
+        XCTAssertLessThan(
+            try darkestPixelLuminance(of: preview), 0.1,
+            "A page thumbnail rendered in dark mode shows light ink on light paper."
+        )
+    }
+
+    func testExportedPagesStayDarkInADarkAppearance() throws {
+        let engine = engineWithAStroke()
+        let page = StoredPage(
+            metadata: PageMetadata(
+                pageID: UUID(),
+                size: PageSize(width: Self.pageSize.width, height: Self.pageSize.height),
+                paper: .blank,
+                elements: []
+            ),
+            inkData: engine.canvasView.drawing.dataRepresentation()
+        )
+        let request = try NotebookPageExportRequest(page: page)
+
+        let data = try inDarkAppearance { try NotebookPageExporter.pngData(for: request) }
+        let image = try XCTUnwrap(UIImage(data: data))
+
+        XCTAssertLessThan(
+            try darkestPixelLuminance(of: image), 0.1,
+            "A page exported from a device in dark mode is white ink on white paper."
+        )
     }
 
     func testTheExporterPaperMatchesTheOnScreenPaper() {

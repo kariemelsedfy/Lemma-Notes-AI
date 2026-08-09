@@ -266,6 +266,23 @@ Acceptance:
 - [x] Contrast is asserted, not eyeballed — WCAG ratio pinned above 4.5:1
 - [x] Suggestion preview uses the same ink, so accepting does not change what you were shown
 
+### M1-12B — Ink renders white in a dark appearance
+status: Done · completed: Claude · 2026-08-09 · refs: ARCHITECTURE.md §4, SESSIONS.md 2026-08-09 · estimate: S
+Note: found on device, again, by the user: "the ink color is actually white not black."
+M1-12 pinned the *stored* colour to a non-dynamic black and stopped there. PencilKit then
+renders that stored colour **through the current appearance**, lightening dark ink so it
+stays legible on a dark background. Margin's paper is fixed light, so the favour is white
+ink on a white page. Reproduced before fixing: the darkest pixel of a black stroke rendered
+under dark traits measured **0.63 relative luminance** — near-white.
+The token tests all passed throughout, because they assert on colours rather than on
+rendered pixels. Every rasterising path was affected, not just the live canvas: page
+thumbnails and PDF/PNG export would have shipped invisible ink from a device in dark mode.
+Acceptance:
+- [x] `InkCore.InkAppearance` is the single opt-out — `onPaper { }` for rendering, `applyPaperAppearance(to:)` for views
+- [x] Live canvas, calibration canvas, engine rasteriser, page previews and notebook export all go through it
+- [x] Tests assert on sampled pixel luminance under dark traits, not on token values
+- [x] `scripts/check-ink-appearance.sh` fails any new `PKCanvasView()` or `.image(from:)` that skips it
+
 ### M1-13 — Dark paper mode
 status: Ready · refs: SESSIONS.md 2026-08-02 M1-12 · estimate: M
 Note: M1-12 fixed contrast by making the page a fixed light sheet in both appearances —

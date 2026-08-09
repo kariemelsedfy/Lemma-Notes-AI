@@ -94,6 +94,13 @@ public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
         /// Never `UIColor.label`: that is dynamic, and PencilKit bakes whatever it resolves
         /// to at tool-construction time into the stroke. Resolved in a light context it is
         /// black, which is invisible on a dark page — the bug this token exists to prevent.
+        ///
+        /// **This token is only half of it.** It fixes what gets *stored*. PencilKit then
+        /// renders that stored colour through the *current* appearance, lightening dark ink
+        /// for a dark background — so in dark mode this black draws as white, on paper that
+        /// is fixed light. The other half is `InkCore.InkAppearance`, which every canvas and
+        /// every rasterising path has to go through; `scripts/check-ink-appearance.sh`
+        /// enforces it.
         public static let color = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
     }
 #endif
