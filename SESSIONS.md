@@ -11,6 +11,30 @@ unless you check.
 
 ---
 
+## 2026-08-02 · Claude · M3-03, and two decisions
+
+**Goal:** turn calibration strokes into glyphs. Q10 and Q11 were answered first, and Q10 changed the shape of this task substantially.
+
+**Decisions recorded:** **ADR-013** print-only for 1.0, **ADR-014** calibration optional and deferrable. Both from the human.
+
+**Done:** `GuideBoxSegmenter` (assign strokes to the box holding most of them, score confidence, drop and *report* the poor ones) and `SpacingAnalyzer` (letter gaps, word gaps, line spacing from freeform writing). 14 tests; Handwriting 64.
+
+**The part worth explaining: I did not build §3.2's dynamic-programming alignment.** The pangram exists for spacing, connections and variation. ADR-013 removes connections. Variation comes from §3.1's repeated guide-box pass, which is reliable. That leaves spacing — and spacing is measurable **from gaps alone**, with no knowledge of what was written. Alignment is the step where segmentation goes wrong, and it does not fail loudly: a mis-aligned glyph appears, subtly wrong, in every word containing that letter, forever. Skipping it removes the largest quality risk in calibration and costs a few extra samples per glyph. Filed as **M3-03B** in the icebox with the conditions that would justify it.
+
+**Left open:** the review step §3.2 asks for — show the user the segmentation, let them retap a glyph — belongs to M3-02's UI. §3.2 is right that it is small and saves enormous quality pain; the `confidence` on each `Capture` is kept unreduced so that UI can flag the doubtful ones. Filed **M3-13** for ADR-014's consequence: a user can now use this product indefinitely without ever seeing the feature it is named for, so *when* to invite them to calibrate is a design problem, not a settings row.
+
+**Surprises and gotchas:** word gaps are separated from letter gaps at the midpoint of their range, and when every gap is similar the honest answer is "one word, no word gaps" rather than splitting anyway. That test exists because the naive version reports a confident word gap for a single word.
+
+Confidence deliberately combines containment *and* fill. Containment alone gives a stray dot a perfect score — all of it is inside the box — which is exactly how a tap becomes a letter.
+
+**And the trap at the top of this file caught me.** The scripted edit for this entry anchored on an M3-07 header that lives in an unmerged branch, so it matched nothing — but the `assert` fired, the write was skipped, and I noticed. The PROGRESS edit in the same script had already been written, so the commit went out one file short and this was added after. Assert, but also sequence your writes so a later failure doesn't leave an earlier one committed alone.
+
+**Next:** M3-02, the capture UI.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 64 tests ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
+---
+
 ## 2026-08-02 · Claude · M3-07
 
 **Goal:** wrap synthesized text to a rectangle at the writer's own rhythm.
