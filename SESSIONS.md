@@ -11,6 +11,30 @@ unless you check.
 
 ---
 
+## 2026-08-02 · Claude · M3-05
+
+**Goal:** the synthesizer — the heart of M3 and the thing ADR-004 bet the product on.
+
+**Done:** `Synthesizer.strokes(for:in:bank:variation:seed:)`. Glyph selection that never repeats a sample adjacently, advance from measured widths plus the writer's letter gap, slant sheared about the baseline, per-glyph jitter and slow baseline drift, dynamics carried through from capture, and a `Variation` knob that gives §8's "neat" style for free. 12 tests; Handwriting 50.
+
+**It scores 100% legibility** against a bank built from typeset letterforms. That is a deliberately narrow claim and worth stating precisely: it means the synthesizer's *layout* — selection, spacing, slant, jitter, drift — costs nothing in readability. A real bank will score lower, and that will be the writer's hand rather than this code. Keeping the assertion at §7's 95% means a spacing regression fails loudly instead of hiding behind scruffy input later.
+
+**I pulled M3-06 forward into this.** Dynamics, slant, drift and jitter are the same loop over the same points as placement; splitting them across two tasks would have meant writing that loop twice and holding an incomplete synthesizer in between. M3-06 is marked partly done with the one piece that genuinely cannot be built yet called out — see below.
+
+**Not done / left open:** §4.1 wants height variance drawn from **the writer's measured σ**, not a fixed percentage, and `StyleStats` has no per-glyph height variance to draw from. Jitter currently uses a fixed fraction of x-height, which is exactly the "looks uniform" tell §4.1 warns about. It needs a real capture to measure σ from, so it waits on M3-02/M3-03. Recorded on M3-06 rather than quietly left.
+
+Cursive connections (§4 step 4) are also absent — `ConnectionClass` is stored on every glyph and nothing reads it. That is Q10, still unanswered: print-only or cursive for 1.0.
+
+**Surprises and gotchas:** testing a handwriting synthesizer with no handwriting is the whole problem of this milestone in miniature. The fixture is a bank built by rendering each character with `TypesetStyle` and normalizing it — glyphs of *known* quality, so a legibility failure means the synthesizer is wrong rather than the input being scruffy. Inventing deliberately scruffy glyphs would have tested the fixture.
+
+Two of my first assertions were wrong in the same way: they measured the *glyphs* rather than the code. `testZeroVariationIsMechanical` measured baseline spread across strokes, which is dominated by letters having different depths, not by jitter — with zero variation and one sample per character the honest assertion is that the seed becomes irrelevant entirely. **When a test of behaviour fails, check it is not measuring the fixture.**
+
+**Decisions made:** `Variation` is a scale on every source of randomness rather than separate knobs, so §8's three styles differ by one number and "neat" needs no separate code path.
+
+**Next:** M3-07 line breaking, then M3-03 segmentation and M3-02 capture.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 50 tests ✅ · 100% legibility on the synthetic bank ✅ · ≤30ms/line asserted on a Mac, **not on device** ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
 ## 2026-08-02 · Claude · M3-04
 
 **Goal:** the data model the synthesis path hangs off, and the one place in this project with a hard privacy invariant.
