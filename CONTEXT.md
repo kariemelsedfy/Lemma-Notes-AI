@@ -4,17 +4,23 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-07-31 · by: Claude · Milestone: **M2 pipeline assembled end to end except the renderer**
+**Last updated:** 2026-08-08 · by: Claude · Milestone: **M3 complete except the human gate**
 
 ---
 
 ## 1. Where we are
 
-M0 and M1 are complete except the device-only tasks (M1-03C FPS trace, M1-06D two-device sync) and the human-owned M0-07/M1-06A. **Every non-device M2 task is done except the canvas wiring**: selection model and geometry, the Ask entry point, selection context, the spec contract with fail-closed validation, the provider boundary and mock, the placement engine, the request state machine, the suggestion layer, a throwaway ink renderer, the Ask bar, and the pipeline that drives them.
+**M3 is feature-complete on the agent side. The only thing left in it is M3-10, and only a human can run it.**
 
-The whole path from ink to answer exists and is tested off-device: a lasso selects strokes, a context is built, a canned spec is validated, placement resolves a rectangle, and the placeholder font draws the answer on the anchor's baseline. There is a test that runs exactly that sequence. `AskPipeline` now drives that whole sequence in the app target and is covered by simulator tests: a canned answer reaches the suggestion layer, lands inside the frame placement chose, commits in one undo group, and every provider failure maps onto a designed §8 state. What is missing is purely **the canvas wiring** — neither `AskBar` nor `AskPipeline` is in the view hierarchy, so the product still cannot be *seen*. That is M2-12B, and judging it needs a device.
+M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple Developer account. M3 built the whole handwriting path: a typeset fallback, an OCR legibility harness, calibration capture over seven guided sheets, guide-box segmentation, glyph-bank storage, the synthesizer, line breaking, the three §8 styles, and an automated similarity metric.
 
-Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now works in the simulator: circle ink, hold, pick a verb, generated ink appears, accept commits it with provenance and it survives a reload. Nothing is claimed — **In progress** in `PROGRESS.md` is empty. M0-07 remains the human Apple Developer/TestFlight prerequisite. Everything else left in M2 needs a physical iPad and is collected in `DEVICE_SESSION.md`, which is written to be worked through in one sitting.
+**The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
+
+**Next action: M3-10, the blind similarity panel.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
+
+Two things to know before running it. Nobody has yet *looked* at generated ink in a real hand — the whole path is verified by tests, never by eye. And if the panel says it looks mechanical, **M3-08C is the first place to look**: `Variation` currently reaches only vertical jitter and drift, not glyph-sample selection, so a bank with four samples per letter behaves identically to one with a single sample.
+
+Device work is collected in `DEVICE_SESSION.md`; the newest item is **M3-02B**, timing a real calibration pass against §3.1's three-minute budget.
 
 ## 2. What exists
 
@@ -28,7 +34,7 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
-| Handwriting OCR | On-device Vision recognizer plus reading-order assembly; no caller yet |
+| Handwriting OCR | On-device Vision recognizer plus reading-order assembly. `LegibilityHarness` scores rendered ink against its intended string; nothing runs it on a build (M3-09B) |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
 | Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
 | Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster requests; `SelectionRasterizer` renders those to PNG flattened on white. `pageText` (whole-page OCR) is still absent |
@@ -38,13 +44,17 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. In the canvas chrome, driven by the loop-and-dwell selection |
 | Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Driven by the Ask bar's verbs against a canned provider until M4 |
-| Ink renderer | `PlainStrokeFont` + `PlainInkRenderer`: a throwaway skeletal font covering ASCII letters, digits, operators and sentence punctuation. Fails closed on anything else, and on plots and marks. Deleted when M3 lands |
+| Ink renderer | `HandwritingInkRenderer` draws from the glyph bank; `TypesetInkRenderer` is the §8 fallback and the Exam Mode default. Fallback is per block, never per character. Which one runs is `HandwritingStylePreference` |
 | Packages | Six SPM packages under `Packages/`; the app target now also links `Intelligence` and `InkCore` |
 | Design system | Adaptive color, type, spacing, and SF Symbol tokens; gallery and direct-`Color` lint check |
 | Analytics | Closed typed event vocabulary matching the spec contract's five verbs; opt-out gate before transport; no content or identifier payloads. No concrete transport yet, and nothing reports events |
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement. Package tests run on macOS, so anything `#if os(iOS)` must be tested from the app target instead |
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
-| Golden eval set | Does not exist (M2) |
+| Calibration | Seven guided sheets (§3.1) from the library toolbar. `CalibrationSession` builds a bank and reports what it could not capture; partial banks are kept, since ADR-014 makes leaving early legitimate |
+| Glyph bank | `GlyphBank` + `GlyphBankStore`, on device only, deletable in one tap. `GuideBoxSegmenter` assigns strokes to boxes and drops low-confidence captures rather than storing a bad glyph |
+| Synthesizer | Concatenative from the bank (ADR-004), with per-glyph jitter, baseline drift and preserved pen-lifts. `LineBreaker` wraps to the writer's own line spacing |
+| Evaluation | `StyleSimilarity` — a hand-built feature vector, **not** the writer-ID embedding §7 names. A regression detector, not a certificate of realism |
+| Golden eval set | Does not exist (M4) |
 | Server proxy | Does not exist (M4) |
 
 ## 3. Invariants (do not break these without an ADR)

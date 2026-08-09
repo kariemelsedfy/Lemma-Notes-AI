@@ -1,7 +1,7 @@
 # Device session checklist
 
-Everything left in M1 and M2 that cannot be done without hardware, ordered so one sitting
-clears all of it. Budget ~20 minutes.
+Everything left in M1, M2 and M3 that cannot be done without hardware, ordered so one
+sitting clears all of it. Budget ~35 minutes, most of it §6.
 
 **You need:** an iPad with an Apple Pencil, and an Apple ID signed into Xcode (free is
 fine — see §0). A Pencil Pro for the squeeze test specifically. Two iPads, an iCloud
@@ -88,12 +88,40 @@ ubiquity container is real.
 
 ## 5. M2-12D — the demo recording
 
-Do this last. Everything it needs has landed.
+Do this after §6, so the answer in the clip is in your own handwriting.
 
 - Write `2+2=` on a page. Loop it and hold. The canned answer should appear as suggestion
   ink at the anchor. Accept it. Then one undo should remove the whole answer.
 - **Record the screen.** This is the first real signal about whether the product feels
   right, and it is the clip that goes in front of anyone else.
+
+---
+
+## 6. M3-02B — calibration, timed · **and the first look at your own handwriting**
+
+The most important item in this document. Everything below §0 is verification; this is the
+first time anyone sees what the product is actually for.
+
+**Calibrate.** Library toolbar → the hand icon → "Teach it your handwriting". Seven sheets.
+
+- **Time it.** §3.1 budgets under three minutes for a cooperative user. Start a timer and
+  write at your normal speed — not carefully, *normally*. A calibration that only works
+  when someone is being careful produces a bank that does not look like their real hand.
+- Note any sheet that dragged, and whether the guide boxes were comfortable to write in.
+  They are sized to the screen, so this is the only way to find out.
+- Skip the maths-symbols sheet if you never write those. That path is meant to work.
+
+**Then ask something and look at the answer.** Write `2+2=`, lasso it, pick a verb.
+
+- Does the answer look like your handwriting? Say what gives it away — that answer is
+  worth more than any number in this file.
+- Switch to "A neater version of mine" in the same menu and ask again. **I expect you to
+  see almost no difference**: `Variation` currently only reaches vertical jitter and
+  baseline drift, not which sample of each letter gets used. If you *can* tell them apart,
+  say so — that would contradict the measurement (M3-08C).
+
+**This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If it looks
+obviously mechanical here, fix M3-08C before recruiting anyone.
 
 ---
 

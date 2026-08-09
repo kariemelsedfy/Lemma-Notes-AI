@@ -613,6 +613,22 @@ outcome is building all of M3 and *then* discovering it does not convince anyone
 ADR-011 raised the stakes: with loop-and-dwell gone, "the answer is in your handwriting"
 is carrying more of the product's differentiation than it was.
 
+**Status 2026-08-08: everything an agent can build in M3 is built.** The only remaining
+item is **M3-10, the panel, and only a human can run it.** Two things to know before
+running it:
+
+- **Nobody has yet looked at generated ink in a real hand.** The whole path is verified by
+  tests, never by eye. `DEVICE_SESSION.md` §6 is the dress rehearsal — do that first.
+- **If it looks mechanical, M3-08C is the first place to look.** `Variation` reaches only
+  vertical jitter and baseline drift, not glyph-sample selection, so a bank with four
+  samples per letter currently behaves identically to one with a single sample. That
+  undercuts §3.1's repeated pass, which exists precisely to kill the "robot repeating the
+  identical 'e'" tell.
+
+The follow-ups filed during M3 — M3-01B, M3-02B, M3-03B, M3-04B, M3-08B, M3-08C, M3-09B,
+M3-11, M3-12, M3-13 — are deliberately *not* prerequisites for the gate. Polishing before
+the verdict is the failure mode this milestone is sequenced to avoid.
+
 ### M3-00 — Typeset fallback style
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
 Note: **next.** M3-01 went first so this can be scored rather than guessed at. It is
