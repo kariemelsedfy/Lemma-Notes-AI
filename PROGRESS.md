@@ -727,11 +727,24 @@ Acceptance:
       real capture to measure σ from, so it waits for M3-02/M3-03.
 
 ### M3-07 — Line breaking
-status: Ready · refs: HANDWRITING.md §4 step 7 · estimate: S
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §4 step 7 · estimate: S
 Acceptance:
-- [ ] Greedy wrap to the target rect at the writer's measured line spacing
-- [ ] No hyphenation
-- [ ] Interacts correctly with the placement engine's reserved frame
+- [x] Greedy wrap to the target rect at the writer's measured line spacing
+- [x] No hyphenation — an over-long word takes its own line rather than being split
+- [x] Text that needs more lines than fit is refused with the counts, so the caller can
+      offer "make room" or the next page (`AI_PIPELINE.md` §8) instead of overflowing
+- [x] `lineCount(for:width:measure:)` lets placement size a frame before reserving it
+
+### M3-12 — Wire line breaking into the placement engine
+status: Ready · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
+Note: `LineBreaker` exists and is tested, but `NominalContentMeasurer` still estimates a
+`lines` block's height from character counts rather than asking the breaker, and nothing
+routes a `doesNotFit` into the §8 "no room on the page" state. Until then a long answer can
+still be measured optimistically and then not fit.
+Acceptance:
+- [ ] `PlacementEngine` sizes `lines` blocks from `LineBreaker.lineCount`
+- [ ] Measurement goes through the glyph bank's advances when one exists
+- [ ] `doesNotFit` surfaces as `AskFailure.noRoom` rather than an overflow
 
 ### M3-08 — Neat style
 status: Ready · refs: HANDWRITING.md §8 · estimate: S

@@ -11,6 +11,24 @@ unless you check.
 
 ---
 
+## 2026-08-02 · Claude · M3-07
+
+**Goal:** wrap synthesized text to a rectangle at the writer's own rhythm.
+
+**Done:** `LineBreaker` — greedy wrap, no hyphenation, lines stacked at the writer's measured spacing. Refuses text that needs more lines than fit, reporting both counts. 11 tests; Handwriting 61. One test wraps a sentence and then synthesizes each line, checking every line stays inside its own frame.
+
+**Not done / left open:** filed **M3-12**. The breaker exists but nothing uses it — `NominalContentMeasurer` still estimates a `lines` block's height from character counts, and `doesNotFit` does not reach `AskFailure.noRoom`. So a long answer can still be measured optimistically and then not fit. That is placement work rather than handwriting work, which is why it is its own task.
+
+**Surprises and gotchas:** the measurement function is injected rather than computed inside the breaker. Only the glyph bank knows a writer's real advance widths, and §4 is explicit that measuring precedes placing — a breaker that guessed widths would wrap correctly for a font nobody is writing in. It also keeps the breaker testable with a trivial "10 points per character" closure, so the wrapping logic is exercised without dragging a bank into every case.
+
+Greedy rather than Knuth-Plass, deliberately. Handwriting has no justified right edge to optimise toward; the ragged edge *is* the natural one, and a paragraph algorithm would be solving a problem this does not have.
+
+**Decisions made:** an over-long word takes its own line rather than being split. §4 step 7 turns hyphenation off, and breaking a word mid-stroke would read as the synthesizer failing rather than as a deliberate hyphen.
+
+**Next:** M3-03 segmentation, then M3-02 capture.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 61 tests ✅ · `./scripts/lint.sh` ✅ · device tested: n/a
+
 ## 2026-08-02 · Claude · M3-05
 
 **Goal:** the synthesizer — the heart of M3 and the thing ADR-004 bet the product on.
