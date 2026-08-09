@@ -6,6 +6,12 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 **Last updated:** 2026-08-09 · by: Claude · Milestone: **M3 complete except the human gate**
 
+**Just in from the first real device session:** the Ask → Keep path did not survive contact —
+accepted ink was invisible (M2-13, fixed) and export failed on any notebook with an untouched
+page (M2-14, fixed). Both were found by a user in minutes; neither was visible to 400+ tests.
+Typeset answers are now known-bold as a consequence — **M2-13B**, and worth reading before
+judging what the app looks like.
+
 ---
 
 ## 1. Where we are
@@ -72,6 +78,10 @@ Device work is collected in `DEVICE_SESSION.md`; the newest item is **M3-02B**, 
     `PKDrawing` rasterisation goes through `InkCore.InkAppearance`, or PencilKit inverts dark
     ink for a dark background that Margin's fixed-light page does not have. Enforced by
     `scripts/check-ink-appearance.sh` (M1-12B).
+11. **Nothing draws thinner than `InkRenderingLimits.minimumStrokeWidth`.** PencilKit renders
+    a `.pen` below ~1.5pt as *nothing at all*, and the OCR harness — which uses Core Graphics,
+    not PencilKit — will not tell you. Tune a stroke width against the harness and you are
+    tuning against a renderer the user never sees (M2-13).
 
 ## 4. Environment notes
 

@@ -1,4 +1,5 @@
 import DocumentStore
+import Handwriting
 import InkCore
 import Intelligence
 import PencilKit
@@ -101,6 +102,75 @@ final class SuggestionAcceptTests: XCTestCase {
         // of its input, with no state of its own.
         XCTAssertTrue(SuggestionOverlay(strokes: []).strokes.isEmpty)
         XCTAssertEqual(SuggestionOverlay(strokes: [Self.stroke()]).strokes.count, 1)
+    }
+
+    /// Generated ink has to survive the trip the accept button actually takes it on.
+    ///
+    /// The overlay draws `[InkStroke]` as plain polylines; accepting converts the same
+    /// strokes to `PKStroke` and hands them to PencilKit. Those are two different renderers,
+    /// so ink that looks right in the preview is not evidence that it draws once committed.
+    func testGeneratedInkStillDrawsOnceCommittedToPencilKit() throws {
+        let placement = BlockPlacement(
+            block: SpecBlock(
+                placement: .belowSelection,
+                content: .inline(SpecRun(kind: .text, value: "4"))
+            ),
+            frame: CGRect(x: 10, y: 10, width: 200, height: 60),
+            requested: .belowSelection,
+            usedFallback: false
+        )
+        let generated = try TypesetInkRenderer().strokes(
+            for: placement,
+            style: StyleStats(
+                xHeight: 18,
+                slant: 0,
+                lineSpacing: 30,
+                baselineDrift: 0.5,
+                meanVelocity: 320,
+                meanForce: 0.55,
+                strokeWidth: 3
+            ),
+            seed: 1
+        )
+        XCTAssertFalse(generated.isEmpty, "Nothing was generated, so the rest proves nothing.")
+
+        let pencilStrokes = generated.compactMap { PKStroke($0, color: .black) }
+        XCTAssertEqual(
+            pencilStrokes.count, generated.count,
+            "PKStroke(_:color:) dropped generated strokes on the floor."
+        )
+
+        let drawing = PKDrawing(strokes: pencilStrokes)
+        let image = InkAppearance.onPaper {
+            drawing.image(from: CGRect(x: 0, y: 0, width: 220, height: 80), scale: 1)
+        }
+
+        // Not "some ink somewhere": before the fix this rendered 428 faint pixels peaking at
+        // alpha 40/255, which is on the page in principle and invisible in practice.
+        XCTAssertGreaterThan(
+            try opaquePixelCount(of: image), 0,
+            "Committed ink rendered to nothing — accepting would look like the answer was deleted."
+        )
+    }
+
+    /// How many pixels PencilKit actually put down.
+    private func opaquePixelCount(of image: UIImage) throws -> Int {
+        let cgImage = try XCTUnwrap(image.cgImage)
+        let width = cgImage.width
+        let height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try XCTUnwrap(
+            CGContext(
+                data: &pixels,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ))
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return stride(from: 0, to: pixels.count, by: 4).count { pixels[$0 + 3] > 200 }
     }
 
     // MARK: - Fixtures

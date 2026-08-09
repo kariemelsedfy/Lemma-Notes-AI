@@ -11,6 +11,48 @@ unless you check.
 
 ---
 
+## 2026-08-09 · Claude · M2-13 and M2-14 — two bugs from one device session
+
+**Three reports from the user, one session:** dark ink now correct (M1-12B closed on device ✅), "I couldn't export to pdf", and "I chose keep and the 4 got deleted."
+
+### The vanishing answer was mine, from five days ago
+
+**M3-00B thinned `nibToHeightRatio` 0.075 → 0.025 and I validated it against the OCR harness.** `InkRasterizer` draws with `CGContext.setLineWidth` and renders any width you ask for. **The page is drawn by PencilKit, which does not.** Measured on the simulator: `.pen` at 3.4pt → alpha 253/255, at 2.0pt → 40, **below 1.5pt → 0**. The nib I chose was 1.5.
+
+So the answer rendered to *nothing*, and "Keep" looked exactly like deletion.
+
+**The overlay never showed it.** `SuggestionOverlay` draws `[InkStroke]` as plain SwiftUI polylines; accepting converts the same strokes to `PKStroke`. **Two renderers, and the preview one is not the one that keeps the ink.** The suite has 400+ tests and not one of them had ever rasterised committed ink.
+
+**What I would tell the next person:** when you tune a number against a harness, write down which renderer the harness uses, and check that it is the one the user sees. Mine differed and nothing in the code said so. `InkRenderingLimits` now says it, with the measured curve in the doc comment.
+
+**A pleasant near-miss:** `.pencil` ink draws at *any* width, including 1.0pt. I nearly took it. It is textured, and the user's own pen is `.pen` — generated ink that does not match the pen beside it is a different bug, so the floor stands.
+
+### The fix has a cost and I have not hidden it
+
+Floored at 3.4pt, typeset answers now render at ~**0.077 of text height — heavier than the 0.075 M3-00B rejected as "heavy bold display type"**. Lowering the ratio cannot help; the floor binds at every realistic answer size. I rendered it and looked: legible, correctly spaced, and bold.
+
+**Visible-and-bold beats invisible**, so it ships, but ADR-014 makes typeset the default for every uncalibrated user and this is the first thing most people will see. Filed as **M2-13B** with the design sketched: erode the fill region by half the nib so the *geometry* is thinner rather than the pen. The trap there is thin features — trim a span below nib width and the crossbar of `e` disappears, taking OCR with it.
+
+**Four tests changed rather than four tests deleted.** Two in `TypesetWeightTests` and two in `PencilKitInkEngineTests` asserted properties the floor genuinely breaks: that weight scales with text size, and that nib width round-trips. Both are still true *above* the floor, and false below it. I moved each to a size where it means something and added a test stating the floored behaviour outright, so the regression is recorded in the suite rather than only in this file.
+
+**Real fidelity loss worth knowing:** width modulation below the floor is gone. A stroke tapering 5pt → 1pt comes back 5pt → 3.4pt. Capture is unaffected — the clamp is `InkStroke → PKStroke` only, so glyph banks still store the writer's true widths.
+
+### Export was broken for new users specifically
+
+A page nobody has drawn on stores **empty** ink data. `PKDrawing(data:)` rejects empty data, `pdfData(for:)` renders *every* page, so **one untouched page failed the entire export** — PDF and PNG alike. A fresh notebook is mostly untouched pages.
+
+**All 12 `DocumentStore` tests passed.** Every one builds its fixture from a real `PKDrawing`, so not one had ever exported the state the app ships in. The same shape as the ink bug: the default path was the untested path.
+
+Empty ink is now a blank page; `invalidInkData` is reserved for data that is actually damaged.
+
+### The pattern is no longer subtle
+
+Four defects on this project have been found by a human looking at a screen, and none by the suite. The common thread in three of them is not thin coverage — coverage is good — it is that **the tests exercise a reconstruction of the code rather than the code**. `SuggestionAcceptTests` rebuilt the accept logic locally and asserted on the rebuild; `acceptSuggestion()` itself was never called. Worth a pass over the suite asking, for each test, "if the shipping path broke, would this fail?"
+
+**Verification:** all 6 packages, 283 tests ✅ · `xcodebuild test` iPad simulator, 128 tests ✅ · `./scripts/lint.sh` 0 violations across 125 files ✅ · 4 invariant checks ✅ · rendered committed ink and looked at it · device tested: no — **needs-device-verification on both**
+
+---
+
 ## 2026-08-09 · Claude · M1-12B — the ink was white
 
 **Reported in five words by the user:** "the ink color is actually white not black." On device, in dark mode.

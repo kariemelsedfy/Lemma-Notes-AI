@@ -33,7 +33,24 @@ public enum TypesetStyle {
     /// corpus against 4/5 at 0.075, because inflated stems close the counters of `e` and
     /// `a`. Lighter still works too, but the hatch spacing is tied to the nib, so halving
     /// it doubles the stroke count and the render time with it.
+    ///
+    /// **This ratio is a ceiling on lightness, not a promise.** At a typical answer size it
+    /// asks for a 1.5pt nib, and PencilKit — which draws the page, unlike the `InkRasterizer`
+    /// this constant was tuned against — will not draw a `.pen` that thin *at all*. The nib
+    /// is therefore floored at `InkRenderingLimits.minimumStrokeWidth`, so in practice most
+    /// answers render at 3.4pt however light this number gets. Lowering it further changes
+    /// nothing on the page. See `renderableNib(_:)` and M2-13.
     public static let nibToHeightRatio: CGFloat = 0.025
+
+    /// The nib to actually draw with: what the ratio asked for, or the narrowest stroke the
+    /// page can show, whichever is wider.
+    ///
+    /// Applied *before* the advance compensation below rather than at the PencilKit
+    /// boundary, because the layout has to know the real pen width. Compensating gaps for a
+    /// 1.5pt nib and then drawing 3.4pt is how letters merge.
+    private static func renderableNib(_ requested: CGFloat) -> CGFloat {
+        max(requested, InkRenderingLimits.minimumStrokeWidth)
+    }
 
     /// Lays `text` out inside `frame`, sitting on its baseline.
     ///
@@ -51,7 +68,7 @@ public enum TypesetStyle {
         let font = CTFontCreateWithName(fontName as CFString, referencePointSize, nil)
         let glyphs = try glyphs(for: text, font: font)
         var metrics = layout(glyphs, font: font, in: frame)
-        var nib = max(metrics.pointSize * nibRatio, 0.6)
+        var nib = renderableNib(metrics.pointSize * nibRatio)
 
         // A stroked glyph is fatter than its outline by half a nib on each side, so gaps
         // close by a full nib. Left uncompensated, words merge — Vision read
@@ -62,7 +79,7 @@ public enum TypesetStyle {
             GlyphEntry(glyph: $0.glyph, advance: $0.advance + bleed, isBlank: $0.isBlank)
         }
         metrics = layout(compensated, font: font, in: frame)
-        nib = max(metrics.pointSize * nibRatio, 0.6)
+        nib = renderableNib(metrics.pointSize * nibRatio)
 
         var strokes: [InkStroke] = []
         var clock: TimeInterval = 0

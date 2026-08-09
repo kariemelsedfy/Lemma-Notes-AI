@@ -15,14 +15,37 @@ final class TypesetWeightTests: XCTestCase {
     private let frame = CGRect(x: 0, y: 0, width: 620, height: 60)
 
     func testStemsAreNotWiderThanTheLetterformItselfAsks() throws {
-        let strokes = try TypesetStyle.strokes(for: "the derivative is 2x", in: frame)
+        // Large enough that the ratio, not the renderer floor, decides the nib.
+        let big = CGRect(x: 0, y: 0, width: 2_400, height: 240)
+        let strokes = try TypesetStyle.strokes(for: "the derivative is 2x", in: big)
         let nib = try XCTUnwrap(strokes.first?.points.first?.size.width)
         let height = InkLineGrouping.bounds(of: strokes).height
 
         // The nib is centred on the traced contour, so half of it lands outside the letter
         // and every stem gains a full nib of width. Helvetica's own stem is roughly a tenth
         // of its cap height; a nib approaching that doubles the apparent weight.
+        XCTAssertGreaterThan(nib, InkRenderingLimits.minimumStrokeWidth, "floor is binding; this measures nothing")
         XCTAssertLessThan(nib / height, 0.05, "nib \(nib) on \(height)pt text reads as bold")
+    }
+
+    /// **A known regression, recorded rather than hidden (M2-13B).**
+    ///
+    /// PencilKit will not draw a `.pen` below `InkRenderingLimits.minimumStrokeWidth`, and
+    /// at any realistic answer size the ratio asks for less than that — so the floor, not
+    /// `nibToHeightRatio`, sets the weight of nearly every answer a user will see. At the
+    /// frame these tests use that works out to ~0.077 of the text height, which is *heavier
+    /// than the 0.075 M3-00B rejected as "bold display type"*.
+    ///
+    /// Lowering `nibToHeightRatio` cannot fix this; only drawing thinner geometry can, which
+    /// is M2-13B. Until then this test exists so nobody re-derives the ratio from what they
+    /// see on screen and concludes the constant is wrong.
+    func testTheRendererFloorAndNotTheRatioDecidesRealAnswerWeight() throws {
+        let strokes = try TypesetStyle.strokes(for: "the derivative is 2x", in: frame)
+        let nib = try XCTUnwrap(strokes.first?.points.first?.size.width)
+        let height = InkLineGrouping.bounds(of: strokes).height
+
+        XCTAssertEqual(nib, InkRenderingLimits.minimumStrokeWidth, accuracy: 0.0001)
+        XCTAssertGreaterThan(nib / height, 0.05, "If this has dropped, M2-13B landed — update this test.")
     }
 
     func testTheDefaultWeightIsTheOneThatWasMeasured() {
@@ -54,8 +77,10 @@ final class TypesetWeightTests: XCTestCase {
     }
 
     func testWeightScalesWithTheTextRatherThanBeingFixed() throws {
-        let small = try TypesetStyle.strokes(for: "hello", in: CGRect(x: 0, y: 0, width: 200, height: 24))
-        let large = try TypesetStyle.strokes(for: "hello", in: CGRect(x: 0, y: 0, width: 800, height: 96))
+        // Both above the floor, where the ratio is what decides. Below it every size draws
+        // at the same 3.4pt, so weight cannot scale — see the test above.
+        let small = try TypesetStyle.strokes(for: "hello", in: CGRect(x: 0, y: 0, width: 1_400, height: 160))
+        let large = try TypesetStyle.strokes(for: "hello", in: CGRect(x: 0, y: 0, width: 2_800, height: 320))
 
         // A fixed nib would make small text look bold and large text look hairline — the
         // block's apparent weight would depend on how much room placement happened to find.
