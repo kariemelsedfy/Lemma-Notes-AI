@@ -102,8 +102,10 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
 | Q7 | Confirm current Apple Intelligence regional availability (EU / mainland China) — determines whether T2 must carry entire regions | agent research | M4 |
 | Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
-| Q10 | Does 1.0 attempt cursive connections, or ship print-only with the connection work deferred? `HANDWRITING.md` §1 flags cursive as much harder; §4.4 already allows a print fallback per join | human | M3 scope |
-| Q11 | Must calibration happen before the first Ask, or can a new user start on the "neat" fallback style and calibrate later? Trades onboarding drop-off against first-impression quality | human | M3 / M7 |
+
+**Q10 and Q11 are resolved (2026-08-02): print-only for 1.0, and calibration is optional
+and deferrable.** See ADR-013 and ADR-014. Together they mean a new user writes with the
+typeset style until they choose to calibrate, and cursive joins are post-1.0.
 
 **Q8 is resolved (2026-08-02): loop-and-dwell is dropped.** On device it did not fire
 reliably, and with a working toolbar lasso it was a redundant second way to select — one

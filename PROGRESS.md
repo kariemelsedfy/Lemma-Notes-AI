@@ -665,15 +665,36 @@ Acceptance:
 - [ ] Skippable, with the typeset style as the consequence
 
 ### M3-03 — Segmentation and alignment
-status: Ready · refs: HANDWRITING.md §3.2 · estimate: L
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §3.2, DECISIONS.md ADR-013 · estimate: L
 Note: guide-box lines are trivial. The pangram needs pen-up gap splitting plus DP alignment
 to the known target string, and **must drop low-confidence alignments rather than store a
 bad glyph** — one wrong glyph is visible in every word that uses it.
 Acceptance:
-- [ ] Guide-box strokes assign to the box they mostly occupy
-- [ ] Pangram segments by gap threshold + dynamic-programming alignment
-- [ ] Low-confidence alignments are dropped, not stored
-- [ ] The user can see the segmentation and retap any glyph to rewrite it
+- [x] Guide-box strokes assign to the box they mostly occupy, length-weighted
+- [x] Low-confidence captures are dropped **and reported**, so calibration can re-ask
+- [x] The pangram yields spacing statistics, which needs no alignment
+- [ ] The user can see the segmentation and retap any glyph to rewrite it — UI, in M3-02
+Note: **DP alignment of the pangram is deliberately not built.** ADR-013 removed the need to
+classify cursive joins, and variation comes from §3.1's repeated guide-box pass, so the only
+thing left to take from freeform writing is spacing — which is measurable from gaps alone.
+Alignment is the step where segmentation goes wrong, and a mis-aligned glyph appears in
+every word using that letter. Filed as M3-03B if it is ever needed.
+
+### M3-03B — Pangram glyph extraction by DP alignment
+status: Icebox · refs: HANDWRITING.md §3.2 · estimate: L
+Note: only worth building if guide-box capture proves to give too little variation, or if
+cursive returns (ADR-013). Gains extra samples per glyph at the cost of the riskiest step in
+calibration.
+
+### M3-13 — Prompting a user to calibrate
+status: Ready · refs: DECISIONS.md ADR-014 · estimate: M
+Note: ADR-014 makes calibration optional, so a user can use the product indefinitely without
+ever seeing the feature it is named for. Where the invitation appears and how insistent it is
+becomes a real design problem rather than a settings row.
+Acceptance:
+- [ ] Calibration is reachable from Settings and offered somewhere in the natural flow
+- [ ] Declining is remembered; the app does not nag
+- [ ] Accepting an answer in the typeset style is a plausible moment to offer it
 
 ### M3-04 — Glyph bank storage
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §3.4, AGENTS.md §7 · estimate: M
