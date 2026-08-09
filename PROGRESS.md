@@ -314,6 +314,30 @@ Acceptance:
 - [x] Command–Return invokes the same Ask path on a hardware keyboard
 - [x] The pre-selection path makes no model or network request
 
+### M2-19 — Make the toolbar Ask path work
+status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
+Note: **found on device — the Ask button was a dead end.** It switched to `PKLassoTool`,
+and PencilKit exposes *no* API for what that tool selects: `PKLassoTool` has only `init`,
+and `PKCanvasView` has no selection property. So the user lassoed, PencilKit selected for
+its own cut/copy purposes, and nothing reached our pipeline. §3.1 calls this path the
+accessibility floor and says never to remove it; it had never worked.
+Acceptance:
+- [x] Arming Ask captures a lasso in the app's own coordinate space, not PencilKit's
+- [x] The captured loop drives the same `SelectionGeometry` as loop-and-dwell
+- [x] Works from a drag, so it needs no Pencil
+- [x] A manual selection offers no revert — no ink was consumed
+
+### M2-20 — Pen colours
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §10, AI_PIPELINE.md §6 · estimate: S
+Note: four pens, staggered in **lightness** as well as hue — vivid blue, red and green sit
+at nearly identical luminance, so red-green colour blindness makes them indistinguishable.
+Generated ink and its preview both follow the selected pen.
+Acceptance:
+- [x] Pen swatches in the palette, shown only while the pen tool is selected
+- [x] Every pen is legible on paper and separable in greyscale
+- [x] Colours are fixed across appearances, so stored strokes cannot change meaning
+- [x] Generated ink comes out in the pen the user is writing with
+
 ### M2-03 — Loop-and-dwell gesture
 status: Ready · claimed: — · note: decomposed into M2-03A (Done) and M2-03B (Ready, human). This parent closes when M2-03B does. · refs: PROJECT_PLAN.md §3.1 · estimate: L
 Acceptance:

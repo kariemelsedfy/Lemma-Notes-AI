@@ -40,7 +40,55 @@ public enum MarginColor {
     public static let paperRule = Color(light: 0xC8C9D2, dark: 0xC8C9D2)
 }
 
+/// The pen colours a user can write in.
+///
+/// Fixed across appearances for the same reason `MarginColor.ink` is: PencilKit bakes a
+/// resolved colour into every stroke, so a colour that moved with the system appearance
+/// would change the meaning of ink already on the page.
+///
+/// Deliberately few. A note app with thirty pens is a colour picker with a page attached,
+/// and `AI_PIPELINE.md` §6 only needs one of them to be a recognisable "red pen" for
+/// correction marks.
+///
+/// **The four are staggered in lightness, not just hue.** Vivid blue, red and green at
+/// their natural saturation have nearly identical luminance, so someone with red-green
+/// colour blindness cannot tell them apart at all — and `ARCHITECTURE.md` §10 does not
+/// treat accessibility as optional. Graphite is darkest, then green, blue, and red; each
+/// stays above 3.9:1 against paper, so every pen is legible on its own.
+public enum MarginPen: String, CaseIterable, Sendable, Identifiable {
+    case graphite
+    case blue
+    case red
+    case green
+
+    public var id: String { rawValue }
+
+    public var color: Color {
+        switch self {
+        case .graphite: MarginColor.ink
+        case .blue: Color(light: 0x2C63E0, dark: 0x2C63E0)
+        case .red: Color(light: 0xE0484A, dark: 0xE0484A)
+        case .green: Color(light: 0x14603A, dark: 0x14603A)
+        }
+    }
+
+    /// The pen used for correction marks (`AI_PIPELINE.md` §6).
+    public static let correction = MarginPen.red
+}
+
 #if os(iOS)
+    extension MarginPen {
+        /// PencilKit needs a `UIColor`, and it must not be dynamic.
+        public var uiColor: UIColor {
+            switch self {
+            case .graphite: MarginInk.color
+            case .blue: UIColor(red: 0x2C / 255, green: 0x63 / 255, blue: 0xE0 / 255, alpha: 1)
+            case .red: UIColor(red: 0xE0 / 255, green: 0x48 / 255, blue: 0x4A / 255, alpha: 1)
+            case .green: UIColor(red: 0x14 / 255, green: 0x60 / 255, blue: 0x3A / 255, alpha: 1)
+            }
+        }
+    }
+
     /// Colours PencilKit needs as `UIColor`, since `PKInkingTool` takes no SwiftUI type.
     public enum MarginInk {
         /// Never `UIColor.label`: that is dynamic, and PencilKit bakes whatever it resolves

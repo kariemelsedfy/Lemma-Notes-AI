@@ -20,6 +20,7 @@ struct VirtualizedPageStack: View {
     let suggestions = SuggestionLayer()
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
+    @State var selectedPen: MarginPen = .graphite
     @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
@@ -102,7 +103,7 @@ struct VirtualizedPageStack: View {
                 }
 
                 HStack(spacing: 12) {
-                    ToolPalette(selectedTool: $selectedTool)
+                    ToolPalette(selectedTool: $selectedTool, selectedPen: $selectedPen)
                     Button(action: invokeAsk) {
                         Label("ask.action", systemImage: "sparkles")
                             .frame(minHeight: 44)
@@ -149,9 +150,14 @@ struct VirtualizedPageStack: View {
                 pageSize: pageSizes[pageID] ?? pageSize,
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
+                selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
                 loopSelection: loopSelection,
-                suggestionInk: suggestionInk(for: pageID)
+                suggestionInk: suggestionInk(for: pageID),
+                isCapturingAskLasso: askPath.isArmed && pageID == visiblePageID,
+                onAskLasso: { loop in
+                    loopSelection.selectManually(loop: loop, onPage: pageID)
+                }
             )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
@@ -182,9 +188,14 @@ struct VirtualizedPageStack: View {
         }
     }
 
+    /// Arms our own lasso capture.
+    ///
+    /// Deliberately does **not** switch to `PKLassoTool`: PencilKit's lasso selection is
+    /// opaque, so choosing it made the Ask path a dead end — selection appeared to work
+    /// and then nothing happened.
     private func invokeAsk() {
+        loopSelection.clearSelection()
         askPath.invoke()
-        selectedTool = .lasso
     }
 
     /// Puts the consumed loop back on the page and drops the selection it produced.
@@ -200,9 +211,12 @@ private struct LivePageView: View {
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
+    let selectedPen: MarginPen
     let selection: PageSelection?
     @ObservedObject var loopSelection: LoopSelectionCoordinator
     let suggestionInk: [InkStroke]
+    let isCapturingAskLasso: Bool
+    let onAskLasso: ([CGPoint]) -> Void
 
     var body: some View {
         ZStack {
@@ -212,13 +226,17 @@ private struct LivePageView: View {
                 pageSize: pageSize,
                 drawingStore: drawingStore,
                 selectedTool: selectedTool,
+                selectedPen: selectedPen,
                 loopSelection: loopSelection
             )
             if let selection {
                 PageSelectionOverlay(selection: selection)
             }
             if !suggestionInk.isEmpty {
-                SuggestionOverlay(strokes: suggestionInk)
+                SuggestionOverlay(strokes: suggestionInk, pen: selectedPen)
+            }
+            if isCapturingAskLasso {
+                AskLassoCapture(onComplete: onAskLasso)
             }
         }
         .clipShape(.rect(cornerRadius: 12))
@@ -251,6 +269,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
     let selectedTool: CanvasTool
+    let selectedPen: MarginPen
     @ObservedObject var loopSelection: LoopSelectionCoordinator
 
     func makeCoordinator() -> Coordinator {
@@ -283,7 +302,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
         switch tool {
         case .pen:
-            canvasView.tool = PKInkingTool(.pen, color: MarginInk.color, width: 5)
+            canvasView.tool = PKInkingTool(.pen, color: selectedPen.uiColor, width: 5)
         case .eraser:
             canvasView.tool = PKEraserTool(.vector)
         case .lasso:
