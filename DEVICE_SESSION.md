@@ -102,15 +102,21 @@ Do this after §6, so the answer in the clip is in your own handwriting.
 The most important item in this document. Everything below §0 is verification; this is the
 first time anyone sees what the product is actually for.
 
-**First, thirty seconds on M1-12B.** Put the iPad in dark mode (Control Centre, or Settings →
-Display) and write a stroke on a page. It must be **dark ink on light paper**. Until
-2026-08-09 it was white-on-white and therefore invisible: PencilKit was lightening the stored
-black for a dark background that Margin's fixed-light page does not have. Fixed and tested,
-but the tests measure rendered pixels in a simulator and this is the report that closes it.
+**M1-12B is closed** — confirmed on device 2026-08-09, dark ink on light paper. ✅
 
-While you are there, check two things that were broken by the same cause and are also fixed
-untested-on-device: a **page thumbnail** in the library shows dark ink, and a **notebook
-exported to PDF** from dark mode is readable rather than blank.
+**First, two minutes on M2-13 and M2-14**, both reported from the last session and both
+fixed but unverified on hardware:
+
+- **Ask something and press Keep.** The answer must **stay on the page**. It vanished before
+  because the nib was 1.5pt and PencilKit draws nothing below ~1.5pt — the preview used a
+  different renderer, so it looked fine right up to the moment you accepted.
+- **Expect it to look bold.** That is known (M2-13B), not a new bug: floored at the thinnest
+  stroke PencilKit will draw, typeset text lands heavier than intended. Say whether it is bad
+  enough to fix before anything else.
+- **Export to PDF.** Open a notebook → toolbar → the share icon → "PDF". It failed before on
+  any notebook containing a page you had never drawn on, which is most new notebooks.
+- Then **export a notebook in dark mode** and confirm the PDF is readable rather than blank —
+  the other half of M1-12B, still unverified on device.
 
 **Calibrate.** Library toolbar → the hand icon → "Teach it your handwriting". Seven sheets.
 

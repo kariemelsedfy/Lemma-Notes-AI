@@ -266,6 +266,58 @@ Acceptance:
 - [x] Contrast is asserted, not eyeballed — WCAG ratio pinned above 4.5:1
 - [x] Suggestion preview uses the same ink, so accepting does not change what you were shown
 
+### M2-13 — Accepted ink vanishes: PencilKit will not draw the nib we chose
+status: Done · completed: Claude · 2026-08-09 · refs: HANDWRITING.md §8, SESSIONS.md 2026-08-09 · estimate: M
+Note: found on device by the user — "when i chose keep, it didn't stick, it got deleted."
+**A regression I introduced in M3-00B five days earlier.** That task thinned
+`nibToHeightRatio` 0.075 → 0.025 to help OCR, validated against `InkRasterizer`, which draws
+with `CGContext.setLineWidth` and renders any width faithfully. **The page is drawn by
+PencilKit, which does not.** Measured: `.pen` fades from alpha 253/255 at 3.4pt to 40 at
+2.0pt to **0 below 1.5pt**. The chosen nib was 1.5. So the answer rendered to nothing.
+The overlay draws `[InkStroke]` as plain SwiftUI polylines and looked correct throughout —
+two renderers, and only the one that never shows a user anything was ever checked.
+`.pencil` ink draws at any width but is textured, and the user's own pen is `.pen`.
+Acceptance:
+- [x] `InkRenderingLimits.minimumStrokeWidth` records the measured floor with its curve
+- [x] `TypesetStyle` floors the nib *before* computing gap compensation and hatch spacing, so letters do not merge
+- [x] `PKStroke(_:color:)` clamps as a backstop for producers that do not, e.g. a light-handed writer's bank
+- [x] A test renders committed ink through PencilKit and counts opaque pixels — the only kind that could have caught this
+- [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
+
+### M2-13B — Typeset answers are now bold, and the ratio cannot fix it
+status: Ready · refs: PROGRESS.md M2-13, HANDWRITING.md §8 · estimate: M
+Note: **the cost of M2-13, stated plainly.** The nib is laid down centred on the traced
+contour, so half of it sits outside the letter. Floored at 3.4pt on ~44pt text that is a
+ratio of **0.077 — heavier than the 0.075 M3-00B rejected as "heavy bold display type"**.
+Lowering `nibToHeightRatio` changes nothing, because the floor binds at every realistic
+answer size. ADR-014 makes typeset the default for every uncalibrated user, so this is the
+first thing most people will see. OCR still passes 3/3 on the harness corpus, so this is an
+appearance problem, not a legibility one — but it is the appearance §8 explicitly asks for.
+The fix is to draw *thinner geometry*, not a thinner pen: erode the fill region by half the
+nib so the stroked result lands on the true contour. Sketch, from the plotter approach
+already in `hatchFill`: trim each scanline span by nib/2 at both ends, confine scanlines to
+the eroded y-range, and — importantly — keep a minimum-width mark where a span is shorter
+than the nib, or thin features like the crossbar of `e` disappear and OCR collapses.
+Also worth measuring: whether the outline trace can be dropped once the fill is inset.
+Acceptance:
+- [ ] Rendered weight at a realistic answer size is at or below 0.05 of text height
+- [ ] `LegibilityHarness` does not regress on the five-string sweep corpus
+- [ ] Someone looks at the rendered output and agrees it reads as regular, not bold
+- [ ] `testTheRendererFloorAndNotTheRatioDecidesRealAnswerWeight` is updated or deleted
+
+### M2-14 — A notebook with an untouched page cannot be exported
+status: Done · completed: Claude · 2026-08-09 · refs: ARCHITECTURE.md §6 · estimate: S
+Note: found on device by the user — "I couldn't export to pdf." A page nobody has drawn on
+stores empty ink, `PKDrawing(data:)` rejects empty data, and `pdfData(for:)` renders *every*
+page — so one untouched page failed the whole export, for both PDF and PNG. A fresh notebook
+is mostly untouched pages, so export was broken for precisely the people most likely to try
+it. The 12 `DocumentStore` tests all passed: every one of them builds its fixture from a
+`PKDrawing`, so none had ever exported the empty state that ships by default.
+Acceptance:
+- [x] Empty ink data renders as a blank page instead of throwing
+- [x] `invalidInkData` still fires for data that is actually damaged
+- [x] Tests cover an untouched page alone, and mixed with a drawn one
+
 ### M1-12B — Ink renders white in a dark appearance
 status: Done · completed: Claude · 2026-08-09 · refs: ARCHITECTURE.md §4, SESSIONS.md 2026-08-09 · estimate: S
 Note: found on device, again, by the user: "the ink color is actually white not black."

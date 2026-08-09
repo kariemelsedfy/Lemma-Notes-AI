@@ -86,6 +86,13 @@ public enum NotebookExportError: Error, Equatable, Sendable {
         }
 
         private static func drawing(from request: NotebookPageExportRequest) throws -> PKDrawing {
+            // A page nobody has drawn on yet stores no ink at all, and `PKDrawing(data:)`
+            // rejects empty data. Treating that as corruption made a single untouched page
+            // fail the *whole* export — and a fresh notebook is mostly untouched pages, so
+            // export was broken for exactly the people most likely to try it (M2-14).
+            // `invalidInkData` is for data that is actually damaged.
+            guard !request.page.inkData.isEmpty else { return PKDrawing() }
+
             do {
                 return try PKDrawing(data: request.page.inkData)
             } catch {

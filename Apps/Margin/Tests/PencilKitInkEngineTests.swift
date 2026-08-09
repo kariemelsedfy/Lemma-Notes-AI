@@ -58,13 +58,35 @@ final class PencilKitInkEngineTests: XCTestCase {
 
     func testNibWidthSurvivesARoundTrip() throws {
         let engine = PencilKitInkEngine()
-        let nib = CGSize(width: 7.5, height: 3.25)
+        // Both above `InkRenderingLimits.minimumStrokeWidth`, where the width asked for is
+        // the width drawn. Below it PencilKit draws nothing, so the width is raised — see
+        // the test below.
+        let nib = CGSize(width: 7.5, height: 4.25)
 
         engine.insertProgrammatic(strokes: [Self.stroke(size: nib)])
 
         let points = try XCTUnwrap(engine.strokes.first).points
         XCTAssertEqual(points.first?.size.width ?? 0, nib.width, accuracy: Self.sizeTolerance)
         XCTAssertEqual(points.first?.size.height ?? 0, nib.height, accuracy: Self.sizeTolerance)
+    }
+
+    /// A width PencilKit cannot draw is raised to one it can, deliberately and lossily.
+    ///
+    /// The alternative is honest-but-invisible: below ~1.5pt PencilKit's `.pen` puts down
+    /// nothing at all, which on a page is indistinguishable from the ink being deleted
+    /// (M2-13). Capture is unaffected — this is the `InkStroke → PKStroke` direction only, so
+    /// a glyph bank still stores the writer's real measured widths.
+    func testAWidthTooThinToDrawIsRaisedToTheThinnestThatDraws() throws {
+        let engine = PencilKitInkEngine()
+
+        engine.insertProgrammatic(strokes: [Self.stroke(size: CGSize(width: 1.5, height: 1.5))])
+
+        let points = try XCTUnwrap(engine.strokes.first).points
+        XCTAssertEqual(
+            points.first?.size.width ?? 0,
+            InkRenderingLimits.minimumStrokeWidth,
+            accuracy: Self.sizeTolerance
+        )
     }
 
     func testPointsBuiltWithoutASizeGetTheDefaultNib() throws {
@@ -79,7 +101,7 @@ final class PencilKitInkEngineTests: XCTestCase {
     func testWidthVariationWithinAStrokeIsPreserved() throws {
         let engine = PencilKitInkEngine()
         let tapering = InkStroke(points: [
-            Self.point(x: 0, size: CGSize(width: 2, height: 2)),
+            Self.point(x: 0, size: CGSize(width: 4, height: 4)),
             Self.point(x: 50, size: CGSize(width: 9, height: 9)),
         ])
 
@@ -87,8 +109,14 @@ final class PencilKitInkEngineTests: XCTestCase {
 
         // A stroke that thickens must not come back flat — width modulation is most of
         // what makes ink read as drawn rather than plotted.
+        //
+        // Both ends are above the renderer floor on purpose. **Modulation below the floor is
+        // genuinely lost**: a stroke tapering from 5pt to 1pt comes back as 5pt to 3.4pt,
+        // because PencilKit cannot draw the thin end at all. That is a real fidelity cost of
+        // the fix in M2-13 and the reason M2-13B wants thinner geometry rather than a
+        // thinner pen.
         let widths = try XCTUnwrap(engine.strokes.first).points.map(\.size.width)
-        XCTAssertEqual(widths.first ?? 0, 2, accuracy: Self.sizeTolerance)
+        XCTAssertEqual(widths.first ?? 0, 4, accuracy: Self.sizeTolerance)
         XCTAssertEqual(widths.last ?? 0, 9, accuracy: Self.sizeTolerance)
     }
 
