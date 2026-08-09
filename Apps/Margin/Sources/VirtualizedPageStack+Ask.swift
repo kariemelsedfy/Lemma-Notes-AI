@@ -26,6 +26,9 @@ extension VirtualizedPageStack {
                 model: askModel,
                 suggestions: suggestions
             )
+        // Picked up per Ask rather than at construction: the user can change style between
+        // two questions, and the pipeline is cached across both.
+        pipeline.renderer = inkRenderer
         askPipeline = pipeline
         askSelection.commit()
 

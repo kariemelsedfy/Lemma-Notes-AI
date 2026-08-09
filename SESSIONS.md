@@ -11,6 +11,120 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-00B — fixing what looking found
+
+**Goal:** the typeset fallback rendered as heavy bold display type. Filed an hour earlier from a screenshot; fixed here because it is what *every* uncalibrated user sees, and if R-01 fails and we pivot to typeset it becomes the entire product. Worth doing in either branch of the gate.
+
+**Cause:** the nib is laid down **centred on the traced contour**, so half of it sits outside the letter and every stem gains a full nib of width. At `nibToHeightRatio` 0.075 that roughly doubled Helvetica's own stem weight. The constant was picked against the OCR harness, and OCR does not care about weight — so nothing caught it.
+
+**The pleasant surprise:** thinner is *better* for OCR, not worse. Sweeping 0.075 → 0.015 over a five-string corpus, everything from 0.045 up scored 4/5 and everything from 0.025 down scored 5/5. Inflated stems close the counters of `e` and `a`, and Vision reads a filled `e` as `o` or `c`. I had assumed a legibility-versus-weight trade-off and there is not one in this range.
+
+**Now 0.025**, chosen by rendering and looking rather than by the number alone — 0.035 still reads as medium weight, 0.025 as regular.
+
+**The cost, and it is real.** Hatch spacing is tied to the nib, so halving the nib doubles the hatch lines: 265 → 734 strokes for a 20-char line, 3.2ms → 7.5ms on this Mac. §7 budgets 30ms *on device*, so there is headroom, but rendering is now the dominant term and a device is slower than a Mac. **Do not thin it further without measuring on hardware** — folded into M3-02B.
+
+**Left undone deliberately:** M3-00B's original acceptance asked for weight proportional to the writer's measured `strokeWidth`. Weight now scales with the text's own size, which is the property that actually matters — otherwise apparent weight would depend on how much room placement happened to find. Keying it to the writer's pen is a different feature and belongs with M3-08C.
+
+**Five tests lock this in**, including the constant itself. That is unusual and deliberate: this number was wrong for weeks precisely because nothing asserted it, and the next person to change it should have to argue with a failing test rather than quietly re-bolding the default experience.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 109 tests ✅ · `swift test --package-path Packages/Intelligence` — 120 tests ✅ · `./scripts/lint.sh` ✅ · rendered and viewed at 0.075 / 0.035 / 0.025 · device tested: no
+
+---
+
+## 2026-08-08 · Claude · I looked at the output
+
+**Not a task.** M3 is code-complete and every number is green, and it occurred to me that **nobody — human or agent — had ever seen what this thing draws.** So I rendered three samples to PNG and read them back.
+
+**Reassuring:** the synthesizer path works. Legible text, correct word spacing, letters on a straight baseline, the right size for its frame. Nothing structurally broken.
+
+**Two findings that only looking could produce.**
+
+*Natural and neat are visually identical.* Side by side, at answer size, I cannot tell them apart at all. This is M3-08C confirmed by eye rather than by measurement — and it is the stronger evidence of the two, because "the cosine cannot resolve it" invites the reply that the metric is too blunt. It is not too blunt. There is nothing to resolve.
+
+*The typeset fallback is far too heavy.* §8 calls it "clean vector text at matched size and color". It renders as heavy bold display type — M3-00's scanline hatch fill, added so outline letters would survive OCR, reads as very thick strokes at answer sizes. Beside someone's pen strokes it will look like a sticker rather than a note. **And this is the default for every new user**, because ADR-014 makes calibration optional. ADR-014's own consequence note predicted exactly this — "the typeset style is the first impression for every user" — and then nobody looked at it. Filed **M3-00B**, with the warning that the hatch fill is load-bearing: outline-only scored 3/8 on the legibility harness.
+
+**The lesson, for whoever is next.** Every test in this repo asserts a property of the output. Not one of them asks what it looks like. Two real defects sat behind a fully green suite, and it took about four minutes to find both. `InkRasterizer.pngData` plus reading the file back is the whole technique.
+
+**Caveat on the samples:** the bank was built from `TypesetStyle` glyphs, since no real capture exists yet. So this says nothing about whether synthesized ink resembles a *person* — that is still M3-10, and still needs a device and a panel. What it does establish is that "natural vs neat" and "how heavy is typeset" are answerable now.
+
+**Verification:** rendered `sample-natural.png`, `sample-neat.png`, `sample-typeset.png` and viewed them. Scratch test file deleted; no code changed by this entry.
+
+---
+
+## 2026-08-08 · Claude · M3-12 — the bug that looks fine in a screenshot
+
+**Goal:** wire line breaking into placement. `LineBreaker` had existed since M3-07 and nothing called it.
+
+**The visible half:** `ContentMeasuring` assumed one unbroken line, so a long answer measured ~4000pt wide on a 1668pt page, found nowhere to go, and came back as "no room" for something that fits easily wrapped. Measuring now takes a width ceiling, wraps through `LineBreaker`, and takes the ceiling from the block's *slot* — anchored content gets what is left of its line, not the whole page width, or it would overflow the right margin every time.
+
+**The half that matters more.** Fixing measurement alone would have made things worse, and no existing test could have told you. **Both renderers fit text to their frame by shrinking the x-height.** Hand a wrapped-height frame to `TypesetStyle` or `Synthesizer` without also breaking the text, and you get the entire paragraph as one line of roughly 2pt letters. It does not throw, does not overflow, and looks like a neat grey line in a screenshot. So both renderers now wrap too, and there is a test asserting rendered ink fits the frame measurement reserved — because those are two different code paths that can silently disagree forever.
+
+The "too short a frame" case is deliberately left overflowing at a readable size. Shrinking is the one outcome that hides the problem from everybody.
+
+**The gotcha, and it cost three iterations:** the closure that measures a candidate line must be given a frame **one line tall**, not the block's height. Both renderers scale to fit the box they are handed, so measuring inside the full block returns every word at several times its drawn width — the breaker then wraps after each word, blows the line budget, throws `doesNotFit`, and falls back to the unwrapped single line. The symptom is "wrapping does nothing", and the cause is two frames away.
+
+**A process note worth more than the code.** I went looking for M3-12 in `PROGRESS.md`, did not find it, and filed it fresh — **the M3-07 entry says "filed M3-12" and the task was real; my checkout simply predated the merge that added it.** I then wrote a duplicate section and had to merge them. If a task you expect is missing, `git fetch` and rebase before concluding it was never filed. (The M3-07 claim was accurate. The one genuinely-missing thing was my own base.)
+
+**Not done:** measuring still uses a flat 0.62 x-heights per character while rendering uses each glyph's real advance. Harmless today because the renderers wrap to the frame they are handed, but reserved frames are systematically the wrong width for a proportional hand. Filed **M3-12B**, together with an end-to-end assertion that a genuinely un-fitting answer reaches `AskFailure.noRoom`.
+
+**Verification:** `swift test --package-path Packages/Intelligence` — 120 tests ✅ · `xcodebuild test` — 119 tests ✅ · `./scripts/lint.sh` ✅ · privacy/deps/colour checks ✅ · device tested: no
+
+---
+
+## 2026-08-08 · Claude · M3-09 — a metric, and what it found about M3-08
+
+**Goal:** §7's automated style similarity.
+
+**Say this plainly: §7 asks for a writer-identification embedding and I did not build one.** There is no such model on device, and shipping one means bundling weights and a training story this project does not have. `StyleSimilarity` is a hand-built eight-feature vector — slant, slant spread, curvature, aspect, strokes per cluster, wander, velocity spread, force spread — scored by cosine against the writer's own intra-sample baseline. 10 tests; Handwriting 98.
+
+**Read it as a regression detector, not a certificate.** A score that drops between builds means something broke. A high score does not mean a human would be fooled — that is M3-10, which is the gate for exactly this reason. I would rather this be stated in the type's own doc comment than discovered by someone quoting the number in a decision.
+
+**Building it surfaced two bugs in work I had just committed.**
+
+*My own M3-08 test was vacuous.* `testNeatDiffersFromNaturalButStaysInTheSameFrame` asserted `XCTAssertNotEqual(natural, neat)` — and every `InkStroke` gets a fresh `UUID`, so that assertion passes even when the two renders are pixel-identical. I had already hit this exact trap earlier the same day and written it into the M3-08 entry below, then walked into it again two files away. Compare geometry, never strokes.
+
+*And with the assertion fixed, the difference turns out to be under a point.* `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline drift (2%). It does **not** reach sample selection — which sample of `e` gets used, the single largest source of natural variation — nor spacing, slant or size. So the neat style is close to a no-op, *and* a bank with four samples per letter currently behaves identically to one with a single sample, which undercuts the point of §3.1's repeated pass. Filed **M3-08C**. This matters for the gate: if the panel says the output looks mechanical, this is the first place to look.
+
+**The metric's own blind spot, recorded in a test rather than hidden:** it cannot tell natural from neat — the embeddings come out byte-identical. Partly M3-08C, partly that medians over a whole sample are the wrong resolution for sub-point wobble. The test asserts the blind spot *and* asserts the underlying ink does differ, so it fails if either half changes.
+
+**One design note:** the score is a ratio of the intra-writer baseline, never an absolute. Nobody is perfectly self-consistent, and holding synthesis to a standard the writer does not meet would fail every writer — worst for the ones whose hand varies most, who are exactly the hardest to synthesize.
+
+**Also fixed while here:** curvature was turning *per unit length*, which made the whole metric size-dependent — one hand rendered at two sizes scored as two writers. Total turning is already scale-free.
+
+**Not done:** neither this nor the M3-01 legibility harness runs on a build. Both are libraries nothing calls. Filed **M3-09B**.
+
+**Next:** M3-10 is the gate and is human-only. That makes M3 feature-complete on my side.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 98 tests ✅ · `swift test --package-path Packages/Intelligence` ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
+---
+
+## 2026-08-08 · Claude · M3-08 — the three styles, and the gap nobody had noticed
+
+**Goal:** the "neat version of mine" option from §8.
+
+**What I found instead:** the neat style was already there — `Synthesizer.Variation.neat` has existed since M3-05. What did *not* exist was any path from a glyph bank to a rendered answer. `AskPipeline` took a `SuggestionInkRendering`, and the only implementation was `TypesetInkRenderer`. **Every answer in the app was typeset regardless of whether the user had calibrated.** M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them; the seam is exactly where you would not look, because both halves are done and tested.
+
+So M3-08 turned out to be `HandwritingInkRenderer` plus a style preference, not a variance slider.
+
+**Done:** `HandwritingInkRenderer` in `Intelligence` (7 tests), `HandwritingStyleChoice` and `HandwritingStylePreference` in the app (6 tests), a picker in the library toolbar, and `AskPipeline.renderer` made settable so a style switch takes effect on the next Ask. Intelligence and Margin both green — Margin 119.
+
+**Two decisions worth knowing about:**
+
+*Fallback is per block, never per character.* One glyph missing sends the whole block to typeset. Half a sentence in someone's handwriting and half in a typeface is more obviously wrong than either style used consistently — and the mixed version is the one that looks broken rather than deliberate.
+
+*A defaulted style preference follows the bank; an explicit one does not.* Typeset is the default (ADR-014), but someone who has just spent three minutes writing out the alphabet and is then shown a typeface would reasonably conclude the feature does not work. Someone who deliberately chose typeset has said what they want, and calibrating later must not overrule them. `isExplicit` is the whole distinction.
+
+**Gotcha that cost four test failures:** every `InkStroke` gets a fresh `UUID`, so two renders of identical geometry are never `==`. Any test comparing rendered ink must compare point locations, not strokes. This will bite again.
+
+**Not done, deliberately:** §8's other promise — *"users can switch at any time and re-render existing generated blocks, because we keep the spec"*. We do keep the spec, in the `PageElement` written by `SuggestionProvenance`. What is missing is the reverse path: locate an element's strokes, delete them, re-render, put them back. That is an **edit to committed ink**, which is categorically more dangerous than presenting a suggestion, and it deserves its own task with its own undo story rather than being the riskiest third of a task estimated S. Filed **M3-08B**.
+
+**Next:** M3-09 (automated similarity) is the last buildable M3 item; M3-10, the blind panel, is the gate and is human-only.
+
+**Verification:** `swift test --package-path Packages/Intelligence` ✅ · `xcodebuild test` — 119 tests ✅ · `./scripts/lint.sh` ✅ · privacy/deps/colour checks ✅ · device tested: no
+
+---
+
 ## 2026-08-08 · Claude · M3-02 — calibration capture
 
 **Goal:** the seven guided sheets that build a glyph bank, and somewhere to keep it.

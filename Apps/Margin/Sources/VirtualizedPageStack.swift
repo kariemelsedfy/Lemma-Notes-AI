@@ -1,6 +1,7 @@
 import DesignSystem
 import DocumentStore
 import InkCore
+import Intelligence
 import PencilKit
 import SwiftUI
 
@@ -11,6 +12,9 @@ struct VirtualizedPageStack: View {
     let notebookID: UUID?
     let autosave: PageAutosave?
     let pageMetadata: [UUID: PageMetadata]
+    /// Recomputed by the parent whenever the style preference or the glyph bank changes,
+    /// so a switch takes effect on the next Ask without rebuilding the pipeline.
+    let inkRenderer: any SuggestionInkRendering
 
     @State private var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
@@ -24,9 +28,14 @@ struct VirtualizedPageStack: View {
     @State private var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
-    init(document: StoredDocument? = nil, autosave: PageAutosave? = nil) {
+    init(
+        document: StoredDocument? = nil,
+        autosave: PageAutosave? = nil,
+        inkRenderer: any SuggestionInkRendering = TypesetInkRenderer()
+    ) {
         notebookID = document?.manifest.id
         self.autosave = autosave
+        self.inkRenderer = inkRenderer
         let pages = document?.pages ?? []
         pageIDs = pages.map(\.metadata.pageID)
         pageSizes = Dictionary(

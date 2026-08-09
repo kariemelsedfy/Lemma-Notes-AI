@@ -18,6 +18,7 @@ struct NotebookLibraryView: View {
     @State private var exportErrorPresented = false
     @State private var calibrationPresented = false
     @StateObject private var handwriting = HandwritingStyleStore()
+    @StateObject private var stylePreference = HandwritingStylePreference()
 
     var body: some View {
         NavigationSplitView {
@@ -55,6 +56,15 @@ struct NotebookLibraryView: View {
                     // front of a new user. M3-13 covers offering it at a better moment
                     // than "buried in a toolbar" — this is the reachable minimum.
                     Menu("calibration.title", systemImage: "hand.draw") {
+                        // §8's three styles. Offered even without a bank so the choice is
+                        // discoverable, but they resolve to typeset until one exists.
+                        Picker("style.title", selection: $stylePreference.choice) {
+                            ForEach(HandwritingStyleChoice.allCases) { style in
+                                Text(LocalizedStringKey(style.localizedNameKey)).tag(style)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                        .disabled(handwriting.bank == nil)
                         Button("calibration.start") { calibrationPresented = true }
                         if handwriting.bank != nil {
                             Button("calibration.delete", role: .destructive) { handwriting.delete() }
@@ -64,15 +74,19 @@ struct NotebookLibraryView: View {
             }
         } detail: {
             if let selectedNotebookID, let document = library.document(id: selectedNotebookID) {
-                VirtualizedPageStack(document: document, autosave: library.autosave)
-                    .onDisappear { flushEdits() }
-                    .id(selectedNotebookID)
-                    .toolbar {
-                        Menu("library.export", systemImage: "square.and.arrow.up") {
-                            Button("library.export.pdf") { export(document, format: .pdf) }
-                            Button("library.export.png") { export(document, format: .png) }
-                        }
+                VirtualizedPageStack(
+                    document: document,
+                    autosave: library.autosave,
+                    inkRenderer: stylePreference.renderer(bank: handwriting.bank)
+                )
+                .onDisappear { flushEdits() }
+                .id(selectedNotebookID)
+                .toolbar {
+                    Menu("library.export", systemImage: "square.and.arrow.up") {
+                        Button("library.export.pdf") { export(document, format: .pdf) }
+                        Button("library.export.png") { export(document, format: .png) }
                     }
+                }
             } else {
                 ContentUnavailableView("library.selection.title", systemImage: "doc")
             }

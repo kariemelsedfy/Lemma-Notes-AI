@@ -613,6 +613,22 @@ outcome is building all of M3 and *then* discovering it does not convince anyone
 ADR-011 raised the stakes: with loop-and-dwell gone, "the answer is in your handwriting"
 is carrying more of the product's differentiation than it was.
 
+**Status 2026-08-08: everything an agent can build in M3 is built.** The only remaining
+item is **M3-10, the panel, and only a human can run it.** Two things to know before
+running it:
+
+- **Nobody has yet looked at generated ink in a real hand.** The whole path is verified by
+  tests, never by eye. `DEVICE_SESSION.md` §6 is the dress rehearsal — do that first.
+- **If it looks mechanical, M3-08C is the first place to look.** `Variation` reaches only
+  vertical jitter and baseline drift, not glyph-sample selection, so a bank with four
+  samples per letter currently behaves identically to one with a single sample. That
+  undercuts §3.1's repeated pass, which exists precisely to kill the "robot repeating the
+  identical 'e'" tell.
+
+The follow-ups filed during M3 — M3-01B, M3-02B, M3-03B, M3-04B, M3-08B, M3-08C, M3-09B,
+M3-11, M3-13 — are deliberately *not* prerequisites for the gate. Polishing before
+the verdict is the failure mode this milestone is sequenced to avoid.
+
 ### M3-00 — Typeset fallback style
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
 Note: **next.** M3-01 went first so this can be scored rather than guessed at. It is
@@ -768,32 +784,132 @@ Acceptance:
 - [x] `lineCount(for:width:measure:)` lets placement size a frame before reserving it
 
 ### M3-12 — Wire line breaking into the placement engine
-status: Ready · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
-Note: `LineBreaker` exists and is tested, but `NominalContentMeasurer` still estimates a
-`lines` block's height from character counts rather than asking the breaker, and nothing
-routes a `doesNotFit` into the §8 "no room on the page" state. Until then a long answer can
-still be measured optimistically and then not fit.
+status: Done · completed: Claude · 2026-08-08 · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
+Note: `ContentMeasuring` assumed one unbroken line, so a long answer measured wider than
+the page and came back unplaced — surfacing to the user as "no room" for something that
+fits easily when wrapped. **Both renderers made it worse in a way no test could see:** they
+fit text to their frame by *shrinking the x-height*, so a wrapped-height frame would have
+produced one line of 2pt letters. Legible in a screenshot, unreadable in use.
 Acceptance:
-- [ ] `PlacementEngine` sizes `lines` blocks from `LineBreaker.lineCount`
-- [ ] Measurement goes through the glyph bank's advances when one exists
-- [ ] `doesNotFit` surfaces as `AskFailure.noRoom` rather than an overflow
+- [x] Measuring takes a width ceiling and wraps through `LineBreaker`
+- [x] The ceiling comes from the block's slot, so anchored content gets what is left of its
+      line rather than the whole page width
+- [x] Both renderers wrap the same way, with a test asserting rendered ink fits the frame
+      measuring reserved
+- [x] A frame genuinely too short draws at a readable size and overflows visibly rather
+      than shrinking to hide it
+- [ ] Measurement goes through the glyph bank's advances when one exists — **not done**,
+      `NominalContentMeasurer` still uses a character-count estimate. Filed as M3-12B
+- [ ] `doesNotFit` surfaces as `AskFailure.noRoom` — the block reaches `unplaced` and
+      `AskPipeline` already maps that, but nothing asserts the whole path. Filed as M3-12B
+
+### M3-00B — The typeset fallback is too heavy to sit next to handwriting
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8, DECISIONS.md ADR-014 · estimate: M
+Note: **found by rendering a sample to a PNG and looking at it** — the first time anyone
+had. §8 describes typeset as "clean vector text at matched size and color". What it
+actually renders is heavy bold display type: M3-00's scanline hatch fill (added to make
+outline letters OCR-legible) reads as very thick strokes at answer sizes. Next to a
+person's pen strokes it will look like a sticker rather than a note.
+**This is the default for every new user** — ADR-014 makes calibration optional, and its
+own consequence note says "the typeset style is the first impression for every user".
+Cause: the nib is laid down **centred on the traced contour**, so half of it sits outside
+the letter and every stem gains a full nib of width. At `nibToHeightRatio` 0.075 that
+roughly doubled Helvetica's own stem weight.
+Fix: 0.025, chosen by sweeping and *looking*. It renders as regular Helvetica and is also
+**better** for OCR — 5/5 on the sweep corpus against 4/5 at 0.075, because inflated stems
+close the counters of `e` and `a`. Cost: hatch spacing is tied to the nib, so stroke count
+rises 265 → 734 for a 20-char line and render time 3.2ms → 7.5ms on a Mac. §7's budget is
+30ms on device, so there is headroom, but this is now the dominant term — **re-measure on
+device before thinning further** (folded into M3-02B).
+Acceptance:
+- [x] A rendered sample reads as regular weight rather than bold, verified by eye
+- [x] Still passes the OCR legibility harness — in fact scores better
+- [x] A test locks the weight in, so re-bolting it has to argue with a failing test
+- [ ] Weight proportional to the writer's measured `strokeWidth` — **not done**. It scales
+      with the text's own size, which is the property that matters for consistency; keying
+      it to the writer's pen is a different feature and belongs with M3-08C
+
+### M3-12B — Measure through the glyph bank, and prove the no-room path
+status: Ready · refs: AI_PIPELINE.md §4, §8 · estimate: M
+Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's
+real advance, so the two disagree — harmlessly today because the renderers wrap to the frame
+they are handed, but it means reserved frames are systematically the wrong width for a
+proportional hand.
+Acceptance:
+- [ ] `ContentMeasuring` consults the bank's advances when a bank exists
+- [ ] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`
 
 ### M3-08 — Neat style
-status: Ready · refs: HANDWRITING.md §8 · estimate: S
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8 · estimate: S
 Note: the glyph bank with variance reduced ~60%. §8 expects several early testers to prefer
 this *over* their real hand for answers, which would itself be a finding worth recording.
 Acceptance:
-- [ ] Selectable in Settings alongside "My handwriting" and "Typeset"
-- [ ] Existing generated blocks re-render on switch, since we keep the spec
+- [x] Selectable alongside "My handwriting" and "Typeset"
+- [x] The user's hand actually reaches the Ask pipeline — `HandwritingInkRenderer` was the
+      missing half of §8, and until now every answer was typeset regardless of the bank
+- [ ] Existing generated blocks re-render on switch — **not done**, filed as M3-08B
+
+### M3-08B — Re-render existing blocks on a style switch
+status: Ready · refs: HANDWRITING.md §8 · estimate: M
+Note: §8 promises this and says why it is possible — "because we keep the spec that produced
+them". We do keep it, in the page metadata `PageElement` written by `SuggestionProvenance`.
+What is missing is the reverse path: find the strokes an element owns, delete them, re-render
+the spec in the new style, and put them back — an edit to committed ink, which is a different
+and more dangerous operation than presenting a suggestion. Deliberately not bundled into
+M3-08, where it would have been the riskiest part of an otherwise small task.
+Acceptance:
+- [ ] Switching style re-renders previously accepted blocks
+- [ ] Undo restores the previous rendering, not an empty page
+- [ ] Ink the user drew themselves is never touched
 
 ### M3-09 — Automated style similarity
-status: Ready · refs: HANDWRITING.md §7 · estimate: M
-Note: writer-identification embedding, cosine similarity of generated-vs-real against
-real-vs-real. Target ≥0.80 of the intra-writer baseline. A cheap proxy for the human panel
-that can run every build.
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §7 · estimate: M
+Note: **§7 asks for a writer-identification embedding; this is not one.** There is no such
+model on device, and shipping one means bundling weights and a training story this project
+does not have. `StyleSimilarity` computes a hand-built eight-feature vector instead — slant,
+curvature, aspect, stroke economy, wander, speed and pressure spreads — and takes the cosine.
+Read it as **a regression detector, not a certificate of realism**: a score that drops means
+something broke; a high score does not mean a human would be fooled. That is M3-10's job.
 Acceptance:
-- [ ] Similarity score computed over a fixed sample set
-- [ ] Reported alongside the OCR legibility number
+- [x] Similarity score computed over a fixed sample set, as a ratio of the intra-writer
+      baseline rather than an absolute
+- [x] Every feature named, so a drop can be attributed to a property
+- [ ] Reported alongside the OCR legibility number in CI — filed as M3-09B
+Known blind spot: it cannot tell `Variation.natural` from `.neat`. Two causes, both real —
+see M3-08C, and the fact that medians over a whole sample are the wrong resolution for
+sub-point wobble.
+
+### M3-09B — Snapshot tests, and printing the evaluation numbers
+status: Ready · refs: HANDWRITING.md §7 · estimate: M
+Note: **corrected 2026-08-08.** I filed this believing neither metric ran on a build. Both
+do: `testTypesetStyleMeetsTheLegibilityBar` gates legibility at 95%, and
+`testSynthesizedInkResemblesTheBankItCameFrom` gates similarity at §7's 0.80 ratio. Both
+run under `swift test`, which `scripts/test.sh` already invokes. So the *gating* half is
+done and building a reporting script would duplicate it.
+What is genuinely missing is §7's **snapshot tests** — rendered PNGs compared against
+references with a perceptual tolerance. That is the only kind of check that would have
+caught M3-00B, where every property assertion passed and the output was visibly wrong.
+§7 is explicit that references are regenerated **only with a human reviewing the diff**,
+which is why an agent should not generate the first set unreviewed.
+Acceptance:
+- [ ] A small set of reference PNGs, generated once and reviewed by a human
+- [ ] A CI check comparing renders against them with a perceptual tolerance
+- [ ] Regenerating references requires an explicit flag, never happens automatically
+- [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
+
+### M3-08C — `Variation` barely varies anything
+status: Ready · refs: HANDWRITING.md §8, §4.1 · estimate: M
+Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
+but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
+drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
+It does *not* reach sample selection — which glyph sample gets used, the single largest
+source of natural variation — nor spacing, slant or size. So "neat" is currently close to a
+no-op, and the sample-selection gap also means a bank with several samples per letter behaves
+identically to one with a single sample.
+Acceptance:
+- [ ] `Variation` biases sample selection toward the writer's most typical glyph
+- [ ] Horizontal spacing and per-glyph slant scale with it too
+- [ ] The difference is visible side by side, not just measurable
 
 ### M3-10 — Blind similarity panel *(the gate)*
 status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
