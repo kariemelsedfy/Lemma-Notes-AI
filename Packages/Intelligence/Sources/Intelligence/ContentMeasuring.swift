@@ -1,11 +1,29 @@
+import CoreGraphics
 import Foundation
+import Handwriting
 
 /// Estimates how much page a block will take before any ink is synthesized.
 ///
 /// `AI_PIPELINE.md` §4: measure, then place, then synthesize. Placing first and
 /// discovering the width afterwards means either overlapping ink or a second layout pass.
 public protocol ContentMeasuring: Sendable {
-    func size(of content: SpecBlockContent, xHeight: CGFloat, lineSpacing: CGFloat) -> CGSize
+    /// - Parameter maxWidth: the widest the block may be before it has to wrap. Passing
+    ///   `.infinity` measures the unwrapped run, which is what a single-line slot wants.
+    ///   Without this, a long answer measures as one enormous line, finds nowhere on the
+    ///   page wide enough, and is reported as "no room" when it would have fitted wrapped.
+    func size(
+        of content: SpecBlockContent,
+        xHeight: CGFloat,
+        lineSpacing: CGFloat,
+        maxWidth: CGFloat
+    ) -> CGSize
+}
+
+extension ContentMeasuring {
+    /// Measures without a width ceiling.
+    public func size(of content: SpecBlockContent, xHeight: CGFloat, lineSpacing: CGFloat) -> CGSize {
+        size(of: content, xHeight: xHeight, lineSpacing: lineSpacing, maxWidth: .infinity)
+    }
 }
 
 /// A measurer that works from character counts and the local x-height.
@@ -44,17 +62,45 @@ public struct NominalContentMeasurer: ContentMeasuring {
         self.noteScale = noteScale
     }
 
-    public func size(of content: SpecBlockContent, xHeight: CGFloat, lineSpacing: CGFloat) -> CGSize {
+    public func size(
+        of content: SpecBlockContent,
+        xHeight: CGFloat,
+        lineSpacing: CGFloat,
+        maxWidth: CGFloat = .infinity
+    ) -> CGSize {
         let height = max(xHeight, 1)
         let ink = height * inkHeightRatio
         let advance = lineSpacing > 0 ? lineSpacing : height * lineHeightRatio
 
         switch content {
         case .inline(let run):
-            return CGSize(width: width(of: run, xHeight: height), height: ink)
+            let natural = width(of: run, xHeight: height)
+            guard natural > maxWidth, maxWidth > 0 else {
+                return CGSize(width: natural, height: ink)
+            }
+            // Wraps rather than reporting a run wider than the page. `LineBreaker` does
+            // the breaking so the measured line count matches what will actually be
+            // drawn — measuring one way and rendering another is how a block overflows
+            // the frame that was reserved for it.
+            let wrapped = LineBreaker.lineCount(for: run.value, width: maxWidth) {
+                self.width(of: SpecRun(kind: run.kind, value: $0), xHeight: height)
+            }
+            return CGSize(width: maxWidth, height: ink + advance * CGFloat(max(wrapped - 1, 0)))
         case .lines(let lines):
             let widest = lines.map { width(of: $0.run, xHeight: height) + CGFloat($0.indent) * height * 2 }.max() ?? 0
-            return CGSize(width: widest, height: ink + advance * CGFloat(lines.count - 1))
+            guard widest > maxWidth, maxWidth > 0 else {
+                return CGSize(width: widest, height: ink + advance * CGFloat(lines.count - 1))
+            }
+            let wrapped = lines.reduce(0) { total, line in
+                let indent = CGFloat(line.indent) * height * 2
+                let available = max(maxWidth - indent, height)
+                return total
+                    + max(
+                        LineBreaker.lineCount(for: line.run.value, width: available) {
+                            self.width(of: SpecRun(kind: line.run.kind, value: $0), xHeight: height)
+                        }, 1)
+            }
+            return CGSize(width: maxWidth, height: ink + advance * CGFloat(max(wrapped - 1, 0)))
         case .plot:
             let side = height * plotSideRatio
             return CGSize(width: side, height: side)

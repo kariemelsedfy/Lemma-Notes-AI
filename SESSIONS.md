@@ -11,6 +11,26 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-12 — the bug that looks fine in a screenshot
+
+**Goal:** wire line breaking into placement. `LineBreaker` had existed since M3-07 and nothing called it.
+
+**The visible half:** `ContentMeasuring` assumed one unbroken line, so a long answer measured ~4000pt wide on a 1668pt page, found nowhere to go, and came back as "no room" for something that fits easily wrapped. Measuring now takes a width ceiling, wraps through `LineBreaker`, and takes the ceiling from the block's *slot* — anchored content gets what is left of its line, not the whole page width, or it would overflow the right margin every time.
+
+**The half that matters more.** Fixing measurement alone would have made things worse, and no existing test could have told you. **Both renderers fit text to their frame by shrinking the x-height.** Hand a wrapped-height frame to `TypesetStyle` or `Synthesizer` without also breaking the text, and you get the entire paragraph as one line of roughly 2pt letters. It does not throw, does not overflow, and looks like a neat grey line in a screenshot. So both renderers now wrap too, and there is a test asserting rendered ink fits the frame measurement reserved — because those are two different code paths that can silently disagree forever.
+
+The "too short a frame" case is deliberately left overflowing at a readable size. Shrinking is the one outcome that hides the problem from everybody.
+
+**The gotcha, and it cost three iterations:** the closure that measures a candidate line must be given a frame **one line tall**, not the block's height. Both renderers scale to fit the box they are handed, so measuring inside the full block returns every word at several times its drawn width — the breaker then wraps after each word, blows the line budget, throws `doesNotFit`, and falls back to the unwrapped single line. The symptom is "wrapping does nothing", and the cause is two frames away.
+
+**A process note worth more than the code.** I went looking for M3-12 in `PROGRESS.md`, did not find it, and filed it fresh — **the M3-07 entry says "filed M3-12" and the task was real; my checkout simply predated the merge that added it.** I then wrote a duplicate section and had to merge them. If a task you expect is missing, `git fetch` and rebase before concluding it was never filed. (The M3-07 claim was accurate. The one genuinely-missing thing was my own base.)
+
+**Not done:** measuring still uses a flat 0.62 x-heights per character while rendering uses each glyph's real advance. Harmless today because the renderers wrap to the frame they are handed, but reserved frames are systematically the wrong width for a proportional hand. Filed **M3-12B**, together with an end-to-end assertion that a genuinely un-fitting answer reaches `AskFailure.noRoom`.
+
+**Verification:** `swift test --package-path Packages/Intelligence` — 120 tests ✅ · `xcodebuild test` — 119 tests ✅ · `./scripts/lint.sh` ✅ · privacy/deps/colour checks ✅ · device tested: no
+
+---
+
 ## 2026-08-08 · Claude · M3-09 — a metric, and what it found about M3-08
 
 **Goal:** §7's automated style similarity.

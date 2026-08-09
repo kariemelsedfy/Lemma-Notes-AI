@@ -56,10 +56,40 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
             return try fallback.strokes(for: placement, style: style, seed: seed)
         }
         do {
-            return try Synthesizer.strokes(for: text, in: frame, bank: bank, variation: variation, seed: seed)
+            // Wrapped, not scaled. `Synthesizer` fits text to its frame by shrinking the
+            // x-height, so a long answer in a one-line frame comes out microscopic rather
+            // than overflowing — legible-looking in a screenshot and unreadable in use.
+            // Placement measured this block wrapped (M3-12), so rendering must break it
+            // the same way or the two disagree about how much room it needs.
+            // Measured against **one line's height**, not the block's. `Synthesizer`
+            // scales text to fit the box it is given, so measuring inside the full block
+            // returns every word at several times its drawn width.
+            let advance = LineBreaker.lineAdvance(style: bank.style.stats, frame: frame)
+            let lines = try LineBreaker.lines(for: text, in: frame, style: bank.style.stats) { candidate in
+                (try? Synthesizer.strokes(
+                    for: candidate,
+                    in: CGRect(x: 0, y: 0, width: 100_000, height: advance),
+                    bank: bank,
+                    variation: variation,
+                    seed: seed
+                )).map { InkLineGrouping.bounds(of: $0).width } ?? 0
+            }
+            return try lines.enumerated().flatMap { index, line in
+                try Synthesizer.strokes(
+                    for: line.text,
+                    in: line.frame,
+                    bank: bank,
+                    variation: variation,
+                    seed: seed &+ UInt64(index)
+                )
+            }
         } catch Synthesizer.Error.missingGlyphs {
             // `canRender` said yes, so this means the bank changed underneath us. Falling
             // back beats throwing away an answer the user already waited for.
+            return try fallback.strokes(for: placement, style: style, seed: seed)
+        } catch is LineBreaker.Error {
+            // The frame is too short for the wrapped text. Placement is meant to prevent
+            // this; if it happens the honest move is the fallback, not silently shrinking.
             return try fallback.strokes(for: placement, style: style, seed: seed)
         }
     }

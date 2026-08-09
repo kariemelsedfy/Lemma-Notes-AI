@@ -75,7 +75,14 @@ public struct PlacementEngine: Sendable {
                 continue
             }
 
-            let size = measurer.size(of: block.content, xHeight: xHeight, lineSpacing: context.style.lineSpacing)
+            // A width ceiling, so a long answer wraps instead of measuring as one line
+            // wider than the page and being reported as "no room" (M3-12).
+            let size = measurer.size(
+                of: block.content,
+                xHeight: xHeight,
+                lineSpacing: context.style.lineSpacing,
+                maxWidth: availableWidth(for: block, context: context, xHeight: xHeight)
+            )
             guard size.width > 0, size.height > 0 else {
                 unplaced.append(block)
                 continue
@@ -107,6 +114,22 @@ public struct PlacementEngine: Sendable {
         let startY = preferred?.minY ?? context.selectionBounds.maxY
         guard let fallback = search(size: size, below: startY, columns: columns, grid: grid) else { return nil }
         return BlockPlacement(block: block, frame: fallback, requested: block.placement, usedFallback: true)
+    }
+
+    /// The widest a block may be in its requested slot before it has to wrap.
+    ///
+    /// Measured from the page, not the selection: wrapping to the selection's width would
+    /// make a short circled expression produce a tall narrow column of an answer.
+    private func availableWidth(for block: SpecBlock, context: SelectionContext, xHeight: CGFloat) -> CGFloat {
+        let gap = xHeight * spacing.wordGapRatio
+        switch block.placement {
+        case .atAnchor:
+            return max(page.maxX - (context.anchor.point.x + gap), xHeight)
+        case .rightOfSelection:
+            return max(page.maxX - (context.selectionBounds.maxX + gap), xHeight)
+        case .belowSelection, .nearestFree:
+            return max(page.width - gap * 2, xHeight)
+        }
     }
 
     /// The rectangle the requested slot asks for, before checking whether it is free.

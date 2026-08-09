@@ -45,9 +45,30 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
 
     private func render(_ text: String, in frame: CGRect, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
         do {
-            return try TypesetStyle.strokes(for: text, in: frame, style: style)
+            // Wrapped rather than scaled, for the same reason as the handwriting renderer:
+            // `TypesetStyle` fits text to its frame by shrinking it, so a long answer in a
+            // one-line frame becomes unreadably small instead of taking the lines it needs
+            // (M3-12).
+            // The measuring frame is **one line tall**, not the block's height. Both
+            // renderers scale text to fit the box they are given, so measuring inside the
+            // full block makes every word come back several times its drawn width and the
+            // breaker wraps after each one.
+            let advance = LineBreaker.lineAdvance(style: style, frame: frame)
+            let lines = try LineBreaker.lines(for: text, in: frame, style: style) { candidate in
+                let oneLine = CGRect(x: 0, y: 0, width: 100_000, height: advance)
+                return (try? TypesetStyle.strokes(for: candidate, in: oneLine, style: style))
+                    .map { InkLineGrouping.bounds(of: $0).width } ?? 0
+            }
+            guard lines.count > 1 else {
+                return try TypesetStyle.strokes(for: text, in: frame, style: style)
+            }
+            return try lines.flatMap { try TypesetStyle.strokes(for: $0.text, in: $0.frame, style: style) }
         } catch TypesetStyle.Error.unsupportedCharacter {
             throw SuggestionRenderError.unsupportedContent
+        } catch is LineBreaker.Error {
+            // Too short a frame for the wrapped text. Placement should prevent it; drawing
+            // it scaled down is the one option that hides the problem, so do not.
+            return try TypesetStyle.strokes(for: text, in: frame, style: style)
         }
     }
 

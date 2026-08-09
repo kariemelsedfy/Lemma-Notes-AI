@@ -626,7 +626,7 @@ running it:
   identical 'e'" tell.
 
 The follow-ups filed during M3 — M3-01B, M3-02B, M3-03B, M3-04B, M3-08B, M3-08C, M3-09B,
-M3-11, M3-12, M3-13 — are deliberately *not* prerequisites for the gate. Polishing before
+M3-11, M3-13 — are deliberately *not* prerequisites for the gate. Polishing before
 the verdict is the failure mode this milestone is sequenced to avoid.
 
 ### M3-00 — Typeset fallback style
@@ -784,15 +784,34 @@ Acceptance:
 - [x] `lineCount(for:width:measure:)` lets placement size a frame before reserving it
 
 ### M3-12 — Wire line breaking into the placement engine
-status: Ready · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
-Note: `LineBreaker` exists and is tested, but `NominalContentMeasurer` still estimates a
-`lines` block's height from character counts rather than asking the breaker, and nothing
-routes a `doesNotFit` into the §8 "no room on the page" state. Until then a long answer can
-still be measured optimistically and then not fit.
+status: Done · completed: Claude · 2026-08-08 · refs: AI_PIPELINE.md §4, HANDWRITING.md §4 · estimate: M
+Note: `ContentMeasuring` assumed one unbroken line, so a long answer measured wider than
+the page and came back unplaced — surfacing to the user as "no room" for something that
+fits easily when wrapped. **Both renderers made it worse in a way no test could see:** they
+fit text to their frame by *shrinking the x-height*, so a wrapped-height frame would have
+produced one line of 2pt letters. Legible in a screenshot, unreadable in use.
 Acceptance:
-- [ ] `PlacementEngine` sizes `lines` blocks from `LineBreaker.lineCount`
-- [ ] Measurement goes through the glyph bank's advances when one exists
-- [ ] `doesNotFit` surfaces as `AskFailure.noRoom` rather than an overflow
+- [x] Measuring takes a width ceiling and wraps through `LineBreaker`
+- [x] The ceiling comes from the block's slot, so anchored content gets what is left of its
+      line rather than the whole page width
+- [x] Both renderers wrap the same way, with a test asserting rendered ink fits the frame
+      measuring reserved
+- [x] A frame genuinely too short draws at a readable size and overflows visibly rather
+      than shrinking to hide it
+- [ ] Measurement goes through the glyph bank's advances when one exists — **not done**,
+      `NominalContentMeasurer` still uses a character-count estimate. Filed as M3-12B
+- [ ] `doesNotFit` surfaces as `AskFailure.noRoom` — the block reaches `unplaced` and
+      `AskPipeline` already maps that, but nothing asserts the whole path. Filed as M3-12B
+
+### M3-12B — Measure through the glyph bank, and prove the no-room path
+status: Ready · refs: AI_PIPELINE.md §4, §8 · estimate: M
+Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's
+real advance, so the two disagree — harmlessly today because the renderers wrap to the frame
+they are handed, but it means reserved frames are systematically the wrong width for a
+proportional hand.
+Acceptance:
+- [ ] `ContentMeasuring` consults the bank's advances when a bank exists
+- [ ] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`
 
 ### M3-08 — Neat style
 status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8 · estimate: S
