@@ -614,16 +614,16 @@ ADR-011 raised the stakes: with loop-and-dwell gone, "the answer is in your hand
 is carrying more of the product's differentiation than it was.
 
 ### M3-00 — Typeset fallback style
-status: Ready · refs: HANDWRITING.md §8 · estimate: S
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
 Note: **next.** M3-01 went first so this can be scored rather than guessed at. It is
 needed regardless — `HANDWRITING.md` §8 makes it a
 Settings option and `BUSINESS.md` makes it the Exam Mode default — and it is the pivot
 target if R-01 fails. Building it now means a failed gate is a setting change, not a
 rewrite. It also replaces `PlainStrokeFont`, which is throwaway code sitting in the app.
 Acceptance:
-- [ ] Clean vector text rendered as `PKStroke`s at matched size, colour and baseline
-- [ ] Replaces `PlainStrokeFont` and `PlainInkRenderer` at the `SuggestionInkRendering` seam
-- [ ] Legible via the OCR round-trip harness
+- [x] Real letterforms traced from a font, hatch-filled so they read as solid ink
+- [x] Replaces `PlainStrokeFont` and `PlainInkRenderer`, both deleted
+- [x] **100% exact on the OCR corpus**, against the placeholder's 87.5% and §7's 95% bar
 
 ### M3-01 — OCR round-trip harness
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §7, ARCHITECTURE.md §9 · estimate: S

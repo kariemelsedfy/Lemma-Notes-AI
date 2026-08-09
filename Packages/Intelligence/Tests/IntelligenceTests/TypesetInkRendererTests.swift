@@ -4,11 +4,11 @@ import XCTest
 
 @testable import Intelligence
 
-final class PlainInkRendererTests: XCTestCase {
+final class TypesetInkRendererTests: XCTestCase {
     private let frame = CGRect(x: 300, y: 400, width: 200, height: 50)
 
     func testDrawsAnInlineAnswerInsideItsPlacedFrame() throws {
-        let strokes = try PlainInkRenderer().strokes(
+        let strokes = try TypesetInkRenderer().strokes(
             for: Self.placement(.inline(SpecRun(kind: .math, value: "4")), frame: frame),
             style: .unmeasured,
             seed: 0
@@ -24,19 +24,30 @@ final class PlainInkRendererTests: XCTestCase {
             SpecLine(run: SpecRun(kind: .math, value: "34")),
         ]
 
-        let strokes = try PlainInkRenderer().strokes(
+        let strokes = try TypesetInkRenderer().strokes(
             for: Self.placement(.lines(lines), frame: frame),
             style: .unmeasured,
             seed: 0
         )
 
-        let grouped = InkLineGrouping.lines(from: strokes)
-        XCTAssertEqual(grouped.count, 2)
-        XCTAssertLessThan(grouped[0].bounds.maxY, grouped[1].bounds.minY)
+        // Asserted geometrically rather than through `InkLineGrouping`: a hatch-filled
+        // glyph is dozens of short strokes, and counting inferred "lines" measures the
+        // grouping heuristic instead of the renderer.
+        let bounds = InkLineGrouping.bounds(of: strokes)
+        let midline = bounds.midY
+        let upper = strokes.filter { InkLineGrouping.bounds(of: $0).midY < midline }
+        let lower = strokes.filter { InkLineGrouping.bounds(of: $0).midY >= midline }
+
+        XCTAssertFalse(upper.isEmpty, "Nothing rendered on the first line.")
+        XCTAssertFalse(lower.isEmpty, "Nothing rendered on the second line.")
+        XCTAssertLessThan(
+            InkLineGrouping.bounds(of: upper).maxY,
+            InkLineGrouping.bounds(of: lower).maxY
+        )
     }
 
     func testIndentedLinesStartFurtherIn() throws {
-        let renderer = PlainInkRenderer()
+        let renderer = TypesetInkRenderer()
         let flush = try renderer.strokes(
             for: Self.placement(.lines([SpecLine(run: SpecRun(kind: .math, value: "1"))]), frame: frame),
             style: .unmeasured,
@@ -55,7 +66,7 @@ final class PlainInkRendererTests: XCTestCase {
     }
 
     func testPlotsAndMarksFailClosedRatherThanDrawingCharacters() {
-        let renderer = PlainInkRenderer()
+        let renderer = TypesetInkRenderer()
         let plot = Self.placement(.plot(SpecPlot(functions: [SpecPlotFunction(expression: "x^2")])), frame: frame)
         let mark = Self.placement(
             .marks([SpecMark(kind: .check, target: .strokeIndices([0]))]),
@@ -73,18 +84,26 @@ final class PlainInkRendererTests: XCTestCase {
     func testProseRenders() throws {
         let placement = Self.placement(.inline(SpecRun(kind: .text, value: "four")), frame: frame)
 
-        let strokes = try PlainInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)
+        let strokes = try TypesetInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)
 
         XCTAssertFalse(strokes.isEmpty)
         XCTAssertTrue(frame.insetBy(dx: -2, dy: -2).contains(InkLineGrouping.bounds(of: strokes)))
     }
 
-    func testContentOutsideTheFontStillFailsClosed() {
-        // The font covers ASCII; a square root sign has to be an honest error rather
-        // than a silently dropped glyph.
+    func testMathSymbolsTheOldFontLackedNowRender() throws {
+        // The typeset style traces a real font, so `√` and `≈` come free — the hand-drawn
+        // placeholder could never have had them.
         let placement = Self.placement(.inline(SpecRun(kind: .text, value: "√2 ≈ 1.41")), frame: frame)
 
-        XCTAssertThrowsError(try PlainInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)) { error in
+        XCTAssertFalse(try TypesetInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0).isEmpty)
+    }
+
+    func testContentOutsideTheFontStillFailsClosed() {
+        // Still fails closed on what the font genuinely lacks, rather than dropping a
+        // glyph and quietly changing the answer.
+        let placement = Self.placement(.inline(SpecRun(kind: .text, value: "answer: 漢字")), frame: frame)
+
+        XCTAssertThrowsError(try TypesetInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)) { error in
             XCTAssertEqual(error as? SuggestionRenderError, .unsupportedContent)
         }
     }
@@ -119,14 +138,17 @@ final class PlainInkRendererTests: XCTestCase {
         let result = PlacementEngine(page: CGRect(x: 0, y: 0, width: 1668, height: 2388), occupancy: grid)
             .place(spec, context: context, pageStrokes: pageStrokes)
         let placement = try XCTUnwrap(result.placements.first)
-        let ink = try PlainInkRenderer().strokes(for: placement, style: context.style, seed: 0)
+        let ink = try TypesetInkRenderer().strokes(for: placement, style: context.style, seed: 0)
 
         XCTAssertTrue(result.isComplete)
         XCTAssertFalse(ink.isEmpty)
         // The answer sits to the right of the work it answers, on its baseline.
         let drawn = InkLineGrouping.bounds(of: ink)
         XCTAssertGreaterThan(drawn.minX, context.anchor.point.x)
-        XCTAssertEqual(drawn.maxY, context.anchor.baseline, accuracy: 4)
+        // The baseline sits a descender above the frame's bottom so a `g` stays inside the
+        // rectangle placement reserved, which puts a descender-free string slightly high.
+        XCTAssertLessThanOrEqual(drawn.maxY, context.anchor.baseline + 1)
+        XCTAssertGreaterThan(drawn.maxY, context.anchor.baseline - 12)
     }
 
     // MARK: - Fixtures

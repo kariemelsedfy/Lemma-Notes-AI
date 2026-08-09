@@ -25,7 +25,7 @@ final class AskPipeline {
 
     init(
         provider: any SpecProvider,
-        renderer: any SuggestionInkRendering = PlainInkRenderer(),
+        renderer: any SuggestionInkRendering = TypesetInkRenderer(),
         model: AskBarModel,
         suggestions: SuggestionLayer
     ) {
