@@ -11,6 +11,32 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-08 — the three styles, and the gap nobody had noticed
+
+**Goal:** the "neat version of mine" option from §8.
+
+**What I found instead:** the neat style was already there — `Synthesizer.Variation.neat` has existed since M3-05. What did *not* exist was any path from a glyph bank to a rendered answer. `AskPipeline` took a `SuggestionInkRendering`, and the only implementation was `TypesetInkRenderer`. **Every answer in the app was typeset regardless of whether the user had calibrated.** M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them; the seam is exactly where you would not look, because both halves are done and tested.
+
+So M3-08 turned out to be `HandwritingInkRenderer` plus a style preference, not a variance slider.
+
+**Done:** `HandwritingInkRenderer` in `Intelligence` (7 tests), `HandwritingStyleChoice` and `HandwritingStylePreference` in the app (6 tests), a picker in the library toolbar, and `AskPipeline.renderer` made settable so a style switch takes effect on the next Ask. Intelligence and Margin both green — Margin 119.
+
+**Two decisions worth knowing about:**
+
+*Fallback is per block, never per character.* One glyph missing sends the whole block to typeset. Half a sentence in someone's handwriting and half in a typeface is more obviously wrong than either style used consistently — and the mixed version is the one that looks broken rather than deliberate.
+
+*A defaulted style preference follows the bank; an explicit one does not.* Typeset is the default (ADR-014), but someone who has just spent three minutes writing out the alphabet and is then shown a typeface would reasonably conclude the feature does not work. Someone who deliberately chose typeset has said what they want, and calibrating later must not overrule them. `isExplicit` is the whole distinction.
+
+**Gotcha that cost four test failures:** every `InkStroke` gets a fresh `UUID`, so two renders of identical geometry are never `==`. Any test comparing rendered ink must compare point locations, not strokes. This will bite again.
+
+**Not done, deliberately:** §8's other promise — *"users can switch at any time and re-render existing generated blocks, because we keep the spec"*. We do keep the spec, in the `PageElement` written by `SuggestionProvenance`. What is missing is the reverse path: locate an element's strokes, delete them, re-render, put them back. That is an **edit to committed ink**, which is categorically more dangerous than presenting a suggestion, and it deserves its own task with its own undo story rather than being the riskiest third of a task estimated S. Filed **M3-08B**.
+
+**Next:** M3-09 (automated similarity) is the last buildable M3 item; M3-10, the blind panel, is the gate and is human-only.
+
+**Verification:** `swift test --package-path Packages/Intelligence` ✅ · `xcodebuild test` — 119 tests ✅ · `./scripts/lint.sh` ✅ · privacy/deps/colour checks ✅ · device tested: no
+
+---
+
 ## 2026-08-08 · Claude · M3-02 — calibration capture
 
 **Goal:** the seven guided sheets that build a glyph bank, and somewhere to keep it.

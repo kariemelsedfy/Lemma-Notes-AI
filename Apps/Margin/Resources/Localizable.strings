@@ -63,3 +63,7 @@
 "calibration.summary.captured %lld" = "Captured %lld characters.";
 "calibration.summary.unclear" = "These came out unclear. Tap one to write it again.";
 "calibration.delete" = "Delete my handwriting";
+"style.title" = "Answers are written in";
+"style.mine" = "My handwriting";
+"style.neat" = "A neater version of mine";
+"style.typeset" = "Typeset";

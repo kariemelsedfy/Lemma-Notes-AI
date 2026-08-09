@@ -779,12 +779,27 @@ Acceptance:
 - [ ] `doesNotFit` surfaces as `AskFailure.noRoom` rather than an overflow
 
 ### M3-08 — Neat style
-status: Ready · refs: HANDWRITING.md §8 · estimate: S
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8 · estimate: S
 Note: the glyph bank with variance reduced ~60%. §8 expects several early testers to prefer
 this *over* their real hand for answers, which would itself be a finding worth recording.
 Acceptance:
-- [ ] Selectable in Settings alongside "My handwriting" and "Typeset"
-- [ ] Existing generated blocks re-render on switch, since we keep the spec
+- [x] Selectable alongside "My handwriting" and "Typeset"
+- [x] The user's hand actually reaches the Ask pipeline — `HandwritingInkRenderer` was the
+      missing half of §8, and until now every answer was typeset regardless of the bank
+- [ ] Existing generated blocks re-render on switch — **not done**, filed as M3-08B
+
+### M3-08B — Re-render existing blocks on a style switch
+status: Ready · refs: HANDWRITING.md §8 · estimate: M
+Note: §8 promises this and says why it is possible — "because we keep the spec that produced
+them". We do keep it, in the page metadata `PageElement` written by `SuggestionProvenance`.
+What is missing is the reverse path: find the strokes an element owns, delete them, re-render
+the spec in the new style, and put them back — an edit to committed ink, which is a different
+and more dangerous operation than presenting a suggestion. Deliberately not bundled into
+M3-08, where it would have been the riskiest part of an otherwise small task.
+Acceptance:
+- [ ] Switching style re-renders previously accepted blocks
+- [ ] Undo restores the previous rendering, not an empty page
+- [ ] Ink the user drew themselves is never touched
 
 ### M3-09 — Automated style similarity
 status: Ready · refs: HANDWRITING.md §7 · estimate: M

@@ -18,7 +18,9 @@ final class AskPipeline {
     }
 
     private let provider: any SpecProvider
-    private let renderer: any SuggestionInkRendering
+    /// Settable, because `HANDWRITING.md` §8 lets the user switch style at any time and the
+    /// pipeline outlives that choice.
+    var renderer: any SuggestionInkRendering
     private let model: AskBarModel
     private let suggestions: SuggestionLayer
     private var task: Task<Void, Never>?
