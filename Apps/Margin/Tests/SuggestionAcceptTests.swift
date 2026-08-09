@@ -31,7 +31,7 @@ final class SuggestionAcceptTests: XCTestCase {
         let existing = PKDrawing(strokes: [Self.pencilStroke()])
         let generated = [Self.stroke(offset: 200)]
 
-        let committed = PKDrawing(strokes: existing.strokes + generated.compactMap { PKStroke($0) })
+        let committed = PKDrawing(strokes: existing.strokes + generated.compactMap { PKStroke($0, color: .black) })
 
         // Provenance indexes into this order, so appending — not inserting — is the
         // contract the element references depend on.
@@ -46,7 +46,7 @@ final class SuggestionAcceptTests: XCTestCase {
         layer.present(generated, requestID: "req_1")
         let accepted = try XCTUnwrap(layer.acceptWithoutInserting())
 
-        let committed = PKDrawing(strokes: [Self.pencilStroke()] + generated.compactMap { PKStroke($0) })
+        let committed = PKDrawing(strokes: [Self.pencilStroke()] + generated.compactMap { PKStroke($0, color: .black) })
         let pageStrokes = committed.strokes.map { InkStroke($0) }
         let placed = AcceptedSuggestion(
             requestID: accepted.requestID,

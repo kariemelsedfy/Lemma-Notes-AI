@@ -1,3 +1,4 @@
+import DesignSystem
 import DocumentStore
 import InkCore
 import PencilKit
@@ -282,7 +283,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
         switch tool {
         case .pen:
-            canvasView.tool = PKInkingTool(.pen, color: .label, width: 5)
+            canvasView.tool = PKInkingTool(.pen, color: MarginInk.color, width: 5)
         case .eraser:
             canvasView.tool = PKEraserTool(.vector)
         case .lasso:

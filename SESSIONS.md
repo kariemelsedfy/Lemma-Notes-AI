@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · M1-12 — invisible ink on device
+
+**Goal:** first device run showed dark ink on a dark page. Fix it, and make it unable to come back.
+
+**What was wrong — two independent causes.** `PaperCanvas` drew ruling lines but **never filled a page background**, so the page was transparent and the stack's system-appearance background showed through as a dark "page". Separately, the pen was `PKInkingTool(.pen, color: .label)` — and PencilKit **resolves a dynamic colour once and bakes it into the stroke**, so `.label` could be black. Either alone looks correct in review; together they make handwriting invisible.
+
+The same `.label` default was on `PKStroke(_:color:)` in `InkCore`, so *generated* ink had the identical bug waiting.
+
+**Done:** `MarginColor.paper` / `.ink` / `.paperRule` and `MarginInk.color` tokens; the page fills itself; the pen, the engine's programmatic strokes and the suggestion preview all use the ink token. Linked `DesignSystem` into the app — it had existed since M0-05 and the app had **never used it**. 7 contrast tests, app suite 111.
+
+**Decisions made — this is ADR-shaped and there is nowhere to put it.** The page is a fixed light sheet in **both** appearances; the chrome still follows the system. Real paper does not change colour when the sun goes down, and more practically: PencilKit stores *resolved* stroke colours, so appearance-following ink means a note written at night is invisible by morning. `PKInkingTool.convertColor(_:fromUserInterfaceStyle:to:)` exists for exactly that (verified in the SDK header) but converting every stored drawing on every appearance change is a feature, not a default. Export also renders on white, so a fixed light page is the only way the screen matches the PDF. Filed **M1-13** for a real dark-paper mode as an explicit user setting.
+
+`DECISIONS.md` is not tracked in git, so that decision lives here instead. Filed **M0-09**: eight planning documents including the ADR log are untracked local files, and a fresh clone gets none of them.
+
+**Surprises and gotchas:** the tests pin *contrast ratios and appearance-invariance*, not colour values — a colour test that just asserts `#1A1A1F` passes forever and catches nothing. Verified by putting `.label` back: three assertions fail. Worth keeping that habit for anything visual, because the compiler has no opinion about whether you can see the result.
+
+**Next:** device re-run. The manual checks are in `DEVICE_SESSION.md` §0.
+
+**Verification:** `swift test` InkCore 48, DesignSystem 2 ✅ · `xcodebuild test` — 111 tests ✅ · deliberate regression fails as intended ✅ · `./scripts/lint.sh` ✅ · device tested: **not yet — this needs your eyes**
+
 ## 2026-08-02 · Claude · M2-04
 
 **Goal:** the two Pencil hardware gestures, built without being able to fire either of them.

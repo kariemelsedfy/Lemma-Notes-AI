@@ -1,3 +1,4 @@
+import DesignSystem
 import InkCore
 import SwiftUI
 
@@ -21,7 +22,7 @@ struct SuggestionOverlay: View {
                 }
                 context.stroke(
                     path,
-                    with: .color(.accentColor.opacity(SuggestionLayer.previewAlpha)),
+                    with: .color(MarginColor.ink.opacity(SuggestionLayer.previewAlpha)),
                     style: StrokeStyle(lineWidth: strokeWidth(of: stroke), lineCap: .round, lineJoin: .round)
                 )
             }

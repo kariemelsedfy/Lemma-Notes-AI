@@ -170,7 +170,11 @@ public protocol InkEngine: AnyObject {
         ///
         /// The mirror of `InkStroke(_ PKStroke)`. Both directions live here so the app can
         /// commit generated ink to a drawing without reaching for a whole engine.
-        public init?(_ stroke: InkStroke, color: UIColor = .label) {
+        /// The colour is required rather than defaulted to `UIColor.label`. `.label` is
+        /// dynamic and PencilKit bakes whatever it resolves to into the stroke, so a
+        /// stroke built in the wrong trait context is permanently the wrong colour — and
+        /// `InkCore` cannot see the design system's ink token to default to it.
+        public init?(_ stroke: InkStroke, color: UIColor) {
             guard !stroke.points.isEmpty else { return nil }
             let points = stroke.points.map { point in
                 PKStrokePoint(
@@ -200,6 +204,14 @@ public protocol InkEngine: AnyObject {
         private var redoHistory: [PKDrawing] = []
         private var strokeIDs: [InkStrokeID] = []
         private var currentSelection = InkSelection()
+
+        /// The colour programmatic strokes are drawn in.
+        ///
+        /// A fixed dark by default, never `UIColor.label`: PencilKit bakes a resolved
+        /// colour into each stroke, so a dynamic one produces permanently-wrong ink
+        /// depending on which appearance happened to be active. The app overrides this
+        /// with its design-system ink token.
+        public var inkColor: UIColor = UIColor(red: 0x1A / 255, green: 0x1A / 255, blue: 0x1F / 255, alpha: 1)
 
         public init(canvasView: PKCanvasView) {
             self.canvasView = canvasView
@@ -314,7 +326,7 @@ public protocol InkEngine: AnyObject {
         }
 
         private func makePencilStroke(from stroke: InkStroke) -> PKStroke? {
-            PKStroke(stroke)
+            PKStroke(stroke, color: inkColor)
         }
     }
 #endif
