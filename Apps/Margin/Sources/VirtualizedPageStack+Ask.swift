@@ -12,13 +12,13 @@ import SwiftUI
 extension VirtualizedPageStack {
     /// The generated ink awaiting a decision on this page, if any.
     func suggestionInk(for pageID: UUID) -> [InkStroke] {
-        guard askModel.phase == .awaitingDecision, loopSelection.selection?.pageID == pageID else { return [] }
+        guard askModel.phase == .awaitingDecision, askSelection.selection?.pageID == pageID else { return [] }
         return suggestions.strokes
     }
 
     /// Runs one Ask against the canned provider.
     func ask(_ verb: AskVerb) {
-        guard let selection = loopSelection.selection else { return }
+        guard let selection = askSelection.selection else { return }
         let pipeline =
             askPipeline
             ?? AskPipeline(
@@ -27,7 +27,7 @@ extension VirtualizedPageStack {
                 suggestions: suggestions
             )
         askPipeline = pipeline
-        loopSelection.commit()
+        askSelection.commit()
 
         pipeline.run(
             AskPipeline.PageInput(
@@ -46,7 +46,7 @@ extension VirtualizedPageStack {
 
     /// Commits the suggestion to the page in one undo group and records its provenance.
     func acceptSuggestion() {
-        guard let pageID = loopSelection.selection?.pageID else { return }
+        guard let pageID = askSelection.selection?.pageID else { return }
         let pencilStrokes = suggestions.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
         guard !pencilStrokes.isEmpty else {
             askModel.accept()
@@ -58,13 +58,13 @@ extension VirtualizedPageStack {
         drawingStore.save(committed, for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         recordProvenance(accepted, on: pageID, in: committed)
         askModel.accept()
-        loopSelection.clearSelection()
+        askSelection.clearSelection()
     }
 
     func rejectSuggestion() {
         suggestions.discard()
         askModel.reject()
-        loopSelection.clearSelection()
+        askSelection.clearSelection()
     }
 
     /// Writes the `generated` element so the ink stays attributable after a reload.

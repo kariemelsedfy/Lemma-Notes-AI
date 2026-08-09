@@ -211,7 +211,7 @@ public protocol InkEngine: AnyObject {
         /// colour into each stroke, so a dynamic one produces permanently-wrong ink
         /// depending on which appearance happened to be active. The app overrides this
         /// with its design-system ink token.
-        public var inkColor: UIColor = UIColor(red: 0x1A / 255, green: 0x1A / 255, blue: 0x1F / 255, alpha: 1)
+        public var inkColor: UIColor = .black
 
         public init(canvasView: PKCanvasView) {
             self.canvasView = canvasView

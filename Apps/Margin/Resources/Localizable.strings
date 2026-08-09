@@ -46,10 +46,8 @@
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t reach the model — try again.";
 
-"selection.revert" = "Undo selection";
-"selection.revert.hint" = "Put the loop back as ink.";
 
-"pen.graphite" = "Graphite pen";
+"pen.black" = "Black pen";
 "pen.blue" = "Blue pen";
 "pen.red" = "Red pen";
 "pen.green" = "Green pen";

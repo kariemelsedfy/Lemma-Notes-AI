@@ -10,7 +10,6 @@ final class PageDrawingStore: ObservableObject {
     @Published private var previews: [UUID: UIImage] = [:]
     /// Bumped on every edit so the view has something to observe without diffing ink.
     @Published private(set) var revision = 0
-    private var snapshots: [UUID: PKDrawing] = [:]
     private var dirtyPageIDs: Set<UUID> = []
 
     init(inkData: [UUID: Data] = [:]) {
@@ -42,17 +41,6 @@ final class PageDrawingStore: ObservableObject {
         return dirtyPageIDs.reduce(into: [:]) { result, pageID in
             result[pageID] = drawings[pageID]
         }
-    }
-
-    /// Keeps the drawing exactly as it was before a loop was consumed.
-    func snapshot(_ drawing: PKDrawing, for pageID: UUID) {
-        snapshots[pageID] = drawing
-    }
-
-    /// Restores that drawing, giving back the original stroke rather than a redraw.
-    func restoreSnapshot(for pageID: UUID, pageSize: CGSize) {
-        guard let drawing = snapshots.removeValue(forKey: pageID) else { return }
-        save(drawing, for: pageID, pageSize: pageSize)
     }
 
     func cachePreview(for pageID: UUID, pageSize: CGSize) {

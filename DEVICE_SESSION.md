@@ -1,8 +1,7 @@
 # Device session checklist
 
 Everything left in M1 and M2 that cannot be done without hardware, ordered so one sitting
-clears all of it. Budget ~45 minutes plus a 30-minute note-taking block that can happen
-whenever you would be taking notes anyway.
+clears all of it. Budget ~20 minutes.
 
 **You need:** an iPad with an Apple Pencil, and an Apple ID signed into Xcode (free is
 fine — see §0). A Pencil Pro for the squeeze test specifically. Two iPads, an iCloud
@@ -43,31 +42,13 @@ export TUIST_BUNDLE_ID_PREFIX=com.yourname
 wrong you will see it before you pick up the Pencil: circle some ink, hold, pick a verb,
 an answer should appear and accept should commit it.
 
-## 1. M2-03B — does loop-and-dwell survive contact with real handwriting? *(the important one)*
+## 1. ~~Loop-and-dwell~~ — dropped
 
-This answers **Q8**, which decides whether the signature gesture can be the primary
-interaction at all. Nothing else on this list changes the product's shape; this does.
+Removed on 2026-08-02. It did not fire reliably on device, and the toolbar lasso made it a
+redundant second way to select. `CONTEXT.md` Q8 is closed.
 
-**Method.** Take 30 minutes of ordinary notes — a lecture, a problem set, whatever you
-would write anyway. Do not try to trigger the gesture and do not avoid it. Write normally.
-
-**Count two things:**
-- **False positives.** Times ink vanished into a selection when you meant to write. Note
-  what you had drawn each time — a circled word, a crossed-out line, a looped letter.
-- **False negatives.** Times you deliberately looped-and-held and nothing happened.
-
-**Then judge:** is the false-positive rate low enough to leave this on by default? A single
-false positive in 30 minutes is probably tolerable; one every few minutes is not, because
-each one destroys ink the user just drew.
-
-**If it needs tuning,** every threshold is in `LoopAndDwell.Configuration` — no logic
-changes. The likely levers, in order: `minimumCompactness` (raise it to reject scribbles
-harder), `dwellDuration` (raise to demand a longer hold), `minimumClosure`.
-
-**Also judge:** conversion currently fires **on pen lift**, not while you are still
-holding. The 350ms hold is enforced either way. Does waiting for the lift feel wrong? If
-it does, that is a real finding and worth a task — live conversion is more work and was
-deliberately deferred until someone had felt both.
+**Selection is now: tap Ask, draw a lasso.** That is the only way, and it works with a
+finger as well as a Pencil.
 
 ## 2. M2-04B — Pencil squeeze and double-tap
 

@@ -6,6 +6,26 @@ Write for the agent who picks this up next week with none of your context. The d
 
 ---
 
+## 2026-08-02 · Claude · device feedback — M2-19, M2-20, M2-21
+
+**Goal:** three things came back from the first real device session. Two were bugs, one was a product decision.
+
+**The Ask button never worked.** "Selects fine but does nothing after we select." It switched the canvas to `PKLassoTool` — and PencilKit exposes **no API for what that tool selects**: `PKLassoTool` has only `init`, `PKCanvasView` has no selection property. Verified in the SDK headers. So every lasso went into PencilKit's own cut/copy machinery and our pipeline never saw it. A dead end by construction, and it was the path `PROJECT_PLAN.md` §3.1 calls the accessibility floor. Ask now captures its own lasso.
+
+**Loop-and-dwell is dropped, and that answers Q8.** Not the way the question anticipated — the plan expected "does it false-positive too often?" and the real answer was "it does not fire, and once a dedicated selection tool works it is a redundant second way to select, one that sometimes eats your ink." The user made the call after using it. `LoopAndDwell`, its 20 tests, the coordinator's revert machinery, and the drawing snapshots are all removed; git history has them if this is ever revisited.
+
+**This puts `PROJECT_PLAN.md` §3.1 out of date** — it calls loop-and-dwell the signature interaction and "the one to demo", which is now false. I cannot fix it: the planning documents are untracked local files (M0-09). Anyone reading §3.1 will be misled until that is resolved.
+
+**Ink colours added.** Four pens. My first palette failed its own test — vivid blue, red and green sit at nearly identical luminance, so red-green colour blindness makes them one colour. Restaggered by lightness. Then device feedback moved two more: black was #1A1A1F, which reads as "not really black" on a real screen, and green was too light. Now true black and a deeper green, both still passing the greyscale-separation test.
+
+**Surprises and gotchas:** the greyscale test earning its keep twice is the thing to remember. A colour palette looks fine in a diff and fine on a laptop; it is wrong for a real user on a real screen, and neither review nor a simulator catches that. What caught it first was an assertion about luminance, and what caught it second was a person looking at an iPad.
+
+**Decisions made:** loop-and-dwell removed (human). Pen colours are fixed across appearances for the same reason ink is — PencilKit bakes resolved colours into strokes.
+
+**Next:** M2-12D, the demo recording, and the two remaining hardware checks in `DEVICE_SESSION.md`.
+
+**Verification:** `xcodebuild test` on iPad Pro 13-inch (M5) — 107 tests ✅ · InkCore 31 ✅ · `./scripts/lint.sh` ✅ · device tested: **the fixes need your eyes**
+
 ## 2026-08-02 · Claude · M1-12 — invisible ink on device
 
 **Goal:** first device run showed dark ink on a dark page. Fix it, and make it unable to come back.
