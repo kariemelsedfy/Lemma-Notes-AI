@@ -23,8 +23,17 @@ public enum TypesetStyle {
 
     /// Traced outlines are *stroked*, not filled, so the nib has to be a large enough
     /// fraction of the stem width that a letter reads as solid rather than hollow.
-    /// Measured against the OCR harness rather than chosen by eye.
-    public static let nibToHeightRatio: CGFloat = 0.075
+    ///
+    /// **Was 0.075, which produced heavy bold display type** — the nib is laid down
+    /// centred on the contour, so half of it sits *outside* the letter and every stem
+    /// gains a full nib of width. §8 asks for "clean vector text"; beside a person's pen
+    /// strokes the old weight looked like a sticker rather than a note (M3-00B).
+    ///
+    /// 0.025 renders as regular Helvetica and is also *better* for OCR — 5/5 on the sweep
+    /// corpus against 4/5 at 0.075, because inflated stems close the counters of `e` and
+    /// `a`. Lighter still works too, but the hatch spacing is tied to the nib, so halving
+    /// it doubles the stroke count and the render time with it.
+    public static let nibToHeightRatio: CGFloat = 0.025
 
     /// Lays `text` out inside `frame`, sitting on its baseline.
     ///

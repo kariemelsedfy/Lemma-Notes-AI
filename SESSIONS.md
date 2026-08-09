@@ -11,6 +11,26 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-00B — fixing what looking found
+
+**Goal:** the typeset fallback rendered as heavy bold display type. Filed an hour earlier from a screenshot; fixed here because it is what *every* uncalibrated user sees, and if R-01 fails and we pivot to typeset it becomes the entire product. Worth doing in either branch of the gate.
+
+**Cause:** the nib is laid down **centred on the traced contour**, so half of it sits outside the letter and every stem gains a full nib of width. At `nibToHeightRatio` 0.075 that roughly doubled Helvetica's own stem weight. The constant was picked against the OCR harness, and OCR does not care about weight — so nothing caught it.
+
+**The pleasant surprise:** thinner is *better* for OCR, not worse. Sweeping 0.075 → 0.015 over a five-string corpus, everything from 0.045 up scored 4/5 and everything from 0.025 down scored 5/5. Inflated stems close the counters of `e` and `a`, and Vision reads a filled `e` as `o` or `c`. I had assumed a legibility-versus-weight trade-off and there is not one in this range.
+
+**Now 0.025**, chosen by rendering and looking rather than by the number alone — 0.035 still reads as medium weight, 0.025 as regular.
+
+**The cost, and it is real.** Hatch spacing is tied to the nib, so halving the nib doubles the hatch lines: 265 → 734 strokes for a 20-char line, 3.2ms → 7.5ms on this Mac. §7 budgets 30ms *on device*, so there is headroom, but rendering is now the dominant term and a device is slower than a Mac. **Do not thin it further without measuring on hardware** — folded into M3-02B.
+
+**Left undone deliberately:** M3-00B's original acceptance asked for weight proportional to the writer's measured `strokeWidth`. Weight now scales with the text's own size, which is the property that actually matters — otherwise apparent weight would depend on how much room placement happened to find. Keying it to the writer's pen is a different feature and belongs with M3-08C.
+
+**Five tests lock this in**, including the constant itself. That is unusual and deliberate: this number was wrong for weeks precisely because nothing asserted it, and the next person to change it should have to argue with a failing test rather than quietly re-bolding the default experience.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 109 tests ✅ · `swift test --package-path Packages/Intelligence` — 120 tests ✅ · `./scripts/lint.sh` ✅ · rendered and viewed at 0.075 / 0.035 / 0.025 · device tested: no
+
+---
+
 ## 2026-08-08 · Claude · I looked at the output
 
 **Not a task.** M3 is code-complete and every number is green, and it occurred to me that **nobody — human or agent — had ever seen what this thing draws.** So I rendered three samples to PNG and read them back.

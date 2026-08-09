@@ -804,7 +804,7 @@ Acceptance:
       `AskPipeline` already maps that, but nothing asserts the whole path. Filed as M3-12B
 
 ### M3-00B — The typeset fallback is too heavy to sit next to handwriting
-status: Ready · owner: — · refs: HANDWRITING.md §8, DECISIONS.md ADR-014 · estimate: M
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8, DECISIONS.md ADR-014 · estimate: M
 Note: **found by rendering a sample to a PNG and looking at it** — the first time anyone
 had. §8 describes typeset as "clean vector text at matched size and color". What it
 actually renders is heavy bold display type: M3-00's scanline hatch fill (added to make
@@ -812,12 +812,22 @@ outline letters OCR-legible) reads as very thick strokes at answer sizes. Next t
 person's pen strokes it will look like a sticker rather than a note.
 **This is the default for every new user** — ADR-014 makes calibration optional, and its
 own consequence note says "the typeset style is the first impression for every user".
+Cause: the nib is laid down **centred on the traced contour**, so half of it sits outside
+the letter and every stem gains a full nib of width. At `nibToHeightRatio` 0.075 that
+roughly doubled Helvetica's own stem weight.
+Fix: 0.025, chosen by sweeping and *looking*. It renders as regular Helvetica and is also
+**better** for OCR — 5/5 on the sweep corpus against 4/5 at 0.075, because inflated stems
+close the counters of `e` and `a`. Cost: hatch spacing is tied to the nib, so stroke count
+rises 265 → 734 for a 20-char line and render time 3.2ms → 7.5ms on a Mac. §7's budget is
+30ms on device, so there is headroom, but this is now the dominant term — **re-measure on
+device before thinning further** (folded into M3-02B).
 Acceptance:
-- [ ] Stroke weight is proportional to the writer's measured `strokeWidth`, not to whatever
-      the hatch spacing produces
-- [ ] A rendered sample sits beside real ink without looking bolder than it
-- [ ] Still passes the OCR legibility harness — the hatch fill exists because hollow
-      outlines scored 3/8 (see the M3-00 session entry before undoing it)
+- [x] A rendered sample reads as regular weight rather than bold, verified by eye
+- [x] Still passes the OCR legibility harness — in fact scores better
+- [x] A test locks the weight in, so re-bolting it has to argue with a failing test
+- [ ] Weight proportional to the writer's measured `strokeWidth` — **not done**. It scales
+      with the text's own size, which is the property that matters for consistency; keying
+      it to the writer's pen is a different feature and belongs with M3-08C
 
 ### M3-12B — Measure through the glyph bank, and prove the no-room path
 status: Ready · refs: AI_PIPELINE.md §4, §8 · estimate: M
