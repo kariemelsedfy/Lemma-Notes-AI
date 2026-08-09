@@ -57,7 +57,7 @@ final class LegibilityHarnessTests: XCTestCase {
     // MARK: - Rasterizing
 
     func testInkRendersToABitmapLargerThanItsBounds() throws {
-        let strokes = try PlainStrokeFont.strokes(for: "42", in: frame)
+        let strokes = try TypesetStyle.strokes(for: "4242", in: frame)
 
         let image = try InkRasterizer.image(of: strokes, scale: 4, padding: 12)
 
@@ -72,7 +72,7 @@ final class LegibilityHarnessTests: XCTestCase {
     }
 
     func testRasterizingIsDeterministic() throws {
-        let strokes = try PlainStrokeFont.strokes(for: "2+2=4", in: frame, seed: 7)
+        let strokes = try TypesetStyle.strokes(for: "2+2=4", in: frame)
 
         let first = try InkRasterizer.pngData(of: strokes)
         let second = try InkRasterizer.pngData(of: strokes)
@@ -92,7 +92,7 @@ final class LegibilityHarnessTests: XCTestCase {
 
     func testTheHarnessReadsBackProseItRendered() throws {
         let result = try LegibilityHarness.evaluate("The derivative is 2x") { text in
-            try PlainStrokeFont.strokes(for: text, in: Self.frame(for: text))
+            try TypesetStyle.strokes(for: text, in: Self.frame(for: text))
         }
 
         XCTAssertTrue(result.isExact, "Read back '\(result.recognized)' instead.")
@@ -100,35 +100,27 @@ final class LegibilityHarnessTests: XCTestCase {
 
     func testTheHarnessReadsBackSimpleArithmetic() throws {
         let result = try LegibilityHarness.evaluate("2+2=4") { text in
-            try PlainStrokeFont.strokes(for: text, in: Self.frame(for: text))
+            try TypesetStyle.strokes(for: text, in: Self.frame(for: text))
         }
 
         XCTAssertTrue(result.isExact, "Read back '\(result.recognized)' instead.")
     }
 
-    /// Records the placeholder font's baseline: **87.5% exact on prose**, the one failure
-    /// being `"area under the curve"` read as `"ared under the curve"`.
-    ///
-    /// The floor here is 80%, not the 95% `HANDWRITING.md` §7 requires. That is deliberate
-    /// and is not a lowered bar: `PlainStrokeFont` is throwaway demo code that M3-00
-    /// deletes, and asserting it meets the shipping standard would assert something that
-    /// was never intended to be true. What this guards is that the render → OCR → score
-    /// pipeline keeps working and does not silently rot.
-    ///
-    /// **The real bar belongs to whatever replaces it.** When the typeset style (M3-00)
-    /// and the synthesizer (M3-05) land, they get their own test at 95%.
+    /// The real bar, now that a real renderer exists: `HANDWRITING.md` §7 requires ≥95%
+    /// exact match, and the typeset style scores **100%** on this corpus. The placeholder
+    /// font it replaced managed 87.5%.
     ///
     /// Prose and simple arithmetic only: notation like `x^2` scores badly because a
     /// literal caret is not how anyone writes an exponent, and fixing that needs the M5
-    /// math layout rather than a better font.
-    func testThePlaceholderFontsLegibilityBaselineHoldsUp() throws {
+    /// math layout rather than a better font (M3-11).
+    func testTypesetStyleMeetsTheLegibilityBar() throws {
         let report = try LegibilityHarness.evaluate(corpus: Self.proseCorpus) { text in
-            try PlainStrokeFont.strokes(for: text, in: Self.frame(for: text))
+            try TypesetStyle.strokes(for: text, in: Self.frame(for: text))
         }
 
         XCTAssertGreaterThanOrEqual(
             report.exactMatchRate,
-            0.8,
+            0.95,
             "\(Int(report.exactMatchRate * 100))% exact. Worst: \(report.failures.prefix(3).map(\.recognized))"
         )
         XCTAssertGreaterThan(report.meanSimilarity, 0.9)

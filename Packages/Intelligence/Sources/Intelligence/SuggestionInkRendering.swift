@@ -19,12 +19,13 @@ public enum SuggestionRenderError: Error, Equatable, Sendable {
     case unsupportedContent
 }
 
-/// Draws placed blocks with `PlainStrokeFont`.
+/// Draws placed blocks in the typeset style.
 ///
-/// **Temporary.** It draws recognizable arithmetic, not handwriting, and is deleted when
-/// the synthesizer lands. It fails closed on anything it cannot draw properly: a plot
-/// rendered as a row of characters would be worse than an honest error.
-public struct PlainInkRenderer: SuggestionInkRendering {
+/// The honest fallback from `HANDWRITING.md` §8: clean letterforms that nobody will
+/// mistake for their own hand. Used until a glyph bank exists, and permanently in Exam
+/// Mode. Fails closed on plots and marks — a plot rendered as a row of characters would be
+/// worse than an honest error.
+public struct TypesetInkRenderer: SuggestionInkRendering {
     public init() {}
 
     public func strokes(for placement: BlockPlacement, style: StyleStats, seed: UInt64 = 0) throws -> [InkStroke] {
@@ -44,8 +45,8 @@ public struct PlainInkRenderer: SuggestionInkRendering {
 
     private func render(_ text: String, in frame: CGRect, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
         do {
-            return try PlainStrokeFont.strokes(for: text, in: frame, style: style, seed: seed)
-        } catch PlainStrokeFont.RenderError.unsupportedCharacter {
+            return try TypesetStyle.strokes(for: text, in: frame, style: style)
+        } catch TypesetStyle.Error.unsupportedCharacter {
             throw SuggestionRenderError.unsupportedContent
         }
     }
