@@ -802,13 +802,44 @@ Acceptance:
 - [ ] Ink the user drew themselves is never touched
 
 ### M3-09 — Automated style similarity
-status: Ready · refs: HANDWRITING.md §7 · estimate: M
-Note: writer-identification embedding, cosine similarity of generated-vs-real against
-real-vs-real. Target ≥0.80 of the intra-writer baseline. A cheap proxy for the human panel
-that can run every build.
+status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §7 · estimate: M
+Note: **§7 asks for a writer-identification embedding; this is not one.** There is no such
+model on device, and shipping one means bundling weights and a training story this project
+does not have. `StyleSimilarity` computes a hand-built eight-feature vector instead — slant,
+curvature, aspect, stroke economy, wander, speed and pressure spreads — and takes the cosine.
+Read it as **a regression detector, not a certificate of realism**: a score that drops means
+something broke; a high score does not mean a human would be fooled. That is M3-10's job.
 Acceptance:
-- [ ] Similarity score computed over a fixed sample set
-- [ ] Reported alongside the OCR legibility number
+- [x] Similarity score computed over a fixed sample set, as a ratio of the intra-writer
+      baseline rather than an absolute
+- [x] Every feature named, so a drop can be attributed to a property
+- [ ] Reported alongside the OCR legibility number in CI — filed as M3-09B
+Known blind spot: it cannot tell `Variation.natural` from `.neat`. Two causes, both real —
+see M3-08C, and the fact that medians over a whole sample are the wrong resolution for
+sub-point wobble.
+
+### M3-09B — Report both evaluation numbers in CI
+status: Ready · refs: HANDWRITING.md §7 · estimate: S
+Note: the legibility harness (M3-01) and the similarity metric (M3-09) both exist and
+neither runs on a build. §7 also wants snapshot tests against reference PNGs with a
+perceptual tolerance, regenerated only with a human reviewing the diff.
+Acceptance:
+- [ ] Both numbers printed by `scripts/test.sh`
+- [ ] A drop below target fails the build rather than being buried in output
+
+### M3-08C — `Variation` barely varies anything
+status: Ready · refs: HANDWRITING.md §8, §4.1 · estimate: M
+Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
+but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
+drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
+It does *not* reach sample selection — which glyph sample gets used, the single largest
+source of natural variation — nor spacing, slant or size. So "neat" is currently close to a
+no-op, and the sample-selection gap also means a bank with several samples per letter behaves
+identically to one with a single sample.
+Acceptance:
+- [ ] `Variation` biases sample selection toward the writer's most typical glyph
+- [ ] Horizontal spacing and per-glyph slant scale with it too
+- [ ] The difference is visible side by side, not just measurable
 
 ### M3-10 — Blind similarity panel *(the gate)*
 status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M

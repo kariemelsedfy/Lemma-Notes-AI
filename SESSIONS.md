@@ -11,6 +11,34 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · M3-09 — a metric, and what it found about M3-08
+
+**Goal:** §7's automated style similarity.
+
+**Say this plainly: §7 asks for a writer-identification embedding and I did not build one.** There is no such model on device, and shipping one means bundling weights and a training story this project does not have. `StyleSimilarity` is a hand-built eight-feature vector — slant, slant spread, curvature, aspect, strokes per cluster, wander, velocity spread, force spread — scored by cosine against the writer's own intra-sample baseline. 10 tests; Handwriting 98.
+
+**Read it as a regression detector, not a certificate.** A score that drops between builds means something broke. A high score does not mean a human would be fooled — that is M3-10, which is the gate for exactly this reason. I would rather this be stated in the type's own doc comment than discovered by someone quoting the number in a decision.
+
+**Building it surfaced two bugs in work I had just committed.**
+
+*My own M3-08 test was vacuous.* `testNeatDiffersFromNaturalButStaysInTheSameFrame` asserted `XCTAssertNotEqual(natural, neat)` — and every `InkStroke` gets a fresh `UUID`, so that assertion passes even when the two renders are pixel-identical. I had already hit this exact trap earlier the same day and written it into the M3-08 entry below, then walked into it again two files away. Compare geometry, never strokes.
+
+*And with the assertion fixed, the difference turns out to be under a point.* `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline drift (2%). It does **not** reach sample selection — which sample of `e` gets used, the single largest source of natural variation — nor spacing, slant or size. So the neat style is close to a no-op, *and* a bank with four samples per letter currently behaves identically to one with a single sample, which undercuts the point of §3.1's repeated pass. Filed **M3-08C**. This matters for the gate: if the panel says the output looks mechanical, this is the first place to look.
+
+**The metric's own blind spot, recorded in a test rather than hidden:** it cannot tell natural from neat — the embeddings come out byte-identical. Partly M3-08C, partly that medians over a whole sample are the wrong resolution for sub-point wobble. The test asserts the blind spot *and* asserts the underlying ink does differ, so it fails if either half changes.
+
+**One design note:** the score is a ratio of the intra-writer baseline, never an absolute. Nobody is perfectly self-consistent, and holding synthesis to a standard the writer does not meet would fail every writer — worst for the ones whose hand varies most, who are exactly the hardest to synthesize.
+
+**Also fixed while here:** curvature was turning *per unit length*, which made the whole metric size-dependent — one hand rendered at two sizes scored as two writers. Total turning is already scale-free.
+
+**Not done:** neither this nor the M3-01 legibility harness runs on a build. Both are libraries nothing calls. Filed **M3-09B**.
+
+**Next:** M3-10 is the gate and is human-only. That makes M3 feature-complete on my side.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 98 tests ✅ · `swift test --package-path Packages/Intelligence` ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
+---
+
 ## 2026-08-08 · Claude · M3-08 — the three styles, and the gap nobody had noticed
 
 **Goal:** the "neat version of mine" option from §8.

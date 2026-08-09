@@ -25,9 +25,14 @@ final class HandwritingInkRendererTests: XCTestCase {
         let neat = try HandwritingInkRenderer(bank: bank, variation: .neat)
             .strokes(for: placement, style: Self.style, seed: 7)
 
-        // If these came out identical, the neat option would be a label with nothing
-        // behind it — and §8 expects testers to prefer it over their real hand.
-        XCTAssertNotEqual(natural, neat)
+        // Compared by geometry, not by `==`: every `InkStroke` gets a fresh id, so the
+        // obvious `XCTAssertNotEqual(natural, neat)` passes even when the two renders are
+        // pixel-identical. It did, and hid how small the difference actually is.
+        //
+        // §8 asks for "variance reduced ~60%". What `Variation` currently scales is
+        // vertical jitter and baseline drift only — not sample choice, spacing or slant —
+        // so the difference here is under a point. Filed as M3-08C.
+        XCTAssertNotEqual(Self.geometry(natural), Self.geometry(neat))
         XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: neat)))
     }
 
