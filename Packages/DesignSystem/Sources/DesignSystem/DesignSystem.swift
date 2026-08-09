@@ -17,7 +17,38 @@ public enum MarginColor {
     public static let secondaryText = Color(light: 0x666570, dark: 0xAAA8B4)
     public static let accent = Color(light: 0x5C5CE2, dark: 0x9A9AFF)
     public static let divider = Color(light: 0xE5E4EB, dark: 0x36353E)
+
+    /// The page itself, and the ink on it.
+    ///
+    /// **Deliberately the same in light and dark.** A page is a sheet of paper: the app's
+    /// chrome follows the system appearance, but the paper does not, for three reasons.
+    ///
+    /// PencilKit stores a *resolved* colour in the drawing, not a dynamic one. If ink
+    /// followed the appearance, a note written at night would be white ink, and reading it
+    /// the next morning on a light page would show nothing at all. `PKInkingTool` offers
+    /// `convertColor(_:fromUserInterfaceStyle:to:)` for exactly that problem, but using it
+    /// means every stored drawing needs converting on every appearance change — a real
+    /// feature, not a default.
+    ///
+    /// Export renders on white (`DocumentStore.NotebookPageExporter`), so a fixed light
+    /// page is also the only way the screen matches the PDF.
+    ///
+    /// A proper dark-paper mode is M1-13.
+    public static let paper = Color(light: 0xFDFDFB, dark: 0xFDFDFB)
+    public static let ink = Color(light: 0x1A1A1F, dark: 0x1A1A1F)
+    /// The ruling on the page. Light enough to sit under handwriting without competing.
+    public static let paperRule = Color(light: 0xC8C9D2, dark: 0xC8C9D2)
 }
+
+#if os(iOS)
+    /// Colours PencilKit needs as `UIColor`, since `PKInkingTool` takes no SwiftUI type.
+    public enum MarginInk {
+        /// Never `UIColor.label`: that is dynamic, and PencilKit bakes whatever it resolves
+        /// to at tool-construction time into the stroke. Resolved in a light context it is
+        /// black, which is invisible on a dark page — the bug this token exists to prevent.
+        public static let color = UIColor(red: 0x1A / 255, green: 0x1A / 255, blue: 0x1F / 255, alpha: 1)
+    }
+#endif
 
 /// The spacing scale keeps rhythm consistent across components.
 public enum MarginSpacing {

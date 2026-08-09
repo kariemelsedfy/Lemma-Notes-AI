@@ -1,3 +1,4 @@
+import DesignSystem
 import SwiftUI
 
 enum PaperStyle: CaseIterable {
@@ -13,6 +14,9 @@ struct PaperCanvas: View {
     var body: some View {
         Canvas { context, size in
             let bounds = CGRect(origin: .zero, size: size)
+            // The page paints its own background. Without this it was transparent, and a
+            // dark system appearance showed through as a dark "page" under dark ink.
+            context.fill(Path(bounds), with: .color(MarginColor.paper))
             switch style {
             case .blank:
                 break
@@ -37,7 +41,7 @@ struct PaperCanvas: View {
             var path = Path()
             path.move(to: CGPoint(x: bounds.minX, y: position))
             path.addLine(to: CGPoint(x: bounds.maxX, y: position))
-            context.stroke(path, with: .color(.secondary.opacity(0.16)), lineWidth: 1)
+            context.stroke(path, with: .color(MarginColor.paperRule), lineWidth: 1)
         }
     }
 
@@ -58,14 +62,14 @@ struct PaperCanvas: View {
             var horizontal = Path()
             horizontal.move(to: CGPoint(x: bounds.minX, y: position))
             horizontal.addLine(to: CGPoint(x: bounds.maxX, y: position))
-            context.stroke(horizontal, with: .color(.secondary.opacity(0.12)), lineWidth: 1)
+            context.stroke(horizontal, with: .color(MarginColor.paperRule), lineWidth: 1)
         }
 
         for position in verticalPositions {
             var vertical = Path()
             vertical.move(to: CGPoint(x: position, y: bounds.minY))
             vertical.addLine(to: CGPoint(x: position, y: bounds.maxY))
-            context.stroke(vertical, with: .color(.secondary.opacity(0.12)), lineWidth: 1)
+            context.stroke(vertical, with: .color(MarginColor.paperRule), lineWidth: 1)
         }
     }
 
@@ -85,7 +89,7 @@ struct PaperCanvas: View {
         for horizontal in horizontalPositions {
             for vertical in verticalPositions {
                 let dot = Path(ellipseIn: CGRect(x: vertical - 1, y: horizontal - 1, width: 2, height: 2))
-                context.fill(dot, with: .color(.secondary.opacity(0.24)))
+                context.fill(dot, with: .color(MarginColor.paperRule))
             }
         }
     }

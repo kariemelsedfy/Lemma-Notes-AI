@@ -254,6 +254,41 @@ Acceptance:
 - [x] `scenePhase` leaving `.active` flushes
 - [x] A test proves an edit made immediately before close is on disk, without waiting for the quiet period
 
+### M1-12 — Page and ink contrast
+status: Done · completed: Claude · 2026-08-02 · refs: ARCHITECTURE.md §4 · estimate: S
+Note: found on device. Two independent causes: `PaperCanvas` drew ruling lines but never
+filled a page background, so the dark system appearance showed through as the "page"; and
+ink was `UIColor.label`, which PencilKit *resolves and bakes into the stroke*, so it could
+be black on that dark page. Either alone was defensible; together they made ink invisible.
+Acceptance:
+- [x] The page fills itself with an explicit paper colour
+- [x] Ink and paper are fixed across appearances, so stored strokes can never invert
+- [x] Contrast is asserted, not eyeballed — WCAG ratio pinned above 4.5:1
+- [x] Suggestion preview uses the same ink, so accepting does not change what you were shown
+
+### M1-13 — Dark paper mode
+status: Ready · refs: SESSIONS.md 2026-08-02 M1-12 · estimate: M
+Note: M1-12 fixed contrast by making the page a fixed light sheet in both appearances —
+the chrome follows the system, the paper does not. A real dark page is a feature, not a
+default, because PencilKit stores resolved stroke colours: every existing drawing would
+need converting through `PKInkingTool.convertColor(_:fromUserInterfaceStyle:to:)` on every
+appearance change, and export (which renders on white) would need to agree.
+Acceptance:
+- [ ] An explicit user setting, not the system appearance, selects dark paper
+- [ ] Existing drawings convert so nothing becomes invisible
+- [ ] Export reflects the page the user actually sees
+
+### M0-09 — Track the planning documents in git
+status: Ready · owner: human · refs: AGENTS.md §5 · estimate: S
+Note: `AGENTS.md`, `ARCHITECTURE.md`, `AI_PIPELINE.md`, `HANDWRITING.md`, `BUSINESS.md`,
+`PROJECT_PLAN.md`, `CLAUDE.md` and **`DECISIONS.md`** are untracked local files. Every
+agent reads them from a working copy nobody else has, and **there is nowhere to write an
+ADR** — M1-12 made a decision that qualifies under AGENTS §5 and had to record it in
+`SESSIONS.md` instead. A fresh clone gets none of this.
+Acceptance:
+- [ ] The planning documents are committed, or a deliberate decision not to is recorded
+- [ ] `README.md`'s `docs/` links resolve to where the files actually live
+
 ### M1-09 — Handwriting-to-text (Vision, on-device)
 status: Done · completed: Codex · 2026-07-29 · estimate: M
 Acceptance:

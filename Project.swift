@@ -32,6 +32,7 @@ let project = Project(
         .local(path: "Packages/Intelligence"),
         .local(path: "Packages/InkCore"),
         .local(path: "Packages/Analytics"),
+        .local(path: "Packages/DesignSystem"),
     ],
     targets: [
         .target(
@@ -50,6 +51,7 @@ let project = Project(
                 .package(product: "Intelligence"),
                 .package(product: "InkCore"),
                 .package(product: "Analytics"),
+                .package(product: "DesignSystem"),
             ],
             settings: .settings(
                 base: signingSettings.merging(["TARGETED_DEVICE_FAMILY": "2"]) { current, _ in current }
@@ -69,6 +71,7 @@ let project = Project(
                 .package(product: "Intelligence"),
                 .package(product: "InkCore"),
                 .package(product: "Analytics"),
+                .package(product: "DesignSystem"),
             ],
             settings: .settings(base: signingSettings)
         ),
