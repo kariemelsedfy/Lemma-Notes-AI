@@ -7,6 +7,7 @@ cd "$root_dir"
 ./scripts/test-module-dependencies.sh
 ./scripts/check-color-tokens.sh
 ./scripts/check-glyph-bank-privacy.sh
+./scripts/check-ink-appearance.sh
 
 for package in Packages/*; do
     swift test --package-path "$package"

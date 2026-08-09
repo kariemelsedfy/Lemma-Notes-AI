@@ -1,3 +1,4 @@
+import InkCore
 import PencilKit
 import SwiftUI
 
@@ -30,9 +31,17 @@ final class PageDrawingStore: ObservableObject {
 
     func save(_ drawing: PKDrawing, for pageID: UUID, pageSize: CGSize) {
         drawings[pageID] = drawing
-        previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
+        previews[pageID] = renderPreview(drawing, pageSize: pageSize)
         dirtyPageIDs.insert(pageID)
         revision += 1
+    }
+
+    /// Rendered as paper, not as chrome. `InkAppearance` explains why; the short version is
+    /// that PencilKit would otherwise lighten the ink in a preview shown on a light page.
+    private func renderPreview(_ drawing: PKDrawing, pageSize: CGSize) -> UIImage {
+        InkAppearance.onPaper {
+            drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
+        }
     }
 
     /// The pages edited since the last call, clearing the record.
@@ -48,6 +57,6 @@ final class PageDrawingStore: ObservableObject {
             return
         }
 
-        previews[pageID] = drawing.image(from: CGRect(origin: .zero, size: pageSize), scale: 1)
+        previews[pageID] = renderPreview(drawing, pageSize: pageSize)
     }
 }

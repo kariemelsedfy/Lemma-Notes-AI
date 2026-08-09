@@ -272,6 +272,10 @@ private struct LiveInkCanvas: UIViewRepresentable {
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
         canvasView.backgroundColor = .clear
+        // The page is paper, not chrome: it stays light while the rest of the app follows the
+        // system. Without this PencilKit lightens dark ink for a dark background that is not
+        // there, and the user writes in white on a white page (M1-12B).
+        InkAppearance.applyPaperAppearance(to: canvasView)
         canvasView.drawing = drawingStore.drawing(for: pageID)
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)

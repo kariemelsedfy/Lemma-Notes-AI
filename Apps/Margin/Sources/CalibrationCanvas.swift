@@ -21,6 +21,9 @@ struct CalibrationCanvas: UIViewRepresentable {
         // so a dynamic one writes permanently-wrong ink (M1-12).
         canvas.tool = PKInkingTool(.pen, color: MarginInk.color, width: 3)
         canvas.drawingPolicy = .anyInput
+        // The calibration sheet is paper too, and this ink is the sample the whole glyph bank
+        // is built from — it has to look the way it will look on a page.
+        InkAppearance.applyPaperAppearance(to: canvas)
         return canvas
     }
 

@@ -27,6 +27,8 @@ jobs:
         run: ./scripts/check-module-dependencies.sh
       - name: Verify color token usage
         run: ./scripts/check-color-tokens.sh
+      - name: Verify ink appearance opt-outs
+        run: ./scripts/check-ink-appearance.sh
       - name: Run package tests and app build
         run: ./scripts/test.sh
       - name: Run app tests

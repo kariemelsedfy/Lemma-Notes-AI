@@ -30,6 +30,19 @@ public enum NotebookExportError: Error, Equatable, Sendable {
     import PencilKit
     import UIKit
 
+    extension UITraitCollection {
+        /// `performAsCurrent`, for a closure that produces something.
+        func performAsCurrentReturning<T>(_ body: () -> T) -> T {
+            var result: T?
+            // Synchronous, so `result` is always assigned by the time this returns.
+            performAsCurrent { result = body() }
+            guard let result else {
+                preconditionFailure("performAsCurrent did not run its closure")
+            }
+            return result
+        }
+    }
+
     /// Renders persisted notebook pages to shareable PDF and PNG data without modifying source ink.
     @MainActor
     public enum NotebookPageExporter {
@@ -84,7 +97,16 @@ public enum NotebookExportError: Error, Equatable, Sendable {
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(request.bounds)
             drawPaper(request.paper, in: request.bounds, context: context)
-            drawing.image(from: request.bounds, scale: 2).draw(in: request.bounds)
+
+            // Rasterised in a light trait environment on purpose. PencilKit renders a stored
+            // colour through the *current* appearance and lightens dark ink to keep it visible
+            // on a dark background — so exporting from a device in dark mode would put white
+            // ink on this white page. `InkCore.InkAppearance` says the same thing; `DocumentStore`
+            // depends on no internal module (`ARCHITECTURE.md` §2), so it cannot share the type.
+            let ink = UITraitCollection(userInterfaceStyle: .light).performAsCurrentReturning {
+                drawing.image(from: request.bounds, scale: 2)
+            }
+            ink.draw(in: request.bounds)
         }
 
         private static func drawPaper(_ paper: PaperStyle, in bounds: CGRect, context: CGContext) {

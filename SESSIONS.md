@@ -11,6 +11,34 @@ unless you check.
 
 ---
 
+## 2026-08-09 · Claude · M1-12B — the ink was white
+
+**Reported in five words by the user:** "the ink color is actually white not black." On device, in dark mode.
+
+**My first instinct was wrong and worth recording.** I went looking for a dynamic colour leaking back in — that was M1-12's cause, so it was the obvious suspect. There is none: `MarginInk.color` is a literal `UIColor(red: 0, green: 0, blue: 0, alpha: 1)`, with no dynamic path anywhere. The token was never the problem, and half an hour spent auditing tokens would have found nothing.
+
+**The actual cause is one layer further out.** PencilKit renders a *stored* stroke colour **through the current appearance**, lightening dark ink so it stays legible on a dark background. That is a sensible default for a canvas that follows the system, and exactly wrong for Margin, whose paper is deliberately fixed light in both appearances (ADR from M1-12). So the favour PencilKit was doing us produced white ink on a white page.
+
+**Store versus draw.** This is the distinction I would put in front of the next person. M1-12 fixed what gets *stored* and stopped, because a stored-colour bug and a drawn-colour bug present identically — invisible ink — and fixing the first one made the symptom go away in light mode, which is where it was being tested. `PKInkingTool.convertColor(_:fromUserInterfaceStyle:to:)` was even cited in the M1-12 comment; whoever wrote it knew the rendering behaviour existed and read it as advice about storage.
+
+**I reproduced it before touching anything**, which I recommend for this class of bug. Rendered a black stroke under dark traits and sampled the darkest opaque pixel: **0.63 relative luminance**, where black is 0. That single number turned "the ink looks wrong" into a fact, and it is what the new test asserts on.
+
+**Why the whole suite stayed green.** Every existing contrast test compares `UIColor` values — resolved tokens, WCAG ratios between tokens. Not one of them rendered a pixel. A test that asserts on colours cannot see a bug in rendering, however many of them you write. The new tests sample images.
+
+**Wider than the canvas.** `PageDrawingStore` thumbnails, `PencilKitInkEngine.exportImage`, and `NotebookPageExporter`'s PDF/PNG all call `drawing.image(from:scale:)`, which reads `UITraitCollection.current`. **Export was the one that bothered me most** — a user in dark mode would have shared a PDF of white ink on white paper and not known until someone else opened it.
+
+**The fix is per-call-site, so it is enforced rather than remembered.** `InkCore.InkAppearance` holds both halves (`onPaper { }` for rendering, `applyPaperAppearance(to:)` for views), and `scripts/check-ink-appearance.sh` rejects any `PKCanvasView()` or `.image(from:)` that skips it. I verified the guard fails by deleting a call and watching it catch. `DocumentStore` cannot import `InkCore` (ARCHITECTURE §2) so it carries a four-line copy with a comment pointing home — duplication I chose over weakening the boundary.
+
+**A test I could not write.** `LiveInkCanvas` and `CalibrationCanvas` are `UIViewRepresentable`s, and a test cannot manufacture a `Context` to call `makeUIView`. The two canvases the user actually writes on are therefore covered by the shell check and not by XCTest. If someone finds a clean way to exercise them, that is worth doing.
+
+**Found in passing: `scripts/lint.sh` never linted `Apps/Margin/Tests`.** The pre-commit hook does, so `./scripts/lint.sh` came back clean and the commit was then rejected by the hook for formatting in a file lint had not looked at. Thirteen app test files had been outside the lint set the whole time. Added to all three argument lists — the file count went 110 → 123.
+
+**What I would tell the next person:** when a symptom recurs after a fix that looked complete, suspect a *second* mechanism with the same signature before suspecting the first one regressed. And this is now the third defect on this project found by a human looking at a screen and none by the test suite — the pattern is not subtle.
+
+**Verification:** all 6 packages, 282 tests ✅ · `xcodebuild test` iPad simulator, 123 tests ✅ · `./scripts/lint.sh` 0 violations ✅ · 4 invariant checks incl. the new one ✅ · repro measured at 0.63 before, all paths < 0.1 after · device tested: no — **needs-device-verification, and it is the user's report that closes this**
+
+---
+
 ## 2026-08-08 · Claude · M3-00B — fixing what looking found
 
 **Goal:** the typeset fallback rendered as heavy bold display type. Filed an hour earlier from a screenshot; fixed here because it is what *every* uncalibrated user sees, and if R-01 fails and we pivot to typeset it becomes the entire product. Worth doing in either branch of the gate.
