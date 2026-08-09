@@ -879,14 +879,23 @@ Known blind spot: it cannot tell `Variation.natural` from `.neat`. Two causes, b
 see M3-08C, and the fact that medians over a whole sample are the wrong resolution for
 sub-point wobble.
 
-### M3-09B — Report both evaluation numbers in CI
-status: Ready · refs: HANDWRITING.md §7 · estimate: S
-Note: the legibility harness (M3-01) and the similarity metric (M3-09) both exist and
-neither runs on a build. §7 also wants snapshot tests against reference PNGs with a
-perceptual tolerance, regenerated only with a human reviewing the diff.
+### M3-09B — Snapshot tests, and printing the evaluation numbers
+status: Ready · refs: HANDWRITING.md §7 · estimate: M
+Note: **corrected 2026-08-08.** I filed this believing neither metric ran on a build. Both
+do: `testTypesetStyleMeetsTheLegibilityBar` gates legibility at 95%, and
+`testSynthesizedInkResemblesTheBankItCameFrom` gates similarity at §7's 0.80 ratio. Both
+run under `swift test`, which `scripts/test.sh` already invokes. So the *gating* half is
+done and building a reporting script would duplicate it.
+What is genuinely missing is §7's **snapshot tests** — rendered PNGs compared against
+references with a perceptual tolerance. That is the only kind of check that would have
+caught M3-00B, where every property assertion passed and the output was visibly wrong.
+§7 is explicit that references are regenerated **only with a human reviewing the diff**,
+which is why an agent should not generate the first set unreviewed.
 Acceptance:
-- [ ] Both numbers printed by `scripts/test.sh`
-- [ ] A drop below target fails the build rather than being buried in output
+- [ ] A small set of reference PNGs, generated once and reviewed by a human
+- [ ] A CI check comparing renders against them with a perceptual tolerance
+- [ ] Regenerating references requires an explicit flag, never happens automatically
+- [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
 
 ### M3-08C — `Variation` barely varies anything
 status: Ready · refs: HANDWRITING.md §8, §4.1 · estimate: M
