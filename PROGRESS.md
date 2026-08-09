@@ -803,6 +803,22 @@ Acceptance:
 - [ ] `doesNotFit` surfaces as `AskFailure.noRoom` — the block reaches `unplaced` and
       `AskPipeline` already maps that, but nothing asserts the whole path. Filed as M3-12B
 
+### M3-00B — The typeset fallback is too heavy to sit next to handwriting
+status: Ready · owner: — · refs: HANDWRITING.md §8, DECISIONS.md ADR-014 · estimate: M
+Note: **found by rendering a sample to a PNG and looking at it** — the first time anyone
+had. §8 describes typeset as "clean vector text at matched size and color". What it
+actually renders is heavy bold display type: M3-00's scanline hatch fill (added to make
+outline letters OCR-legible) reads as very thick strokes at answer sizes. Next to a
+person's pen strokes it will look like a sticker rather than a note.
+**This is the default for every new user** — ADR-014 makes calibration optional, and its
+own consequence note says "the typeset style is the first impression for every user".
+Acceptance:
+- [ ] Stroke weight is proportional to the writer's measured `strokeWidth`, not to whatever
+      the hatch spacing produces
+- [ ] A rendered sample sits beside real ink without looking bolder than it
+- [ ] Still passes the OCR legibility harness — the hatch fill exists because hollow
+      outlines scored 3/8 (see the M3-00 session entry before undoing it)
+
 ### M3-12B — Measure through the glyph bank, and prove the no-room path
 status: Ready · refs: AI_PIPELINE.md §4, §8 · estimate: M
 Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's

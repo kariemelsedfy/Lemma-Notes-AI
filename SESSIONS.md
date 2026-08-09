@@ -11,6 +11,26 @@ unless you check.
 
 ---
 
+## 2026-08-08 · Claude · I looked at the output
+
+**Not a task.** M3 is code-complete and every number is green, and it occurred to me that **nobody — human or agent — had ever seen what this thing draws.** So I rendered three samples to PNG and read them back.
+
+**Reassuring:** the synthesizer path works. Legible text, correct word spacing, letters on a straight baseline, the right size for its frame. Nothing structurally broken.
+
+**Two findings that only looking could produce.**
+
+*Natural and neat are visually identical.* Side by side, at answer size, I cannot tell them apart at all. This is M3-08C confirmed by eye rather than by measurement — and it is the stronger evidence of the two, because "the cosine cannot resolve it" invites the reply that the metric is too blunt. It is not too blunt. There is nothing to resolve.
+
+*The typeset fallback is far too heavy.* §8 calls it "clean vector text at matched size and color". It renders as heavy bold display type — M3-00's scanline hatch fill, added so outline letters would survive OCR, reads as very thick strokes at answer sizes. Beside someone's pen strokes it will look like a sticker rather than a note. **And this is the default for every new user**, because ADR-014 makes calibration optional. ADR-014's own consequence note predicted exactly this — "the typeset style is the first impression for every user" — and then nobody looked at it. Filed **M3-00B**, with the warning that the hatch fill is load-bearing: outline-only scored 3/8 on the legibility harness.
+
+**The lesson, for whoever is next.** Every test in this repo asserts a property of the output. Not one of them asks what it looks like. Two real defects sat behind a fully green suite, and it took about four minutes to find both. `InkRasterizer.pngData` plus reading the file back is the whole technique.
+
+**Caveat on the samples:** the bank was built from `TypesetStyle` glyphs, since no real capture exists yet. So this says nothing about whether synthesized ink resembles a *person* — that is still M3-10, and still needs a device and a panel. What it does establish is that "natural vs neat" and "how heavy is typeset" are answerable now.
+
+**Verification:** rendered `sample-natural.png`, `sample-neat.png`, `sample-typeset.png` and viewed them. Scratch test file deleted; no code changed by this entry.
+
+---
+
 ## 2026-08-08 · Claude · M3-12 — the bug that looks fine in a screenshot
 
 **Goal:** wire line breaking into placement. `LineBreaker` had existed since M3-07 and nothing called it.
