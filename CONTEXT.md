@@ -61,14 +61,18 @@ Next action: **the device session** — `DEVICE_SESSION.md`. The full loop now w
 
 ## 4. Environment notes
 
-**Two traps in this working copy, both cost time on 2026-08-01:**
+**Three traps in this working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
    change and blocks `git merge`/`rebase`. `git config core.fileMode false` is set locally
    to ignore it; the committed modes are unaffected, so `scripts/*.sh` still arrive
    executable in a fresh clone. If a clone elsewhere shows the same noise, set it there too.
-2. **A stale `Packages/*/.build` produces fake compiler errors.** After the mode churn
+2. **A new executable script needs `git update-index --chmod=+x`.** Because of the setting
+   above, git ignores the filesystem's executable bit entirely — so `chmod +x` on a new
+   script has no effect on what gets committed, and CI fails with `Permission denied` while
+   the script runs perfectly on your machine. This caught `check-glyph-bank-privacy.sh`.
+3. **A stale `Packages/*/.build` produces fake compiler errors.** After the mode churn
    above, `swift test --package-path Packages/Intelligence` reported four
    `cannot infer type` errors in `Handwriting`. The source was fine — `rm -rf` the
    package's `.build` and the same commit builds clean and passes 90 tests. **Before

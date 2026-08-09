@@ -4,7 +4,90 @@ Append-only log. **Newest at the top**, directly under the template. Never edit 
 
 Write for the agent who picks this up next week with none of your context. The diff already records *what changed*; this file records what the diff can't: what surprised you, what you tried that failed, and what you'd warn the next person about.
 
+**If you edit this file with a script, assert that your anchor matched.** Four entries went
+missing on 2026-08-02 because a `str.replace` on a header that had moved silently did
+nothing, and the commit went through regardless. A no-op is indistinguishable from success
+unless you check.
+
 ---
+
+## 2026-08-02 · Claude · M3-04
+
+**Goal:** the data model the synthesis path hangs off, and the one place in this project with a hard privacy invariant.
+
+**Done:** `Glyph`, `GlyphStroke`, `GlyphPoint`, `GlyphBank`, `GlyphNormalizer`, `GlyphBankStore`. Glyphs normalize to **x-height 1, baseline y = 0, left edge x = 0**, so one captured `e` renders at any size. 13 tests; Handwriting 38.
+
+**The privacy invariant is enforced, not promised.** `AGENTS.md` §7 says the bank never leaves the device and no upload path may exist *even disabled*. `scripts/check-glyph-bank-privacy.sh` greps the module for transmission symbols and fails the build. **Verified by making it fail** — dropped a `URLSession` reference in and checked the exit code, not just that a message appeared.
+
+**Not done / left open:** §3.4 also wants the bank mirrored so a new iPad inherits it. The only acceptable route is the user's own ubiquity container, which needs M0-07. Filed **M3-04B** rather than half-building it — a half-built sync path for biometric-adjacent data is exactly what later gets "temporarily" repointed.
+
+**Surprises and gotchas:** normalization must preserve *relative* height. Dividing each glyph by its own height makes `l` and `e` identical and the writing unreadable; dividing by the writer's measured x-height keeps the proportion that matters. There is a test, because the wrong version looks fine in code.
+
+Then CI went red: the new script committed as `100644` and failed with `Permission denied` while running perfectly locally. Cause was my own earlier workaround — `core.fileMode false`, set to stop OneDrive's permission churn, makes git ignore `chmod +x` entirely. New executable scripts need `git update-index --chmod=+x`. Now the third trap in `CONTEXT.md` §4, because the two settings interact in a way neither documents alone.
+
+**Decisions made:** pen lifts are stored as separate strokes rather than one flattened path (§4.1 lists preserving them as decisive), and `StyleStats` stays non-`Codable` with `StoredStyleStats` as its persisted form, so the file format and the measurement type can change independently.
+
+**Next:** M3-05, the synthesizer.
+
+**Verification:** `swift test --package-path Packages/Handwriting` — 38 ✅ · privacy check verified to fail ✅ · `./scripts/lint.sh` ✅ · device tested: n/a
+
+## 2026-08-02 · Claude · M3-00
+
+**Goal:** the honest fallback style, and the pivot target if the M3 gate fails.
+
+**Done:** `TypesetStyle` traces glyph outlines from Helvetica via Core Text, flattens the Béziers, and hatch-fills the interiors so letters read as solid ink. Replaces and deletes `PlainStrokeFont`, `PlainGlyphTable`, `PlainInkRenderer`. **100% exact on the legibility corpus**, against the placeholder's 87.5% and §7's 95% bar.
+
+**The harness paid for itself three times.** Each looked correct in code:
+
+1. **Outline-tracing alone scored 3/8 — worse than the crude font it replaced.** Hollow letters read fine to a human and badly to Vision. That matters beyond the metric: the app reads its own pages with Vision for `pageText`, so ink our own OCR cannot read breaks follow-ups about generated content. Fixed with scanline hatch fill.
+2. **`"The derivative is 2x"` read back as `"ThederivativelsI2x"`** — a stroked glyph is fatter than its outline by half a nib each side, so word gaps close. Advances are widened by the nib before fitting.
+3. **Spaces rendered as `[` and `D`** — I had modelled a space as `GlyphEntry(glyph: 0)`, and glyph 0 is `.notdef`, which Helvetica draws as a box.
+
+**Surprises and gotchas:** hatch fill broke `InkLineGrouping` — a horizontal stroke has zero point-height, so every scanline counted as its own line of writing (64 "lines" in a two-line block). Inflating `bounds(of:)` by the nib fixed it and broke 13 other tests, because that function feeds placement and style estimation. Reverted; grouping now inflates internally for its own decision only. **Widening a shared geometry function to fix a local problem is how one fix becomes a day.**
+
+**Decisions made:** trace a real font rather than extend the hand-drawn glyph table — full coverage (`√`, `≈`) and no hand-authored letterforms.
+
+**Next:** M3-04.
+
+**Verification:** InkCore 31, Handwriting 25, Intelligence 100, app 107 ✅ · `./scripts/lint.sh` ✅ · device tested: no
+
+## 2026-08-02 · Claude · M3-01
+
+**Goal:** build the automated legibility measure before the things it measures.
+
+**Done:** `InkRasterizer` and `LegibilityHarness` — render → Vision → normalized compare, reporting exact-match rate, mean similarity, and failures worst-first. 12 tests.
+
+**I reordered M3 doing this.** The plan had typeset first, harness second. Backwards: I cannot see rendered output, so typeset would have been judged by guesswork, and the harness could validate itself against the existing placeholder font immediately.
+
+**Surprises and gotchas — two would have cost someone a day.**
+
+**Vision returns nothing for strings under ~4 characters**, whatever the ink quality. `"a"`, `"ab"`, `"1/3"` → empty; `"abc"`, `"2+2=4"` → exact. A short-string corpus would have scored 0% and looked exactly like a broken synthesizer. Now refused with `tooShortToMeasure`. Found because my first test used `"42"` and failed — I checked the rasterizer (1924 dark pixels) before blaming the font.
+
+**Notation-heavy math cannot be measured this way.** `"x^2 + 3x"` → garbage; `"The derivative is 2x"` → perfect. A literal caret is not how anyone writes an exponent. Real limit on §7, which states 95% without saying on what corpus. Filed **M3-11**.
+
+**Language correction must be off for measurement** — it repairs bad ink into plausible words, hiding the failure being measured.
+
+**Decisions made:** the placeholder's test asserted an 80% floor rather than §7's 95%, since it was throwaway code M3-00 deletes; the 95% assertion moved to the real renderer when it landed.
+
+**Baseline recorded:** 87.5% exact on prose.
+
+**Next:** M3-00.
+
+**Verification:** Handwriting 42 ✅ · `./scripts/lint.sh` ✅ · device tested: n/a
+
+## 2026-08-02 · Claude · M0-09 and the M3 plan
+
+**Goal:** get the planning documents under version control and correct what the last change made untrue.
+
+**Done:** committed the eight untracked planning documents. Fixed **25 `docs/…` references** across README, AGENTS, CLAUDE and ARCHITECTURE — they pointed at a directory that does not exist, so every cross-reference in the repository was broken. Corrected `PROJECT_PLAN.md` §3.1, which still called loop-and-dwell the signature interaction. Superseded **ADR-007** with **ADR-011**, added **ADR-012**. Expanded M3 into 11 tasks.
+
+**Surprises and gotchas:** for this project's whole life, every cross-reference between planning documents was broken and the documents existed on exactly one machine. Two decisions could not be recorded as ADRs because the log was not in the repository. Invisible while one person works in one directory; total the moment anyone clones.
+
+**M3 sequencing.** The gate is R-01: a blind panel below 40% "plausibly mine" means pivoting to typeset. So M3 is ordered to reach that verdict early. M3-00 (typeset) is first despite being least exciting — needed regardless, deletes the throwaway font, and *is* the pivot target, so a failed gate becomes a setting change rather than a rewrite.
+
+**Next:** M3-01.
+
+**Verification:** documentation only · device tested: n/a
 
 ## 2026-08-02 · Claude · device feedback — M2-19, M2-20, M2-21
 
