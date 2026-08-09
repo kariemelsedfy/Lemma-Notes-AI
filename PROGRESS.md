@@ -676,13 +676,26 @@ Acceptance:
 - [ ] The user can see the segmentation and retap any glyph to rewrite it
 
 ### M3-04 — Glyph bank storage
-status: Ready · refs: HANDWRITING.md §3.4, AGENTS.md §7 · estimate: M
+status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §3.4, AGENTS.md §7 · estimate: M
 Note: **the glyph bank never leaves the device.** No upload path may exist in the code,
 even disabled — that is an invariant, not a preference.
 Acceptance:
-- [ ] Per glyph: normalized polylines with pressure/tilt/timestamps, advance width, bounds, entry/exit points, connection class
-- [ ] Stored in the app container; mirrored to iCloud only within the user's own account
-- [ ] A test asserts no network symbol is reachable from the glyph-bank module
+- [x] Per glyph: normalized polylines with pressure/tilt/timestamps, advance width, bounds, entry/exit points, connection class
+- [x] Stored on disk with complete file protection; deletable outright
+- [x] `scripts/check-glyph-bank-privacy.sh` fails the build on any networking symbol in
+      the module, and is verified to fail — wired into `test.sh`
+Note: iCloud mirroring is deliberately **not** built. §3.4 wants a new iPad to inherit the
+bank, but the only safe route is the user's own container and it needs M0-07 first. Filed
+as M3-04B rather than half-built.
+
+### M3-04B — Mirror the glyph bank to the user's own iCloud
+status: Blocked · blocker: M0-07 · refs: HANDWRITING.md §3.4, AGENTS.md §7 · estimate: S
+Note: the bank must reach a user's second iPad without ever reaching us. That means the
+private ubiquity container and nothing else, and the privacy check will need widening to
+permit exactly that one path and no other.
+Acceptance:
+- [ ] The bank syncs through the user's own container only
+- [ ] The privacy check still fails on any other transmission route
 
 ### M3-05 — Synthesizer core
 status: Ready · refs: HANDWRITING.md §4 · estimate: L
