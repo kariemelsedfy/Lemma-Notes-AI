@@ -110,9 +110,11 @@ fixed but unverified on hardware:
 - **Ask something and press Keep.** The answer must **stay on the page**. It vanished before
   because the nib was 1.5pt and PencilKit draws nothing below ~1.5pt — the preview used a
   different renderer, so it looked fine right up to the moment you accepted.
-- **Expect it to look bold.** That is known (M2-13B), not a new bug: floored at the thinnest
-  stroke PencilKit will draw, typeset text lands heavier than intended. Say whether it is bad
-  enough to fix before anything else.
+- **Check it at more than one size.** Write `2+2=` small, ask, then write it large and ask
+  again. Both answers should be the same apparent weight and both legible. This is the one
+  that produced a black dot for small handwriting and a stack of bars after the first fix
+  attempt (M2-13B); the weight is now measured as consistent from a 10pt frame to a 120pt
+  one, but only in a simulator.
 - **Export to PDF.** Open a notebook → toolbar → the share icon → "PDF". It failed before on
   any notebook containing a page you had never drawn on, which is most new notebooks.
 - Then **export a notebook in dark mode** and confirm the PDF is readable rather than blank —

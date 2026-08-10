@@ -18,14 +18,47 @@ import PencilKit
 public enum InkRenderingLimits {
     /// The narrowest stroke the page renderer draws at full strength.
     ///
-    /// **Measured** (iOS 26 simulator, black `.pen`, peak alpha out of 255):
+    /// **Measured** (iOS 26 simulator, black `.pen`, peak alpha out of 255). The cutoff below
+    /// 2.0pt does not move with render scale — it is a property of the ink, not of
+    /// rasterisation — but everything above it does, and the page draws at device scale:
     ///
-    ///     1.4pt → 0    1.8pt → 16    2.2pt → 72    2.6pt → 147   3.0pt → 215   3.4pt → 253
-    ///     1.6pt → 2    2.0pt → 40    2.4pt → 108   2.8pt → 183   3.2pt → 239   3.6pt → 255
+    ///     width  2.0  2.1  2.2  2.3  2.4  2.5  2.6
+    ///     1×      40   55   72   90  108  128  147
+    ///     2×      40   72  108  147  183  215  239
+    ///     3×      40   90  146  200  240  255  255
+    ///
+    /// 2.6 is chosen against **2×**, the worst case a real page hits: solid at 3×, 239/255 at
+    /// 2×, which includes export. Measuring at 1× instead is what first put this at 3.4 and
+    /// made every answer bolder than it needed to be — the harness scale was not the page's.
     ///
     /// `.pencil` ink draws at any width, but it is textured and the user's own pen is
     /// `.pen`; generated ink that does not match the pen beside it is its own problem.
-    public static let minimumStrokeWidth: CGFloat = 3.4
+    public static let minimumStrokeWidth: CGFloat = 2.6
+
+    /// **`PKStrokePoint.size` is not the width PencilKit draws.** Measured vertical extent of
+    /// a horizontal `.pen` stroke, in points:
+    ///
+    ///     size   2.4  2.6  2.8  3.0  3.2  3.4  4.0  4.5  5.0  6.0  8.0  12.0
+    ///     drawn  1.0  1.0  1.5  2.0  2.5  3.0  4.0  5.0  6.0  8.0  12.0 20.0
+    ///
+    /// Every one of those fits `drawn = 2 × size − 4`, and the cutoff falls exactly where
+    /// that reaches zero, at 2.0.
+    ///
+    /// Anything reasoning about ink *geometry* — hatch spacing, how far to inset a fill, how
+    /// wide a stem ends up — has to use the drawn width. Using `size` instead is why the
+    /// first attempt at this laid 1pt-wide hatch lines 2.08pt apart and drew a `4` as a stack
+    /// of disconnected bars (M2-13B).
+    public static func drawnWidth(forSize size: CGFloat) -> CGFloat {
+        max(0, 2 * size - 4)
+    }
+
+    /// The `PKStrokePoint.size` that draws `width` points wide. The inverse of the above.
+    public static func size(forDrawnWidth width: CGFloat) -> CGFloat {
+        max(minimumStrokeWidth, width / 2 + 2)
+    }
+
+    /// The thinnest line worth drawing: below this the pen fades rather than thins.
+    public static let minimumDrawnWidth: CGFloat = 1.0
 }
 
 #if os(iOS)

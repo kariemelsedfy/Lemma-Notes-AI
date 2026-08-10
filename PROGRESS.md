@@ -284,26 +284,34 @@ Acceptance:
 - [x] A test renders committed ink through PencilKit and counts opaque pixels — the only kind that could have caught this
 - [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
 
-### M2-13B — Typeset answers are now bold, and the ratio cannot fix it
-status: Ready · refs: PROGRESS.md M2-13, HANDWRITING.md §8 · estimate: M
-Note: **the cost of M2-13, stated plainly.** The nib is laid down centred on the traced
-contour, so half of it sits outside the letter. Floored at 3.4pt on ~44pt text that is a
-ratio of **0.077 — heavier than the 0.075 M3-00B rejected as "heavy bold display type"**.
-Lowering `nibToHeightRatio` changes nothing, because the floor binds at every realistic
-answer size. ADR-014 makes typeset the default for every uncalibrated user, so this is the
-first thing most people will see. OCR still passes 3/3 on the harness corpus, so this is an
-appearance problem, not a legibility one — but it is the appearance §8 explicitly asks for.
-The fix is to draw *thinner geometry*, not a thinner pen: erode the fill region by half the
-nib so the stroked result lands on the true contour. Sketch, from the plotter approach
-already in `hatchFill`: trim each scanline span by nib/2 at both ends, confine scanlines to
-the eroded y-range, and — importantly — keep a minimum-width mark where a span is shorter
-than the nib, or thin features like the crossbar of `e` disappear and OCR collapses.
-Also worth measuring: whether the outline trace can be dropped once the fill is inset.
+### M2-13B — Answers render as a blob, a stack of bars, or bold, depending on size
+status: Done · completed: Claude · 2026-08-09 · refs: PROGRESS.md M2-13, HANDWRITING.md §8 · estimate: M
+Note: filed as "typeset is bold", but the user's next report — "sometimes it writes 4,
+sometimes a black dot, sometimes nothing" — showed it was worse than cosmetic. Measured:
+at the frame the app asks for when the writer's x-height is 12pt (**7×17pt** — placement
+sizes the block from the writer's own hand), a `4` filled **91% of its own bounding box.**
+A black dot, exactly as reported.
+**The root cause was a wrong mental model, not a wrong constant.** `PKStrokePoint.size` is
+not the width PencilKit draws. Measured across 13 sizes, `drawn = 2 × size − 4`: a size of
+2.6 draws 1pt, 3.4 draws 3pt, and the cutoff at size 2.0 is exactly where that reaches zero.
+Every geometric decision — hatch spacing, inset, gap compensation — had been using `size`
+where it needed the drawn width, which is why M2-13's floor of 3.4 doubled the intended
+weight, and why the first attempt at insetting drew a `4` as a stack of disconnected bars:
+1pt lines laid 2.08pt apart.
+Three things had to be true together, and none is sufficient alone: the fill is inset by
+0.4 nib so the pen's outer edge lands on the contour instead of half a nib beyond it; the
+outline pass is dropped, since a pen centred on the contour is what put half of itself
+outside; and all of it is computed in drawn width, converting to a `size` only at the end.
+Inset wants to be 0.5 geometrically — 0.5 measured `integral` as `inte9ral`, so 0.4.
+Result: fill is **0.37–0.49 across every size from a 10pt frame to a 120pt one**, where it
+was 0.91 at the small end and 0.19 at the large. Rendered and looked at: clean Helvetica
+with open counters.
 Acceptance:
-- [ ] Rendered weight at a realistic answer size is at or below 0.05 of text height
-- [ ] `LegibilityHarness` does not regress on the five-string sweep corpus
-- [ ] Someone looks at the rendered output and agrees it reads as regular, not bold
-- [ ] `testTheRendererFloorAndNotTheRatioDecidesRealAnswerWeight` is updated or deleted
+- [x] Rendered weight at a realistic answer size is at or below 0.05 of text height
+- [x] `LegibilityHarness` does not regress — 116 Handwriting tests pass, both corpora
+- [x] Someone looks at the rendered output and agrees it reads as regular, not bold
+- [x] The size-versus-drawn-width model is re-measured by a test, not trusted
+- [ ] **Confirm on device** — every measurement here is simulator
 
 ### M2-14 — A notebook with an untouched page cannot be exported
 status: Done · completed: Claude · 2026-08-09 · refs: ARCHITECTURE.md §6 · estimate: S
