@@ -110,6 +110,10 @@ fixed but unverified on hardware:
 - **Ask something and press Keep.** The answer must **stay on the page**. It vanished before
   because the nib was 1.5pt and PencilKit draws nothing below ~1.5pt — the preview used a
   different renderer, so it looked fine right up to the moment you accepted.
+- **Ask more than once on the same page**, and then ask a third time with the lasso drawn
+  around a previous *answer*. All three should draw a properly sized figure. The second ask
+  used to be a black dot: generated ink is horizontal hatch lines, the x-height estimator
+  reads flat ink as zero, and the whole layout scales from it (M2-15).
 - **Check it at more than one size.** Write `2+2=` small, ask, then write it large and ask
   again. Both answers should be the same apparent weight and both legible. This is the one
   that produced a black dot for small handwriting and a stack of bars after the first fix

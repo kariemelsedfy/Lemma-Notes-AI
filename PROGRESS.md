@@ -284,6 +284,29 @@ Acceptance:
 - [x] A test renders committed ink through PencilKit and counts opaque pixels — the only kind that could have caught this
 - [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
 
+### M2-15 — Asking twice on one page draws a dot the second time
+status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
+Note: found on device — "the 4 prints fine the first time; if I draw another 2+2 and ask, it
+only draws a black dot." Not the same bug as M2-13B, which was about weight; this one is
+about size, and it survived that fix.
+**A typeset answer is drawn as horizontal hatch scanlines, so every stroke in one is flat.**
+`StyleStatsEstimator` correctly reports an x-height of **zero** for ink like that. Once a
+page has an answer on it, a lasso that catches that answer produces a zero x-height, and the
+whole layout scales from the x-height — so the frame collapsed to **1×1** and the glyph
+rendered **0.1×0.0**. A dot.
+`SelectionContextBuilder` already had a fallback for a lasso containing *nothing*, which is
+why an empty lasso works fine and this went unnoticed: the case it missed is a lasso full of
+ink that measures as flat. The app makes that ink itself, so the bug appears only from the
+second ask onward.
+Two fixes, because a context can arrive from anywhere: the builder falls back to the line's
+own bounds when the estimate is zero, and `PlacementEngine.usableXHeight(for:)` floors the
+result so no single bad number can render an answer unreadable.
+Acceptance:
+- [x] A selection of flat generated ink still produces a usable frame — was 1×1, now 14×31
+- [x] `PlacementEngine` floors the x-height independently of the builder
+- [x] Both covered by tests in `Intelligence`, using flat strokes as the app really draws them
+- [ ] **Confirm on device**: ask twice on the same page, then ask a third time on the answer itself
+
 ### M2-13B — Answers render as a blob, a stack of bars, or bold, depending on size
 status: Done · completed: Claude · 2026-08-09 · refs: PROGRESS.md M2-13, HANDWRITING.md §8 · estimate: M
 Note: filed as "typeset is bold", but the user's next report — "sometimes it writes 4,

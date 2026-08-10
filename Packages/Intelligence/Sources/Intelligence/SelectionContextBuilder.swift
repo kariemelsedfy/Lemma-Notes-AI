@@ -111,9 +111,26 @@ public enum SelectionContextBuilder {
         return SelectionAnchor(
             point: CGPoint(x: last.bounds.maxX, y: last.baseline),
             baseline: last.baseline,
-            xHeight: StyleStatsEstimator.estimate(from: lineStrokes).xHeight,
+            xHeight: xHeight(of: lineStrokes, lineBounds: last.bounds, fallback: fallback),
             lineBounds: last.bounds
         )
+    }
+
+    /// The selection's x-height, which must never be zero.
+    ///
+    /// The estimator can honestly return zero for ink that has no vertical extent, and the
+    /// app makes exactly that kind of ink: typeset answers are drawn as horizontal hatch
+    /// scanlines, so every stroke in one is flat. Lasso a previous answer — easy to do by
+    /// accident once the page has one on it — and the estimate is zero, which collapsed the
+    /// *next* answer's frame to 1×1 and drew it as a black dot (M2-15).
+    ///
+    /// The guard above only covers a selection with no lines in it at all, which is why this
+    /// went unnoticed: an empty lasso was already handled, a lasso full of flat ink was not.
+    private static func xHeight(of strokes: [InkStroke], lineBounds: CGRect, fallback: CGRect) -> CGFloat {
+        let measured = StyleStatsEstimator.estimate(from: strokes).xHeight
+        if measured > 0 { return measured }
+        if lineBounds.height > 0 { return lineBounds.height }
+        return fallback.height
     }
 
     private static func boundingBox(of points: [CGPoint]) -> CGRect {
