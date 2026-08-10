@@ -106,6 +106,11 @@ first time anyone sees what the product is actually for.
 **M2-13, M2-13B, M2-14 and M2-15 are closed** — confirmed 2026-08-10: export works, accepted
 ink stays, and answers are sized in proportion to the writing they answer. ✅
 
+**Do M2-16 first, before anything else here:** calibrate, then ask. The answer must appear.
+Until 2026-08-10 finishing calibration silently broke every subsequent Ask — the generated
+ink was written into an orphaned object — so the feature that was meant to improve answers
+was the one that stopped them.
+
 **What is left here is M3-02B: the calibration timing, and the first look at your own hand.**
 
 **First, two minutes on M2-13 and M2-14**, both reported from the last session and both

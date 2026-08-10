@@ -285,6 +285,83 @@ Acceptance:
 - [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
 - [x] **Confirmed on device 2026-08-10** — accepted ink stays on the page
 
+### M2-16 — After calibrating, every Ask draws nothing
+status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
+Note: found on device — "after I did teach it your handwriting and asked AI it didn't
+actually write anything." Not the renderer: a bank built the way calibration builds one
+renders `4` correctly at every frame the app produces, measured.
+**`let suggestions = SuggestionLayer()` on a `View` struct.** A `View` is a value and the
+parent rebuilds it on every render, so that `let` handed back a *fresh, empty* layer each
+time — while `askPipeline`, being `@State`, survived the rebuild still holding the layer it
+captured at construction. The pipeline then wrote generated ink into an orphaned object that
+nothing displayed.
+**Finishing calibration is precisely the trigger**: it republishes the glyph bank, the parent
+recomputes `inkRenderer`, and the struct is rebuilt. Every Ask after that drew nothing, which
+is why it looked like calibration broke the feature.
+Very likely the same root as the intermittent "sometimes it doesn't write anything at all"
+reported on 2026-08-09, and a plausible explanation for M2-17 as well: a stale layer holding
+the *previous* answer displays ink of the wrong size for the new question.
+Acceptance:
+- [x] The layer is `@State`, so one instance survives the rebuild
+- [x] The pipeline is reused only while it still writes into the layer the view reads
+- [ ] **Confirm on device**: calibrate, then ask — the answer appears
+Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
+so there is no way to make a test rebuild the struct the way the framework does. The guard
+in `ask()` is the substitute, and the device is the test.
+
+### M2-17 — After several asks the answer stops matching the size of the question
+status: Ready · refs: PROGRESS.md M2-16 · estimate: S
+Note: found on device — "if I do ask AI multiple times at some point it stops adjusting the
+size of the answer to what I am asking about."
+**Probably already fixed by M2-16, and filed separately because that is a guess.** A stale
+`SuggestionLayer` still holds the ink from the previous Ask; the view reading it shows the
+*previous* answer, which is sized for the previous question. That fits "stops adjusting"
+better than any sizing bug, and it fits "at some point" — it starts at the first rebuild.
+Ruled out by measurement already: the estimator ignores generated ink rather than being
+skewed by it (hatch strokes are perfectly horizontal, and `xHeight(of:)` filters zero-height
+strokes), and the placement fallback preserves the size it is given.
+Acceptance:
+- [ ] Confirm on device after M2-16 whether this still happens
+- [ ] If it does, log the estimated x-height and chosen frame per Ask and find where they diverge
+
+### M3-14 — Missed characters send you through the whole calibration flow again
+status: Ready · refs: HANDWRITING.md §3.2 · estimate: M
+Note: found on device — "the teach-handwriting flow isn't too long, it's good, but when it
+said there are some characters I missed, it takes me through the whole flow again instead of
+just asking me to draw that character by itself. Ideally you should collect those characters
+and make the user fill them in one tab."
+Correct, and the data for it already exists: `CalibrationSession.outcome(capturedAt:)`
+returns `rejected` and `missing` as character sets, already filtered against what actually
+landed in the bank, and `CalibrationSheet.layout(_:in:)` will lay out an arbitrary set of
+characters into guide boxes. What is missing is a sheet built from that set rather than from
+the fixed script, and a summary screen that offers it instead of restarting.
+This is the second-most-likely thing to cost a user the whole calibration, after length —
+and §3.1's three-minute budget assumes one pass, not two.
+Acceptance:
+- [ ] The summary offers a single repair sheet containing exactly the characters still missing
+- [ ] Boxes are laid out for that set, at the same size as the first pass
+- [ ] Completing it merges into the existing bank rather than replacing it
+- [ ] Repairing repeatedly converges: a character captured on the repair sheet is not asked for again
+- [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
+
+### M2-18 — Erasing generated ink behaves differently from erasing your own
+status: Ready · refs: PROGRESS.md M2-13B · estimate: S
+Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
+by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
+removing pixels in a radius."
+**Both are the same `PKEraserTool(.vector)`; the difference is what a "stroke" is.** A
+handwritten `2` is one or two strokes, so vector erase takes the whole shape. A typeset `4`
+is ~50 horizontal hatch scanlines (M2-13B), so vector erase takes one scanline at a time and
+reads as a soft radius eraser eating pixels.
+Options, in rough order of cost: group a block's strokes so erasing any one erases the block
+(provenance already records which strokes came from one Ask, so the data exists); or treat
+generated ink as a single object until edited. Worth deciding alongside M3-08B, which has the
+same "edits to committed generated ink" question.
+Acceptance:
+- [ ] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
+- [ ] Erasing handwriting is unchanged
+- [ ] Undo restores the whole answer in one step
+
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
 Note: found on device — "the 4 prints fine the first time; if I draw another 2+2 and ask, it

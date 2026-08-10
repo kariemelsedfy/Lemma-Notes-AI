@@ -11,6 +11,34 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Claude · M2-16 — a `let` on a `View` is not storage
+
+**User report:** "after I did teach it your handwriting and asked AI it didn't actually write anything."
+
+**I checked the renderer first and it was innocent.** Built a bank the way calibration builds one — every character the sheets ask for, style stats at a plausible handwriting size — and rendered `4` at the three frames the app actually produces. 51 strokes, sensible bounds, every time, at x-heights of 12, 25 and 40. Ten minutes to eliminate the entire handwriting path, and worth it, because that is where I would otherwise have spent an hour.
+
+**The bug is one word in a property declaration.**
+
+    let suggestions = SuggestionLayer()   // on a View struct
+
+A `View` is a value. The parent rebuilds this struct on every render, so that `let` returns a **fresh, empty** layer each time — while `askPipeline`, being `@State`, survives the rebuild still holding the layer it captured at construction. The pipeline goes on succeeding and writing generated ink into an object nothing displays.
+
+**Finishing calibration is exactly the trigger.** It republishes the glyph bank, the parent recomputes `inkRenderer`, the struct is rebuilt. Every Ask after that draws nothing — so the feature appears to work until you use the feature that was supposed to improve it.
+
+**I had seen this and not chased it.** I noted the `let` two sessions ago while hunting the vanishing `4`, decided it explained "nothing appears" rather than the dot I was chasing, and moved on without filing it. It was the right call for that bug and the wrong one overall: an unverified suspicion I could describe precisely was worth ten minutes to confirm or a line in `PROGRESS.md`. It cost the user a device session.
+
+**Fixed twice on purpose.** `@State` gives one instance per view identity. The reuse site also checks `pipeline.suggestions === suggestions` and rebuilds if not, because the failure mode is *silent success* — no error, no log, an Ask that completes and produces nothing.
+
+**Not unit-tested, and I want to be plain about why.** SwiftUI view identity is not observable from XCTest; there is no way to make a test rebuild the struct the way the framework does. Same category as the `UIViewRepresentable` gap in M1-12B. The identity guard is the substitute and the device is the test. This is now the third bug in this app that lives in the space XCTest cannot reach — worth deciding whether that space deserves a UI test target rather than three separate apologies in this file.
+
+**Probably two bugs, not one.** A stale layer still holds the *previous* answer, so a view reading it shows ink sized for the previous question — which is a better fit for "at some point it stops adjusting the size" (M2-17) than any sizing bug. Filed separately rather than assumed, and I ruled out the obvious sizing suspects by measurement: the x-height estimator discards zero-height strokes, so generated hatch ink cannot skew it, and the placement fallback preserves the size it is handed.
+
+**Also filed from this session:** M3-14, a repair sheet for missed characters instead of restarting calibration — the data is already there, `outcome(capturedAt:)` returns the exact set. And M2-18, the eraser: both paths use the same `PKEraserTool(.vector)`, but a handwritten `2` is one stroke while a typeset `4` is ~50 hatch scanlines, so vector erase looks like a radius eraser on generated ink only. Another consequence of hatch-fill rendering that nobody predicted.
+
+**Verification:** `xcodebuild test` iPad simulator, 133 tests ✅ · `./scripts/lint.sh` 0 violations across 126 files ✅ · renderer eliminated by measurement before touching the view · device tested: no
+
+---
+
 ## 2026-08-10 · Claude · M2-15 — the app poisons its own input
 
 **User report:** "the 4 prints fine the first time I ask; if I draw another 2+2 somewhere else and ask on it, it only draws a black dot."

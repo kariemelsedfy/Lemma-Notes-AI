@@ -19,8 +19,12 @@ extension VirtualizedPageStack {
     /// Runs one Ask against the canned provider.
     func ask(_ verb: AskVerb) {
         guard let selection = askSelection.selection else { return }
+        // Reused only while it still writes into the layer this view reads. `@State` keeps
+        // that true; this makes it self-healing rather than merely true, because the failure
+        // it guards against is silent — the pipeline succeeds, the ink lands in an orphaned
+        // layer, and the user sees an Ask that produced nothing (M2-16).
         let pipeline =
-            askPipeline
+            askPipeline.flatMap { $0.suggestions === suggestions ? $0 : nil }
             ?? AskPipeline(
                 provider: CannedSpecProvider(),
                 model: askModel,
