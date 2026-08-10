@@ -11,6 +11,39 @@ unless you check.
 
 ---
 
+## 2026-08-09 · Claude · M2-13B — `PKStrokePoint.size` is not a width
+
+**User report:** "sometimes it writes 4, sometimes it just writes a black dot, sometimes it doesn't write anything at all." Filed earlier the same day as "typeset is a bit bold". It was not a bit bold.
+
+**The measurement that reframed it.** Placement sizes the answer's frame from the writer's own x-height, so I measured what the app actually asks for: an x-height of 12pt produces a **7×17pt frame** for a single `4`. At that size the glyph filled **91% of its own bounding box** — the black dot, reproduced exactly, with a number attached.
+
+**Then the thing I had wrong all along.** `PKStrokePoint.size` is not the width PencilKit draws. Measured across 13 sizes:
+
+    size   2.4  2.6  2.8  3.0  3.2  3.4  4.0  5.0  8.0  12.0
+    drawn  1.0  1.0  1.5  2.0  2.5  3.0  4.0  6.0  12.0 20.0
+
+Every point fits `drawn = 2 × size − 4`, and the cutoff that made ink invisible in M2-13 sits exactly where that line reaches zero. **The floor I set that morning — size 3.4 — asks for a 3pt line.** I had picked it believing it was the thinnest visible stroke; it was nearly twice the weight I wanted, which is the entire reason typeset went bold.
+
+**Two false starts, both instructive.**
+
+*Erosion alone made it worse.* Insetting the fill by half a nib and dropping the outline gave a glyph of 1pt lines laid 2.08pt apart — a `4` rendered as a **stack of disconnected horizontal bars**. I only caught it because I rendered it and looked; the fill-ratio number had improved and every test was green. Spacing was computed from `size` while the lines were drawn at the real width, which is the same category error one layer down.
+
+*A "dot" for sub-nib spans deleted them.* Collapsing a too-narrow span to a single point produces a zero-length path, and PencilKit draws exactly nothing. That is a plausible source of the user's "sometimes nothing at all", and I had introduced a fresh copy of it while fixing the original.
+
+**What actually worked, and only in combination:** inset the fill by 0.4 nib; drop the outline pass, since a pen centred on the contour is what put half of itself outside the letter; and do every geometric calculation in *drawn width*, converting to a `size` only at the final step. Inset wants to be 0.5 on paper — 0.5 read `integral` as `inte9ral`, so 0.4 with the sweep recorded in the constant.
+
+**Result:** ink fill is **0.37–0.49 at every frame from 10pt to 120pt**, against 0.91 at the small end before. Consistent weight across sizes is the property that was missing, and it is what makes the same code produce a legible `4` for a small hand and a large one.
+
+**The floor no longer binds at realistic sizes**, so `nibToHeightRatio` governs weight again and M3-00B's tuning is live rather than overridden. One of the tests I wrote this morning asserted the opposite; deleting it was the good news.
+
+**A test I kept rather than a diagnostic I deleted.** `InkRenderingLimitsTests` re-measures `drawn = 2 × size − 4` against PencilKit on every run. It is somebody else's renderer encoded as a constant, nothing in the type system defends it, and when Apple moves it the failure is silent — thin, bold, or absent ink with every other test green. Four scratch diagnostics were thrown away; this one earned its place.
+
+**What I would tell the next person:** I burned this whole session on one bug because I twice fixed the *value* of a constant without checking what the constant *meant*. Two of the three symptoms — invisible ink, black dot — were the same error at different magnitudes. When a rendering constant misbehaves, measure the mapping before tuning the number.
+
+**Verification:** all 6 packages, 284 tests ✅ · `xcodebuild test` iPad simulator, 133 tests ✅ · `./scripts/lint.sh` 0 violations across 126 files ✅ · 4 invariant checks ✅ · rendered at four sizes and looked at every one · device tested: no
+
+---
+
 ## 2026-08-09 · Claude · M2-13 and M2-14 — two bugs from one device session
 
 **Three reports from the user, one session:** dark ink now correct (M1-12B closed on device ✅), "I couldn't export to pdf", and "I chose keep and the 4 got deleted."

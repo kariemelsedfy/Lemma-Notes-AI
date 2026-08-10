@@ -78,10 +78,12 @@ Device work is collected in `DEVICE_SESSION.md`; the newest item is **M3-02B**, 
     `PKDrawing` rasterisation goes through `InkCore.InkAppearance`, or PencilKit inverts dark
     ink for a dark background that Margin's fixed-light page does not have. Enforced by
     `scripts/check-ink-appearance.sh` (M1-12B).
-11. **Nothing draws thinner than `InkRenderingLimits.minimumStrokeWidth`.** PencilKit renders
-    a `.pen` below ~1.5pt as *nothing at all*, and the OCR harness — which uses Core Graphics,
-    not PencilKit — will not tell you. Tune a stroke width against the harness and you are
-    tuning against a renderer the user never sees (M2-13).
+11. **`PKStrokePoint.size` is not a width.** `drawn = 2 × size − 4`, measured, and below
+    size 2.0 PencilKit draws nothing at all. Anything geometric — hatch spacing, insets, how
+    wide a stem ends up — uses `InkRenderingLimits.drawnWidth(forSize:)`, never the raw size.
+    Getting this backwards produced invisible ink, then a black dot, then a stack of bars
+    (M2-13, M2-13B). The OCR harness uses Core Graphics and will not tell you: tune a width
+    against it and you are tuning against a renderer the user never sees.
 
 ## 4. Environment notes
 

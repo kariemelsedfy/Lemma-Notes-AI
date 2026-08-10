@@ -42,14 +42,27 @@ public enum TypesetStyle {
     /// nothing on the page. See `renderableNib(_:)` and M2-13.
     public static let nibToHeightRatio: CGFloat = 0.025
 
-    /// The nib to actually draw with: what the ratio asked for, or the narrowest stroke the
-    /// page can show, whichever is wider.
+    /// How far the filled region is pulled inside the contour, as a fraction of the nib.
     ///
-    /// Applied *before* the advance compensation below rather than at the PencilKit
-    /// boundary, because the layout has to know the real pen width. Compensating gaps for a
-    /// 1.5pt nib and then drawing 3.4pt is how letters merge.
+    /// Geometrically this wants to be 0.5 — half the pen on each side puts the pen's outer
+    /// edge exactly on the outline. Measured, 0.5 over-erodes: it took the synthesizer corpus
+    /// from 100% to 80% exact, reading `integral` as `inte9ral`, because the features that
+    /// separate `g` from `9` are the first to go. See M2-13B for the sweep.
+    private static let insetToNibRatio: CGFloat = 0.40
+
+    /// The width the pen will really lay down: what the ratio asked for, or the thinnest line
+    /// PencilKit draws rather than fades, whichever is wider.
+    ///
+    /// **This is a drawn width, not a `PKStrokePoint.size`** — the two differ by roughly a
+    /// factor of two plus an offset (`InkRenderingLimits.drawnWidth(forSize:)`). Everything
+    /// geometric below is in drawn width: hatch spacing, the inset, and the advance
+    /// compensation. Only the very last step converts to a size PencilKit understands.
+    ///
+    /// Applied *before* the advance compensation rather than at the PencilKit boundary,
+    /// because the layout has to know the real pen width. Compensating gaps for a 1.5pt pen
+    /// and then drawing 3pt is how letters merge.
     private static func renderableNib(_ requested: CGFloat) -> CGFloat {
-        max(requested, InkRenderingLimits.minimumStrokeWidth)
+        max(requested, InkRenderingLimits.minimumDrawnWidth)
     }
 
     /// Lays `text` out inside `frame`, sitting on its baseline.
@@ -89,12 +102,18 @@ public enum TypesetStyle {
             defer { pen.x += entry.advance * metrics.scale }
             guard !entry.isBlank, let path = CTFontCreatePathForGlyph(font, entry.glyph, nil) else { continue }
             let contours = polylines(of: path)
-            // Outline plus hatch fill. Tracing the outline alone leaves hollow letters,
-            // which measured *worse* than the crude placeholder font — Vision is trained
-            // on solid text and reads outlines badly. That matters beyond the metric: the
-            // app reads its own pages with Vision (`AI_PIPELINE.md` §1 `pageText`), so ink
+            // Hatch fill only, inset by half a nib. Tracing the outline alone leaves hollow
+            // letters, which measured *worse* than the crude placeholder font — Vision is
+            // trained on solid text and reads outlines badly. That matters beyond the metric:
+            // the app reads its own pages with Vision (`AI_PIPELINE.md` §1 `pageText`), so ink
             // our own OCR cannot read breaks asking a follow-up about generated content.
-            for polyline in contours + hatchFill(of: contours, spacing: nib / metrics.scale * 0.8) {
+            //
+            // The outline pass used to be drawn *as well*, and it is what made glyphs a full
+            // nib fatter than their letterform: a pen centred on the contour leaves half of
+            // itself outside. The inset fill reaches the same edge from the inside, so the
+            // boundary lands where the letterform actually is (M2-13B).
+            let inset = nib / metrics.scale * insetToNibRatio
+            for polyline in hatchFill(of: contours, spacing: nib / metrics.scale * 0.8, inset: inset) {
                 let placed = polyline.map { point in
                     CGPoint(
                         // Core Text's y grows upward; ink coordinates grow downward.
@@ -102,7 +121,15 @@ public enum TypesetStyle {
                         y: pen.y - point.y * metrics.scale
                     )
                 }
-                strokes.append(stroke(through: placed, nib: nib, from: &clock, style: style))
+                // Converted here and nowhere earlier: `nib` is how wide the line should look,
+                // and this is the size that produces it.
+                strokes.append(
+                    stroke(
+                        through: placed,
+                        nib: InkRenderingLimits.size(forDrawnWidth: nib),
+                        from: &clock,
+                        style: style
+                    ))
             }
         }
         return strokes
@@ -235,7 +262,21 @@ public enum TypesetStyle {
     /// the contours, sort the crossings, and draw between alternate pairs (even-odd, which
     /// is what leaves the counter of an `o` empty). Spacing is tied to the nib so adjacent
     /// passes just overlap — tighter wastes strokes, looser leaves visible banding.
-    private static func hatchFill(of contours: [[CGPoint]], spacing: CGFloat) -> [[CGPoint]] {
+    /// - Parameter inset: how far to pull the filled region inside the contour, in font
+    ///   units. Half the nib, so that stroking the result lands the *outer edge* of the pen
+    ///   on the true outline instead of half a nib beyond it.
+    ///
+    ///   Without this a glyph is fatter than its letterform by a full nib in each direction.
+    ///   That is survivable on large text and fatal on small: PencilKit will not draw a pen
+    ///   narrower than `InkRenderingLimits.minimumStrokeWidth`, so at a handwriting-sized
+    ///   frame a `4` measured 5×7pt drawn with a 3.4pt pen, filling 91% of its own bounding
+    ///   box — a black dot (M2-13B).
+    ///
+    ///   A span narrower than the pen cannot be drawn narrower than the pen, so it collapses
+    ///   to a single mark at its midpoint rather than disappearing. Dropping those would
+    ///   erase the thin features first — the crossbar of `e`, the join of `a` — which is the
+    ///   one failure mode Vision cannot recover from.
+    private static func hatchFill(of contours: [[CGPoint]], spacing: CGFloat, inset: CGFloat) -> [[CGPoint]] {
         guard spacing > 0, !contours.isEmpty else { return [] }
         let allPoints = contours.flatMap { $0 }
         guard let minY = allPoints.map(\.y).min(), let maxY = allPoints.map(\.y).max(), maxY > minY else {
@@ -243,8 +284,10 @@ public enum TypesetStyle {
         }
 
         var lines: [[CGPoint]] = []
-        var scanY = minY + spacing / 2
-        while scanY < maxY {
+        // Start half a nib below the top edge, so the pen's own width covers up to it.
+        var scanY = min(minY + inset, (minY + maxY) / 2)
+        let lastY = max(maxY - inset, (minY + maxY) / 2)
+        while scanY <= lastY {
             var crossings: [CGFloat] = []
             for contour in contours {
                 for index in 0..<(contour.count - 1) {
@@ -262,7 +305,17 @@ public enum TypesetStyle {
                 let left = crossings[pair]
                 let right = crossings[pair + 1]
                 if right - left > 0.5 {
-                    lines.append([CGPoint(x: left, y: scanY), CGPoint(x: right, y: scanY)])
+                    let insetLeft = left + inset
+                    let insetRight = right - inset
+                    if insetRight > insetLeft {
+                        lines.append([CGPoint(x: insetLeft, y: scanY), CGPoint(x: insetRight, y: scanY)])
+                    } else {
+                        // Narrower than the pen, so it cannot be drawn narrower than the pen:
+                        // keep the span untrimmed. Collapsing it to a point instead produces
+                        // a zero-length path, which PencilKit draws as *nothing* — the thin
+                        // features would vanish one by one as the text got smaller.
+                        lines.append([CGPoint(x: left, y: scanY), CGPoint(x: right, y: scanY)])
+                    }
                 }
                 pair += 2
             }

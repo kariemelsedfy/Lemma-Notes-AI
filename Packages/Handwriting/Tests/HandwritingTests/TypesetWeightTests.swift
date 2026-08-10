@@ -28,24 +28,35 @@ final class TypesetWeightTests: XCTestCase {
         XCTAssertLessThan(nib / height, 0.05, "nib \(nib) on \(height)pt text reads as bold")
     }
 
-    /// **A known regression, recorded rather than hidden (M2-13B).**
+    /// The ratio, not the renderer floor, decides the weight of a realistic answer.
     ///
-    /// PencilKit will not draw a `.pen` below `InkRenderingLimits.minimumStrokeWidth`, and
-    /// at any realistic answer size the ratio asks for less than that — so the floor, not
-    /// `nibToHeightRatio`, sets the weight of nearly every answer a user will see. At the
-    /// frame these tests use that works out to ~0.077 of the text height, which is *heavier
-    /// than the 0.075 M3-00B rejected as "bold display type"*.
-    ///
-    /// Lowering `nibToHeightRatio` cannot fix this; only drawing thinner geometry can, which
-    /// is M2-13B. Until then this test exists so nobody re-derives the ratio from what they
-    /// see on screen and concludes the constant is wrong.
-    func testTheRendererFloorAndNotTheRatioDecidesRealAnswerWeight() throws {
+    /// It briefly did not. Between M2-13 and M2-13B the nib was floored at a
+    /// `PKStrokePoint.size` of 3.4 — which is a *drawn* width of 3pt — and at a
+    /// handwriting-sized frame that is a ratio of ~0.077, heavier than the 0.075 M3-00B
+    /// rejected as bold display type. The mistake was treating `size` as a width; they differ
+    /// by `drawn = 2 × size − 4`, so asking for 3.4 asks for twice the line you wanted.
+    func testTheRatioAndNotTheRendererFloorDecidesRealAnswerWeight() throws {
         let strokes = try TypesetStyle.strokes(for: "the derivative is 2x", in: frame)
-        let nib = try XCTUnwrap(strokes.first?.points.first?.size.width)
+        let size = try XCTUnwrap(strokes.first?.points.first?.size.width)
+        let drawn = InkRenderingLimits.drawnWidth(forSize: size)
         let height = InkLineGrouping.bounds(of: strokes).height
 
-        XCTAssertEqual(nib, InkRenderingLimits.minimumStrokeWidth, accuracy: 0.0001)
-        XCTAssertGreaterThan(nib / height, 0.05, "If this has dropped, M2-13B landed — update this test.")
+        XCTAssertGreaterThan(drawn, InkRenderingLimits.minimumDrawnWidth, "the floor is binding again")
+        XCTAssertLessThan(drawn / height, 0.05, "drawn \(drawn)pt on \(height)pt text reads as bold")
+    }
+
+    /// The size handed to PencilKit is *not* the width the answer appears at, and every
+    /// geometric decision above uses the width. Pinned because reading `size` as a width is
+    /// what produced first invisible ink and then a black dot.
+    func testTheStoredSizeIsTheOneThatDrawsTheIntendedWidth() throws {
+        let strokes = try TypesetStyle.strokes(for: "4", in: frame)
+        let size = try XCTUnwrap(strokes.first?.points.first?.size.width)
+
+        XCTAssertEqual(
+            InkRenderingLimits.size(forDrawnWidth: InkRenderingLimits.drawnWidth(forSize: size)),
+            size,
+            accuracy: 0.0001
+        )
     }
 
     func testTheDefaultWeightIsTheOneThatWasMeasured() {
