@@ -21,7 +21,16 @@ struct VirtualizedPageStack: View {
     @StateObject var selectionStore = PageSelectionStore()
     @StateObject var askSelection = AskSelectionCoordinator()
     @StateObject var askModel = AskBarModel()
-    let suggestions = SuggestionLayer()
+    /// **`@State`, not a plain `let`.** A `View` is a value: the parent rebuilds this struct
+    /// on every render, and a `let` initialised inline would hand back a *fresh, empty*
+    /// `SuggestionLayer` each time. `askPipeline` is `@State` and survives that rebuild, so
+    /// it would go on writing generated ink into the layer it captured at construction while
+    /// the body read a new one — and the answer would silently never appear.
+    ///
+    /// Finishing calibration is exactly the trigger: it republishes the glyph bank, the
+    /// parent recomputes `inkRenderer`, this struct is rebuilt, and every Ask after that
+    /// drew nothing (M2-16).
+    @State var suggestions = SuggestionLayer()
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
     @State var selectedPen: MarginPen = .black

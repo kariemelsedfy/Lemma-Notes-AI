@@ -22,7 +22,9 @@ final class AskPipeline {
     /// pipeline outlives that choice.
     var renderer: any SuggestionInkRendering
     private let model: AskBarModel
-    private let suggestions: SuggestionLayer
+    /// Readable so a caller can check it is still writing into the layer the view reads.
+    /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
+    let suggestions: SuggestionLayer
     private var task: Task<Void, Never>?
 
     init(
