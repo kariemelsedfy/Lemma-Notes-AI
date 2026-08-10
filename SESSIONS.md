@@ -11,6 +11,26 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Claude · M2-15 — the app poisons its own input
+
+**User report:** "the 4 prints fine the first time I ask; if I draw another 2+2 somewhere else and ask on it, it only draws a black dot."
+
+**I chased two wrong theories first**, and both were cheap to kill because I reproduced rather than reasoned. *Position*: maybe a selection near the right edge squeezes `availableWidth` and the glyph scales down to fit. Measured at three page positions — identical 16×35 frames. *Occupancy*: maybe the fallback search returns a smaller frame once the page has ink on it. It does not; the search preserves the size it was asked for.
+
+**The actual cause is that the app produces ink its own estimator cannot read.** A typeset answer is drawn as horizontal hatch scanlines, so every stroke in one is perfectly flat. `StyleStatsEstimator` reports an x-height of **zero** for that ink, entirely correctly. Everything downstream scales from the x-height, so the frame collapsed to **1×1** and the glyph rendered **0.1×0.0**.
+
+**Why it only happens from the second ask onward:** on an empty page there is no flat ink to catch. Once an answer is on the page there is, and the failure arrives looking like nondeterminism — it depends on whether the lasso happened to include some.
+
+**The near-miss that explains why nobody saw it.** `SelectionContextBuilder` *already* handles a lasso that contains nothing: it falls back to the selection bounds, and I verified that path still works (x-height 60, frame 37×84). The guard is on "no lines were grouped", not on "the measurement came back zero". An empty lasso was defended; a lasso full of flat ink was not, and only one of those was on anyone's mind.
+
+**Fixed in two places on purpose.** The builder falls back to the line's own bounds when the estimate is zero — that is where the knowledge lives. `PlacementEngine.usableXHeight(for:)` also floors it, because a context can be constructed anywhere and a single zero should not be able to render an answer unreadable. The second is not redundant: it is the difference between one bug and one class of bug.
+
+**Worth sitting with:** this is generated ink degrading the app's reading of its own page. `AI_PIPELINE.md` §1 has the app OCR its own pages for `pageText`, so anything that makes generated ink unlike handwriting has effects beyond how it looks. Two of the last three defects came from generated ink being structurally unlike a person's — flat, or thinner than the renderer can draw. **If the M3-10 panel says the synthesiser looks mechanical, this is the same root showing up a third time.**
+
+**Verification:** all 6 packages, 286 tests ✅ · `xcodebuild test` iPad simulator, 133 tests ✅ · `./scripts/lint.sh` 0 violations across 126 files ✅ · 4 invariant checks ✅ · reproduced at 1×1 before, 14×31 after · device tested: no
+
+---
+
 ## 2026-08-09 · Claude · M2-13B — `PKStrokePoint.size` is not a width
 
 **User report:** "sometimes it writes 4, sometimes it just writes a black dot, sometimes it doesn't write anything at all." Filed earlier the same day as "typeset is a bit bold". It was not a bit bold.

@@ -1,3 +1,4 @@
+import Handwriting
 import InkCore
 import XCTest
 
@@ -182,6 +183,73 @@ final class PlacementEngineTests: XCTestCase {
             InkPoint(location: CGPoint(x: rect.minX, y: rect.minY), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
             InkPoint(location: CGPoint(x: rect.maxX, y: rect.maxY), timeOffset: 1, force: 0.5, altitude: 1, azimuth: 0),
         ])
+    }
+
+    // MARK: - Degenerate x-heights
+
+    /// Horizontal strokes with no vertical extent at all — which is exactly what a typeset
+    /// answer is made of, since it is drawn as hatch scanlines.
+    private static func flatStrokes(at origin: CGPoint) -> [InkStroke] {
+        (0..<12).map { index in
+            let baseline = origin.y + CGFloat(index) * 2
+            return InkStroke(points: [
+                InkPoint(
+                    location: CGPoint(x: origin.x, y: baseline), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
+                InkPoint(
+                    location: CGPoint(x: origin.x + 14, y: baseline),
+                    timeOffset: 0.05, force: 0.5, altitude: 1, azimuth: 0),
+            ])
+        }
+    }
+
+    /// Selecting a previous answer must not shrink the next one to a dot.
+    ///
+    /// The estimator honestly reports a zero x-height for flat ink, and everything
+    /// downstream scales from the x-height — so the frame collapsed to 1×1 and the glyph
+    /// rendered 0.1×0.0. Reported by a user as "the second ask only draws a black dot"
+    /// (M2-15).
+    func testSelectingFlatGeneratedInkStillProducesAUsableFrame() throws {
+        let strokes = Self.flatStrokes(at: CGPoint(x: 200, y: 300))
+        let bounds = InkLineGrouping.bounds(of: strokes)
+        let context = try XCTUnwrap(
+            SelectionContextBuilder.build(
+                strokes: strokes,
+                loop: [
+                    CGPoint(x: bounds.minX - 8, y: bounds.minY - 8),
+                    CGPoint(x: bounds.maxX + 8, y: bounds.minY - 8),
+                    CGPoint(x: bounds.maxX + 8, y: bounds.maxY + 8),
+                    CGPoint(x: bounds.minX - 8, y: bounds.maxY + 8),
+                ],
+                pageSize: CGSize(width: 1668, height: 2388)
+            ))
+
+        XCTAssertGreaterThan(context.anchor.xHeight, 0, "a zero x-height collapses every frame downstream")
+
+        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let placement = try XCTUnwrap(
+            engine.place(try Self.spec(placement: .atAnchor), context: context).placements.first)
+
+        XCTAssertGreaterThan(placement.frame.width, 4)
+        XCTAssertGreaterThan(placement.frame.height, 8)
+    }
+
+    func testAContextWithNoUsableMeasurementStillGetsAFloor() {
+        // Defence in depth: a context can arrive from anywhere, and one bad number should
+        // not be able to render an answer unreadable.
+        let context = SelectionContext(
+            pageSize: CGSize(width: 1668, height: 2388),
+            selectionBounds: CGRect(x: 10, y: 10, width: 2, height: 0.5),
+            strokeIDs: [],
+            crop: RasterRequest(bounds: .zero, scale: 1),
+            neighborhood: RasterRequest(bounds: .zero, scale: 1),
+            strokes: [],
+            style: StyleStats(
+                xHeight: 0, slant: 0, lineSpacing: 0, baselineDrift: 0,
+                meanVelocity: 0, meanForce: 0),
+            anchor: SelectionAnchor(point: .zero, baseline: 0, xHeight: 0, lineBounds: .zero)
+        )
+
+        XCTAssertEqual(PlacementEngine.usableXHeight(for: context), PlacementEngine.minimumXHeight)
     }
 
     private static func context() throws -> SelectionContext {

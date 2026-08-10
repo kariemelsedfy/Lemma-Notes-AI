@@ -6,6 +6,13 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 **Last updated:** 2026-08-09 · by: Claude · Milestone: **M3 complete except the human gate**
 
+**Generated ink is an input to this app, not just an output.** It lands on the page, so the
+lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELINE.md` §1
+`pageText`). Three defects so far come from generated ink being structurally unlike a
+person's — thinner than PencilKit draws (M2-13), then bolder (M2-13B), then perfectly flat
+and therefore measuring as a zero x-height (M2-15). Ask what a new kind of generated stroke
+looks like *to the app* before shipping it.
+
 **Just in from the first real device session:** the Ask → Keep path did not survive contact —
 accepted ink was invisible (M2-13, fixed) and export failed on any notebook with an untouched
 page (M2-14, fixed). Both were found by a user in minutes; neither was visible to 400+ tests.

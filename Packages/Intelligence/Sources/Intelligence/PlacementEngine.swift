@@ -56,6 +56,21 @@ public struct PlacementEngine: Sendable {
         self.spacing = spacing
     }
 
+    /// The smallest x-height worth laying out against.
+    ///
+    /// Everything downstream scales from the x-height — the frame, and through the frame the
+    /// glyphs themselves — so a zero here does not produce a small answer, it produces a
+    /// 1×1 frame and a dot. `SelectionContextBuilder` now defends its own estimate; this is
+    /// the second line, because a context can arrive from anywhere and one bad number should
+    /// not be able to render an answer unreadable (M2-15).
+    static let minimumXHeight: CGFloat = 8
+
+    static func usableXHeight(for context: SelectionContext) -> CGFloat {
+        let measured = max(context.anchor.xHeight, context.style.xHeight)
+        let candidate = measured > 0 ? measured : context.selectionBounds.height
+        return max(candidate, minimumXHeight)
+    }
+
     public func place(
         _ spec: ValidatedSpec,
         context: SelectionContext,
@@ -64,7 +79,7 @@ public struct PlacementEngine: Sendable {
         var grid = occupancy
         var placements: [BlockPlacement] = []
         var unplaced: [SpecBlock] = []
-        let xHeight = max(context.anchor.xHeight, context.style.xHeight)
+        let xHeight = Self.usableXHeight(for: context)
 
         for block in spec.blocks {
             if case .marks(let marks) = block.content {
