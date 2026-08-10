@@ -283,6 +283,7 @@ Acceptance:
 - [x] `PKStroke(_:color:)` clamps as a backstop for producers that do not, e.g. a light-handed writer's bank
 - [x] A test renders committed ink through PencilKit and counts opaque pixels — the only kind that could have caught this
 - [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
+- [x] **Confirmed on device 2026-08-10** — accepted ink stays on the page
 
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
@@ -305,7 +306,7 @@ Acceptance:
 - [x] A selection of flat generated ink still produces a usable frame — was 1×1, now 14×31
 - [x] `PlacementEngine` floors the x-height independently of the builder
 - [x] Both covered by tests in `Intelligence`, using flat strokes as the app really draws them
-- [ ] **Confirm on device**: ask twice on the same page, then ask a third time on the answer itself
+- [x] **Confirm on device** — confirmed 2026-08-10: a second ask on the same page draws a correctly sized answer
 
 ### M2-13B — Answers render as a blob, a stack of bars, or bold, depending on size
 status: Done · completed: Claude · 2026-08-09 · refs: PROGRESS.md M2-13, HANDWRITING.md §8 · estimate: M
@@ -334,7 +335,7 @@ Acceptance:
 - [x] `LegibilityHarness` does not regress — 116 Handwriting tests pass, both corpora
 - [x] Someone looks at the rendered output and agrees it reads as regular, not bold
 - [x] The size-versus-drawn-width model is re-measured by a test, not trusted
-- [ ] **Confirm on device** — every measurement here is simulator
+- [x] **Confirm on device** — confirmed 2026-08-10: sized in proportion to the writing it answers
 
 ### M2-14 — A notebook with an untouched page cannot be exported
 status: Done · completed: Claude · 2026-08-09 · refs: ARCHITECTURE.md §6 · estimate: S

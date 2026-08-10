@@ -13,11 +13,14 @@ person's — thinner than PencilKit draws (M2-13), then bolder (M2-13B), then pe
 and therefore measuring as a zero x-height (M2-15). Ask what a new kind of generated stroke
 looks like *to the app* before shipping it.
 
-**Just in from the first real device session:** the Ask → Keep path did not survive contact —
-accepted ink was invisible (M2-13, fixed) and export failed on any notebook with an untouched
-page (M2-14, fixed). Both were found by a user in minutes; neither was visible to 400+ tests.
-Typeset answers are now known-bold as a consequence — **M2-13B**, and worth reading before
-judging what the app looks like.
+**The Ask path now works end to end on a device** (confirmed 2026-08-10): lasso, ask, an
+answer drawn in place, sized in proportion to the writing it answers, and it stays when kept.
+Getting there took four defects the suite could not see — M1-12B, M2-13, M2-13B, M2-15 —
+every one found by a user in minutes.
+
+**What is still fake is the model.** `CannedSpecProvider` answers every request with the same
+hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
+Real providers are M4, and no M4 task has been filed yet.
 
 ---
 

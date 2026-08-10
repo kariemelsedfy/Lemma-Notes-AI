@@ -103,6 +103,10 @@ The most important item in this document. Everything below §0 is verification; 
 first time anyone sees what the product is actually for.
 
 **M1-12B is closed** — confirmed on device 2026-08-09, dark ink on light paper. ✅
+**M2-13, M2-13B, M2-14 and M2-15 are closed** — confirmed 2026-08-10: export works, accepted
+ink stays, and answers are sized in proportion to the writing they answer. ✅
+
+**What is left here is M3-02B: the calibration timing, and the first look at your own hand.**
 
 **First, two minutes on M2-13 and M2-14**, both reported from the last session and both
 fixed but unverified on hardware:
