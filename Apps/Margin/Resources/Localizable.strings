@@ -61,7 +61,8 @@
 "calibration.next" = "Next";
 "calibration.finish" = "Save";
 "calibration.summary.captured %lld" = "Captured %lld characters.";
-"calibration.summary.unclear" = "These came out unclear. Tap one to write it again.";
+"calibration.summary.unclear" = "These are still missing. Answers that use them will be written in the typeset style instead of your hand.";
+"calibration.repair %lld" = "Write these %lld again";
 "calibration.delete" = "Delete my handwriting";
 "style.title" = "Answers are written in";
 "style.mine" = "My handwriting";

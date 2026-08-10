@@ -111,6 +111,20 @@ public enum CalibrationSheet {
     /// Sized to the space rather than fixed, so the same sheet works on an iPad mini and a
     /// 13-inch. Boxes are never narrower than `minimumBoxSide`: a box too small to write a
     /// comfortable letter in produces a cramped glyph that is then used everywhere.
+    /// A sheet for characters an earlier pass did not capture.
+    ///
+    /// Never optional: the user has already been told these are missing and chosen to fix
+    /// them, so offering "skip" again in the same breath is noise.
+    public static func repair(_ characters: [Character], id: Int) -> Sheet {
+        let text = String(characters)
+        return Sheet(
+            id: id,
+            target: text,
+            instruction: "Just these ones — write each in its box.",
+            kind: .guideBoxes(text)
+        )
+    }
+
     public static func layout(
         _ characters: [Character],
         in area: CGRect,

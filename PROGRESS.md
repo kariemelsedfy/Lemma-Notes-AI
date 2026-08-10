@@ -285,6 +285,28 @@ Acceptance:
 - [x] Capture is untouched: the clamp is `InkStroke → PKStroke` only, so glyph banks still store real widths
 - [x] **Confirmed on device 2026-08-10** — accepted ink stays on the page
 
+### M3-15 — Redoing one letter silently wipes the rest of the capture
+status: Done · completed: Claude · 2026-08-10 · refs: HANDWRITING.md §3.2 · estimate: M
+Note: found on device — "I taught it my handwriting and it said it captured all 26
+characters, but then it wrote in typeset and didn't memorise my handwriting."
+**All three reports were one bug.** `CalibrationSession.record` replaced unconditionally, and
+the repair path rewound to the *sheet* a character came from — so fixing one letter meant
+walking forward through every later sheet, and each `next()` recorded the blank canvas over
+what was already there. Capitals, digits and punctuation were wiped. The bank that survived
+held exactly the lowercase alphabet, which is why the summary read "26 characters".
+**And 26 letters is not enough to answer with.** Every answer the canned provider gives is
+`4`, a digit. `HandwritingInkRenderer` falls back per block, so a bank without digits draws
+every answer in typeset — indistinguishable from calibration never having worked. The summary
+said 26 and sounded like success.
+Verified the loss: with the guard removed the fixture bank drops 9 characters → **0**.
+Acceptance:
+- [x] Empty ink never replaces ink already recorded; `skipCurrent()` stays the deliberate clear
+- [x] `repair(_:)` appends one sheet holding exactly the characters still needed, and moves to it
+- [x] The summary lists rejected *and* missing together, with one button to write them all
+- [x] The summary says plainly that answers using missing characters are drawn in typeset
+- [x] Repairing merges into the existing capture rather than disturbing it
+- [ ] **Confirm on device**: calibrate, repair the gaps, ask — the answer is in your hand
+
 ### M2-16 — After calibrating, every Ask draws nothing
 status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
 Note: found on device — "after I did teach it your handwriting and asked AI it didn't
@@ -325,7 +347,8 @@ Acceptance:
 - [ ] If it does, log the estimated x-height and chosen frame per Ask and find where they diverge
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
-status: Ready · refs: HANDWRITING.md §3.2 · estimate: M
+status: Done · completed: Claude · 2026-08-10 · see M3-15
+status-was: Ready · refs: HANDWRITING.md §3.2 · estimate: M
 Note: found on device — "the teach-handwriting flow isn't too long, it's good, but when it
 said there are some characters I missed, it takes me through the whole flow again instead of
 just asking me to draw that character by itself. Ideally you should collect those characters
