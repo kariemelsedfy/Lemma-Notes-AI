@@ -329,7 +329,12 @@ public protocol InkEngine: AnyObject {
         private func synchronizeStrokeIDs() {
             let countDifference = canvasView.drawing.strokes.count - strokeIDs.count
             if countDifference > 0 {
-                strokeIDs.append(contentsOf: repeatElement(UUID(), count: countDifference))
+                // `repeatElement(UUID(), count:)` evaluates `UUID()` once, then repeats
+                // that one value. Loaded pages therefore gave every stroke the same ID:
+                // selecting any one stroke made every stroke on the page look selected,
+                // so old answers and distant lines corrupted the next Ask's size and
+                // placement (M3-20).
+                strokeIDs.append(contentsOf: (0..<countDifference).map { _ in UUID() })
             } else if countDifference < 0 {
                 strokeIDs.removeLast(-countDifference)
                 currentSelection = InkSelection(strokeIDs: currentSelection.strokeIDs.intersection(Set(strokeIDs)))

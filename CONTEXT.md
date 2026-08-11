@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 sizing fix corrected from device ink; awaiting retest**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 handwriting sizing and repeated Ask device-confirmed**
 
 ## Handover, 2026-08-10
 
@@ -20,13 +20,14 @@ gate: one missing lowercase letter disabled the whole bank even when it containe
 answer. The user confirmed that Ask now draws the `4` captured with Apple Pencil rather than
 the typeset glyph. M3-15, M3-16 and M2-16 are device-confirmed with it.
 
-Three follow-ups came from that same device run:
+The latest device runs resolved two earlier follow-ups and exposed one deeper interaction bug:
 
 | | | |
 |---|---|---|
-| **M2-17** | Handwritten and pre-calibration typeset sizing fixed in tests; physical-iPad confirmation pending | review |
-| **M3-18** | Repair sets paginate at 26; physical-Pencil sizing confirmation pending | review |
+| **M2-17** | Typeset and repeated handwritten answers scale correctly on the physical iPad | done |
+| **M3-18** | Repair sets paginate at 26 and are practical on the physical iPad | done |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
+| **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; device-confirmed | done |
 
 **M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
@@ -37,10 +38,21 @@ line metrics. A fresh device run still produced the same 7.2pt answer beside rou
 60pt, and 150pt maths. The real notebook showed why the diagonal test lied: Pencil wobble
 gave horizontal `+`/`=` strokes tiny nonzero heights, so the stroke-level estimator returned
 0.825/1.65/4.125pt and every selection hit the 8pt floor. The anchor now uses its visible
-line height as a lower bound, with a three-scale maths regression. The bottom-right position
-is still the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback.
-M2-22 now supplies the pixels and local transcript; M2-23 owns retaining recognition boxes
-and refining the anchor from content such as `=`.
+line height as a lower bound, with a three-scale maths regression. The user confirmed that
+the corrected typeset answer size now looks good.
+
+A later recording showed the first few handwritten answers working before subsequent answers
+became tiny, detached, and eventually huge. The cause was not rendering or the stored `4`:
+loaded page strokes all received the same UUID because `repeatElement(UUID(), count:)`
+evaluated UUID once. Selecting one stroke could therefore select every old stroke and answer
+on the page, corrupting the next context's scale and anchor. M3-20 generates one fresh UUID
+per loaded stroke and has an iOS regression around a two-stroke loaded drawing.
+The user confirmed the fresh accumulated-page build now works perfectly across repeated asks.
+
+Answer placement is now a decided two-selection interaction (ADR-016/M2-24): question first,
+then an explicitly marked allowed answer area. M2-23's inferred trailing-`=` anchor is
+superseded. This contract is documented but the UI/state-machine implementation is not in the
+M3-20 bug-fix build.
 
 The PNG supplied as M2-17 evidence exposed a separate export defect: it contained the ruled
 paper but no ink while its current on-device notebook package contained 63 strokes. The
@@ -82,17 +94,15 @@ shipping it.
 
 ## 1. Where we are
 
-**M3 is usable in the user's hand, but not ready for its panel until M2-17 is device-confirmed.**
-The blind panel (M3-10) is still the milestone gate and still needs a human, but there is no
-point running it while a calibrated user's answers come out in typeset.
+**M3 is usable in the user's hand; its size and repeated-Ask blockers are device-confirmed.**
+The blind panel (M3-10) remains the milestone gate and still needs a human.
 
 M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple Developer account. M3 built the whole handwriting path: a typeset fallback, an OCR legibility harness, calibration capture over seven guided sheets, guide-box segmentation, glyph-bank storage, the synthesizer, line breaking, the three §8 styles, and an automated similarity metric.
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: device-check M2-17 and M3-18, then M3-10; M2-23 is the flagged placement follow-up.** The
-panel judges handwriting similarity, and a consistently undersized glyph would bias that
-verdict.
+**Next action: implement M2-24's explicit answer-area selection, then run M3-10.** The answer
+region is now a user decision under ADR-016 rather than an inferred anchor.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
@@ -113,7 +123,7 @@ who has not read the code — because they have not.
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period, and flush immediately on notebook close or the app leaving the foreground |
 | Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
-| Selection UI | Arming Ask captures a lasso in the app's own coordinate space and renders it as a non-interactive overlay. PencilKit's own lasso is unusable for this — it exposes no selected-strokes API |
+| Selection UI | Today, arming Ask captures the question lasso in app-owned page coordinates. ADR-016 requires a distinct second lasso for the allowed answer area; M2-24 owns that not-yet-implemented transition. PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
@@ -122,7 +132,7 @@ who has not read the code — because they have not.
 | Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
 | Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster requests. The shipping Ask path renders an exact page snapshot to PNG on white and adds a local selected-area transcript/confidence. Optional whole-page `pageText` is still absent |
 | Provider boundary | `SpecProvider` receives ephemeral crop/neighborhood pixels plus the local selected-area reading and returns `ValidatedSpec`, so no provider can skip validation. Content may not be logged or retained. `MockProvider` supports latency, failure and corruption injection |
-| Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
+| Placement | Today, `PlacementEngine` resolves all four slots from the question anchor and occupancy grid. ADR-016/M2-24 will clip every search to the user-marked allowed answer area |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. In the canvas chrome, driven by the loop-and-dwell selection |

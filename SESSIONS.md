@@ -11,6 +11,68 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M3-20/M2-17 — accumulated-page retest passed
+
+The user ran the fresh physical-iPad build against the repeated-Ask scenario and reported that
+it is working perfectly. This closes both M3-20's loaded-stroke identity defect and M2-17's
+remaining handwritten-size verification; the pre-calibration typeset size and 26-character
+repair pages had already been confirmed in the preceding run.
+
+The next implementation task is M2-24: after selecting the question, prompt for a distinct
+allowed answer area as decided in ADR-016. That UI is not part of the confirmed build.
+
+**Verification:** fresh physical-iPad accumulated-page repeated Ask ✅ · human-confirmed ✅
+
+## 2026-08-11 · Codex · M3-20 — fresh identity-fix build is on the iPad
+
+The manual-test handoff used a brand-new source directory, regenerated workspace, and
+brand-new DerivedData directory. OneDrive timed out both a normal `git clone` and a direct
+source-tree copy, so the fresh source directory was populated from the isolated mirror that
+had just compiled and passed the focused regression. SHA-1 checks confirmed the two changed
+Swift files matched the clean committed checkout byte for byte before generation.
+
+The physical-device build signed successfully, installed over `edu.bowdoin.margin`, and
+launched. Installing over the app preserved the user's notebooks and handwriting calibration;
+there was no uninstall or data reset. Xcode was opened on the regenerated workspace at
+`/private/tmp/lemma-manual-source.DhU74a/Margin.xcworkspace`.
+
+**Verification:** fresh source directory ✅ · regenerated workspace ✅ · new DerivedData
+`/private/tmp/lemma-manual-derived.Sw1PrC` ✅ · signed physical build ✅ · installed and
+launched ✅ · app data preserved ✅ · human accumulated-page comparison pending
+
+## 2026-08-11 · Codex · M3-20 — loaded strokes shared one identity
+
+The user's recording was the crucial clue: handwritten answers worked on a sparse page, then
+became tiny and detached as accepted answers accumulated, and a later narrow selection made a
+huge distorted `4`. With the user's prior authorization, I copied only the affected notebook
+and glyph bank to a private temporary directory for local read-only measurement. Nothing was
+committed, uploaded, or logged as content. The bank's single `4` sample was healthy. The saved
+page instead contained four near-identical tiny generated glyphs and one enormous one.
+
+Replaying the current context/renderer code against isolated source-stroke groups produced
+correct proportional answers. Replaying selections contaminated with old distant strokes
+reproduced the saved tiny geometry and detached placement. The identity path explained why:
+when a fresh `PencilKitInkEngine` loaded an existing drawing, `synchronizeStrokeIDs()` appended
+`repeatElement(UUID(), count:)`. Swift evaluates that UUID expression once, so every loaded
+stroke received the same ID. Selecting any one matching stroke made the context builder admit
+the entire accumulated page.
+
+The adapter now creates a fresh UUID for each loaded stroke. An iOS regression externally
+loads two strokes, verifies two identities, lassos one, and requires exactly one selection.
+The test was red by construction before the fix (`Set(ids).count == 1`) and passes afterward.
+The full package/build suite is green from the isolated source mirror; the focused iOS test
+passes on an iPad simulator. The original OneDrive checkout again timed out while Xcode and
+swift-format read unrelated files, so those same checks were repeated successfully off-drive.
+
+The user also made placement a product decision: after the question lasso, Ask must prompt for
+a second user-marked allowed answer area. ADR-016 records the two-region contract and M2-24
+replaces M2-23's inferred trailing-`=` anchor. That interaction is intentionally separate from
+this narrow identity fix and is not present in this build.
+
+**Verification:** measured device fixture/replay ✅ · focused iOS regression 1/1 ✅ ·
+`swift test --package-path Packages/InkCore` 31/31 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 129 files ✅ · fresh signed device handoff pending
+
 ## 2026-08-11 · Codex · M2-17 — real maths strokes exposed the 8pt sizing floor
 
 The user's fresh physical-device retest disproved the earlier fix: small, normal, and large

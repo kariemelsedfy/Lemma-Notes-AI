@@ -92,13 +92,25 @@ The model must respond with JSON matching this schema, and nothing else. Use str
 
 ## 4. Anchor and placement
 
-The app resolves `placement` to a rectangle. This is the part users will judge hardest — a correct answer in the wrong place feels broken.
+After selecting the question, the user marks a second region in page space: the allowed
+answer area. The two selections are never conflated. The question selection supplies content,
+local writing size and style; the answer-area selection supplies the hard placement boundary.
+The app resolves `placement` to a rectangle wholly inside that boundary. If the answer cannot
+fit without overlapping existing ink, ask the user to mark a different area rather than
+shrinking it below the selected writing size or placing it elsewhere. See ADR-016.
 
-**`atAnchor`:** find the trailing `=` (or the last glyph) in the selection via stroke geometry + OCR box. The anchor is the point just right of it, on that line's baseline, with the local x-height. If the space to the right of the anchor on that line is free for the estimated width → place it there. Otherwise fall through to `nearestFree`.
+**`atAnchor`:** place at the leading baseline of the allowed answer area, matching the local
+x-height from the question selection. It no longer infers a location from a trailing `=`.
 
-**`belowSelection`:** first free band beneath the selection, left-aligned to the selection's left edge (or to the detected indentation of the last line, which matters for derivations). Line height = measured local line spacing, not a constant.
+**`belowSelection`:** first free band inside the allowed answer area. Line height = measured
+local line spacing from the question selection, not a constant.
 
-**`nearestFree`:** occupancy-grid search — down first, then right, then next page. Never overlap existing ink. If nothing fits within one screen height, offer "insert space here" (push subsequent content down) rather than cramming.
+**`rightOfSelection`:** first free band inside the allowed answer area, preferring left-to-right
+flow when its shape permits it.
+
+**`nearestFree`:** occupancy-grid search inside the allowed answer area — down first, then
+right. Never overlap existing ink and never search another part of the page or the next page.
+If nothing fits, ask for another area rather than cramming.
 
 **Estimating width before synthesis:** the glyph bank knows each glyph's advance width, so the renderer can measure a string in O(n) without laying out strokes. Measure, then place, then synthesize.
 
