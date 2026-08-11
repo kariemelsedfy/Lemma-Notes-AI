@@ -25,7 +25,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M3-18 — Repair sheets make missed characters too small to write
+status: In progress · claimed: Codex · 2026-08-10 · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
+Note: device-confirmed after M3-17. A calibration captured 26 characters and put every
+remaining character on one repair sheet. The guide boxes became too small for practical
+Apple Pencil input. The user set the product rule: **at most 26 repair characters per
+sheet**. The referenced screenshot was not available in the workspace, so reproduce from
+the reported character count and an oversized repair set.
+Acceptance:
+- [ ] A repair sheet contains at most 26 characters
+- [ ] Larger repair sets paginate without dropping or duplicating characters
+- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass
+- [ ] Progress makes it clear when more than one repair sheet remains
+- [ ] Captures from every repair sheet merge into the existing bank
 
 ## Review
 
@@ -388,20 +400,6 @@ Acceptance:
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
-
-### M3-18 — Repair sheets make missed characters too small to write
-status: Ready · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
-Note: device-confirmed after M3-17. A calibration captured 26 characters and put every
-remaining character on one repair sheet. The guide boxes became too small for practical
-Apple Pencil input. The user set the product rule: **at most 26 repair characters per
-sheet**. The referenced screenshot was not available in the workspace, so reproduce from
-the reported character count and an oversized repair set.
-Acceptance:
-- [ ] A repair sheet contains at most 26 characters
-- [ ] Larger repair sets paginate without dropping or duplicating characters
-- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass
-- [ ] Progress makes it clear when more than one repair sheet remains
-- [ ] Captures from every repair sheet merge into the existing bank
 
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Ready · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
