@@ -144,7 +144,8 @@ final class AskPipeline {
         var grid = OccupancyGrid(pageBounds: CGRect(origin: .zero, size: pageSize))
         for stroke in pageStrokes { grid.add(stroke: stroke) }
 
-        let result = PlacementEngine(page: CGRect(origin: .zero, size: pageSize), occupancy: grid)
+        let page = CGRect(origin: .zero, size: pageSize)
+        let result = PlacementEngine(page: page, allowedArea: page, occupancy: grid)
             .place(spec, context: context, pageStrokes: pageStrokes)
         for (index, placement) in result.placements.enumerated() {
             let blockDiagnostic =

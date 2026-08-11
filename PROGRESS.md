@@ -477,14 +477,16 @@ Acceptance:
 - [ ] A fresh physical-iPad run confirms the two selections feel distinct and predictable
 
 ### M2-24A — Constrain placement to the user-marked answer area
-status: In progress · claimed: Codex · 2026-08-11 · depends: M3-20 · refs: AI_PIPELINE.md §4, ADR-016 · estimate: M
+status: Done · completed: Codex · 2026-08-11 · depends: M3-20 · refs: AI_PIPELINE.md §4, ADR-016 · estimate: M
 Note: pure placement and pipeline contract only. The app interaction that captures the area
-is M2-24B, keeping both changes below the 400-line PR limit.
+is M2-24B, keeping both changes below the 400-line PR limit. The placement engine now
+requires a page-space allowed rectangle, clips it to the page, searches only within it,
+and reports blocks that cannot fit without changing the question-derived writing size.
 Acceptance:
-- [ ] Every non-mark block is wholly inside the supplied page-space answer rectangle
-- [ ] Occupied and multi-block searches remain inside that rectangle
-- [ ] A block that cannot fit is unplaced without shrinking or escaping
-- [ ] Tests use visibly different question and answer bounds
+- [x] Every non-mark block is wholly inside the supplied page-space answer rectangle
+- [x] Occupied and multi-block searches remain inside that rectangle
+- [x] A block that cannot fit is unplaced without shrinking or escaping
+- [x] Tests use visibly different question and answer bounds
 
 ### M2-24B — Capture and present the second Ask lasso
 status: Ready · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M

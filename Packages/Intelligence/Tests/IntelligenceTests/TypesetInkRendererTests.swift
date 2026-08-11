@@ -134,7 +134,7 @@ final class TypesetInkRendererTests: XCTestCase {
         }
     }
 
-    func testTheWholePipelineProducesInkAtThePlacedAnchor() throws {
+    func testTheWholePipelineProducesInkInsideTheAllowedArea() throws {
         // The M2 loop end to end, minus the gesture and the canvas: ink on a page, a
         // lasso, a canned spec, a placement, and strokes that land where placement said.
         let pageStrokes = [Self.stroke(in: CGRect(x: 100, y: 100, width: 220, height: 26))]
@@ -161,7 +161,9 @@ final class TypesetInkRendererTests: XCTestCase {
             )
         )
 
-        let result = PlacementEngine(page: CGRect(x: 0, y: 0, width: 1668, height: 2388), occupancy: grid)
+        let page = CGRect(x: 0, y: 0, width: 1668, height: 2388)
+        let answerArea = CGRect(x: 700, y: 500, width: 250, height: 200)
+        let result = PlacementEngine(page: page, allowedArea: answerArea, occupancy: grid)
             .place(spec, context: context, pageStrokes: pageStrokes)
         let placement = try XCTUnwrap(result.placements.first)
         let ink = try TypesetInkRenderer().strokes(for: placement, style: context.style, seed: 0)
@@ -177,11 +179,8 @@ final class TypesetInkRendererTests: XCTestCase {
             "Placement and typeset rendering must preserve the selected writing's size: \(drawn)"
         )
         XCTAssertLessThanOrEqual(drawn.height, selectedHeight * 1.05)
-        XCTAssertGreaterThan(drawn.minX, context.anchor.point.x)
-        // The baseline sits a descender above the frame's bottom so a `g` stays inside the
-        // rectangle placement reserved, which puts a descender-free string slightly high.
-        XCTAssertLessThanOrEqual(drawn.maxY, context.anchor.baseline + 1)
-        XCTAssertGreaterThan(drawn.maxY, context.anchor.baseline - 12)
+        XCTAssertTrue(answerArea.contains(drawn))
+        XCTAssertFalse(context.selectionBounds.intersects(drawn))
     }
 
     // MARK: - Fixtures
