@@ -303,7 +303,7 @@ Acceptance:
 - [x] Export failures display a localized, recoverable error
 
 ### M1-07C — Export uses the notebook snapshot from before the current edits
-status: Ready · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
+status: In progress · claimed: Codex · 2026-08-11 · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
 Note: reported indirectly by the M2-17 evidence file. The shared PNG contained ruled paper
 but no ink, while the same on-device notebook package held 63 current strokes. The export
 toolbar closes over the `StoredDocument` loaded before `PageDrawingStore` edits and does not
