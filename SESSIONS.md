@@ -11,6 +11,29 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-17 — manual tests always get an empty DerivedData build
+
+The user made the test protocol explicit: every request for manual verification must begin
+with a genuinely fresh Xcode build. This is now a repository rule in `AGENTS.md` §8, the
+first instruction in `DEVICE_SESSION.md` §0, and an environment invariant in `CONTEXT.md`
+§4. “Fresh” means regenerate with the signing configuration, create a brand-new DerivedData
+directory, build the current branch for the connected device, install that exact `.app`,
+launch it, and open the regenerated workspace in Xcode before handing the test to the human.
+
+The rule deliberately separates build state from app-data state. Installing over the app
+keeps notebooks and the on-device glyph bank. Uninstalling is reserved for tests that
+explicitly need clean app data, and the human must be warned before those local records are
+erased.
+
+For this sizing retest I repeated the entire sequence after documenting it. The new build
+used `/private/tmp/lemma-manual-test-derived.PELWbE`, signed successfully, installed over
+`edu.bowdoin.margin`, and launched on the connected iPad mini. Xcode was opened on the
+regenerated workspace. No earlier `.app` or DerivedData directory was reused.
+
+**Verification:** `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 129 files
+✅ · clean signed physical-device build ✅ · exact artifact installed and launched ✅ · app
+data preserved ✅ · manual size comparison pending
+
 ## 2026-08-11 · Codex · M2-17 — the screenshot was from before calibration
 
 The user's latest detail split one apparent sizing bug into two: the tiny `4` in the new

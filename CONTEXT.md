@@ -156,7 +156,7 @@ who has not read the code — because they have not.
 
 ## 4. Environment notes
 
-**Three traps in this working copy:**
+**Four traps in this working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
@@ -172,6 +172,13 @@ who has not read the code — because they have not.
    `cannot infer type` errors in `Handwriting`. The source was fine — `rm -rf` the
    package's `.build` and the same commit builds clean and passes 90 tests. **Before
    believing a type-inference error that CI does not also show, clear `.build` and retry.**
+4. **Every manual-test handoff requires a fresh physical-device build.** Regenerate with the
+   signing configuration, use a brand-new DerivedData directory, build the current branch,
+   install that exact artifact, launch it, and open the regenerated workspace in Xcode before
+   asking the human to test. Never reuse an earlier `.app` or incremental device build.
+   Installing over the app preserves notebooks and the glyph bank; uninstall only when clean
+   app data is explicitly required, and warn that local data will be erased. This is also
+   recorded in `AGENTS.md` §8 and `DEVICE_SESSION.md` §0.
 
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.

@@ -15,6 +15,17 @@ measured, not how it felt, except where the task explicitly asks how it felt.
 
 ## 0. Before you start
 
+**No manual test starts from a reused build.** Before each individual handoff to the human,
+regenerate the workspace, create a new DerivedData directory, build the current branch for
+the connected iPad, install that exact artifact, launch it, and open the regenerated
+workspace in Xcode. Reusing an earlier `.app`, Xcode's previous DerivedData, or an incremental
+device build is not an acceptable shortcut, even when only documentation changed.
+
+Installing the new build over the current app preserves notebooks and handwriting
+calibration. Uninstall first only when the test explicitly needs a clean app-data state, and
+warn that the uninstall deletes local notebooks and the glyph bank. “Fresh build” does not
+silently mean “erase user data.”
+
 **Set a signing team, once.** A device build will not sign without one. Find your team ID
 in Xcode → Settings → Accounts → your Apple ID → the ID column beside your team (a free
 Apple ID shows a "Personal Team"). Then:

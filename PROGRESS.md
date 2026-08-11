@@ -25,22 +25,22 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M2-17 — The answer's size and placement do not track what was asked about
-status: In progress · claimed: Codex · 2026-08-11 · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: reopened to codify and perform the user's required fresh-build protocol before every
-manual device test: regenerate, use a brand-new DerivedData directory, rebuild, reinstall,
-launch, and open Xcode. Preserve app data unless the test explicitly requires a clean state.
+_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
 
-Previous note: the 2026-08-11 device retest found a separate pre-calibration regression: a
-26pt selection produced a 17.6pt typeset `4` (68%). The nominal frame now reserves 0.98×
-width per character and 1.52× line height; the same app fixture must render at least 25.48pt
-(98%) and stay inside the placed frame. Awaiting a fresh physical-iPad comparison.
+## Review
+
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: the user's fresh-build requirement is now mandatory in `AGENTS.md` §8,
+`DEVICE_SESSION.md` §0, and `CONTEXT.md` §4. This handoff regenerated with signing, built
+from the current branch in a new `/private/tmp` DerivedData directory, installed that exact
+artifact over the app, launched it, and opened Xcode. App data was preserved. The sizing
+fixture still requires a 26pt selection's typeset `4` to render at 98–105%; awaiting the
+physical-iPad comparison.
 Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
 - [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
-
-## Review
 
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M

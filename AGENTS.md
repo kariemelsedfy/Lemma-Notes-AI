@@ -176,6 +176,23 @@ swift test --package-path Packages/<Module>
 
 Requires: macOS with the current Xcode (see BUSINESS.md §5 for the minimum SDK gate), an iPad simulator, and — for anything touching Pencil gestures — a physical iPad with an Apple Pencil. **Pencil interactions cannot be validated in the simulator.** If your task depends on real Pencil input, implement it, write the tests you can, and mark it `needs-device-verification` in `PROGRESS.md` rather than claiming it works.
 
+### Manual device-test builds
+
+**Every time a human is asked to test manually, prepare a genuinely fresh Xcode build first.**
+Do not reuse DerivedData, an earlier `.app`, or an incremental device build. The required
+handoff sequence is:
+
+1. Regenerate the workspace with the intended signing configuration.
+2. Create a brand-new DerivedData directory (prefer `mktemp -d` under `/private/tmp`).
+3. Build the current branch for the connected physical device with that directory passed to
+   `xcodebuild -derivedDataPath`.
+4. Install that exact newly built `.app`, launch it, and open the regenerated workspace in
+   Xcode before telling the human to test.
+
+Installing over the existing app preserves notebooks and the glyph bank. Only uninstall the
+app when the test explicitly requires clean app state, and tell the human beforehand that
+uninstalling clears local data. A fresh build and a fresh app-data state are separate things.
+
 ---
 
 ## 9. If you get stuck
