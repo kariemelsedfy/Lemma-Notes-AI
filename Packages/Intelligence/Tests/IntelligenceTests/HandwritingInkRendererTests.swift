@@ -16,6 +16,26 @@ final class HandwritingInkRendererTests: XCTestCase {
         XCTAssertFalse(strokes.isEmpty)
     }
 
+    func testGlyphSizeTracksTheSelectedWritingsXHeightInsteadOfCalibrationSize() throws {
+        let renderer = HandwritingInkRenderer(bank: try Self.bank(letters: "s"))
+        let smallStyle = Self.style(xHeight: 18)
+        let largeStyle = Self.style(xHeight: 36)
+        let smallPlacement = Self.placement(
+            content: .inline(SpecRun(kind: .text, value: "s")),
+            frame: CGRect(x: 40, y: 60, width: 100, height: smallStyle.xHeight * 1.4)
+        )
+        let largePlacement = Self.placement(
+            content: .inline(SpecRun(kind: .text, value: "s")),
+            frame: CGRect(x: 40, y: 60, width: 200, height: largeStyle.xHeight * 1.4)
+        )
+
+        let small = try renderer.strokes(for: smallPlacement, style: smallStyle, seed: 1)
+        let large = try renderer.strokes(for: largePlacement, style: largeStyle, seed: 1)
+        let scale = InkLineGrouping.bounds(of: large).height / InkLineGrouping.bounds(of: small).height
+
+        XCTAssertEqual(scale, 2, accuracy: 0.05)
+    }
+
     func testNeatDiffersFromNaturalButStaysInTheSameFrame() throws {
         let bank = try Self.bank()
         let placement = Self.placement(text: "sum")
@@ -114,6 +134,18 @@ final class HandwritingInkRendererTests: XCTestCase {
         meanForce: 0.55,
         strokeWidth: 3
     )
+
+    private static func style(xHeight: CGFloat) -> StyleStats {
+        StyleStats(
+            xHeight: xHeight,
+            slant: style.slant,
+            lineSpacing: xHeight * 1.7,
+            baselineDrift: style.baselineDrift,
+            meanVelocity: style.meanVelocity,
+            meanForce: style.meanForce,
+            strokeWidth: style.strokeWidth
+        )
+    }
 
     private static func placement(text: String) -> BlockPlacement {
         placement(

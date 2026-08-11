@@ -77,14 +77,15 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
             // Measured against **one line's height**, not the block's. `Synthesizer`
             // scales text to fit the box it is given, so measuring inside the full block
             // returns every word at several times its drawn width.
-            let advance = LineBreaker.lineAdvance(style: bank.style.stats, frame: frame)
-            let lines = try LineBreaker.lines(for: text, in: frame, style: bank.style.stats) { candidate in
+            let advance = LineBreaker.lineAdvance(style: style, frame: frame)
+            let lines = try LineBreaker.lines(for: text, in: frame, style: style) { candidate in
                 (try? Synthesizer.strokes(
                     for: candidate,
                     in: CGRect(x: 0, y: 0, width: 100_000, height: advance),
                     bank: bank,
                     variation: variation,
-                    seed: seed
+                    seed: seed,
+                    targetXHeight: style.xHeight
                 )).map { InkLineGrouping.bounds(of: $0).width } ?? 0
             }
             return try lines.enumerated().flatMap { index, line in
@@ -93,7 +94,8 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                     in: line.frame,
                     bank: bank,
                     variation: variation,
-                    seed: seed &+ UInt64(index)
+                    seed: seed &+ UInt64(index),
+                    targetXHeight: style.xHeight
                 )
             }
         } catch Synthesizer.Error.missingGlyphs {
@@ -139,7 +141,8 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                 in: lineFrame,
                 bank: bank,
                 variation: variation,
-                seed: seed &+ UInt64(index)
+                seed: seed &+ UInt64(index),
+                targetXHeight: style.xHeight
             )
         }
     }

@@ -37,12 +37,16 @@ public enum Synthesizer {
     }
 
     /// Renders `text` into `frame`, sitting on its baseline.
+    ///
+    /// - Parameter targetXHeight: The local writing size to match. When omitted, direct
+    ///   synthesis uses the size recorded during calibration.
     public static func strokes(
         for text: String,
         in frame: CGRect,
         bank: GlyphBank,
         variation: Variation = .natural,
-        seed: UInt64 = 0
+        seed: UInt64 = 0,
+        targetXHeight: CGFloat? = nil
     ) throws -> [InkStroke] {
         guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
         let missing = bank.missingCharacters(in: text)
@@ -52,7 +56,7 @@ public enum Synthesizer {
         let style = bank.style.stats
         var generator = SeededGenerator(seed: seed)
         let chosen = select(text, from: bank, using: &generator)
-        let metrics = layout(chosen, style: style, in: frame)
+        let metrics = layout(chosen, style: style, targetXHeight: targetXHeight, in: frame)
 
         var strokes: [InkStroke] = []
         var clock: TimeInterval = 0
@@ -149,7 +153,12 @@ public enum Synthesizer {
         let origin: CGPoint
     }
 
-    private static func layout(_ chosen: [Chosen], style: StyleStats, in frame: CGRect) -> Metrics {
+    private static func layout(
+        _ chosen: [Chosen],
+        style: StyleStats,
+        targetXHeight: CGFloat?,
+        in frame: CGRect
+    ) -> Metrics {
         let letterGap: CGFloat = 0.06
         let totalAdvance = chosen.reduce(0) { $0 + $1.advance + letterGap }
         // How far the tallest ascender rises and the deepest descender falls, in x-heights.
@@ -159,7 +168,12 @@ public enum Synthesizer {
         // Fit on whichever axis binds, so nothing leaves the rectangle placement reserved.
         let byWidth = totalAdvance > 0 ? frame.width / totalAdvance : .greatestFiniteMagnitude
         let byHeight = (rise + fall) > 0 ? frame.height / (rise + fall) : .greatestFiniteMagnitude
-        let preferred = style.xHeight > 0 ? style.xHeight : frame.height * 0.5
+        // The bank records how large the writer happened to write on the calibration
+        // sheet. It describes the source sample, not the size of every future answer.
+        // A caller rendering beside page ink supplies that ink's local x-height; direct
+        // synthesis keeps the bank measurement as its backwards-compatible default.
+        let requested = targetXHeight ?? style.xHeight
+        let preferred = requested > 0 ? requested : frame.height * 0.5
         let xHeight = min(preferred, byWidth, byHeight)
 
         return Metrics(

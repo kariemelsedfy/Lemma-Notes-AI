@@ -1,6 +1,13 @@
+import Handwriting
 import InkCore
 import Intelligence
+import OSLog
 import SwiftUI
+
+private let answerPlacementLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Margin",
+    category: "AnswerPlacement"
+)
 
 /// Runs one Ask from a lasso to placed ink.
 ///
@@ -96,22 +103,53 @@ final class AskPipeline {
         pageStrokes: [InkStroke],
         pageSize: CGSize
     ) {
+        // Content-free device evidence for M2-17. These measurements identify whether
+        // local handwriting size was lost during selection, placement, or rendering
+        // without logging the selected ink, its transcription, or the answer.
+        let usableXHeight = PlacementEngine.usableXHeight(for: context)
+        let sizeDiagnostic =
+            "Ask size anchorXHeight=\(context.anchor.xHeight) "
+            + "styleXHeight=\(context.style.xHeight) usableXHeight=\(usableXHeight)"
+        answerPlacementLogger.info("\(sizeDiagnostic, privacy: .public)")
         var grid = OccupancyGrid(pageBounds: CGRect(origin: .zero, size: pageSize))
         for stroke in pageStrokes { grid.add(stroke: stroke) }
 
         let result = PlacementEngine(page: CGRect(origin: .zero, size: pageSize), occupancy: grid)
             .place(spec, context: context, pageStrokes: pageStrokes)
+        for (index, placement) in result.placements.enumerated() {
+            let blockDiagnostic =
+                "Ask block index=\(index) measuredWidth=\(placement.frame.width) "
+                + "measuredHeight=\(placement.frame.height) frameX=\(placement.frame.minX) "
+                + "frameY=\(placement.frame.minY) usedFallback=\(placement.usedFallback)"
+            answerPlacementLogger.info("\(blockDiagnostic, privacy: .public)")
+        }
 
+        // Placement may prefer the last line's anchor measurement over the selection-wide
+        // style estimate. Rendering must use the same winning value or the reserved frame
+        // and the generated glyphs disagree again.
+        let renderingStyle = StyleStats(
+            xHeight: usableXHeight,
+            slant: context.style.slant,
+            lineSpacing: context.style.lineSpacing,
+            baselineDrift: context.style.baselineDrift,
+            meanVelocity: context.style.meanVelocity,
+            meanForce: context.style.meanForce,
+            strokeWidth: context.style.strokeWidth
+        )
         let ink: [InkStroke]
         do {
             ink = try result.placements.flatMap { placement in
-                try renderer.strokes(for: placement, style: context.style, seed: 0)
+                try renderer.strokes(for: placement, style: renderingStyle, seed: 0)
             }
         } catch {
             // The answer was placed but cannot be drawn — an honest failure, not blank ink.
             model.apply(.fail(.invalidSpec))
             return
         }
+        let renderedBounds = InkLineGrouping.bounds(of: ink)
+        let inkDiagnostic =
+            "Ask ink renderedWidth=\(renderedBounds.width) renderedHeight=\(renderedBounds.height)"
+        answerPlacementLogger.info("\(inkDiagnostic, privacy: .public)")
 
         let usedMissingGlyphFallback =
             (renderer as? HandwritingInkRenderer).map { handwritingRenderer in
