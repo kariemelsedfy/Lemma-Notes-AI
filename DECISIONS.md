@@ -188,3 +188,28 @@ Tracked in `CONTEXT.md` §5 (Q1–Q8). Promote each to an ADR here when resolved
 The cost: users who never calibrate never see the feature the product is named for, and "the AI writes in your handwriting" is not true for them until they do. That makes the prompt to calibrate — where it appears, how often — a real design problem rather than a settings row. Filed as M3-13.
 
 **Revisit when.** Telemetry shows a large share of users never calibrating, or first-session retention suggests the opposite gate would be better.
+
+---
+
+## ADR-015 — Provider requests carry ephemeral selection pixels and a local reading
+**Status:** Accepted · 2026-08-10
+
+**Context.** `SpecProvider` received geometry but no pixels even though `AI_PIPELINE.md` §1
+makes the crop the primary handwriting signal. A provider cannot reliably reconstruct the
+selected expression from normalized strokes, and the canned `4` concealed that limitation.
+
+**Decision.** The shipping Ask path snapshots the page, rasterizes the capped crop and
+neighborhood on white, and reads the crop with on-device Vision before calling a provider.
+`SpecRequest` carries those images and the best-effort transcript/confidence ephemerally.
+Providers must neither log nor retain content. Pixels affect the cache digest; only the digest,
+sizes, timings, tier and outcome may be logged. The fields remain optional for pure state-machine
+and schema tests, while the shipping pipeline always populates them.
+
+**Consequences.** Future providers can see what the user actually selected and can combine
+visual, stroke-order and local-reading signals. Requests cost up to the existing 1.5MP/0.5MP
+caps and local Vision adds measured latency (0.34s for the arithmetic fixture on the development
+Mac). The OCR transcript is advisory: an unreadable result has confidence zero and never replaces
+the primary crop. Whole-page OCR remains out of scope.
+
+**Revisit when.** M4 defines real provider transports, measurements justify optional whole-page
+text, or a provider needs a stricter non-optional payload type at the network boundary.

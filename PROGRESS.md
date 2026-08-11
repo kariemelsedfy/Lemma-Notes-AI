@@ -29,6 +29,35 @@ _(empty — nothing is claimed. Pick the highest-priority unblocked task in **Re
 
 ## Review
 
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: the user's fresh-build requirement is now mandatory in `AGENTS.md` §8,
+`DEVICE_SESSION.md` §0, and `CONTEXT.md` §4. This handoff regenerated with signing, built
+from the current branch in a new `/private/tmp` DerivedData directory, installed that exact
+artifact over the app, launched it, and opened Xcode. App data was preserved. The sizing
+fixture still requires a 26pt selection's typeset `4` to render at 98–105%; awaiting the
+physical-iPad comparison.
+Acceptance:
+- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
+- [x] The cause named with failing-test and simulator evidence
+- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
+
+### M2-22 — The selected-area image never reaches anything that can read it
+status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
+the shipping `AskPipeline` now renders both from an exact `PKDrawing` snapshot. Vision reads
+the flattened crop locally with language correction disabled so literal math is preserved;
+providers receive both PNGs plus the best-effort transcript/confidence only for the request
+lifetime. A real Vision fixture reads `2+2=4` correctly in 0.34s on the development Mac.
+The app still uses `CannedSpecProvider`, so this changes what future providers can reason
+over, not the hardcoded answer it visibly returns today. PR publication awaits GitHub login.
+Acceptance:
+- [x] The lasso crop is rasterized from the actual page drawing and flattened on white
+- [x] The bounded neighborhood is rasterized at its requested scale
+- [x] On-device recognition supplies a best-effort selected-area transcript and confidence
+- [x] The provider request carries the pixels/transcript without logging or retaining them
+- [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
+
 ### M3-18 — Repair sheets make missed characters too small to write
 status: Review · implemented: Codex · 2026-08-10 · needs-device-verification · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
 Note: the repair flow now deduplicates the requested characters, chunks them in order at 26,
@@ -43,32 +72,6 @@ Acceptance:
 - [ ] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests; device confirmation pending
 - [x] Progress makes it clear when more than one repair sheet remains
 - [x] Captures from every repair sheet merge into the existing bank
-
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
-Note: the 2026-08-11 device retest found a separate pre-calibration regression: a 26pt
-selection produced a 17.6pt typeset `4` (68%). The renderer was fitting Helvetica's full
-line metrics into a nominal handwriting frame whose 0.62× advance and 1.4× ink box were both
-too small. The nominal frame now reserves 0.98× width per character and 1.52× line height;
-the same app fixture must render at least 25.48pt (98%) and stay inside the placed frame.
-The calibrated-handwriting regression and content-wrapping suite remain green. Awaiting a
-fresh physical-iPad comparison before closing the blocker.
-
-Previous note: a failing measurement finally reproduced the captured-handwriting size defect.
-Doubling selected x-height from 18 to 36 left the handwritten glyph at exactly 1× because
-`Synthesizer.layout` capped
-it at the x-height stored during calibration. It now accepts the selected writing's local
-x-height, and `AskPipeline` feeds rendering the same usable measurement that placement used.
-The package regression changed from 1× to 2×. The app fixture selects 26pt ink and now draws
-a 24.4pt handwritten answer (94%; width fit accounts for the remainder). Privacy-safe logs
-record anchor/style/usable x-height, block frame, fallback, and final ink bounds for the
-required device comparison. The bottom-right position is the current `.atAnchor` policy—one
-word gap after the last selected glyph on its baseline—and remains flagged for M2-22's OCR
-anchor refinement rather than being treated as the sizing bug.
-Acceptance:
-- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
-- [x] The cause named with failing-test and simulator evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
 
 ## Done
 
@@ -404,19 +407,6 @@ Not unit-tested, and deliberately so: SwiftUI view identity is not observable fr
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
 
-### M2-22 — The selected-area image never reaches anything that can read it
-status: Ready · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
-Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
-`SelectionRasterizer` can produce the PNGs, but the shipping `AskPipeline` never calls it.
-The provider therefore receives normalized stroke geometry and no visual or OCR reading of
-what the user selected. The canned provider hides this by always answering `4`.
-Acceptance:
-- [ ] The lasso crop is rasterized from the actual page drawing and flattened on white
-- [ ] The bounded neighborhood is rasterized at its requested scale
-- [ ] On-device recognition supplies a best-effort selected-area transcript and confidence
-- [ ] The provider request carries the pixels/transcript without logging or retaining them
-- [ ] Tests exercise the shipping Ask path, not a reconstructed rasterization path
-
 ### M3-19 — Learn extra glyph variants from the user's ordinary writing
 status: Ready · future · depends: M2-22, M3-08C · refs: HANDWRITING.md §4.1 · estimate: L
 Note: requested direction. When a high-confidence selection contains a user-written `2`
@@ -431,6 +421,20 @@ Acceptance:
 - [ ] Per-character samples are deduplicated and capped with a documented replacement policy
 - [ ] Synthesis actually rotates among variants deterministically for a fixed seed
 - [ ] The glyph bank still has no upload path
+
+### M2-23 — Refine answer placement from the recognized selection
+status: Ready · depends: M2-22 · refs: AI_PIPELINE.md §4 · estimate: M
+Note: the reported bottom-right answer position is the current geometry-only `.atAnchor`
+policy: one word gap after the last selected stroke on its estimated baseline. M2-22 now
+provides a transcript, but deliberately does not pretend its discarded Vision boxes can
+locate a trailing `=`. Preserve per-observation boxes, map them from crop to page coordinates,
+and refine only when the recognition is confident; otherwise keep today's reversible anchor.
+Acceptance:
+- [ ] A confident trailing `=` anchors the answer after that glyph on its baseline
+- [ ] Vision crop boxes map back to page coordinates with crop padding and scale covered
+- [ ] Low-confidence or boxless recognition keeps the geometry anchor unchanged
+- [ ] Placement remains on-page and occupancy fallback still wins when the line is full
+- [ ] Physical-iPad comparison covers tight and loose lassos around the same expression
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15

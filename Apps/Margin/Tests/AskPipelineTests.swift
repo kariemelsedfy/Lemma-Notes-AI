@@ -18,6 +18,36 @@ final class AskPipelineTests: XCTestCase {
         XCTAssertTrue(harness.engine.strokes.isEmpty, "Nothing may reach the page before accept")
     }
 
+    func testShippingAskRasterizesTheActualPageAtBothComputedRegions() async throws {
+        let harness = try Harness()
+
+        try await harness.runToDecision()
+
+        let context = try XCTUnwrap(
+            SelectionContextBuilder.build(
+                strokes: harness.input.strokes,
+                loop: harness.input.loop,
+                pageSize: harness.input.pageSize
+            )
+        )
+        XCTAssertEqual(harness.pageEngine.requests.map(\.bounds), [context.crop.bounds, context.neighborhood.bounds])
+        XCTAssertEqual(harness.pageEngine.requests.map(\.scale), [context.crop.scale, context.neighborhood.scale])
+    }
+
+    func testProviderReceivesPixelsAndBestEffortSelectedAreaReading() async throws {
+        let reading = SelectionReading(transcript: "2+2=", confidence: 0.91)
+        let provider = RequestCapturingProvider()
+        let harness = try Harness(provider: provider, reading: reading)
+
+        try await harness.runToDecision()
+
+        let capturedRequest = await provider.request
+        let request = try XCTUnwrap(capturedRequest)
+        XCTAssertFalse(try XCTUnwrap(request.rasterizedSelection).crop.data.isEmpty)
+        XCTAssertFalse(try XCTUnwrap(request.rasterizedSelection).neighborhood.data.isEmpty)
+        XCTAssertEqual(request.selectedAreaReading, reading)
+    }
+
     func testTheAnswerIsDrawnWhereThePlacementEnginePutIt() async throws {
         let harness = try Harness()
 
@@ -65,7 +95,8 @@ final class AskPipelineTests: XCTestCase {
 
     func testAnInjectedTimeoutSurfacesAsATimeout() async throws {
         let harness = try Harness()
-        await harness.provider.setBehavior(.init(failure: .timeout))
+        let provider = try XCTUnwrap(harness.mockProvider)
+        await provider.setBehavior(.init(failure: .timeout))
 
         harness.pipeline.run(harness.input, verb: .answer)
         try await harness.settle()
@@ -75,7 +106,8 @@ final class AskPipelineTests: XCTestCase {
 
     func testALowConfidenceSpecDrawsNothing() async throws {
         let harness = try Harness()
-        await harness.provider.setBehavior(.init(corruptsSpec: true))
+        let provider = try XCTUnwrap(harness.mockProvider)
+        await provider.setBehavior(.init(corruptsSpec: true))
 
         harness.pipeline.run(harness.input, verb: .answer)
         try await harness.settle()
@@ -136,7 +168,7 @@ final class AskPipelineTests: XCTestCase {
         harness.pipeline.run(harness.input, verb: .answer)
         try await harness.settle()
 
-        let requested = await harness.provider.requestedKeys
+        let requested = await harness.requestedKeys
         XCTAssertTrue(requested.isEmpty)
         XCTAssertEqual(harness.model.phase, .hidden)
     }
@@ -145,39 +177,45 @@ final class AskPipelineTests: XCTestCase {
 
     @MainActor
     private struct Harness {
-        let provider: MockProvider
+        let mockProvider: MockProvider?
         let model = AskBarModel()
         let suggestions = SuggestionLayer()
         let engine = PencilKitInkEngine()
+        let pageEngine: RecordingPageEngine
         let pipeline: AskPipeline
         let input: AskPipeline.PageInput
 
         init(
+            provider injectedProvider: (any SpecProvider)? = nil,
             registerFixture: Bool = true,
-            renderer: any SuggestionInkRendering = TypesetInkRenderer()
+            renderer: any SuggestionInkRendering = TypesetInkRenderer(),
+            reading: SelectionReading = SelectionReading(transcript: "2+2=", confidence: 0.91)
         ) throws {
-            let pageSize = CGSize(width: 1668, height: 2388)
-            let strokes = [Self.stroke(in: CGRect(x: 100, y: 100, width: 220, height: 26))]
-            input = AskPipeline.PageInput(
-                strokes: strokes,
-                loop: [
-                    CGPoint(x: 80, y: 80),
-                    CGPoint(x: 340, y: 80),
-                    CGPoint(x: 340, y: 150),
-                    CGPoint(x: 80, y: 150),
-                ],
-                pageSize: pageSize
-            )
-            let context = try XCTUnwrap(
-                SelectionContextBuilder.build(strokes: strokes, loop: input.loop, pageSize: pageSize)
-            )
-            let key = SpecRequest(context: context, intent: .answer).cacheKey
-            provider = MockProvider(fixtures: registerFixture ? [key: Self.answerSpec] : [:])
+            let setup = try AskPageSetup()
+            input = setup.input
+            pageEngine = setup.engine
+            let key = SpecRequest(
+                context: setup.context,
+                intent: .answer,
+                rasterizedSelection: setup.rasterized,
+                selectedAreaReading: reading
+            ).cacheKey
+            pageEngine.resetRequests()
+            let resolvedProvider: any SpecProvider
+            if let injectedProvider {
+                resolvedProvider = injectedProvider
+                mockProvider = nil
+            } else {
+                let provider = MockProvider(fixtures: registerFixture ? [key: askPipelineAnswerSpec] : [:])
+                resolvedProvider = provider
+                mockProvider = provider
+            }
             pipeline = AskPipeline(
-                provider: provider,
+                provider: resolvedProvider,
                 renderer: renderer,
                 model: model,
-                suggestions: suggestions
+                suggestions: suggestions,
+                recognizeSelection: { _ in reading }
             )
             model.selectionChanged(hasSelection: true)
         }
@@ -196,32 +234,10 @@ final class AskPipelineTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(20))
         }
 
-        static func stroke(in rect: CGRect) -> InkStroke {
-            InkStroke(points: [
-                InkPoint(
-                    location: CGPoint(x: rect.minX, y: rect.minY),
-                    timeOffset: 0,
-                    force: 0.5,
-                    altitude: 1,
-                    azimuth: 0
-                ),
-                InkPoint(
-                    location: CGPoint(x: rect.maxX, y: rect.maxY),
-                    timeOffset: 1,
-                    force: 0.5,
-                    altitude: 1,
-                    azimuth: 0
-                ),
-            ])
+        var requestedKeys: [String] {
+            get async { await mockProvider?.requestedKeys ?? [] }
         }
 
-        static let answerSpec = Spec(
-            read: "2+2=",
-            readConfidence: 0.96,
-            intent: .answer,
-            blocks: [SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .math, value: "4")))],
-            explanation: "Addition."
-        )
     }
 
     private static func bank(letters: String) -> GlyphBank {
@@ -251,3 +267,104 @@ final class AskPipelineTests: XCTestCase {
         ),
     ])
 }
+
+private struct ExportRequest {
+    let bounds: CGRect
+    let scale: CGFloat
+}
+
+@MainActor
+private struct AskPageSetup {
+    let input: AskPipeline.PageInput
+    let engine: RecordingPageEngine
+    let context: SelectionContext
+    let rasterized: RasterizedSelection
+
+    init() throws {
+        let pageSize = CGSize(width: 1668, height: 2388)
+        let strokes = [Self.stroke(in: CGRect(x: 100, y: 100, width: 220, height: 26))]
+        let pencilEngine = PencilKitInkEngine()
+        pencilEngine.insertProgrammatic(strokes: strokes)
+        engine = RecordingPageEngine(base: pencilEngine)
+        input = AskPipeline.PageInput(
+            engine: engine,
+            loop: [
+                CGPoint(x: 80, y: 80),
+                CGPoint(x: 340, y: 80),
+                CGPoint(x: 340, y: 150),
+                CGPoint(x: 80, y: 150),
+            ],
+            pageSize: pageSize
+        )
+        context = try XCTUnwrap(
+            SelectionContextBuilder.build(strokes: input.strokes, loop: input.loop, pageSize: pageSize)
+        )
+        rasterized = try SelectionRasterizer.rasterize(context, using: engine)
+    }
+
+    private static func stroke(in rect: CGRect) -> InkStroke {
+        InkStroke(points: [
+            InkPoint(
+                location: CGPoint(x: rect.minX, y: rect.minY),
+                timeOffset: 0,
+                force: 0.5,
+                altitude: 1,
+                azimuth: 0
+            ),
+            InkPoint(
+                location: CGPoint(x: rect.maxX, y: rect.maxY),
+                timeOffset: 1,
+                force: 0.5,
+                altitude: 1,
+                azimuth: 0
+            ),
+        ])
+    }
+}
+
+@MainActor
+private final class RecordingPageEngine: InkEngine {
+    private let base: any InkEngine
+    private(set) var requests: [ExportRequest] = []
+
+    init(base: any InkEngine) {
+        self.base = base
+    }
+
+    var strokes: [InkStroke] { base.strokes }
+    var selection: InkSelection { base.selection }
+
+    func draw(stroke: InkStroke) { base.draw(stroke: stroke) }
+    func erase(strokeIDs: Set<InkStrokeID>) { base.erase(strokeIDs: strokeIDs) }
+    func select(strokeIDs: Set<InkStrokeID>) { base.select(strokeIDs: strokeIDs) }
+    func undo() -> Bool { base.undo() }
+    func redo() -> Bool { base.redo() }
+    func insertProgrammatic(strokes: [InkStroke]) { base.insertProgrammatic(strokes: strokes) }
+
+    func exportImage(in bounds: CGRect, scale: CGFloat) throws -> InkRasterImage {
+        requests.append(ExportRequest(bounds: bounds, scale: scale))
+        return try base.exportImage(in: bounds, scale: scale)
+    }
+
+    func resetRequests() {
+        requests.removeAll()
+    }
+}
+
+private actor RequestCapturingProvider: SpecProvider {
+    nonisolated let tier = ModelTier.mock
+    private(set) var request: SpecRequest?
+
+    func spec(for request: SpecRequest) async throws -> ValidatedSpec {
+        self.request = request
+        return try SpecValidator.validate(askPipelineAnswerSpec)
+    }
+}
+
+private let askPipelineAnswerSpec = Spec(
+    read: "2+2=",
+    readConfidence: 0.96,
+    intent: .answer,
+    blocks: [SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .math, value: "4")))],
+    explanation: "Addition."
+)

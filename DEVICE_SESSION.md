@@ -15,6 +15,17 @@ measured, not how it felt, except where the task explicitly asks how it felt.
 
 ## 0. Before you start
 
+**No manual test starts from a reused build.** Before each individual handoff to the human,
+regenerate the workspace, create a new DerivedData directory, build the current branch for
+the connected iPad, install that exact artifact, launch it, and open the regenerated
+workspace in Xcode. Reusing an earlier `.app`, Xcode's previous DerivedData, or an incremental
+device build is not an acceptable shortcut, even when only documentation changed.
+
+Installing the new build over the current app preserves notebooks and handwriting
+calibration. Uninstall first only when the test explicitly needs a clean app-data state, and
+warn that the uninstall deletes local notebooks and the glyph bank. “Fresh build” does not
+silently mean “erase user data.”
+
 **Set a signing team, once.** A device build will not sign without one. Find your team ID
 in Xcode → Settings → Accounts → your Apple ID → the ID column beside your team (a free
 Apple ID shows a "Personal Team"). Then:
@@ -106,23 +117,20 @@ first time anyone sees what the product is actually for.
 **M2-13, M2-13B, M2-14 and M2-15 are closed** — confirmed 2026-08-10: export works, accepted
 ink stays, and answers are sized in proportion to the writing they answer. ✅
 
-**Three things are open and only a device can close them. Do them in this order.**
+**Two fixes are open and only a device can close them. Do them in this order.**
 
-**1 — M3-16, the calibration summary.** Calibrate, and deliberately leave a few boxes blank
-(or skip the maths sheet). At the end the summary must show the missing characters *wrapped*
-inside the sheet, and the **Save** button must be visible and tappable. Save is the only thing
-that writes your handwriting to disk; if it is off-screen, the whole calibration is discarded
-without saying so.
+**1 — M3-18, repair-page sizing.** Calibrate and deliberately leave more than 26 boxes blank.
+The repair flow must split the missed characters into pages of at most 26, keep the boxes at
+the normal calibration size, and show **Sheet n of total**. Complete at least two repair pages
+and verify that the final missing-character list reflects captures from both pages.
 
-**2 — M3-17, typeset after calibrating.** Once Save works, calibrate fully, use the repair
-button for anything missed, then ask. The answer should be in your hand. **If it is still
-typeset, that is the blocker** — the diagnosis order is in `PROGRESS.md` M3-17, and the fastest
-route is one log line at the top of `ask()` rather than more guessing.
+**2 — M2-17, size and placement.** Write `2+2=` small, normal, and large, then ask about each.
+The handwritten answer should scale in proportion to the selected writing. Record which sizes
+look right and where the answer lands; bottom-right placement is still the simple geometric
+anchor and is tracked separately as M2-23.
 
-**3 — M2-17, size and placement.** Ask several times, at deliberately different handwriting
-sizes. **Write down the cases that come out right as well as the ones that come out wrong** —
-two theories have already failed, every simulator path produces a correct answer, and the
-difference between a good case and a bad one is the only remaining lead.
+**M3-16 and M3-17 are closed.** On 2026-08-10 the calibration summary saved successfully and
+the generated answer used the captured Apple Pencil `4` rather than the typeset fallback. ✅
 
 **Then M2-16:** calibrate, then ask. The answer must appear.
 Until 2026-08-10 finishing calibration silently broke every subsequent Ask — the generated

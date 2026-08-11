@@ -26,7 +26,7 @@ Three follow-ups came from that same device run:
 |---|---|---|
 | **M2-17** | Handwritten and pre-calibration typeset sizing fixed in tests; physical-iPad confirmation pending | review |
 | **M3-18** | Repair sets paginate at 26; physical-Pencil sizing confirmation pending | review |
-| **M2-22** | The selected-area crop is never rasterized or read in the shipping Ask path | next |
+| **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
 
 **M2-17 has two measured causes and two implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
@@ -35,8 +35,14 @@ typeset path: a nominal frame sized at 0.62× advance and 1.4× ink height squee
 selection's `4` to 17.6pt. The frame now accounts for Helvetica's side bearings and full
 line metrics, and both package and app regressions require the typeset answer to be 98–105%
 of the selected height without escaping its placement. The bottom-right position is still
-the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback;
-M2-22 owns refining that anchor from recognized content such as `=`.
+the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback.
+M2-22 now supplies the pixels and local transcript; M2-23 owns retaining recognition boxes
+and refining the anchor from content such as `=`.
+
+**M2-22 closes the missing-input path.** Every shipping Ask snapshots the actual `PKDrawing`,
+renders the capped crop and neighborhood on white, reads the crop with on-device Vision, and
+hands those ephemeral signals to `SpecProvider`. The state-machine log still carries names
+only, and providers are contractually forbidden to log or retain the images/transcript.
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
@@ -76,7 +82,7 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: M2-22 while M2-17 and M3-18 await the user's device checks, then M3-10.** The
+**Next action: device-check M2-17 and M3-18, then M3-10; M2-23 is the flagged placement follow-up.** The
 panel judges handwriting similarity, and a consistently undersized glyph would bias that
 verdict.
 
@@ -103,11 +109,11 @@ who has not read the code — because they have not.
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
-| Handwriting OCR | On-device Vision recognizer plus reading-order assembly. `LegibilityHarness` scores rendered ink against its intended string; nothing runs it on a build (M3-09B) |
+| Handwriting OCR | On-device Vision recognizer plus reading-order assembly. Every Ask now reads the selected crop locally; `LegibilityHarness` also scores rendered ink against its intended string |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
 | Selection math | `InkCore.SelectionGeometry`: point-in-polygon, loop closure, length-weighted coverage, clipping with interpolated dynamics |
-| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster requests; `SelectionRasterizer` renders those to PNG flattened on white. `pageText` (whole-page OCR) is still absent |
-| Provider boundary | `SpecProvider` returns `ValidatedSpec`, so no provider can skip validation. `MockProvider` supports latency, failure and corruption injection |
+| Selection context | `SelectionContextBuilder` produces normalized strokes, style stats, the anchor, and capped crop/neighborhood raster requests. The shipping Ask path renders an exact page snapshot to PNG on white and adds a local selected-area transcript/confidence. Optional whole-page `pageText` is still absent |
+| Provider boundary | `SpecProvider` receives ephemeral crop/neighborhood pixels plus the local selected-area reading and returns `ValidatedSpec`, so no provider can skip validation. Content may not be logged or retained. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` resolves all four slots against the occupancy grid, reserves each frame, and reports blocks with nowhere to go |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
 | Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
@@ -150,7 +156,7 @@ who has not read the code — because they have not.
 
 ## 4. Environment notes
 
-**Three traps in this working copy:**
+**Four traps in this working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
@@ -166,6 +172,13 @@ who has not read the code — because they have not.
    `cannot infer type` errors in `Handwriting`. The source was fine — `rm -rf` the
    package's `.build` and the same commit builds clean and passes 90 tests. **Before
    believing a type-inference error that CI does not also show, clear `.build` and retry.**
+4. **Every manual-test handoff requires a fresh physical-device build.** Regenerate with the
+   signing configuration, use a brand-new DerivedData directory, build the current branch,
+   install that exact artifact, launch it, and open the regenerated workspace in Xcode before
+   asking the human to test. Never reuse an earlier `.app` or incremental device build.
+   Installing over the app preserves notebooks and the glyph bank; uninstall only when clean
+   app data is explicitly required, and warn that local data will be erased. This is also
+   recorded in `AGENTS.md` §8 and `DEVICE_SESSION.md` §0.
 
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.

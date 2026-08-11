@@ -18,10 +18,13 @@ private let answerPlacementLogger = Logger(
 @MainActor
 final class AskPipeline {
     /// What the page looked like when the user closed the lasso.
+    @MainActor
     struct PageInput {
-        let strokes: [InkStroke]
+        let engine: any InkEngine
         let loop: [CGPoint]
         let pageSize: CGSize
+
+        var strokes: [InkStroke] { engine.strokes }
     }
 
     private let provider: any SpecProvider
@@ -32,18 +35,23 @@ final class AskPipeline {
     /// Readable so a caller can check it is still writing into the layer the view reads.
     /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
     let suggestions: SuggestionLayer
+    private let recognizeSelection: @Sendable (InkRasterImage) async -> SelectionReading
     private var task: Task<Void, Never>?
 
     init(
         provider: any SpecProvider,
         renderer: any SuggestionInkRendering = TypesetInkRenderer(),
         model: AskBarModel,
-        suggestions: SuggestionLayer
+        suggestions: SuggestionLayer,
+        recognizeSelection: @escaping @Sendable (InkRasterImage) async -> SelectionReading = {
+            await OnDeviceSelectionReader.read($0)
+        }
     ) {
         self.provider = provider
         self.renderer = renderer
         self.model = model
         self.suggestions = suggestions
+        self.recognizeSelection = recognizeSelection
     }
 
     /// Starts an Ask. The previous one, if any, is abandoned first.
@@ -66,9 +74,10 @@ final class AskPipeline {
     }
 
     private func execute(_ input: PageInput, verb: AskVerb) async {
+        let pageStrokes = input.strokes
         guard
             let context = SelectionContextBuilder.build(
-                strokes: input.strokes,
+                strokes: pageStrokes,
                 loop: input.loop,
                 pageSize: input.pageSize
             )
@@ -76,9 +85,23 @@ final class AskPipeline {
             model.apply(.fail(.unreadable))
             return
         }
+        let rasterized: RasterizedSelection
+        do {
+            rasterized = try SelectionRasterizer.rasterize(context, using: input.engine)
+        } catch {
+            model.apply(.fail(.unreadable))
+            return
+        }
+        let reading = await recognizeSelection(rasterized.crop)
+        guard !Task.isCancelled else { return }
         guard model.apply(.contextExtracted(context)) else { return }
 
-        let request = SpecRequest(context: context, intent: verb.intent)
+        let request = SpecRequest(
+            context: context,
+            intent: verb.intent,
+            rasterizedSelection: rasterized,
+            selectedAreaReading: reading
+        )
         guard model.apply(.intentClassified(request)) else { return }
 
         let spec: ValidatedSpec
@@ -94,14 +117,21 @@ final class AskPipeline {
         }
         guard !Task.isCancelled, model.apply(.specValidated(spec)) else { return }
 
-        place(spec, context: context, pageStrokes: input.strokes, pageSize: input.pageSize)
+        place(
+            spec,
+            context: context,
+            pageStrokes: pageStrokes,
+            pageSize: input.pageSize,
+            requestID: request.cacheKey
+        )
     }
 
     private func place(
         _ spec: ValidatedSpec,
         context: SelectionContext,
         pageStrokes: [InkStroke],
-        pageSize: CGSize
+        pageSize: CGSize,
+        requestID: String
     ) {
         // Content-free device evidence for M2-17. These measurements identify whether
         // local handwriting size was lost during selection, placement, or rendering
@@ -160,7 +190,7 @@ final class AskPipeline {
         model.renderedWithNotice(
             usedMissingGlyphFallback ? .missingHandwritingCharacters : nil
         )
-        suggestions.present(ink, requestID: SpecRequest(context: context).cacheKey)
+        suggestions.present(ink, requestID: requestID)
         model.apply(.placed(result))
     }
 

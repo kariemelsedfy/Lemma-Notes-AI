@@ -13,6 +13,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "Intelligence", dependencies: ["Handwriting", "InkCore"]),
-        .testTarget(name: "IntelligenceTests", dependencies: ["Intelligence"]),
+        .testTarget(name: "IntelligenceTests", dependencies: ["Intelligence", "Handwriting"]),
     ]
 )
