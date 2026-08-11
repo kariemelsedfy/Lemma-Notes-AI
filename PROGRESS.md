@@ -29,7 +29,31 @@ _(empty — nothing is claimed. Pick the highest-priority unblocked task in **Re
 
 ## Review
 
-_(empty)_
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
+Note: the 2026-08-11 device retest found a separate pre-calibration regression: a 26pt
+selection produced a 17.6pt typeset `4` (68%). The renderer was fitting Helvetica's full
+line metrics into a nominal handwriting frame whose 0.62× advance and 1.4× ink box were both
+too small. The nominal frame now reserves 0.98× width per character and 1.52× line height;
+the same app fixture must render at least 25.48pt (98%) and stay inside the placed frame.
+The calibrated-handwriting regression and content-wrapping suite remain green. Awaiting a
+fresh physical-iPad comparison before closing the blocker.
+
+Previous note: a failing measurement finally reproduced the captured-handwriting size defect.
+Doubling selected x-height from 18 to 36 left the handwritten glyph at exactly 1× because
+`Synthesizer.layout` capped
+it at the x-height stored during calibration. It now accepts the selected writing's local
+x-height, and `AskPipeline` feeds rendering the same usable measurement that placement used.
+The package regression changed from 1× to 2×. The app fixture selects 26pt ink and now draws
+a 24.4pt handwritten answer (94%; width fit accounts for the remainder). Privacy-safe logs
+record anchor/style/usable x-height, block frame, fallback, and final ink bounds for the
+required device comparison. The bottom-right position is the current `.atAnchor` policy—one
+word gap after the last selected glyph on its baseline—and remains flagged for M2-22's OCR
+anchor refinement rather than being treated as the sizing bug.
+Acceptance:
+- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
+- [x] The cause named with failing-test and simulator evidence
+- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
 
 ## Done
 
@@ -364,36 +388,6 @@ Acceptance:
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
-
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Ready · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
-Note: reported three times on device, most recently as "there are still errors with the size
-and the placement of the 4 relative to what I am asking." **Survived M2-16**, so the
-stale-layer explanation is wrong or incomplete.
-**Two theories have been proposed and both were wrong. Do not propose a third from reading
-the code — instrument it.** Every simulator path tried so far produces a correctly sized
-answer, which is itself the most useful fact here: whatever causes it is not reproducible
-from the models alone, so it depends on real ink, a real lasso, or real page state.
-Ruled out **by measurement**, so do not re-spend time here:
-- *Page position.* Frames are identical (16×35) with the selection at three different places
-  on the page, including hard against the right edge.
-- *Occupancy fallback.* The free-space search preserves the size it is handed; it relocates,
-  it does not shrink.
-- *Generated ink skewing the estimate.* `StyleStatsEstimator.xHeight(of:)` discards
-  zero-height strokes, and typeset ink is entirely horizontal hatch lines, so it contributes
-  nothing rather than dragging the median down.
-- *A zero x-height collapsing the frame.* Fixed and floored in M2-15; a selection of pure
-  generated ink now yields 14×31 rather than 1×1.
-**The next step is a device log, not another hypothesis.** At the top of `AskPipeline.place`,
-record per Ask: `context.anchor.xHeight`, `context.style.xHeight`,
-`PlacementEngine.usableXHeight(for:)`, the block's measured size, the chosen frame, and
-`usedFallback`. Ask several times at different handwriting sizes and find which of those
-stops tracking the input. Note the user's observation that it is *sometimes* right — so
-capture the good cases too; the difference between them is the answer.
-Acceptance:
-- [ ] A log from a real device showing where the chain stops tracking the selection
-- [ ] The cause named with evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
 
 ### M3-18 — Repair sheets make missed characters too small to write
 status: Ready · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M

@@ -65,7 +65,7 @@ public struct PlacementEngine: Sendable {
     /// not be able to render an answer unreadable (M2-15).
     static let minimumXHeight: CGFloat = 8
 
-    static func usableXHeight(for context: SelectionContext) -> CGFloat {
+    public static func usableXHeight(for context: SelectionContext) -> CGFloat {
         let measured = max(context.anchor.xHeight, context.style.xHeight)
         let candidate = measured > 0 ? measured : context.selectionBounds.height
         return max(candidate, minimumXHeight)

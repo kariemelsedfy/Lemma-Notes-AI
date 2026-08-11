@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-10 · by: Codex · Milestone: **M3 blocked on answer sizing, then the human gate**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 sizing fixes awaiting device verification**
 
 ## Handover, 2026-08-10
 
@@ -24,18 +24,19 @@ Three follow-ups came from that same device run:
 
 | | | |
 |---|---|---|
-| **M2-17** | The answer's size and placement do not track what was asked about | **blocker** |
+| **M2-17** | Handwritten and pre-calibration typeset sizing fixed in tests; physical-iPad confirmation pending | review |
 | **M3-18** | More than 26 missed characters makes repair boxes impractically small | next |
 | **M2-22** | The selected-area crop is never rasterized or read in the shipping Ask path | next |
 
-**M2-17 has had two hypotheses proposed and both were wrong.** Every simulator path produces a
-correctly sized answer. `PROGRESS.md` lists what has been ruled out *by measurement* — do not
-re-spend that time, and do not offer a third theory from reading the code. The next step is a
-device log; the exact fields to record are in the task.
-
-The latest device observation is specific: the handwritten `4` is too small and sits at the
-bottom-right of the selection. Sizing is the priority; placement is worth measuring and
-flagging, but the user does not consider it the immediate blocker.
+**M2-17 has two measured causes and two implemented fixes.** Captured handwriting used to cap
+the glyph at the unrelated calibration x-height; it now follows the selection. The next
+device run clarified that its screenshot was taken before calibration, exposing a separate
+typeset path: a nominal frame sized at 0.62× advance and 1.4× ink height squeezed a 26pt
+selection's `4` to 17.6pt. The frame now accounts for Helvetica's side bearings and full
+line metrics, and both package and app regressions require the typeset answer to be 98–105%
+of the selected height without escaping its placement. The bottom-right position is still
+the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback;
+M2-22 owns refining that anchor from recognized content such as `=`.
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
@@ -67,7 +68,7 @@ shipping it.
 
 ## 1. Where we are
 
-**M3 is usable in the user's hand, but not ready for its panel until M2-17 is fixed.**
+**M3 is usable in the user's hand, but not ready for its panel until M2-17 is device-confirmed.**
 The blind panel (M3-10) is still the milestone gate and still needs a human, but there is no
 point running it while a calibrated user's answers come out in typeset.
 
@@ -75,8 +76,9 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: M2-17, then M3-18 and M2-22, then M3-10.** The panel judges handwriting
-similarity, and a consistently undersized glyph would bias that verdict.
+**Next action: M3-18 and M2-22 while M2-17 awaits the user's device check, then M3-10.** The
+panel judges handwriting similarity, and a consistently undersized glyph would bias that
+verdict.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 

@@ -104,6 +104,29 @@ final class AskPipelineTests: XCTestCase {
         XCTAssertEqual(harness.model.phase, .awaitingDecision)
         XCTAssertNil(harness.model.renderingNotice)
         XCTAssertEqual(harness.suggestions.strokes.count, 1)
+        let answerHeight = InkLineGrouping.bounds(of: harness.suggestions.strokes).height
+        let selectedHeight = InkLineGrouping.bounds(of: harness.input.strokes).height
+        XCTAssertGreaterThanOrEqual(
+            answerHeight,
+            selectedHeight * 0.9,
+            "The answer must use the selected writing's size, not the calibration sheet's size."
+        )
+        XCTAssertLessThanOrEqual(answerHeight, selectedHeight * 1.05)
+    }
+
+    func testTypesetFallbackMatchesSelectedWritingSizeBeforeCalibration() async throws {
+        let harness = try Harness()
+
+        try await harness.runToDecision()
+
+        let answerHeight = InkLineGrouping.bounds(of: harness.suggestions.strokes).height
+        let selectedHeight = InkLineGrouping.bounds(of: harness.input.strokes).height
+        XCTAssertGreaterThanOrEqual(
+            answerHeight,
+            selectedHeight * 0.98,
+            "The pre-calibration fallback must match the selected writing's size."
+        )
+        XCTAssertLessThanOrEqual(answerHeight, selectedHeight * 1.05)
     }
 
     func testNoRequestIsMadeWithoutASelection() async throws {

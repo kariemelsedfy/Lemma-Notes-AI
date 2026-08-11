@@ -11,6 +11,63 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-17 — the screenshot was from before calibration
+
+The user's latest detail split one apparent sizing bug into two: the tiny `4` in the new
+screenshot was generated before Teach Handwriting, so it could only have come from
+`TypesetInkRenderer`. The prior M2-17 correction was real but covered the captured-handwriting
+path. The app fixture reproduced the remaining defect exactly: 26pt selected ink, a 16.12pt
+wide placement frame, and a 17.6pt typeset answer (68%).
+
+The typeset renderer itself was not arbitrarily choosing a tiny font. It honestly fitted
+Helvetica into the rectangle placement reserved. `NominalContentMeasurer` reserved only
+0.62 x-heights per character, ignoring the font's side bearings, and a 1.4 x-height line box,
+which was too short once the width stopped binding. The nominal frame now uses a measured
+0.98 advance and 1.52 ink height. Package and app regressions require the visible typeset
+answer to be 98–105% of the selected ink and still lie inside its placement. The calibrated
+`4` regression is run alongside it so the already-working handwriting path stays intact.
+
+I first added a renderer-only size test with a sufficiently wide frame; it passed before the
+fix. That was useful evidence, not a reproduction: it proved the renderer could draw at the
+right size when placement gave it enough room. The end-to-end placement/render test was the
+one that failed at 17.6pt and turned green after measurement changed. Placement location was
+not changed; the bottom-right-looking `.atAnchor` policy remains separate work.
+
+**Verification:** pre-fix package regression 17.6/26pt ❌ as intended · post-fix Intelligence
+suite, 124 tests ✅ · focused Margin simulator tests for pre-calibration typeset and captured
+handwriting ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ ·
+physical iPad: pending fresh install and user comparison
+
+## 2026-08-10 · Codex · M2-17 — calibration size was masquerading as answer size
+
+**The cause is measured now.** Placement correctly doubled its frame when the selected
+writing's x-height changed from 18 to 36 points, but the generated handwritten glyph stayed
+at exactly 1×. `Synthesizer.layout` used `bank.style.stats.xHeight` as a preferred maximum,
+so the size a person happened to write during calibration silently became the maximum size
+of every future answer. That explains why the user's recognisable `4` was still too small.
+
+Synthesis now accepts a target x-height, `HandwritingInkRenderer` passes the selected ink's
+local measurement through wrapping and rendering, and `AskPipeline` makes rendering use the
+same usable x-height chosen by placement. The regression now measures a 2× glyph for a 2×
+selection. At the app seam, a 26pt selected stroke produces a 24.4pt handwritten answer
+(94%); the remaining fit is the one-character frame's width constraint, not calibration.
+
+**Placement was a separate observation.** The simulator log shows `usedFallback=false`; the
+answer is placed one word gap after the selected line's last glyph because the canned spec
+requests `.atAnchor`. That naturally looks like the selection's bottom-right. I did not
+change it under a sizing task. M2-22's crop/OCR work is where the intended trailing-`=`
+anchor can be derived from what the selection actually says.
+
+The app now logs only numeric geometry: anchor/style/usable x-height, measured frame,
+fallback state, and final ink bounds. It logs no ink, crop, transcription, or answer. This
+is intentionally left in Review until the user can ask beside small and large real Pencil
+writing on a physical iPad and confirm the relative size there.
+
+**Verification:** pre-fix regression 1× instead of 2× ✅ · post-fix regression 2× ✅ ·
+Handwriting and Intelligence package suites ✅ · full Margin iPad simulator suite, 135 tests
+✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · device
+tested: no, needs user verification
+
 ## 2026-08-10 · Codex · M3-17 — the bank had the answer and we rejected the bank
 
 **Device result:** the app now writes the `4` captured with Apple Pencil rather than the

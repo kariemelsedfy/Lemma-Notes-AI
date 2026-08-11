@@ -49,8 +49,17 @@ public struct NominalContentMeasurer: ContentMeasuring {
     public let noteScale: CGFloat
 
     public init(
-        advanceRatio: CGFloat = 0.62,
-        inkHeightRatio: CGFloat = 1.4,
+        // Helvetica's advance includes side bearings that its visible ink does not. At
+        // the selected writing's height, 0.62 makes that advance bind first and shrinks a
+        // one-character fallback to 68% of the requested size. 0.98 leaves enough width
+        // for the honest typeset fallback to render at the local size while the measured
+        // frame still contains it. A glyph-bank measurer will replace this nominal value.
+        advanceRatio: CGFloat = 0.98,
+        // The typeset fallback fits the font's full ascent and descent into this box.
+        // Helvetica's visible digit occupies about two thirds of that line box, so 1.4
+        // caps a 26pt selection at 24pt even after width is corrected. 1.52 keeps the
+        // visible answer at the selected size while still reserving the descender room.
+        inkHeightRatio: CGFloat = 1.52,
         lineHeightRatio: CGFloat = 1.8,
         plotSideRatio: CGFloat = 10,
         noteScale: CGFloat = 0.75
