@@ -18,10 +18,22 @@ public struct SpecRequest: Equatable, Sendable {
     public let context: SelectionContext
     /// The locally predicted verb (`AI_PIPELINE.md` §2), sent as a hint only.
     public let intent: SpecIntent?
+    /// Ephemeral crop and neighborhood pixels. Providers may transmit these for the
+    /// current request but must not log or retain them.
+    public let rasterizedSelection: RasterizedSelection?
+    /// Vision's on-device best effort for the selected crop.
+    public let selectedAreaReading: SelectionReading?
 
-    public init(context: SelectionContext, intent: SpecIntent? = nil) {
+    public init(
+        context: SelectionContext,
+        intent: SpecIntent? = nil,
+        rasterizedSelection: RasterizedSelection? = nil,
+        selectedAreaReading: SelectionReading? = nil
+    ) {
         self.context = context
         self.intent = intent
+        self.rasterizedSelection = rasterizedSelection
+        self.selectedAreaReading = selectedAreaReading
     }
 
     /// A stable digest of everything that can change the answer.
@@ -40,6 +52,10 @@ public struct SpecRequest: Equatable, Sendable {
                 digest.combine(point.location)
             }
             digest.combine("|")
+        }
+        if let rasterizedSelection {
+            digest.combine(rasterizedSelection.crop.data)
+            digest.combine(rasterizedSelection.neighborhood.data)
         }
         return digest.value
     }
@@ -62,6 +78,8 @@ public enum ProviderError: Error, Equatable, Sendable {
 public protocol SpecProvider: Sendable {
     var tier: ModelTier { get }
 
+    /// Answers one ephemeral request. Crop pixels and transcript must not be logged or
+    /// retained after this call finishes (`AGENTS.md` §7).
     func spec(for request: SpecRequest) async throws -> ValidatedSpec
 }
 
@@ -92,5 +110,12 @@ private struct FNV1a {
         combine(rect.origin)
         combine(rect.width)
         combine(rect.height)
+    }
+
+    mutating func combine(_ data: Data) {
+        for byte in data {
+            state ^= UInt64(byte)
+            state = state &* 0x0000_0100_0000_01B3
+        }
     }
 }

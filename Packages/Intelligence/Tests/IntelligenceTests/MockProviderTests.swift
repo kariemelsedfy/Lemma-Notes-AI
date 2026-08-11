@@ -99,6 +99,17 @@ final class MockProviderTests: XCTestCase {
         XCTAssertNotEqual(first.cacheKey, second.cacheKey)
     }
 
+    func testCacheKeyChangesWithTheRasterizedPixels() throws {
+        let bare = try Self.request()
+        let rasterized = RasterizedSelection(
+            crop: InkRasterImage(data: Data([0x01]), size: CGSize(width: 10, height: 10), scale: 2),
+            neighborhood: InkRasterImage(data: Data([0x02]), size: CGSize(width: 20, height: 20), scale: 1)
+        )
+        let withPixels = SpecRequest(context: bare.context, rasterizedSelection: rasterized)
+
+        XCTAssertNotEqual(bare.cacheKey, withPixels.cacheKey)
+    }
+
     // MARK: - Fixtures
 
     private static func request(origin: CGPoint = CGPoint(x: 100, y: 100)) throws -> SpecRequest {

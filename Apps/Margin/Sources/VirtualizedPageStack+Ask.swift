@@ -52,9 +52,14 @@ extension VirtualizedPageStack {
         askPipeline = pipeline
         askSelection.commit()
 
+        // Snapshot the exact PencilKit page for crop and neighborhood rasterization.
+        // The request owns this engine only until the Ask finishes.
+        let pageEngine = PencilKitInkEngine()
+        pageEngine.canvasView.drawing = drawingStore.drawing(for: selection.pageID)
+
         pipeline.run(
             AskPipeline.PageInput(
-                strokes: drawingStore.drawing(for: selection.pageID).strokes.map { InkStroke($0) },
+                engine: pageEngine,
                 loop: selection.loop,
                 pageSize: pageSizes[selection.pageID] ?? pageSize
             ),
