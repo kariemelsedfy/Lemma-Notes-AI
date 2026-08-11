@@ -70,7 +70,7 @@ arrive as expected.
 - **Squeeze** (Pencil Pro): arms the Ask lasso. If your system squeeze setting is "off",
   nothing should happen — that is deliberate, not a bug.
 - **Double-tap** (Pencil 2+): does whatever your system setting says, and nothing
-  app-specific. The opt-in override is not reachable yet (M2-18, needs onboarding).
+  app-specific. The opt-in override is not reachable yet (M2-25, needs onboarding).
 - **Pencil 1 or no Pencil**: nothing happens, nothing crashes.
 
 **Also worth a judgement:** squeeze is treated as Ask unless you explicitly set the system
@@ -179,6 +179,35 @@ fixed but unverified on hardware:
 
 **This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If it looks
 obviously mechanical here, fix M3-08C before recruiting anyone.
+
+## 7. M2-18 — erasing a generated answer, and undoing it
+
+**~5 minutes, and it is the one item blocking M2-18 from Done.** You reported this yourself:
+"when I delete things I wrote it deletes by shape or stroke, but when I delete something the
+AI wrote it deletes like a rubber removing pixels in a radius." Both used the same vector
+eraser; the difference is that a typeset `4` is ~50 hatch scanlines, so erasing took them one
+at a time.
+
+Set up: write `2+2=` on a page, Ask, and keep the answer so it commits to the page. Write a
+word or two of your own beside it.
+
+- **Erase the answer.** Touch the eraser to *any part* of the generated answer. The whole
+  answer should go at once, not shred away scanline by scanline. This is the fix.
+- **Erase your own writing.** Unchanged from before — it should still erase by stroke/shape.
+  If your own ink starts disappearing in groups, that is a real bug: stop and say so.
+- **Undo once.** ⌘Z, or the undo control. **The entire answer should come back in one undo.**
+  This is the acceptance box that no test here can tick — it depends on the undo manager
+  PencilKit owns, which XCTest cannot reach. If it takes several undos, or brings the answer
+  back in pieces, or restores nothing, that is the finding.
+- **Then undo again.** It should step back to before the answer, not into a half-erased state.
+
+**Worth watching:** erasing two answers with one continuous eraser stroke. Both should go.
+That path is unit-tested but has never run on hardware.
+
+**If the answer only partly erases,** that is the deliberate failure mode, not a crash: when
+two strokes have identical fingerprints the eraser refuses to act, because preserving your
+ink beats tidying a generated group. Note it and move on — it is a known tradeoff, not a
+regression.
 
 ---
 
