@@ -56,6 +56,48 @@ final class CalibrationRepairTests: XCTestCase {
         XCTAssertEqual(session.current?.isOptional, false)
     }
 
+    func testLargeRepairSetsAreSplitIntoOrderedSheetsOfAtMostTwentySix() {
+        let characters = Array("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        var session = CalibrationSession(sheets: [Self.alphabetSheet])
+
+        XCTAssertTrue(session.repair(characters))
+
+        let repairs = Array(session.sheets.dropFirst())
+        XCTAssertEqual(repairs.map { $0.capturedCharacters.count }, [26, 26, 10])
+        XCTAssertTrue(repairs.allSatisfy { $0.capturedCharacters.count <= 26 })
+        XCTAssertEqual(repairs.flatMap(\.capturedCharacters), characters)
+        XCTAssertEqual(Set(repairs.map(\.id)).count, repairs.count)
+        XCTAssertEqual(session.current, repairs.first)
+    }
+
+    func testAFullRepairSheetKeepsTheSameBoxSizeAsTheAlphabetPass() throws {
+        let characters = Array("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        var session = CalibrationSession(sheets: [Self.alphabetSheet])
+        XCTAssertTrue(session.repair(characters))
+        let repair = try XCTUnwrap(session.current)
+
+        let firstPassBoxes = CalibrationSheet.layout(Array("abcdefghijklmnopqrstuvwxyz"), in: Self.area)
+        let repairBoxes = CalibrationSheet.layout(repair.capturedCharacters, in: Self.area)
+
+        XCTAssertEqual(repairBoxes.count, 26)
+        XCTAssertEqual(repairBoxes.first?.frame.size, firstPassBoxes.first?.frame.size)
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(repairBoxes.first).frame.width, 64)
+    }
+
+    func testProgressCountsEveryPaginatedRepairSheet() {
+        var session = CalibrationSession(sheets: [Self.alphabetSheet])
+        session.advance()
+
+        XCTAssertTrue(session.repair(Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123")))
+
+        XCTAssertEqual(session.stepNumber, 2)
+        XCTAssertEqual(session.stepCount, 3)
+        XCTAssertEqual(session.progress, 1 / 3, accuracy: 0.001)
+        session.advance()
+        XCTAssertEqual(session.stepNumber, 3)
+        XCTAssertEqual(session.progress, 2 / 3, accuracy: 0.001)
+    }
+
     func testRepairingDeduplicatesAndIgnoresSpaces() {
         var session = CalibrationSession(sheets: [Self.alphabetSheet])
 
@@ -99,6 +141,21 @@ final class CalibrationRepairTests: XCTestCase {
         XCTAssertFalse(second.rejected.contains("b"))
         XCTAssertTrue(second.bank.canRender("a"), "repairing disturbed the first pass")
         XCTAssertTrue(second.bank.canRender("c"), "repairing disturbed the first pass")
+    }
+
+    func testCharactersFromEveryPaginatedRepairSheetReachTheBank() {
+        let characters = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123")
+        var session = CalibrationSession(sheets: [Self.alphabetSheet])
+
+        XCTAssertTrue(session.repair(characters))
+        for sheet in session.sheets.dropFirst() {
+            write(sheet, into: &session)
+            session.advance()
+        }
+
+        let bank = session.outcome(capturedAt: Self.captureDate).bank
+        XCTAssertTrue(bank.canRender(String(characters)))
+        XCTAssertEqual(Set(bank.samples.keys), Set(characters.map(String.init)))
     }
 
     // MARK: - Fixtures
