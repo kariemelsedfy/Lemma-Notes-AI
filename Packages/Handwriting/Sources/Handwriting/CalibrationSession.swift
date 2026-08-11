@@ -22,7 +22,8 @@ public struct CalibrationSession: Equatable, Sendable {
         }
     }
 
-    public let sheets: [CalibrationSheet.Sheet]
+    /// Grows when the user repairs missed characters, so this is not `let`.
+    public private(set) var sheets: [CalibrationSheet.Sheet]
     public private(set) var index: Int
     /// Ink per sheet. Recording replaces rather than appends, so "redo this sheet" needs
     /// no separate undo path — the user simply writes it again.
@@ -53,14 +54,43 @@ public struct CalibrationSession: Equatable, Sendable {
     // MARK: - Driving the flow
 
     /// Stores the ink for a sheet, replacing anything recorded for it before.
+    ///
+    /// **Empty ink never replaces ink that already exists.** Going back to rewrite one letter
+    /// means walking forward through every later sheet, and each of those recorded whatever
+    /// was on screen — nothing. A user who redid a single `e` came out the far side with a
+    /// bank containing only the sheet they had rewritten, silently losing their capitals,
+    /// digits and punctuation (M3-15). Clearing a sheet on purpose is `skipCurrent()`.
     public mutating func record(
         _ ink: [InkStroke],
         boxes layoutBoxes: [GuideBoxSegmenter.Box],
         for sheetID: Int
     ) {
+        guard !ink.isEmpty || strokes[sheetID] == nil else { return }
         strokes[sheetID] = ink
         boxes[sheetID] = layoutBoxes
         skipped.remove(sheetID)
+    }
+
+    /// Appends a sheet holding exactly `characters` and moves to it.
+    ///
+    /// The repair path from `HANDWRITING.md` §3.2. Rewinding to the sheet a character came
+    /// from means re-walking the whole script, which is both tedious and — before the guard
+    /// above — destructive. One sheet with only the characters still needed is what §3.2
+    /// actually asks for.
+    ///
+    /// Appended rather than replacing the original: `outcome(capturedAt:)` filters `missing`
+    /// and `rejected` against what reached the bank, so a character captured here stops being
+    /// reported without the original sheet having to know about it.
+    @discardableResult
+    public mutating func repair(_ characters: [Character]) -> Bool {
+        let wanted = characters.filter { $0 != " " }
+        guard !wanted.isEmpty else { return false }
+
+        var seen: Set<Character> = []
+        let unique = wanted.filter { seen.insert($0).inserted }
+        sheets.append(CalibrationSheet.repair(unique, id: (sheets.map(\.id).max() ?? 0) + 1))
+        index = sheets.count - 1
+        return true
     }
 
     public mutating func advance() {

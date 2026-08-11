@@ -11,6 +11,28 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Claude · M3-15 — three reports, one bug, and a message that lied
+
+**User report:** "I taught it my handwriting and it said it captured all 26 characters, but then it wrote in typeset and didn't memorise my handwriting." Plus, separately, "when it says you missed a couple of characters and I go to fill them in, it asks me to fill all characters from the start again."
+
+**Those are the same bug, and the second causes the first.** `CalibrationSession.record` replaced unconditionally, and the repair path rewound to the *sheet* a character came from. So fixing one letter meant walking forward through every later sheet, and each `next()` recorded whatever was on the canvas — nothing. Capitals, digits and punctuation were overwritten with empty ink. What survived was the sheet the user had actually rewritten: the lowercase alphabet. **Twenty-six characters.**
+
+**"Captured 26 characters" is why this went unreported for a whole session.** It reads as success. It is in fact the signature of the bug — the number you get when everything except sheet one has been wiped.
+
+**And 26 letters cannot answer anything.** Every answer the canned provider returns is `4`, a digit. `HandwritingInkRenderer` falls back per block by design, so a bank with no digits draws *every* answer in typeset. From the outside, calibration simply never worked. Three symptoms — lost capture, misleading count, typeset output — one cause.
+
+**Measured before and after**, because "it wipes your work" deserves a number: with the guard removed the fixture bank drops from 9 characters to **0**.
+
+**What I changed.** Empty ink no longer replaces ink already recorded — `skipCurrent()` remains the deliberate way to clear a sheet, and there is a test pinning that distinction so the guard cannot be "simplified" into discarding it. `repair(_:)` appends one sheet holding exactly the characters still needed and jumps to it, which is what §3.2 asked for in the first place. The summary now lists rejected and missing *together* — the difference matters to the segmenter and not to the person holding the Pencil — with one button, and says outright that answers using those characters will be typeset.
+
+**The lesson I would put in front of the next person:** a success message that counts what you *have* will read as success even when it is reporting a catastrophe. "Captured 26 characters" should have been "26 of 100 — digits and capitals are missing, and answers using them will not be in your hand". Count against what was asked for, not against what happens to be in the bag.
+
+**Still open and not diagnosed:** the user also reports the answer is sometimes correctly sized and sometimes too small (M2-17). It survived M2-16, so the stale-layer theory is wrong or incomplete. I have no measurement that reproduces it and did not want to guess a third time — the next step is logging the estimated x-height and chosen frame per Ask on device, because every simulator path I have tried produces a correctly sized answer.
+
+**Verification:** Handwriting 122 tests ✅ · Intelligence 122 ✅ · `xcodebuild test` iPad simulator, 133 ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · guard verified by removing it and watching the bank empty · device tested: no
+
+---
+
 ## 2026-08-10 · Claude · M2-16 — a `let` on a `View` is not storage
 
 **User report:** "after I did teach it your handwriting and asked AI it didn't actually write anything."

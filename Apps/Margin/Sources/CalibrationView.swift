@@ -22,8 +22,8 @@ struct CalibrationView: View {
         NavigationStack {
             Group {
                 if let summary {
-                    CalibrationSummaryView(outcome: summary) { character in
-                        redo(character)
+                    CalibrationSummaryView(outcome: summary) { characters in
+                        repair(characters)
                     } onFinish: {
                         store.save(summary.bank)
                         dismiss()
@@ -119,22 +119,16 @@ struct CalibrationView: View {
         generation += 1
     }
 
-    private func redo(_ character: Character) {
-        // Send the user back to the sheet that character came from, rather than inventing
-        // a one-letter screen: they wrote it in context and will rewrite it the same way.
-        guard let index = session.sheets.firstIndex(where: { $0.capturedCharacters.contains(character) }) else {
-            return
-        }
+    /// Takes the user to one sheet holding exactly the characters still needed.
+    ///
+    /// The old behaviour rewound to the sheet a character came from, which meant walking
+    /// forward through every later sheet again — the thing §3.2 explicitly does not ask for,
+    /// and destructive besides, since advancing past a sheet used to record the blank canvas
+    /// over it (M3-15).
+    private func repair(_ characters: [Character]) {
+        guard session.repair(characters) else { return }
         summary = nil
         clear()
-        session = rewound(to: index)
-    }
-
-    private func rewound(to index: Int) -> CalibrationSession {
-        var rewound = session
-        while rewound.index > index { rewound.back() }
-        while rewound.index < index { rewound.advance() }
-        return rewound
     }
 
     private func finish() {
@@ -199,21 +193,34 @@ private struct RuledLines: View {
 /// enormous quality pain, because a bad glyph appears in every word using that letter.
 private struct CalibrationSummaryView: View {
     let outcome: CalibrationSession.Outcome
-    let onRedo: (Character) -> Void
+    let onRepair: ([Character]) -> Void
     let onFinish: () -> Void
+
+    /// Everything still not in the bank: written unclearly, or never written.
+    ///
+    /// Shown together because the distinction matters to the segmenter and not to the
+    /// person — both mean "the app cannot write this character in your hand".
+    private var outstanding: [Character] {
+        var seen: Set<Character> = []
+        return (outcome.rejected + outcome.missing).filter { seen.insert($0).inserted }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
             Text("calibration.summary.captured \(outcome.bank.characterCount)")
                 .font(MarginTypography.title)
 
-            if !outcome.rejected.isEmpty {
-                // Rejected means "written, but not clearly enough to keep". Worth going
-                // back for; missing usually means the user chose to skip, and is not.
+            if !outstanding.isEmpty {
+                // Named plainly, because "26 characters captured" reads as success and is
+                // not: an answer containing any of these is drawn in the typeset style
+                // instead, which looks like calibration simply did not work (M3-15).
                 Text("calibration.summary.unclear")
                     .font(MarginTypography.body)
                     .foregroundStyle(MarginColor.secondaryText)
-                CharacterChips(characters: outcome.rejected, action: onRedo)
+                CharacterChips(characters: outstanding)
+
+                Button("calibration.repair \(outstanding.count)") { onRepair(outstanding) }
+                    .buttonStyle(.bordered)
             }
 
             Spacer()
@@ -227,13 +234,15 @@ private struct CalibrationSummaryView: View {
 
 private struct CharacterChips: View {
     let characters: [Character]
-    let action: (Character) -> Void
 
     var body: some View {
         HStack(spacing: MarginSpacing.small) {
             ForEach(Array(characters.enumerated()), id: \.offset) { _, character in
-                Button(String(character)) { action(character) }
-                    .buttonStyle(.bordered)
+                Text(String(character))
+                    .font(MarginTypography.body)
+                    .padding(.horizontal, MarginSpacing.small)
+                    .padding(.vertical, MarginSpacing.xSmall)
+                    .background(MarginColor.surface, in: Capsule())
             }
         }
     }
