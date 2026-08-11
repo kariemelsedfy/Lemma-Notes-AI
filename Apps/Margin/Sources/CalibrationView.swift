@@ -207,23 +207,32 @@ private struct CalibrationSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
-            Text("calibration.summary.captured \(outcome.bank.characterCount)")
-                .font(MarginTypography.title)
+            ScrollView {
+                VStack(alignment: .leading, spacing: MarginSpacing.large) {
+                    Text("calibration.summary.captured \(outcome.bank.characterCount)")
+                        .font(MarginTypography.title)
 
-            if !outstanding.isEmpty {
-                // Named plainly, because "26 characters captured" reads as success and is
-                // not: an answer containing any of these is drawn in the typeset style
-                // instead, which looks like calibration simply did not work (M3-15).
-                Text("calibration.summary.unclear")
-                    .font(MarginTypography.body)
-                    .foregroundStyle(MarginColor.secondaryText)
-                CharacterChips(characters: outstanding)
+                    if !outstanding.isEmpty {
+                        // Named plainly, because "26 characters captured" reads as success
+                        // and is not: an answer containing any of these is drawn in the
+                        // typeset style instead, which looks like calibration simply did not
+                        // work (M3-15).
+                        Text("calibration.summary.unclear")
+                            .font(MarginTypography.body)
+                            .foregroundStyle(MarginColor.secondaryText)
+                        MissingCharacters(characters: outstanding)
 
-                Button("calibration.repair \(outstanding.count)") { onRepair(outstanding) }
-                    .buttonStyle(.bordered)
+                        Button("calibration.repair \(outstanding.count)") { onRepair(outstanding) }
+                            .buttonStyle(.bordered)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Spacer()
+            // Outside the scroll view on purpose. This button is the only thing that writes
+            // the bank to disk, so it must never be pushed off-screen by a long list of
+            // missing characters — that turns "you missed some" into "your calibration was
+            // silently thrown away" (M3-16).
             Button("calibration.finish", action: onFinish)
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity)
@@ -232,18 +241,26 @@ private struct CalibrationSummaryView: View {
     }
 }
 
-private struct CharacterChips: View {
+/// The characters calibration did not get, as wrapping text.
+///
+/// **Deliberately one `Text` rather than a row of chips.** Chips in an `HStack` do not wrap,
+/// and this list is unbounded — skip the maths sheet and it is eighteen characters before
+/// anything goes wrong. It ran off the side of the sheet and took the Save button with it
+/// (M3-16). A `Text` wraps for free and cannot overflow.
+///
+/// If someone wants chips back, they need a wrapping container (`Layout`, or a `Grid` with a
+/// computed column count) — not an `HStack`.
+private struct MissingCharacters: View {
     let characters: [Character]
 
     var body: some View {
-        HStack(spacing: MarginSpacing.small) {
-            ForEach(Array(characters.enumerated()), id: \.offset) { _, character in
-                Text(String(character))
-                    .font(MarginTypography.body)
-                    .padding(.horizontal, MarginSpacing.small)
-                    .padding(.vertical, MarginSpacing.xSmall)
-                    .background(MarginColor.surface, in: Capsule())
-            }
-        }
+        Text(characters.map(String.init).joined(separator: "   "))
+            .font(MarginTypography.body.monospaced())
+            .foregroundStyle(MarginColor.primaryText)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(MarginSpacing.medium)
+            .background(MarginColor.surface, in: RoundedRectangle(cornerRadius: MarginSpacing.small))
+            .accessibilityLabel(Text(characters.map(String.init).joined(separator: ", ")))
     }
 }

@@ -307,6 +307,52 @@ Acceptance:
 - [x] Repairing merges into the existing capture rather than disturbing it
 - [ ] **Confirm on device**: calibrate, repair the gaps, ask — the answer is in your hand
 
+### M3-16 — The calibration summary overflows and can hide the Save button
+status: Done · completed: Claude · 2026-08-10 · refs: HANDWRITING.md §3.2 · estimate: S
+Note: found on device — "there was an error when I finished teaching the handwriting, it
+looked like it wanted to display something bigger than the widget."
+**A regression from M3-15, one PR earlier.** `CharacterChips` laid the outstanding characters
+out in a plain `HStack`, which does not wrap. Before M3-15 it showed only `rejected`, which
+is usually nought to three; M3-15 changed it to rejected **plus** missing, which is unbounded
+— skipping the optional maths sheet alone contributes eighteen.
+**This is very likely why the bank was still not saved.** `store.save(summary.bank)` runs only
+from the Save button on this screen. An overflowing summary can push it out of reach, and a
+calibration that is never saved is indistinguishable from one that never worked — which is
+exactly the "it still wrote in typeset" report filed alongside it (M3-17).
+Acceptance:
+- [x] The character list wraps instead of running off the side
+- [x] The summary scrolls, so any length of list is reachable
+- [x] Save sits outside the scroll view and cannot be pushed off-screen
+- [ ] **Confirm on device**: finish a calibration that misses characters, and reach Save
+
+### M3-17 — Calibrating fully still renders answers in typeset
+status: Ready · **blocker** · refs: PROGRESS.md M3-15, M3-16 · estimate: M
+Note: found on device — "I calibrated fully and when I finished it still wrote the 4 in
+typeset." Reported *after* M3-15 fixed the capture-wiping bug, so the first explanation is
+already spent. **Do not assume M3-16 fixes this**; confirm it.
+Check in this order, because each is cheaper than the next and the first two are free:
+1. **Was the bank saved at all?** `HandwritingStyleStore` writes to
+   `applicationSupportDirectory/handwriting-style.json`. If M3-16 stopped the user reaching
+   Save, there is no file and everything downstream is correct behaviour. Check the file
+   exists and its `characterCount`.
+2. **Does the bank contain digits?** Every answer the canned provider returns is `4`.
+   `HandwritingInkRenderer` falls back **per block**, so a bank without `4` draws every
+   answer in typeset no matter how good the letters are. `bank.canRender("4")` is the whole
+   question. This has already fooled us once (M3-15).
+3. **Is the preference stuck?** `HandwritingStylePreference.resolved(bank:)` returns
+   `isExplicit ? choice : .mine`. Once the user has *ever* tapped a style, `isExplicit` is
+   true forever, so an early tap on "typeset" pins it — and picking "my handwriting" later
+   only helps if that tap actually wrote the preference.
+4. **Is the renderer reaching the pipeline?** `pipeline.renderer = inkRenderer` is assigned
+   per Ask in `ask()`, and `inkRenderer` is recomputed by the parent. Verify the renderer at
+   the moment of the Ask is a `HandwritingInkRenderer`, not a `TypesetInkRenderer`.
+A one-line log of `(bank == nil, characterCount, canRender("4"), resolved style, renderer
+type)` at the top of `ask()` answers 1–4 in a single device run. Worth adding first.
+Acceptance:
+- [ ] The above is narrowed to one cause with evidence, not inference
+- [ ] A calibrated user's answers are drawn in their hand
+- [ ] Whatever the cause, the app says why it fell back rather than silently degrading
+
 ### M2-16 — After calibrating, every Ask draws nothing
 status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
 Note: found on device — "after I did teach it your handwriting and asked AI it didn't
@@ -331,20 +377,35 @@ Not unit-tested, and deliberately so: SwiftUI view identity is not observable fr
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
 
-### M2-17 — After several asks the answer stops matching the size of the question
-status: Ready · refs: PROGRESS.md M2-16 · estimate: S
-Note: found on device — "if I do ask AI multiple times at some point it stops adjusting the
-size of the answer to what I am asking about."
-**Probably already fixed by M2-16, and filed separately because that is a guess.** A stale
-`SuggestionLayer` still holds the ink from the previous Ask; the view reading it shows the
-*previous* answer, which is sized for the previous question. That fits "stops adjusting"
-better than any sizing bug, and it fits "at some point" — it starts at the first rebuild.
-Ruled out by measurement already: the estimator ignores generated ink rather than being
-skewed by it (hatch strokes are perfectly horizontal, and `xHeight(of:)` filters zero-height
-strokes), and the placement fallback preserves the size it is given.
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Ready · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
+Note: reported three times on device, most recently as "there are still errors with the size
+and the placement of the 4 relative to what I am asking." **Survived M2-16**, so the
+stale-layer explanation is wrong or incomplete.
+**Two theories have been proposed and both were wrong. Do not propose a third from reading
+the code — instrument it.** Every simulator path tried so far produces a correctly sized
+answer, which is itself the most useful fact here: whatever causes it is not reproducible
+from the models alone, so it depends on real ink, a real lasso, or real page state.
+Ruled out **by measurement**, so do not re-spend time here:
+- *Page position.* Frames are identical (16×35) with the selection at three different places
+  on the page, including hard against the right edge.
+- *Occupancy fallback.* The free-space search preserves the size it is handed; it relocates,
+  it does not shrink.
+- *Generated ink skewing the estimate.* `StyleStatsEstimator.xHeight(of:)` discards
+  zero-height strokes, and typeset ink is entirely horizontal hatch lines, so it contributes
+  nothing rather than dragging the median down.
+- *A zero x-height collapsing the frame.* Fixed and floored in M2-15; a selection of pure
+  generated ink now yields 14×31 rather than 1×1.
+**The next step is a device log, not another hypothesis.** At the top of `AskPipeline.place`,
+record per Ask: `context.anchor.xHeight`, `context.style.xHeight`,
+`PlacementEngine.usableXHeight(for:)`, the block's measured size, the chosen frame, and
+`usedFallback`. Ask several times at different handwriting sizes and find which of those
+stops tracking the input. Note the user's observation that it is *sometimes* right — so
+capture the good cases too; the difference between them is the answer.
 Acceptance:
-- [ ] Confirm on device after M2-16 whether this still happens
-- [ ] If it does, log the estimated x-height and chosen frame per Ask and find where they diverge
+- [ ] A log from a real device showing where the chain stops tracking the selection
+- [ ] The cause named with evidence
+- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15

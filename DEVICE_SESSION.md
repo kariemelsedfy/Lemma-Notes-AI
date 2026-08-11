@@ -106,7 +106,25 @@ first time anyone sees what the product is actually for.
 **M2-13, M2-13B, M2-14 and M2-15 are closed** — confirmed 2026-08-10: export works, accepted
 ink stays, and answers are sized in proportion to the writing they answer. ✅
 
-**Do M2-16 first, before anything else here:** calibrate, then ask. The answer must appear.
+**Three things are open and only a device can close them. Do them in this order.**
+
+**1 — M3-16, the calibration summary.** Calibrate, and deliberately leave a few boxes blank
+(or skip the maths sheet). At the end the summary must show the missing characters *wrapped*
+inside the sheet, and the **Save** button must be visible and tappable. Save is the only thing
+that writes your handwriting to disk; if it is off-screen, the whole calibration is discarded
+without saying so.
+
+**2 — M3-17, typeset after calibrating.** Once Save works, calibrate fully, use the repair
+button for anything missed, then ask. The answer should be in your hand. **If it is still
+typeset, that is the blocker** — the diagnosis order is in `PROGRESS.md` M3-17, and the fastest
+route is one log line at the top of `ask()` rather than more guessing.
+
+**3 — M2-17, size and placement.** Ask several times, at deliberately different handwriting
+sizes. **Write down the cases that come out right as well as the ones that come out wrong** —
+two theories have already failed, every simulator path produces a correct answer, and the
+difference between a good case and a bad one is the only remaining lead.
+
+**Then M2-16:** calibrate, then ask. The answer must appear.
 Until 2026-08-10 finishing calibration silently broke every subsequent Ask — the generated
 ink was written into an orphaned object — so the feature that was meant to improve answers
 was the one that stopped them.
