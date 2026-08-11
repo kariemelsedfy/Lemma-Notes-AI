@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **generated-answer erasing awaiting device confirmation**
+**Last updated:** 2026-08-11 · by: Claude · Milestone: **generated-answer erasing awaiting device confirmation**
 
 ## Handover, 2026-08-10
 
@@ -124,7 +124,7 @@ who has not read the code — because they have not.
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
 | Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing |
-| Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
+| Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-25) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing; export flushes autosave, reloads the package, and fails closed rather than sharing a stale snapshot |
@@ -176,7 +176,7 @@ who has not read the code — because they have not.
 
 ## 4. Environment notes
 
-**Four traps in this working copy:**
+**Five traps in this working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
@@ -199,6 +199,23 @@ who has not read the code — because they have not.
    Installing over the app preserves notebooks and the glyph bank; uninstall only when clean
    app data is explicitly required, and warn that local data will be erased. This is also
    recorded in `AGENTS.md` §8 and `DEVICE_SESSION.md` §0.
+5. **Dataless OneDrive files can make this checkout untestable, and the fix is not to retry.**
+   Some tracked files sit as cloud placeholders that never hydrate — repeated `cat` does not
+   bring them down. `xcodebuild` then fails with `Error opening input file … (Operation timed
+   out)` and **nothing in the app target can be built or tested here at all**. Loose objects
+   under `.git/objects` go dataless too, so `git clone` fails the same way (`copy-fd: read
+   returned: Operation timed out`). Packfiles have stayed intact, so the escape is:
+
+   ```bash
+   git archive HEAD | tar -x -C <scratch-dir>   # fully hydrated tree
+   cp <your modified files> <scratch-dir>/…      # working-tree changes on top
+   cd <scratch-dir> && tuist generate --no-open && ./scripts/test.sh
+   ```
+
+   `tuist` is not on `PATH`; it is at
+   `~/.local/share/mise/installs/tuist/<version>/tuist` (version pinned in `.mise.toml`).
+   Two sessions have now lost time rediscovering this. Verify in the scratch tree, commit
+   from this one.
 
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.

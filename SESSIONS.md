@@ -11,6 +11,50 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M2-18 — restore the coverage a test merge dropped
+
+Picked this up with an uncommitted working tree: `GeneratedInkEraserTests.swift` (5 tests)
+deleted and 4 of its tests re-homed in `SuggestionProvenanceTests.swift`, where they can share
+the `page()` fixture. The merge is a reasonable idea, but it **silently lost one test** —
+`testOneGestureCanRemoveTwoGeneratedAnswersWithoutTouchingHandwriting`, the only cover for
+`GeneratedInkEraser.resolve` handling more than one removed element.
+
+I restored it rather than trusting the reading. Mutation-testing earns the claim: adding
+`.prefix(1)` to the `referencesToRemove` chain — a plausible regression that handles only the
+first erased answer — leaves 12 of the 13 tests green and fails exactly the restored one. The
+gap was real, and nothing else in the suite covered it.
+
+That addition then pushed the merged class to 252 lines, over SwiftLint's 250-line
+`type_body_length`. The fixtures moved into an `extension` in the same file, which keeps the
+merge and its shared fixtures while clearing the rule. Worth knowing the merge sits ~2 lines
+under a hard CI gate: **the next test added to this class will break lint again**, and the
+answer then is to split the eraser cases back into their own file, not to keep extending.
+
+**The OneDrive trap in CONTEXT.md §4 is worse than "the formatting script times out."**
+`SuggestionProvenance.swift` and `DocumentPackageStore.swift` are dataless and will not
+hydrate — repeated `cat` never brings them down — so `xcodebuild` fails with `Error opening
+input file (Operation timed out)` and **no test can run in this checkout at all.** 61 loose
+objects under `.git/objects` are dataless too, so `git clone` also fails (`copy-fd: read
+returned: Operation timed out`). What works: packfiles are intact, so `git archive HEAD | tar
+-x -C <dir>` produces a fully hydrated tree. Copy the modified files in, `tuist generate`, and
+run there. That is the whole recipe, and it cost an hour to find twice — once for Codex, once
+for me.
+
+Two things I did not do. I did not touch the `PageDrawingStore`/undo implementation: it is
+Codex's and it is sound. And I reverted the in-place edit of Codex's M2-18 session entry that
+came with the tree — this file says append-only at the top, and the edit was deleting the
+OneDrive note that turned out to be the most valuable thing in it.
+
+**Still open, unchanged by this session:** M2-18's third acceptance box, "Undo restores the
+whole answer in one step," is unticked and **cannot be ticked from here** — it depends on the
+real `UIUndoManager` a `PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4).
+It needs the physical iPad, together with the grouped-erase check already queued.
+
+**Verification:** app tests 151/151 ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0
+violations across 131 files ✅ · mutation test confirms the restored case fails a real
+regression ✅ · all of it run in a `git archive` checkout, not this one · physical iPad
+eraser/undo still pending
+
 ## 2026-08-11 · Codex · M2-18 — generated answers erase as one group
 
 PencilKit was behaving consistently: its vector eraser removed one stroke, but the typeset

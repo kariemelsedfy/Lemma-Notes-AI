@@ -542,10 +542,19 @@ closed to preserve ink. The live page store now owns current metadata so a later
 overwrite accepted provenance with the notebook-opening snapshot. PencilKit undo registration
 is suppressed only for the eraser gesture and replaced by one snapshot restore after its final
 delayed drawing callback.
+Claude 2026-08-11: the eraser tests were merged into `SuggestionProvenanceTests` to share its
+fixtures, which dropped the two-answers-in-one-gesture case — the only cover for `resolve`
+handling more than one removed element. Restored and mutation-tested (`.prefix(1)` on the
+`referencesToRemove` chain fails that case alone, 12 of 13 still green). Fixtures moved to an
+extension to stay under `type_body_length`; the class is ~2 lines under the limit, so the next
+test added here should split the eraser cases back into their own file.
+**The undo box cannot be ticked without hardware:** it depends on the `UIUndoManager` a
+`PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4). It needs the same device
+run as the grouped-erase check.
 Acceptance:
 - [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
 - [x] Erasing handwriting is unchanged
-- [ ] Undo restores the whole answer in one step
+- [ ] Undo restores the whole answer in one step — device-only, queued with the erase check
 
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
@@ -727,7 +736,7 @@ status: Dropped · note: superseded — device use answered Q8 without needing t
 status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
 Note: built against the current API only — `pencilInteractionDidTap:` has been deprecated
 since iOS 17.5. The gestures themselves **cannot fire in a simulator**; confirming they do
-on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-18.
+on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-25.
 Acceptance:
 - [x] `UIPencilInteraction` squeeze arms the Ask lasso, honouring an explicit `.ignore`
 - [x] Double-tap defers to the system preference unless the user opted in
@@ -740,8 +749,12 @@ Acceptance:
 - [ ] Double-tap does what the system setting says, and nothing app-specific
 - [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
 
-### M2-18 — Onboarding toggle for the double-tap override
+### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Note: **renumbered from M2-18 by Claude 2026-08-11.** Two different tasks were both filed as
+M2-18 — this one and the generated-ink eraser — and `PROGRESS.md` claims are the only lock we
+have, so the ID had to be unambiguous. The eraser kept M2-18 because the claim commit and git
+history already reference it.
 Note: `PencilActionPolicy(overridesDoubleTap:)` exists and is tested but is always
 constructed with the default, so the override is currently unreachable. Onboarding does
 not exist yet (M7).
