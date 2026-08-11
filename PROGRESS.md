@@ -489,7 +489,7 @@ Acceptance:
 - [x] Tests use visibly different question and answer bounds
 
 ### M2-24B — Capture and present the second Ask lasso
-status: Ready · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
+status: In progress · claimed: Codex · 2026-08-11 · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
 Acceptance:
 - [ ] Ask visibly prompts question selection, then answer-area selection
 - [ ] The two page-space regions have distinct overlays and cannot be conflated
