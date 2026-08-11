@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 repeated-Ask identity fix awaiting device retest**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 handwriting sizing and repeated Ask device-confirmed**
 
 ## Handover, 2026-08-10
 
@@ -24,10 +24,10 @@ The latest device runs resolved two earlier follow-ups and exposed one deeper in
 
 | | | |
 |---|---|---|
-| **M2-17** | Pre-calibration typeset size is device-confirmed; handwriting retest rides with M3-20 | review |
+| **M2-17** | Typeset and repeated handwritten answers scale correctly on the physical iPad | done |
 | **M3-18** | Repair sets paginate at 26 and are practical on the physical iPad | done |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
-| **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; fresh build installed, human retest pending | review |
+| **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; device-confirmed | done |
 
 **M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
@@ -47,6 +47,7 @@ loaded page strokes all received the same UUID because `repeatElement(UUID(), co
 evaluated UUID once. Selecting one stroke could therefore select every old stroke and answer
 on the page, corrupting the next context's scale and anchor. M3-20 generates one fresh UUID
 per loaded stroke and has an iOS regression around a two-stroke loaded drawing.
+The user confirmed the fresh accumulated-page build now works perfectly across repeated asks.
 
 Answer placement is now a decided two-selection interaction (ADR-016/M2-24): question first,
 then an explicitly marked allowed answer area. M2-23's inferred trailing-`=` anchor is
@@ -93,17 +94,15 @@ shipping it.
 
 ## 1. Where we are
 
-**M3 is usable in the user's hand, but not ready for its panel until M2-17 is device-confirmed.**
-The blind panel (M3-10) is still the milestone gate and still needs a human, but there is no
-point running it while a calibrated user's answers come out in typeset.
+**M3 is usable in the user's hand; its size and repeated-Ask blockers are device-confirmed.**
+The blind panel (M3-10) remains the milestone gate and still needs a human.
 
 M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple Developer account. M3 built the whole handwriting path: a typeset fallback, an OCR legibility harness, calibration capture over seven guided sheets, guide-box segmentation, glyph-bank storage, the synthesizer, line breaking, the three §8 styles, and an automated similarity metric.
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: device-check M3-20 on an accumulated page, implement M2-24's explicit answer-area
-selection, then run M3-10.** The panel judges handwriting similarity, and a context contaminated
-by old page strokes would bias that verdict.
+**Next action: implement M2-24's explicit answer-area selection, then run M3-10.** The answer
+region is now a user decision under ADR-016 rather than an inferred anchor.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 

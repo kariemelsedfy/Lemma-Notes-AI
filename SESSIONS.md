@@ -11,6 +11,18 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M3-20/M2-17 — accumulated-page retest passed
+
+The user ran the fresh physical-iPad build against the repeated-Ask scenario and reported that
+it is working perfectly. This closes both M3-20's loaded-stroke identity defect and M2-17's
+remaining handwritten-size verification; the pre-calibration typeset size and 26-character
+repair pages had already been confirmed in the preceding run.
+
+The next implementation task is M2-24: after selecting the question, prompt for a distinct
+allowed answer area as decided in ADR-016. That UI is not part of the confirmed build.
+
+**Verification:** fresh physical-iPad accumulated-page repeated Ask ✅ · human-confirmed ✅
+
 ## 2026-08-11 · Codex · M3-20 — fresh identity-fix build is on the iPad
 
 The manual-test handoff used a brand-new source directory, regenerated workspace, and

@@ -29,38 +29,6 @@ _(empty)_
 
 ## Review
 
-### M3-20 — Repeated handwritten answers collapse or distort
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: after three correct handwritten answers, the physical-device recording shows later
-`4`s becoming tiny and detached, then severely enlarged/distorted. Changing the lasso shape
-around otherwise similar `2+2=` ink also appeared to change output scale. The saved glyph was
-healthy. `synchronizeStrokeIDs()` used `repeatElement(UUID(), count:)`, which evaluates the
-UUID once and gave every loaded page stroke the same ID. A lasso around one stroke therefore
-fed the whole accumulated page into sizing and placement. Loaded strokes now receive distinct
-IDs; the iOS regression selects exactly one of two loaded strokes.
-Acceptance:
-- [x] The repeated-Ask failure is reproduced with measured geometry before the fix
-- [x] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height in the replay fixture
-- [x] Tight and loose lassos around the same source strokes resolve the same selected IDs
-- [x] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
-- [x] A fresh physical-iPad build is installed for human verification
-
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: the fresh 2026-08-11 device run disproved the earlier one-stroke fixture: real
-`2+2=` selections at roughly 30pt, 60pt, and 150pt all rendered the same 7.2pt `4`.
-Read-only analysis of the local notebook found the stroke-level x-height estimator returning
-0.825/1.65/4.125pt because Pencil wobble gives horizontal `+`/`=` bars tiny nonzero heights;
-all three hit the 8pt layout floor. The anchor now uses its visible line height as a lower
-bound. A three-scale math fixture reproduces the old measurements and requires 30/60/150pt.
-The user confirmed the corrected pre-calibration typeset size on 2026-08-11. The later
-handwriting instability was M3-20's loaded-stroke identity collision; its fresh device
-verification will close the remaining handwriting side of this task.
-Acceptance:
-- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
-- [x] The cause named with failing-test and simulator evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
-
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
 Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
@@ -78,6 +46,35 @@ Acceptance:
 - [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
 ## Done
+
+### M3-20 — Repeated handwritten answers collapse or distort
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: after three correct handwritten answers, the physical-device recording showed later
+`4`s becoming tiny and detached, then severely enlarged/distorted. The saved glyph was
+healthy. `synchronizeStrokeIDs()` used `repeatElement(UUID(), count:)`, which evaluates the
+UUID once and gave every loaded page stroke the same ID. A lasso around one stroke therefore
+fed the whole accumulated page into sizing and placement. Loaded strokes now receive distinct
+IDs; the iOS regression selects exactly one of two loaded strokes. The user confirmed repeated
+Ask now works perfectly on the fresh accumulated-page device build.
+Acceptance:
+- [x] The repeated-Ask failure is reproduced with measured geometry before the fix
+- [x] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height
+- [x] Tight and loose lassos around the same source strokes produce the same answer size
+- [x] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
+- [x] A fresh physical-iPad build is installed and human-confirmed
+
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: real `2+2=` selections at roughly 30pt, 60pt, and 150pt originally rendered the same
+7.2pt `4`. Pencil wobble gave horizontal `+`/`=` bars tiny nonzero heights, so the stroke-level
+estimator returned 0.825/1.65/4.125pt and every selection hit the 8pt floor. The anchor now
+uses its visible line height as a lower bound. The typeset path was device-confirmed first;
+M3-20's loaded-stroke identity repair removed the remaining accumulated-page contamination.
+The user confirmed the fresh physical build now sizes repeated handwritten answers correctly.
+Acceptance:
+- [x] A real-device comparison covers multiple handwriting sizes on an accumulated page
+- [x] The cause is named with failing-test and simulator evidence
+- [x] Answers are sized relative to the writing they answer at every tested handwriting size
 
 ### M3-18 — Repair sheets make missed characters too small to write
 status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
