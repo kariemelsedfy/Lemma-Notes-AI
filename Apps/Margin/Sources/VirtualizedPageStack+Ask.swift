@@ -138,7 +138,6 @@ extension VirtualizedPageStack {
 
         let committed = PKDrawing(strokes: drawingStore.drawing(for: pageID).strokes + pencilStrokes)
         let accepted = suggestions.acceptWithoutInserting()
-        drawingStore.save(committed, for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         recordProvenance(accepted, on: pageID, in: committed)
         askModel.accept()
         clearCompletedAskSelections()
@@ -158,7 +157,10 @@ extension VirtualizedPageStack {
 
     /// Writes the `generated` element so the ink stays attributable after a reload.
     func recordProvenance(_ accepted: AcceptedSuggestion?, on pageID: UUID, in drawing: PKDrawing) {
-        guard let accepted, let notebookID, let autosave, let metadata = pageMetadata[pageID] else { return }
+        guard let accepted, let metadata = drawingStore.metadata(for: pageID) else {
+            drawingStore.save(drawing, for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
+            return
+        }
         // Re-derive the identifiers against the committed drawing: the suggestion's own
         // stroke IDs are not the ones the page ended up with.
         let pageStrokes = drawing.strokes.map { InkStroke($0) }
@@ -169,7 +171,11 @@ extension VirtualizedPageStack {
             acceptedAt: accepted.acceptedAt
         )
         let updated = SuggestionProvenance.recording(placed, into: metadata, pageStrokes: pageStrokes)
-        let page = StoredPage(metadata: updated, inkData: drawing.dataRepresentation())
-        Task { await autosave.record(page, inNotebook: notebookID) }
+        drawingStore.save(
+            drawing,
+            metadata: updated,
+            for: pageID,
+            pageSize: pageSizes[pageID] ?? pageSize
+        )
     }
 }

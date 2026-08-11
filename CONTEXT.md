@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 handwriting sizing and repeated Ask device-confirmed**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **generated-answer erasing awaiting device confirmation**
 
 ## Handover, 2026-08-10
 
@@ -28,6 +28,7 @@ The latest device runs resolved two earlier follow-ups and exposed one deeper in
 | **M3-18** | Repair sets paginate at 26 and are practical on the physical iPad | done |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
 | **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; device-confirmed | done |
+| **M2-18** | Touching one generated stroke removes its provenance group; physical eraser/undo check remains | review |
 
 **M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
@@ -55,9 +56,8 @@ accent and green overlays. Placement treats the green rectangle as a hard bounda
 the question-derived writing size, and asks for another area when the answer cannot fit.
 
 The PNG supplied as M2-17 evidence exposed a separate export defect: it contained the ruled
-paper but no ink while its current on-device notebook package contained 63 strokes. The
-toolbar exports the `StoredDocument` snapshot loaded before live edits; M1-07C owns flushing
-and reloading before PNG/PDF generation.
+paper but no ink while its current on-device notebook package contained 63 strokes. M1-07C
+now flushes pending autosave work, reloads the package, and only then renders PNG or PDF.
 
 **M2-22 closes the missing-input path.** Every shipping Ask snapshots the actual `PKDrawing`,
 renders the capped crop and neighborhood on white, reads the crop with on-device Vision, and
@@ -73,8 +73,9 @@ lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELIN
 `pageText`). Four defects so far come from generated ink being structurally unlike a person's
 — thinner than PencilKit draws (M2-13), then bolder (M2-13B), then perfectly flat and so
 measuring as a zero x-height (M2-15), and its hatch strokes making the eraser behave
-differently (M2-18). Ask what a new kind of generated stroke looks like *to the app* before
-shipping it.
+differently (M2-18). Generated answers now erase as provenance groups, and live page metadata
+travels through the same store/autosave path as its drawing. Ask what a new kind of generated
+stroke looks like *to the app* before shipping it.
 
 ## 1a. If you are picking this up cold
 
@@ -101,8 +102,9 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: run M3-10's human panel.** M2-24's two-stage Pencil interaction is
-device-confirmed, and M1-07C now reloads the current notebook before either export format.
+**Next action: physically verify M2-18's grouped erase and one-step undo, then run M3-10's
+human panel.** M2-24's two-stage Pencil interaction is device-confirmed, and M1-07C now
+reloads the current notebook before either export format.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
@@ -121,7 +123,7 @@ who has not read the code — because they have not.
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period, and flush immediately on notebook close or the app leaving the foreground |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing |
 | Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
@@ -134,7 +136,7 @@ who has not read the code — because they have not.
 | Provider boundary | `SpecProvider` receives ephemeral crop/neighborhood pixels plus the local selected-area reading and returns `ValidatedSpec`, so no provider can skip validation. Content may not be logged or retained. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` clips every search to the user-marked allowed answer rectangle, respects occupied ink, preserves the question-derived writing size, and returns no-room rather than shrinking or escaping |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
-| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
+| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept returns provenance which is stored with the committed drawing and survives save/edit/reload. Erasing any one unambiguous stroke removes that generated element as a group |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. In the canvas chrome, driven by the loop-and-dwell selection |
 | Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Driven by the Ask bar's verbs against a canned provider until M4 |
 | Ink renderer | `HandwritingInkRenderer` draws from the glyph bank; `TypesetInkRenderer` is the §8 fallback and the Exam Mode default. Fallback is per block, never per character. Which one runs is `HandwritingStylePreference` |

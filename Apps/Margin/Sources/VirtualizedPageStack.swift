@@ -11,7 +11,6 @@ struct VirtualizedPageStack: View {
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
-    let pageMetadata: [UUID: PageMetadata]
     /// Recomputed by the parent whenever the style preference or the glyph bank changes,
     /// so a switch takes effect on the next Ask without rebuilding the pipeline.
     let inkRenderer: any SuggestionInkRendering
@@ -55,8 +54,8 @@ struct VirtualizedPageStack: View {
                 ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
             })
         let inkData = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.inkData) })
-        pageMetadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
-        _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData))
+        let metadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
+        _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData, metadata: metadata))
     }
 
     private var livePageIndices: Set<Int> {
@@ -189,9 +188,7 @@ struct VirtualizedPageStack: View {
         let dirty = drawingStore.takeDirtyPages()
         guard !dirty.isEmpty else { return }
 
-        for (pageID, drawing) in dirty {
-            guard let metadata = pageMetadata[pageID] else { continue }
-            let page = StoredPage(metadata: metadata, inkData: drawing.dataRepresentation())
+        for page in dirty {
             Task { await autosave.record(page, inNotebook: notebookID) }
         }
     }
@@ -264,7 +261,7 @@ private struct CachedPageView: View {
     }
 }
 
-private struct LiveInkCanvas: UIViewRepresentable {
+struct LiveInkCanvas: UIViewRepresentable {
     let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
@@ -272,8 +269,8 @@ private struct LiveInkCanvas: UIViewRepresentable {
     let selectedPen: MarginPen
     @ObservedObject var askSelection: AskSelectionCoordinator
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+    func makeCoordinator() -> LiveInkCanvasCoordinator {
+        LiveInkCanvasCoordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -309,22 +306,6 @@ private struct LiveInkCanvas: UIViewRepresentable {
         }
     }
 
-    @MainActor
-    final class Coordinator: NSObject, PKCanvasViewDelegate {
-        private let pageID: UUID
-        private let pageSize: CGSize
-        private let drawingStore: PageDrawingStore
-
-        init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
-            self.pageID = pageID
-            self.pageSize = pageSize
-            self.drawingStore = drawingStore
-        }
-
-        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
-        }
-    }
 }
 
 extension PageSelectionStore {

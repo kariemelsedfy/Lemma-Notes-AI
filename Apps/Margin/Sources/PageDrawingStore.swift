@@ -1,3 +1,4 @@
+import DocumentStore
 import InkCore
 import PencilKit
 import SwiftUI
@@ -9,11 +10,13 @@ import SwiftUI
 final class PageDrawingStore: ObservableObject {
     @Published private var drawings: [UUID: PKDrawing] = [:]
     @Published private var previews: [UUID: UIImage] = [:]
+    private var metadataByPageID: [UUID: PageMetadata]
     /// Bumped on every edit so the view has something to observe without diffing ink.
     @Published private(set) var revision = 0
     private var dirtyPageIDs: Set<UUID> = []
 
-    init(inkData: [UUID: Data] = [:]) {
+    init(inkData: [UUID: Data] = [:], metadata: [UUID: PageMetadata] = [:]) {
+        metadataByPageID = metadata
         for (pageID, data) in inkData {
             if let drawing = try? PKDrawing(data: data) {
                 drawings[pageID] = drawing
@@ -29,8 +32,20 @@ final class PageDrawingStore: ObservableObject {
         previews[pageID]
     }
 
-    func save(_ drawing: PKDrawing, for pageID: UUID, pageSize: CGSize) {
+    func metadata(for pageID: UUID) -> PageMetadata? {
+        metadataByPageID[pageID]
+    }
+
+    func save(
+        _ drawing: PKDrawing,
+        metadata: PageMetadata? = nil,
+        for pageID: UUID,
+        pageSize: CGSize
+    ) {
         drawings[pageID] = drawing
+        if let metadata {
+            metadataByPageID[pageID] = metadata
+        }
         previews[pageID] = renderPreview(drawing, pageSize: pageSize)
         dirtyPageIDs.insert(pageID)
         revision += 1
@@ -45,10 +60,11 @@ final class PageDrawingStore: ObservableObject {
     }
 
     /// The pages edited since the last call, clearing the record.
-    func takeDirtyPages() -> [UUID: PKDrawing] {
+    func takeDirtyPages() -> [StoredPage] {
         defer { dirtyPageIDs.removeAll() }
-        return dirtyPageIDs.reduce(into: [:]) { result, pageID in
-            result[pageID] = drawings[pageID]
+        return dirtyPageIDs.compactMap { pageID in
+            guard let drawing = drawings[pageID], let metadata = metadataByPageID[pageID] else { return nil }
+            return StoredPage(metadata: metadata, inkData: drawing.dataRepresentation())
         }
     }
 

@@ -11,6 +11,30 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-18 — generated answers erase as one group
+
+PencilKit was behaving consistently: its vector eraser removed one stroke, but the typeset
+answer's visible shapes are dozens of hatch strokes. The canvas now detects a missing stroke
+through the generated element's persisted fingerprints and removes the rest of that answer.
+Ordinary handwriting remains on PencilKit's vector path. Ambiguous fingerprints fail closed
+so an attribution collision can never delete user ink.
+
+The implementation also fixes a provenance lifecycle defect found while tracing the erase:
+the live drawing store retained only the notebook-opening metadata, so a later autosave could
+overwrite the generated element recorded at acceptance. Drawing and current metadata now move
+through the store and autosave atomically. An eraser gesture suppresses PencilKit's internal
+undo registrations until its delayed final drawing callback, then registers one snapshot
+restore for the entire gesture.
+
+Physical Pencil input and the real canvas undo manager are the remaining checks. OneDrive
+timed out on two unrelated dataless Swift files during the local formatting script, so the
+exact changed-file hashes were checked against the fully hydrated verification checkout;
+the complete lint script passed there.
+
+**Verification:** focused grouped-erase tests 5/5 ✅ · app tests 151/151 ✅ · full
+`./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 132 files ✅ · physical
+iPad eraser/undo pending
+
 ## 2026-08-11 · Codex · M1-07C — export now uses the current notebook
 
 The export toolbar captured the `StoredDocument` that opened the canvas and kept using it

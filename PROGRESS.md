@@ -524,7 +524,7 @@ Acceptance:
 - [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
 
 ### M2-18 — Erasing generated ink behaves differently from erasing your own
-status: In progress · claimed: Codex · 2026-08-11 · refs: PROGRESS.md M2-13B · estimate: S
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · refs: PROGRESS.md M2-13B · estimate: S
 Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
 by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
 removing pixels in a radius."
@@ -536,9 +536,15 @@ Options, in rough order of cost: group a block's strokes so erasing any one eras
 (provenance already records which strokes came from one Ask, so the data exists); or treat
 generated ink as a single object until edited. Worth deciding alongside M3-08B, which has the
 same "edits to committed generated ink" question.
+Implemented the provenance-group option: losing any unambiguous stroke fingerprint from one
+generated element removes the element's other strokes, while ambiguous fingerprints fail
+closed to preserve ink. The live page store now owns current metadata so a later edit cannot
+overwrite accepted provenance with the notebook-opening snapshot. PencilKit undo registration
+is suppressed only for the eraser gesture and replaced by one snapshot restore after its final
+delayed drawing callback.
 Acceptance:
-- [ ] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
-- [ ] Erasing handwriting is unchanged
+- [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
+- [x] Erasing handwriting is unchanged
 - [ ] Undo restores the whole answer in one step
 
 ### M2-15 — Asking twice on one page draws a dot the second time
