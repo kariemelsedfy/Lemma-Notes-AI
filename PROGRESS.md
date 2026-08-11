@@ -25,22 +25,17 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
-
-## Review
-
 ### M2-17 — The answer's size and placement do not track what was asked about
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: the user's fresh-build requirement is now mandatory in `AGENTS.md` §8,
-`DEVICE_SESSION.md` §0, and `CONTEXT.md` §4. This handoff regenerated with signing, built
-from the current branch in a new `/private/tmp` DerivedData directory, installed that exact
-artifact over the app, launched it, and opened Xcode. App data was preserved. The sizing
-fixture still requires a 26pt selection's typeset `4` to render at 98–105%; awaiting the
-physical-iPad comparison.
+status: In progress · claimed: Codex · 2026-08-11 · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: the fresh 2026-08-11 physical-device build failed verification: the generated `4`
+remains the same small size for small, normal, and large selections. Reopened to reproduce
+the complete shipping scale chain and identify where selection-relative sizing is discarded.
 Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
 - [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
+
+## Review
 
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
