@@ -25,7 +25,18 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M3-20 — Repeated handwritten answers collapse or distort
+status: In progress · claimed: Codex · 2026-08-11 · needs-device-verification · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: after three correct handwritten answers, the physical-device recording shows later
+`4`s becoming tiny and detached, then severely enlarged/distorted. Changing the lasso shape
+around otherwise similar `2+2=` ink also appears to change output scale. Treat the video and
+the local-only device notebook/glyph bank as the fixture; do not guess from renderer code.
+Acceptance:
+- [ ] The repeated-Ask failure is reproduced with measured geometry before the fix
+- [ ] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height
+- [ ] Tight and loose lassos around the same source strokes produce the same answer size
+- [ ] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
+- [ ] A fresh physical-iPad build is installed for human verification
 
 ## Review
 
