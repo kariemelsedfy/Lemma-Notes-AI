@@ -524,7 +524,7 @@ Acceptance:
 - [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
 
 ### M2-18 — Erasing generated ink behaves differently from erasing your own
-status: Ready · refs: PROGRESS.md M2-13B · estimate: S
+status: In progress · claimed: Codex · 2026-08-11 · refs: PROGRESS.md M2-13B · estimate: S
 Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
 by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
 removing pixels in a radius."
