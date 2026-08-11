@@ -25,7 +25,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M2-17 — The answer's size and placement do not track what was asked about
+status: In progress · claimed: Codex · 2026-08-11 · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: reopened to codify and perform the user's required fresh-build protocol before every
+manual device test: regenerate, use a brand-new DerivedData directory, rebuild, reinstall,
+launch, and open Xcode. Preserve app data unless the test explicitly requires a clean state.
+
+Previous note: the 2026-08-11 device retest found a separate pre-calibration regression: a
+26pt selection produced a 17.6pt typeset `4` (68%). The nominal frame now reserves 0.98×
+width per character and 1.52× line height; the same app fixture must render at least 25.48pt
+(98%) and stay inside the placed frame. Awaiting a fresh physical-iPad comparison.
+Acceptance:
+- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
+- [x] The cause named with failing-test and simulator evidence
+- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
 
 ## Review
 
@@ -59,32 +72,6 @@ Acceptance:
 - [ ] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests; device confirmation pending
 - [x] Progress makes it clear when more than one repair sheet remains
 - [x] Captures from every repair sheet merge into the existing bank
-
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
-Note: the 2026-08-11 device retest found a separate pre-calibration regression: a 26pt
-selection produced a 17.6pt typeset `4` (68%). The renderer was fitting Helvetica's full
-line metrics into a nominal handwriting frame whose 0.62× advance and 1.4× ink box were both
-too small. The nominal frame now reserves 0.98× width per character and 1.52× line height;
-the same app fixture must render at least 25.48pt (98%) and stay inside the placed frame.
-The calibrated-handwriting regression and content-wrapping suite remain green. Awaiting a
-fresh physical-iPad comparison before closing the blocker.
-
-Previous note: a failing measurement finally reproduced the captured-handwriting size defect.
-Doubling selected x-height from 18 to 36 left the handwritten glyph at exactly 1× because
-`Synthesizer.layout` capped
-it at the x-height stored during calibration. It now accepts the selected writing's local
-x-height, and `AskPipeline` feeds rendering the same usable measurement that placement used.
-The package regression changed from 1× to 2×. The app fixture selects 26pt ink and now draws
-a 24.4pt handwritten answer (94%; width fit accounts for the remainder). Privacy-safe logs
-record anchor/style/usable x-height, block frame, fallback, and final ink bounds for the
-required device comparison. The bottom-right position is the current `.atAnchor` policy—one
-word gap after the last selected glyph on its baseline—and remains flagged for M2-22's OCR
-work and M2-23's anchor refinement rather than being treated as the sizing bug.
-Acceptance:
-- [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
-- [x] The cause named with failing-test and simulator evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
 
 ## Done
 
