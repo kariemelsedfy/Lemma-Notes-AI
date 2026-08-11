@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-10 · by: Codex · Milestone: **M3 sizing fix awaiting device verification**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 sizing fixes awaiting device verification**
 
 ## Handover, 2026-08-10
 
@@ -24,17 +24,19 @@ Three follow-ups came from that same device run:
 
 | | | |
 |---|---|---|
-| **M2-17** | Relative answer sizing fixed in tests; physical-iPad confirmation pending | review |
+| **M2-17** | Handwritten and pre-calibration typeset sizing fixed in tests; physical-iPad confirmation pending | review |
 | **M3-18** | More than 26 missed characters makes repair boxes impractically small | next |
 | **M2-22** | The selected-area crop is never rasterized or read in the shipping Ask path | next |
 
-**M2-17 now has a measured cause and an implemented fix.** Placement already scaled its frame
-from selected ink; synthesis then capped the actual glyph at the unrelated x-height recorded
-during calibration. A failing regression measured a 1× glyph when selection size doubled;
-it now measures 2×. The app-level fixture produces a 24.4pt handwritten answer for 26pt
-selected ink, and privacy-safe size/placement logs are ready for physical-iPad confirmation.
-The bottom-right position is the current `.atAnchor` policy (after the last selected glyph),
-not occupancy fallback; M2-22 owns refining that anchor from recognized content such as `=`.
+**M2-17 has two measured causes and two implemented fixes.** Captured handwriting used to cap
+the glyph at the unrelated calibration x-height; it now follows the selection. The next
+device run clarified that its screenshot was taken before calibration, exposing a separate
+typeset path: a nominal frame sized at 0.62× advance and 1.4× ink height squeezed a 26pt
+selection's `4` to 17.6pt. The frame now accounts for Helvetica's side bearings and full
+line metrics, and both package and app regressions require the typeset answer to be 98–105%
+of the selected height without escaping its placement. The bottom-right position is still
+the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback;
+M2-22 owns refining that anchor from recognized content such as `=`.
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.

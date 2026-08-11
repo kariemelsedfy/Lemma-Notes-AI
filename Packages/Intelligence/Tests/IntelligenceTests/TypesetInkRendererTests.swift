@@ -18,6 +18,32 @@ final class TypesetInkRendererTests: XCTestCase {
         XCTAssertTrue(frame.insetBy(dx: -2, dy: -2).contains(InkLineGrouping.bounds(of: strokes)))
     }
 
+    func testInlineAnswerMatchesTheSelectedWritingsSize() throws {
+        let selectedHeight: CGFloat = 26
+        // Deliberately wider than the answer. The selected size, not whichever axis of
+        // the placement frame happens to bind first, must decide the visible glyph size.
+        let placed = CGRect(x: 300, y: 400, width: 200, height: selectedHeight * 1.52)
+
+        let strokes = try TypesetInkRenderer().strokes(
+            for: Self.placement(.inline(SpecRun(kind: .math, value: "4")), frame: placed),
+            style: StyleStats(
+                xHeight: selectedHeight,
+                slant: 0,
+                lineSpacing: 0,
+                baselineDrift: 0,
+                meanVelocity: 0,
+                meanForce: 0,
+                strokeWidth: 0
+            ),
+            seed: 0
+        )
+
+        let drawn = InkLineGrouping.bounds(of: strokes)
+        XCTAssertGreaterThanOrEqual(drawn.height, selectedHeight * 0.98)
+        XCTAssertLessThanOrEqual(drawn.height, selectedHeight * 1.05)
+        XCTAssertTrue(placed.insetBy(dx: -2, dy: -2).contains(drawn))
+    }
+
     func testStacksLinesDownTheFrame() throws {
         let lines = [
             SpecLine(run: SpecRun(kind: .math, value: "12")),
@@ -144,6 +170,13 @@ final class TypesetInkRendererTests: XCTestCase {
         XCTAssertFalse(ink.isEmpty)
         // The answer sits to the right of the work it answers, on its baseline.
         let drawn = InkLineGrouping.bounds(of: ink)
+        let selectedHeight = InkLineGrouping.bounds(of: pageStrokes).height
+        XCTAssertGreaterThanOrEqual(
+            drawn.height,
+            selectedHeight * 0.98,
+            "Placement and typeset rendering must preserve the selected writing's size: \(drawn)"
+        )
+        XCTAssertLessThanOrEqual(drawn.height, selectedHeight * 1.05)
         XCTAssertGreaterThan(drawn.minX, context.anchor.point.x)
         // The baseline sits a descender above the frame's bottom so a `g` stays inside the
         // rectangle placement reserved, which puts a descender-free string slightly high.

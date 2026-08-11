@@ -25,16 +25,23 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
+_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+
+## Review
+
 ### M2-17 — The answer's size and placement do not track what was asked about
-status: In progress · claimed: Codex · 2026-08-11 · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
 Note: the 2026-08-11 device retest found a separate pre-calibration regression: a 26pt
-selection produces a 17.6pt typeset `4` (68%). The earlier fix only corrected the captured-
-handwriting renderer, which produces a 24.4pt answer (94%) for the same fixture. Reopened to
-make the typeset fallback honor the selected writing's local size before another device test.
+selection produced a 17.6pt typeset `4` (68%). The renderer was fitting Helvetica's full
+line metrics into a nominal handwriting frame whose 0.62× advance and 1.4× ink box were both
+too small. The nominal frame now reserves 0.98× width per character and 1.52× line height;
+the same app fixture must render at least 25.48pt (98%) and stay inside the placed frame.
+The calibrated-handwriting regression and content-wrapping suite remain green. Awaiting a
+fresh physical-iPad comparison before closing the blocker.
 
 Previous note: a failing measurement finally reproduced the captured-handwriting size defect.
-Doubling selected x-height
-from 18 to 36 left the handwritten glyph at exactly 1× because `Synthesizer.layout` capped
+Doubling selected x-height from 18 to 36 left the handwritten glyph at exactly 1× because
+`Synthesizer.layout` capped
 it at the x-height stored during calibration. It now accepts the selected writing's local
 x-height, and `AskPipeline` feeds rendering the same usable measurement that placement used.
 The package regression changed from 1× to 2×. The app fixture selects 26pt ink and now draws
@@ -47,10 +54,6 @@ Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
 - [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size — automated scaling tests pass; physical-iPad confirmation pending
-
-## Review
-
-_(empty)_
 
 ## Done
 
