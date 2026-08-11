@@ -11,6 +11,23 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M3-20 — fresh identity-fix build is on the iPad
+
+The manual-test handoff used a brand-new source directory, regenerated workspace, and
+brand-new DerivedData directory. OneDrive timed out both a normal `git clone` and a direct
+source-tree copy, so the fresh source directory was populated from the isolated mirror that
+had just compiled and passed the focused regression. SHA-1 checks confirmed the two changed
+Swift files matched the clean committed checkout byte for byte before generation.
+
+The physical-device build signed successfully, installed over `edu.bowdoin.margin`, and
+launched. Installing over the app preserved the user's notebooks and handwriting calibration;
+there was no uninstall or data reset. Xcode was opened on the regenerated workspace at
+`/private/tmp/lemma-manual-source.DhU74a/Margin.xcworkspace`.
+
+**Verification:** fresh source directory ✅ · regenerated workspace ✅ · new DerivedData
+`/private/tmp/lemma-manual-derived.Sw1PrC` ✅ · signed physical build ✅ · installed and
+launched ✅ · app data preserved ✅ · human accumulated-page comparison pending
+
 ## 2026-08-11 · Codex · M3-20 — loaded strokes shared one identity
 
 The user's recording was the crucial clue: handwritten answers worked on a sparse page, then

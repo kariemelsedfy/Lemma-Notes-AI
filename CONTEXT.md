@@ -27,7 +27,7 @@ The latest device runs resolved two earlier follow-ups and exposed one deeper in
 | **M2-17** | Pre-calibration typeset size is device-confirmed; handwriting retest rides with M3-20 | review |
 | **M3-18** | Repair sets paginate at 26 and are practical on the physical iPad | done |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
-| **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; device retest pending | review |
+| **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; fresh build installed, human retest pending | review |
 
 **M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next

@@ -43,7 +43,7 @@ Acceptance:
 - [x] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height in the replay fixture
 - [x] Tight and loose lassos around the same source strokes resolve the same selected IDs
 - [x] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
-- [ ] A fresh physical-iPad build is installed for human verification
+- [x] A fresh physical-iPad build is installed for human verification
 
 ### M2-17 — The answer's size and placement do not track what was asked about
 status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
