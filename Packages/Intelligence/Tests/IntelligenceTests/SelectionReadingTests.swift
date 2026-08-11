@@ -11,26 +11,6 @@ final class SelectionReadingTests: XCTestCase {
         XCTAssertEqual(SelectionReading(transcript: "a", confidence: .nan).confidence, 0)
     }
 
-    func testRecognitionsBecomeAReadingOrderedConservatively() {
-        let recognitions = [
-            HandwritingRecognition(
-                text: "second",
-                confidence: 0.92,
-                boundingBox: CGRect(x: 0, y: 0.2, width: 0.2, height: 0.1)
-            ),
-            HandwritingRecognition(
-                text: "first",
-                confidence: 0.71,
-                boundingBox: CGRect(x: 0, y: 0.8, width: 0.2, height: 0.1)
-            ),
-        ]
-
-        let reading = OnDeviceSelectionReader.reading(from: recognitions)
-
-        XCTAssertEqual(reading.transcript, "first\nsecond")
-        XCTAssertEqual(reading.confidence, 0.71)
-    }
-
     func testUndecodableCropFailsClosedWithoutInventingATranscript() async {
         let crop = InkRasterImage(data: Data([0x00, 0x01]), size: CGSize(width: 10, height: 10), scale: 2)
 

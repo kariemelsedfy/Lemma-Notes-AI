@@ -186,6 +186,7 @@ final class AskPipelineTests: XCTestCase {
         let input: AskPipeline.PageInput
 
         init(
+            provider injectedProvider: (any SpecProvider)? = nil,
             registerFixture: Bool = true,
             renderer: any SuggestionInkRendering = TypesetInkRenderer(),
             reading: SelectionReading = SelectionReading(transcript: "2+2=", confidence: 0.91)
@@ -200,32 +201,17 @@ final class AskPipelineTests: XCTestCase {
                 selectedAreaReading: reading
             ).cacheKey
             pageEngine.resetRequests()
-            let mockProvider = MockProvider(
-                fixtures: registerFixture ? [key: askPipelineAnswerSpec] : [:]
-            )
-            self.mockProvider = mockProvider
+            let resolvedProvider: any SpecProvider
+            if let injectedProvider {
+                resolvedProvider = injectedProvider
+                mockProvider = nil
+            } else {
+                let provider = MockProvider(fixtures: registerFixture ? [key: askPipelineAnswerSpec] : [:])
+                resolvedProvider = provider
+                mockProvider = provider
+            }
             pipeline = AskPipeline(
-                provider: mockProvider,
-                renderer: renderer,
-                model: model,
-                suggestions: suggestions,
-                recognizeSelection: { _ in reading }
-            )
-            model.selectionChanged(hasSelection: true)
-        }
-
-        init(
-            provider: any SpecProvider,
-            reading: SelectionReading,
-            renderer: any SuggestionInkRendering = TypesetInkRenderer()
-        ) throws {
-            let setup = try AskPageSetup()
-            input = setup.input
-            pageEngine = setup.engine
-            pageEngine.resetRequests()
-            mockProvider = nil
-            pipeline = AskPipeline(
-                provider: provider,
+                provider: resolvedProvider,
                 renderer: renderer,
                 model: model,
                 suggestions: suggestions,

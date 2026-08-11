@@ -50,7 +50,7 @@ public enum OnDeviceSelectionReader {
         }
     }
 
-    static func reading(from recognitions: [HandwritingRecognition]) -> SelectionReading {
+    private static func reading(from recognitions: [HandwritingRecognition]) -> SelectionReading {
         guard !recognitions.isEmpty else { return .unreadable }
         return SelectionReading(
             transcript: HandwritingTranscript.text(from: recognitions),
