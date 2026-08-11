@@ -11,6 +11,39 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M3-20 — loaded strokes shared one identity
+
+The user's recording was the crucial clue: handwritten answers worked on a sparse page, then
+became tiny and detached as accepted answers accumulated, and a later narrow selection made a
+huge distorted `4`. With the user's prior authorization, I copied only the affected notebook
+and glyph bank to a private temporary directory for local read-only measurement. Nothing was
+committed, uploaded, or logged as content. The bank's single `4` sample was healthy. The saved
+page instead contained four near-identical tiny generated glyphs and one enormous one.
+
+Replaying the current context/renderer code against isolated source-stroke groups produced
+correct proportional answers. Replaying selections contaminated with old distant strokes
+reproduced the saved tiny geometry and detached placement. The identity path explained why:
+when a fresh `PencilKitInkEngine` loaded an existing drawing, `synchronizeStrokeIDs()` appended
+`repeatElement(UUID(), count:)`. Swift evaluates that UUID expression once, so every loaded
+stroke received the same ID. Selecting any one matching stroke made the context builder admit
+the entire accumulated page.
+
+The adapter now creates a fresh UUID for each loaded stroke. An iOS regression externally
+loads two strokes, verifies two identities, lassos one, and requires exactly one selection.
+The test was red by construction before the fix (`Set(ids).count == 1`) and passes afterward.
+The full package/build suite is green from the isolated source mirror; the focused iOS test
+passes on an iPad simulator. The original OneDrive checkout again timed out while Xcode and
+swift-format read unrelated files, so those same checks were repeated successfully off-drive.
+
+The user also made placement a product decision: after the question lasso, Ask must prompt for
+a second user-marked allowed answer area. ADR-016 records the two-region contract and M2-24
+replaces M2-23's inferred trailing-`=` anchor. That interaction is intentionally separate from
+this narrow identity fix and is not present in this build.
+
+**Verification:** measured device fixture/replay ✅ · focused iOS regression 1/1 ✅ ·
+`swift test --package-path Packages/InkCore` 31/31 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 129 files ✅ · fresh signed device handoff pending
+
 ## 2026-08-11 · Codex · M2-17 — real maths strokes exposed the 8pt sizing floor
 
 The user's fresh physical-device retest disproved the earlier fix: small, normal, and large

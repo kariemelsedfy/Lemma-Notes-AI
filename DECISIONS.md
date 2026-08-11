@@ -213,3 +213,30 @@ the primary crop. Whole-page OCR remains out of scope.
 
 **Revisit when.** M4 defines real provider transports, measurements justify optional whole-page
 text, or a provider needs a stricter non-optional payload type at the network boundary.
+
+---
+
+## ADR-016 — The user marks the allowed answer area
+**Status:** Accepted · 2026-08-11 · decided by: human
+
+**Context.** The first physical Ask runs placed answers after the selected expression using
+geometry-derived anchors. Even when the size was correct, the result felt arbitrary: the
+question's location and shape do not reveal whether the user wants an inline answer, a margin
+note, or work beneath it. Improving OCR boxes could make an inferred trailing-`=` anchor more
+precise, but could not recover that intent.
+
+**Decision.** Ask is a two-region interaction. First the user lassos the question; immediately
+afterward the app prompts them to lasso the area where the answer is allowed to go. The first
+region supplies pixels, strokes, reading, style and scale. The second is a hard page-space
+placement boundary. The model still returns semantic placement slots and never coordinates;
+the app resolves those slots inside the allowed area and asks for another area when the result
+cannot fit without overlapping ink. It must not silently shrink the answer or escape the area.
+
+**Consequences.** Placement becomes intentional and testable, and question-lasso aspect ratio
+cannot move an answer. Ask gains one extra gesture and state, plus cancel/retry/accessibility
+work. M2-23's recognized-selection anchor is superseded for placement; recognition boxes may
+still improve reading. The occupancy grid remains useful, but its search is clipped to the
+user's region instead of roaming the page or advancing to another page.
+
+**Revisit when.** Device testing shows the second selection adds more friction than certainty,
+or a future direct-manipulation preview lets the user position the answer more efficiently.

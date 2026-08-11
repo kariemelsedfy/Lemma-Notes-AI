@@ -25,20 +25,25 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M3-20 — Repeated handwritten answers collapse or distort
-status: In progress · claimed: Codex · 2026-08-11 · needs-device-verification · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: after three correct handwritten answers, the physical-device recording shows later
-`4`s becoming tiny and detached, then severely enlarged/distorted. Changing the lasso shape
-around otherwise similar `2+2=` ink also appears to change output scale. Treat the video and
-the local-only device notebook/glyph bank as the fixture; do not guess from renderer code.
-Acceptance:
-- [ ] The repeated-Ask failure is reproduced with measured geometry before the fix
-- [ ] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height
-- [ ] Tight and loose lassos around the same source strokes produce the same answer size
-- [ ] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
-- [ ] A fresh physical-iPad build is installed for human verification
+_(empty)_
 
 ## Review
+
+### M3-20 — Repeated handwritten answers collapse or distort
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: after three correct handwritten answers, the physical-device recording shows later
+`4`s becoming tiny and detached, then severely enlarged/distorted. Changing the lasso shape
+around otherwise similar `2+2=` ink also appeared to change output scale. The saved glyph was
+healthy. `synchronizeStrokeIDs()` used `repeatElement(UUID(), count:)`, which evaluates the
+UUID once and gave every loaded page stroke the same ID. A lasso around one stroke therefore
+fed the whole accumulated page into sizing and placement. Loaded strokes now receive distinct
+IDs; the iOS regression selects exactly one of two loaded strokes.
+Acceptance:
+- [x] The repeated-Ask failure is reproduced with measured geometry before the fix
+- [x] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height in the replay fixture
+- [x] Tight and loose lassos around the same source strokes resolve the same selected IDs
+- [x] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
+- [ ] A fresh physical-iPad build is installed for human verification
 
 ### M2-17 — The answer's size and placement do not track what was asked about
 status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
@@ -48,7 +53,9 @@ Read-only analysis of the local notebook found the stroke-level x-height estimat
 0.825/1.65/4.125pt because Pencil wobble gives horizontal `+`/`=` bars tiny nonzero heights;
 all three hit the 8pt layout floor. The anchor now uses its visible line height as a lower
 bound. A three-scale math fixture reproduces the old measurements and requires 30/60/150pt.
-Awaiting a fresh physical-iPad comparison.
+The user confirmed the corrected pre-calibration typeset size on 2026-08-11. The later
+handwriting instability was M3-20's loaded-stroke identity collision; its fresh device
+verification will close the remaining handwriting side of this task.
 Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
@@ -70,22 +77,23 @@ Acceptance:
 - [x] The provider request carries the pixels/transcript without logging or retaining them
 - [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
+## Done
+
 ### M3-18 — Repair sheets make missed characters too small to write
-status: Review · implemented: Codex · 2026-08-10 · needs-device-verification · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
 Note: the repair flow now deduplicates the requested characters, chunks them in order at 26,
 assigns each chunk a unique sheet ID, and moves to the first appended sheet. A 62-character
 fixture produces 26/26/10 without loss or duplication; a 30-character fixture proves both
 repair pages merge into one bank. A full repair page measures the same ≥64pt boxes as the
 first 26-letter page in the fixture. The UI now labels progress as “Sheet n of total,” with
-the appended repair pages included. Physical Apple Pencil sizing remains to be confirmed.
+the appended repair pages included. The user confirmed on the physical iPad that the
+26-character repair pages are practical to write in and look good.
 Acceptance:
 - [x] A repair sheet contains at most 26 characters
 - [x] Larger repair sets paginate without dropping or duplicating characters
-- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests; device confirmation pending
+- [x] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests and device-confirmed
 - [x] Progress makes it clear when more than one repair sheet remains
 - [x] Captures from every repair sheet merge into the existing bank
-
-## Done
 
 ### M3-17 — Calibrating fully still renders answers in typeset
 status: Done · completed: Codex · 2026-08-10 · refs: PROGRESS.md M3-15, M3-16 · estimate: M
@@ -447,18 +455,28 @@ Acceptance:
 - [ ] The glyph bank still has no upload path
 
 ### M2-23 — Refine answer placement from the recognized selection
-status: Ready · depends: M2-22 · refs: AI_PIPELINE.md §4 · estimate: M
+status: Icebox · superseded-by: M2-24 · decided: human · 2026-08-11 · refs: AI_PIPELINE.md §4 · estimate: M
 Note: the reported bottom-right answer position is the current geometry-only `.atAnchor`
-policy: one word gap after the last selected stroke on its estimated baseline. M2-22 now
-provides a transcript, but deliberately does not pretend its discarded Vision boxes can
-locate a trailing `=`. Preserve per-observation boxes, map them from crop to page coordinates,
-and refine only when the recognition is confident; otherwise keep today's reversible anchor.
+policy. The human decided that placement should not be inferred from the question: after
+selecting the question, the user explicitly marks the allowed answer area. M2-24 replaces
+this task. Recognition boxes may still improve reading, but they no longer own placement.
 Acceptance:
-- [ ] A confident trailing `=` anchors the answer after that glyph on its baseline
-- [ ] Vision crop boxes map back to page coordinates with crop padding and scale covered
-- [ ] Low-confidence or boxless recognition keeps the geometry anchor unchanged
-- [ ] Placement remains on-page and occupancy fallback still wins when the line is full
-- [ ] Physical-iPad comparison covers tight and loose lassos around the same expression
+- [ ] Superseded — see M2-24
+
+### M2-24 — Ask for an allowed answer area after the question selection
+status: Ready · depends: M3-20 · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
+Note: the answer location is a user decision, not an OCR inference. Keep the question lasso
+for reading and sizing, then immediately prompt for a second lasso that marks the hard region
+inside which the answer may be rendered. Split the interaction/state-machine work if the
+implementation would exceed the 400-line PR limit.
+Acceptance:
+- [ ] Ask distinctly prompts for question ink, then for the allowed answer area
+- [ ] The second lasso is stored as page-space geometry and shown with a distinct overlay
+- [ ] Placement never returns a rectangle outside that area or overlapping occupied ink
+- [ ] An answer that cannot fit asks for a larger/different area instead of shrinking or escaping
+- [ ] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
+- [ ] Tests cannot accidentally substitute the question bounds for the answer-area bounds
+- [ ] A fresh physical-iPad run confirms the two selections feel distinct and predictable
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15
