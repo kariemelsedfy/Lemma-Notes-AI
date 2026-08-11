@@ -31,12 +31,13 @@ _(empty — nothing is claimed. Pick the highest-priority unblocked task in **Re
 
 ### M2-17 — The answer's size and placement do not track what was asked about
 status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
-Note: the user's fresh-build requirement is now mandatory in `AGENTS.md` §8,
-`DEVICE_SESSION.md` §0, and `CONTEXT.md` §4. This handoff regenerated with signing, built
-from the current branch in a new `/private/tmp` DerivedData directory, installed that exact
-artifact over the app, launched it, and opened Xcode. App data was preserved. The sizing
-fixture still requires a 26pt selection's typeset `4` to render at 98–105%; awaiting the
-physical-iPad comparison.
+Note: the fresh 2026-08-11 device run disproved the earlier one-stroke fixture: real
+`2+2=` selections at roughly 30pt, 60pt, and 150pt all rendered the same 7.2pt `4`.
+Read-only analysis of the local notebook found the stroke-level x-height estimator returning
+0.825/1.65/4.125pt because Pencil wobble gives horizontal `+`/`=` bars tiny nonzero heights;
+all three hit the 8pt layout floor. The anchor now uses its visible line height as a lower
+bound. A three-scale math fixture reproduces the old measurements and requires 30/60/150pt.
+Awaiting a fresh physical-iPad comparison.
 Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
@@ -284,6 +285,18 @@ Acceptance:
 - [x] The selected notebook exposes accessible PDF and PNG export actions
 - [x] Successful exports open the system share sheet with a temporary output file
 - [x] Export failures display a localized, recoverable error
+
+### M1-07C — Export uses the notebook snapshot from before the current edits
+status: Ready · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
+Note: reported indirectly by the M2-17 evidence file. The shared PNG contained ruled paper
+but no ink, while the same on-device notebook package held 63 current strokes. The export
+toolbar closes over the `StoredDocument` loaded before `PageDrawingStore` edits and does not
+flush/reload it before rendering. Keep this separate from answer sizing.
+Acceptance:
+- [ ] Export flushes pending autosave work and reloads the current persisted document
+- [ ] PNG and PDF opened from an actively edited notebook contain its latest ink
+- [ ] A regression test exports after an edit made later than the original document snapshot
+
 ### M1-08 — Occupancy grid
 status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4.1 · estimate: M
 Acceptance:

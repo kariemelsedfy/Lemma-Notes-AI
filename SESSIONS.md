@@ -11,6 +11,38 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-17 — real maths strokes exposed the 8pt sizing floor
+
+The user's fresh physical-device retest disproved the earlier fix: small, normal, and large
+`2+2=` selections still received the same tiny `4`. The earlier regression fixture was one
+diagonal stroke, which guarantees that a stroke-level height estimator returns the selected
+height and therefore could not reproduce real maths.
+
+With the user's authorization, I copied only the affected notebook from the connected iPad
+to a private temporary directory and inspected counts and bounds locally. Nothing was added
+to the repository or uploaded. The three user-written groups were roughly 37pt, 61pt, and
+165pt tall, while their generated answers were all about 8–9pt. A synthetic three-scale
+fixture then reproduced the exact internal chain: nominal writing heights of 30/60/150pt
+were estimated as 0.825/1.65/4.125pt, and all became the same 8pt placement and 7.2pt ink.
+
+The cause was Pencil wobble in nominally horizontal `+` and `=` strokes. Their vertical
+extent is not exactly zero, so the stroke-level estimator treated those tiny bars as the
+short body of the writing. `SelectionContextBuilder` now treats the last line's visible
+height as a lower bound for the answer anchor. The regression explicitly proves its raw
+style estimate remains below 8pt at all three scales while its anchor correctly remains
+30/60/150pt.
+
+The evidence file named `Margin-<notebook id>.png` was an app PNG export, not an iPad screen
+capture. It contains ruled paper but no ink even though the current on-device package holds
+63 strokes. The export toolbar renders the `StoredDocument` snapshot it captured before
+live canvas edits; M1-07C now tracks the separate flush-and-reload fix.
+
+**Verification:** focused `SelectionContextTests` 13/13 ✅ · all 129 Intelligence tests ✅ ·
+full `./scripts/test.sh` (isolated source mirror, because OneDrive blocked Xcode's coordinated
+workspace read) ✅ · `./scripts/lint.sh` 0 violations across 129 files ✅ · app test target
+compiled ✅ · Xcode simulator test launch blocked by the local runner waiting for workers to
+materialize on two simulators · fresh device handoff pending
+
 ## 2026-08-11 · Codex · M2-17 — manual tests always get an empty DerivedData build
 
 The user made the test protocol explicit: every request for manual verification must begin

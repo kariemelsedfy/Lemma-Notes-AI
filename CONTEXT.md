@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 sizing fixes awaiting device verification**
+**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 sizing fix corrected from device ink; awaiting retest**
 
 ## Handover, 2026-08-10
 
@@ -28,16 +28,24 @@ Three follow-ups came from that same device run:
 | **M3-18** | Repair sets paginate at 26; physical-Pencil sizing confirmation pending | review |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
 
-**M2-17 has two measured causes and two implemented fixes.** Captured handwriting used to cap
+**M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
 device run clarified that its screenshot was taken before calibration, exposing a separate
 typeset path: a nominal frame sized at 0.62× advance and 1.4× ink height squeezed a 26pt
 selection's `4` to 17.6pt. The frame now accounts for Helvetica's side bearings and full
-line metrics, and both package and app regressions require the typeset answer to be 98–105%
-of the selected height without escaping its placement. The bottom-right position is still
-the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback.
+line metrics. A fresh device run still produced the same 7.2pt answer beside roughly 30pt,
+60pt, and 150pt maths. The real notebook showed why the diagonal test lied: Pencil wobble
+gave horizontal `+`/`=` strokes tiny nonzero heights, so the stroke-level estimator returned
+0.825/1.65/4.125pt and every selection hit the 8pt floor. The anchor now uses its visible
+line height as a lower bound, with a three-scale maths regression. The bottom-right position
+is still the current `.atAnchor` policy (after the last selected glyph), not occupancy fallback.
 M2-22 now supplies the pixels and local transcript; M2-23 owns retaining recognition boxes
 and refining the anchor from content such as `=`.
+
+The PNG supplied as M2-17 evidence exposed a separate export defect: it contained the ruled
+paper but no ink while its current on-device notebook package contained 63 strokes. The
+toolbar exports the `StoredDocument` snapshot loaded before live edits; M1-07C owns flushing
+and reloading before PNG/PDF generation.
 
 **M2-22 closes the missing-input path.** Every shipping Ask snapshots the actual `PKDrawing`,
 renders the capped crop and neighborhood on white, reads the crop with on-device Vision, and

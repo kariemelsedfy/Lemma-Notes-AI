@@ -116,21 +116,20 @@ public enum SelectionContextBuilder {
         )
     }
 
-    /// The selection's x-height, which must never be zero.
+    /// The selection's local writing height, which must never collapse below its line.
     ///
-    /// The estimator can honestly return zero for ink that has no vertical extent, and the
-    /// app makes exactly that kind of ink: typeset answers are drawn as horizontal hatch
-    /// scanlines, so every stroke in one is flat. Lasso a previous answer — easy to do by
-    /// accident once the page has one on it — and the estimate is zero, which collapsed the
-    /// *next* answer's frame to 1×1 and drew it as a black dot (M2-15).
+    /// A stroke-level x-height is useful for prose but actively misleading for maths. Real
+    /// Pencil input gives the horizontal bars in `+` and `=` a small non-zero vertical
+    /// wobble. Those bars then look like the selection's shortest "letters" and can pin a
+    /// 30pt, 60pt, or 150pt expression to the same 8pt answer (M2-17). The last line's
+    /// visible height is the size the user is comparing against, so it is a lower bound.
     ///
     /// The guard above only covers a selection with no lines in it at all, which is why this
     /// went unnoticed: an empty lasso was already handled, a lasso full of flat ink was not.
     private static func xHeight(of strokes: [InkStroke], lineBounds: CGRect, fallback: CGRect) -> CGFloat {
         let measured = StyleStatsEstimator.estimate(from: strokes).xHeight
-        if measured > 0 { return measured }
-        if lineBounds.height > 0 { return lineBounds.height }
-        return fallback.height
+        let visibleLineHeight = lineBounds.height > 0 ? lineBounds.height : fallback.height
+        return max(measured, visibleLineHeight)
     }
 
     private static func boundingBox(of points: [CGPoint]) -> CGRect {
