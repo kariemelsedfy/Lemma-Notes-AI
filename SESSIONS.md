@@ -11,6 +11,25 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M1-07C — export now uses the current notebook
+
+The export toolbar captured the `StoredDocument` that opened the canvas and kept using it
+after `PageDrawingStore` had persisted newer ink. This explains the user's evidence PNG: its
+paper came from the old snapshot while the package already contained the current strokes.
+
+Export now establishes one strict order for both formats: flush pending autosave work, refuse
+to continue if the write remains pending, reload the package, then render. The regression
+starts with an empty stale document, records later PencilKit ink, and proves both PNG and PDF
+receive the reloaded bytes. A second test deletes the package before the flush and verifies
+the exporter is never called with stale content.
+
+OneDrive had evicted `PageAutosave.swift` into a dataless placeholder and timed out whenever
+the patch tool read it. The exact patch was applied and tested in the isolated mirror, then
+the validated file replaced that one tracked placeholder; no unrelated file was touched.
+
+**Verification:** focused export tests ✅ · app tests 146/146 ✅ · full
+`./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 129 files ✅
+
 ## 2026-08-11 · Codex · M2-24 — two-stage answer placement passed on the physical iPad
 
 The user tested the exact fresh commit on the physical iPad and reported that the interaction

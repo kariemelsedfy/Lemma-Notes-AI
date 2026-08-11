@@ -303,15 +303,16 @@ Acceptance:
 - [x] Export failures display a localized, recoverable error
 
 ### M1-07C — Export uses the notebook snapshot from before the current edits
-status: In progress · claimed: Codex · 2026-08-11 · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
+status: Done · completed: Codex · 2026-08-11 · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
 Note: reported indirectly by the M2-17 evidence file. The shared PNG contained ruled paper
 but no ink, while the same on-device notebook package held 63 current strokes. The export
 toolbar closes over the `StoredDocument` loaded before `PageDrawingStore` edits and does not
-flush/reload it before rendering. Keep this separate from answer sizing.
+flush/reload it before rendering. Export now flushes pending work, fails closed if that write
+does not succeed, reloads the package, and only then renders either format.
 Acceptance:
-- [ ] Export flushes pending autosave work and reloads the current persisted document
-- [ ] PNG and PDF opened from an actively edited notebook contain its latest ink
-- [ ] A regression test exports after an edit made later than the original document snapshot
+- [x] Export flushes pending autosave work and reloads the current persisted document
+- [x] PNG and PDF opened from an actively edited notebook contain its latest ink
+- [x] A regression test exports after an edit made later than the original document snapshot
 
 ### M1-08 — Occupancy grid
 status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4.1 · estimate: M

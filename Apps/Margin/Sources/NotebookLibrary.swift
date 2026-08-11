@@ -66,9 +66,19 @@ final class NotebookLibrary: ObservableObject {
     private(set) lazy var autosave = PageAutosave(library: packageLibrary)
 
     func document(id: UUID) -> StoredDocument? {
-        do { return try packageLibrary.document(id: id) } catch {
+        do { return try documentForExport(id: id) } catch {
             lastError = error
             return nil
+        }
+    }
+
+    /// Reloads the package for an operation where a stale snapshot is not acceptable.
+    func documentForExport(id: UUID) throws -> StoredDocument {
+        do {
+            return try packageLibrary.document(id: id)
+        } catch {
+            lastError = error
+            throw error
         }
     }
 

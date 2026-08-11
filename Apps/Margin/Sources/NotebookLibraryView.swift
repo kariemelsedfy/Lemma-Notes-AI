@@ -84,8 +84,8 @@ struct NotebookLibraryView: View {
                 .id(selectedNotebookID)
                 .toolbar {
                     Menu("library.export", systemImage: "square.and.arrow.up") {
-                        Button("library.export.pdf") { export(document, format: .pdf) }
-                        Button("library.export.png") { export(document, format: .png) }
+                        Button("library.export.pdf") { export(selectedNotebookID, format: .pdf) }
+                        Button("library.export.png") { export(selectedNotebookID, format: .png) }
                     }
                 }
             } else {
@@ -144,11 +144,17 @@ struct NotebookLibraryView: View {
         }
     }
 
-    private func export(_ document: StoredDocument, format: NotebookShareExporter.Format) {
-        do {
-            shareFileURL = try NotebookShareExporter.export(document, format: format)
-        } catch {
-            exportErrorPresented = true
+    private func export(_ notebookID: UUID, format: NotebookShareExporter.Format) {
+        Task { @MainActor in
+            do {
+                shareFileURL = try await NotebookExportCoordinator.export(
+                    notebookID: notebookID,
+                    format: format,
+                    library: library
+                )
+            } catch {
+                exportErrorPresented = true
+            }
         }
     }
 

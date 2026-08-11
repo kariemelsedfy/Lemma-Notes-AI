@@ -101,8 +101,8 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: run M3-10's human panel. While that outside-reviewer gate waits, fix M1-07C's
-confirmed stale export snapshot.** M2-24's two-stage Pencil interaction is device-confirmed.
+**Next action: run M3-10's human panel.** M2-24's two-stage Pencil interaction is
+device-confirmed, and M1-07C now reloads the current notebook before either export format.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
@@ -125,7 +125,7 @@ who has not read the code — because they have not.
 | Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
-| Export | PDF/PNG rendering and accessible system sharing for persisted notebooks |
+| Export | PDF/PNG rendering and accessible system sharing; export flushes autosave, reloads the package, and fails closed rather than sharing a stale snapshot |
 | Occupancy grid | Reference-counted 8pt grid in `InkCore` with `isFree` and `nearestFree`; not yet fed by the canvas |
 | Handwriting OCR | On-device Vision recognizer plus reading-order assembly. Every Ask now reads the selected crop locally; `LegibilityHarness` also scores rendered ink against its intended string |
 | Spec contract | Full `AI_PIPELINE.md` §3 schema, decoder, and fail-closed validator in `Intelligence`. Only `SpecValidator` can produce a `ValidatedSpec`, and nothing else may reach a renderer |
