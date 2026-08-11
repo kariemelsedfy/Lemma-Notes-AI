@@ -16,15 +16,62 @@ private let handwritingAskLogger = Logger(
 ///
 /// Split out of `VirtualizedPageStack` when that file crossed the 400-line lint ceiling.
 extension VirtualizedPageStack {
+    /// Arms our own capture rather than PencilKit's opaque `PKLassoTool` selection.
+    func invokeAsk() {
+        askPipeline?.cancel(.superseded)
+        suggestions.discard()
+        askSelection.clearSelections()
+        selectionStore.clear()
+        askModel.selectionChanged(hasSelection: false)
+        askPath.invoke()
+    }
+
+    func captureStage(for pageID: UUID) -> AskCaptureStage? {
+        guard askPath.isArmed else { return nil }
+        let targetPage = askSelection.questionSelection?.pageID ?? visiblePageID
+        return targetPage == pageID ? askPath.stage : nil
+    }
+
+    func capture(_ loop: [CGPoint], on pageID: UUID) {
+        switch askPath.stage {
+        case .question:
+            askSelection.selectQuestion(loop: loop, onPage: pageID)
+            guard let question = askSelection.questionSelection else { return }
+            selectionStore.select(question)
+            askPath.questionDidComplete()
+        case .answerArea:
+            askSelection.selectAnswerArea(loop: loop, onPage: pageID)
+            guard askSelection.answerArea != nil else { return }
+            askPath.answerAreaDidComplete()
+            askModel.selectionChanged(hasSelection: true)
+        case .idle:
+            break
+        }
+    }
+
+    func cancelSelection() {
+        askPath.cancel()
+        askSelection.clearSelections()
+        selectionStore.clear()
+        askModel.selectionChanged(hasSelection: false)
+    }
+
+    func chooseAnotherAnswerArea() {
+        askSelection.clearAnswerArea()
+        askModel.dismissFailure()
+        askModel.selectionChanged(hasSelection: false)
+        askPath.retryAnswerArea()
+    }
+
     /// The generated ink awaiting a decision on this page, if any.
     func suggestionInk(for pageID: UUID) -> [InkStroke] {
-        guard askModel.phase == .awaitingDecision, askSelection.selection?.pageID == pageID else { return [] }
+        guard askModel.phase == .awaitingDecision, askSelection.questionSelection?.pageID == pageID else { return [] }
         return suggestions.strokes
     }
 
     /// Runs one Ask against the canned provider.
     func ask(_ verb: AskVerb) {
-        guard let selection = askSelection.selection else { return }
+        guard let selection = askSelection.questionSelection, let answerArea = askSelection.answerArea else { return }
         // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
         // an unsaved bank, missing `4`, a pinned preference, and a stale renderer in one run.
         let rendererName = String(describing: type(of: inkRenderer))
@@ -61,6 +108,7 @@ extension VirtualizedPageStack {
             AskPipeline.PageInput(
                 engine: pageEngine,
                 loop: selection.loop,
+                allowedAnswerArea: answerArea.bounds,
                 pageSize: pageSizes[selection.pageID] ?? pageSize
             ),
             verb: verb
@@ -72,9 +120,16 @@ extension VirtualizedPageStack {
         suggestions.discard()
     }
 
+    /// A retry must restart the pipeline, not only advance the bar's state machine.
+    func retryAsk() {
+        guard let verb = askModel.lastVerb else { return }
+        askModel.dismissFailure()
+        ask(verb)
+    }
+
     /// Commits the suggestion to the page in one undo group and records its provenance.
     func acceptSuggestion() {
-        guard let pageID = askSelection.selection?.pageID else { return }
+        guard let pageID = askSelection.questionSelection?.pageID else { return }
         let pencilStrokes = suggestions.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
         guard !pencilStrokes.isEmpty else {
             askModel.accept()
@@ -86,13 +141,19 @@ extension VirtualizedPageStack {
         drawingStore.save(committed, for: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         recordProvenance(accepted, on: pageID, in: committed)
         askModel.accept()
-        askSelection.clearSelection()
+        clearCompletedAskSelections()
     }
 
     func rejectSuggestion() {
         suggestions.discard()
         askModel.reject()
-        askSelection.clearSelection()
+        clearCompletedAskSelections()
+    }
+
+    private func clearCompletedAskSelections() {
+        askSelection.clearSelections()
+        selectionStore.clear()
+        askModel.selectionChanged(hasSelection: false)
     }
 
     /// Writes the `generated` element so the ink stays attributable after a reload.

@@ -103,6 +103,7 @@ struct AskBar: View {
     var onAccept: () -> Void = {}
     var onReject: () -> Void = {}
     var onRetry: () -> Void = {}
+    var onChooseArea: () -> Void = {}
     var onDismiss: () -> Void = {}
 
     var body: some View {
@@ -184,6 +185,11 @@ struct AskBar: View {
                 .lineLimit(2)
             if failure.isRetryable {
                 Button("ask.retry", action: onRetry)
+                    .buttonStyle(.borderedProminent)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            if failure == .noRoom {
+                Button("ask.choose-area", action: onChooseArea)
                     .buttonStyle(.borderedProminent)
                     .frame(minWidth: 44, minHeight: 44)
             }

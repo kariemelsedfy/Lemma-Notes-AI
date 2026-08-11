@@ -17,7 +17,7 @@ struct VirtualizedPageStack: View {
     let inkRenderer: any SuggestionInkRendering
     let handwritingStatus: HandwritingStyleStatus
 
-    @State private var visiblePageID: UUID?
+    @State var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
     @StateObject var selectionStore = PageSelectionStore()
     @StateObject var askSelection = AskSelectionCoordinator()
@@ -35,7 +35,7 @@ struct VirtualizedPageStack: View {
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
     @State var selectedPen: MarginPen = .black
-    @State private var askPath = AskPathState()
+    @State var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
     init(
@@ -101,18 +101,23 @@ struct VirtualizedPageStack: View {
                         onCancel: { cancelAsk() },
                         onAccept: { acceptSuggestion() },
                         onReject: { rejectSuggestion() },
-                        onRetry: { askModel.retry() },
+                        onRetry: { retryAsk() },
+                        onChooseArea: { chooseAnotherAnswerArea() },
                         onDismiss: { askModel.dismissFailure() }
                     )
                 }
 
-                if askPath.isArmed && askModel.phase == .hidden {
-                    Text("ask.hint")
-                        .font(.footnote.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.regularMaterial, in: Capsule())
-                        .accessibilityAddTraits(.isStaticText)
+                if askPath.isArmed {
+                    HStack(spacing: 8) {
+                        Text(askPath.stage.hintKey)
+                            .font(.footnote.weight(.medium))
+                            .accessibilityAddTraits(.isStaticText)
+                        Button("ask.cancel", role: .cancel, action: cancelSelection)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 4)
+                    .background(.regularMaterial, in: Capsule())
                 }
 
                 HStack(spacing: 12) {
@@ -122,7 +127,7 @@ struct VirtualizedPageStack: View {
                             .frame(minHeight: 44)
                     }
                     .keyboardShortcut(.return, modifiers: .command)
-                    .accessibilityHint("ask.hint")
+                    .accessibilityHint("ask.hint.question")
                     .buttonStyle(.borderedProminent)
                 }
             }
@@ -134,17 +139,6 @@ struct VirtualizedPageStack: View {
         }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
-        }
-        .onChange(of: askSelection.selection) { _, newSelection in
-            // The lasso is the only producer of a selection, so this is what makes the
-            // Ask bar reachable at all.
-            if let newSelection {
-                selectionStore.select(newSelection)
-                askPath.selectionDidComplete()
-            } else {
-                selectionStore.clear()
-            }
-            askModel.selectionChanged(hasSelection: newSelection != nil)
         }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else {
@@ -165,11 +159,12 @@ struct VirtualizedPageStack: View {
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
+                answerArea: askSelection.answerArea?.onPage(pageID),
                 askSelection: askSelection,
                 suggestionInk: suggestionInk(for: pageID),
-                isCapturingAskLasso: askPath.isArmed && pageID == visiblePageID,
+                captureStage: captureStage(for: pageID),
                 onAskLasso: { loop in
-                    askSelection.select(loop: loop, onPage: pageID)
+                    capture(loop, on: pageID)
                 }
             )
         } else {
@@ -201,15 +196,6 @@ struct VirtualizedPageStack: View {
         }
     }
 
-    /// Arms our own lasso capture.
-    ///
-    /// Deliberately does **not** switch to `PKLassoTool`: PencilKit's lasso selection is
-    /// opaque, so choosing it made the Ask path a dead end — selection appeared to work
-    /// and then nothing happened.
-    private func invokeAsk() {
-        askSelection.clearSelection()
-        askPath.invoke()
-    }
 }
 
 private struct LivePageView: View {
@@ -219,9 +205,10 @@ private struct LivePageView: View {
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     let selection: PageSelection?
+    let answerArea: AnswerAreaSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
     let suggestionInk: [InkStroke]
-    let isCapturingAskLasso: Bool
+    let captureStage: AskCaptureStage?
     let onAskLasso: ([CGPoint]) -> Void
 
     var body: some View {
@@ -238,11 +225,18 @@ private struct LivePageView: View {
             if let selection {
                 PageSelectionOverlay(selection: selection)
             }
+            if let answerArea {
+                AnswerAreaOverlay(selection: answerArea)
+            }
             if !suggestionInk.isEmpty {
                 SuggestionOverlay(strokes: suggestionInk, pen: selectedPen)
             }
-            if isCapturingAskLasso {
-                AskLassoCapture(onComplete: onAskLasso)
+            if let captureStage {
+                AskLassoCapture(
+                    onComplete: onAskLasso,
+                    tint: captureStage.captureTint,
+                    label: captureStage.captureLabel
+                )
             }
         }
         .clipShape(.rect(cornerRadius: 12))
@@ -340,5 +334,33 @@ extension PageSelectionStore {
         }
 
         return selection
+    }
+}
+
+extension AnswerAreaSelection {
+    fileprivate func onPage(_ pageID: UUID) -> Self? {
+        self.pageID == pageID ? self : nil
+    }
+}
+
+extension AskCaptureStage {
+    fileprivate var hintKey: LocalizedStringKey {
+        switch self {
+        case .question: "ask.hint.question"
+        case .answerArea: "ask.hint.answer-area"
+        case .idle: "ask.hint.question"
+        }
+    }
+
+    fileprivate var captureLabel: LocalizedStringKey {
+        switch self {
+        case .question: "ask.lasso.question.capture"
+        case .answerArea: "ask.lasso.answer-area.capture"
+        case .idle: "ask.lasso.question.capture"
+        }
+    }
+
+    fileprivate var captureTint: Color {
+        self == .answerArea ? MarginPen.green.color : MarginColor.accent
     }
 }

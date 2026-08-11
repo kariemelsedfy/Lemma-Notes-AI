@@ -11,6 +11,24 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-24 — explicit answer-area interaction is ready for Pencil testing
+
+Ask now has two visible capture stages: first the question lasso, then a green allowed answer
+area on the same page. The green overlay is the exact rectangular boundary supplied to
+placement. Answer frames retain the question-derived writing size, remain inside that area and
+avoid occupied ink; content that cannot fit produces a choose-another-area action instead of
+shrinking or escaping. Choosing again preserves the question and recaptures only the answer
+area. Cancel, retry, keyboard and accessibility transitions are defined and covered where
+automation can reach them.
+
+The interaction and placement work were split into M2-24A/B before implementation to keep each
+task below the 400-line limit. The simulator build and 144 app tests pass. A three-point but
+zero-area second lasso was initially accepted; a regression now rejects it before placement.
+Physical Pencil input is the remaining verification and must not be claimed from the simulator.
+
+**Verification:** simulator app tests 144/144 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 129 files ✅ · fresh physical-iPad build pending
+
 ## 2026-08-11 · Codex · M3-20/M2-17 — accumulated-page retest passed
 
 The user ran the fresh physical-iPad build against the repeated-Ask scenario and reported that

@@ -22,6 +22,7 @@ final class AskPipeline {
     struct PageInput {
         let engine: any InkEngine
         let loop: [CGPoint]
+        let allowedAnswerArea: CGRect
         let pageSize: CGSize
 
         var strokes: [InkStroke] { engine.strokes }
@@ -121,7 +122,7 @@ final class AskPipeline {
             spec,
             context: context,
             pageStrokes: pageStrokes,
-            pageSize: input.pageSize,
+            input: input,
             requestID: request.cacheKey
         )
     }
@@ -130,7 +131,7 @@ final class AskPipeline {
         _ spec: ValidatedSpec,
         context: SelectionContext,
         pageStrokes: [InkStroke],
-        pageSize: CGSize,
+        input: PageInput,
         requestID: String
     ) {
         // Content-free device evidence for M2-17. These measurements identify whether
@@ -141,11 +142,11 @@ final class AskPipeline {
             "Ask size anchorXHeight=\(context.anchor.xHeight) "
             + "styleXHeight=\(context.style.xHeight) usableXHeight=\(usableXHeight)"
         answerPlacementLogger.info("\(sizeDiagnostic, privacy: .public)")
-        var grid = OccupancyGrid(pageBounds: CGRect(origin: .zero, size: pageSize))
+        var grid = OccupancyGrid(pageBounds: CGRect(origin: .zero, size: input.pageSize))
         for stroke in pageStrokes { grid.add(stroke: stroke) }
 
-        let page = CGRect(origin: .zero, size: pageSize)
-        let result = PlacementEngine(page: page, allowedArea: page, occupancy: grid)
+        let page = CGRect(origin: .zero, size: input.pageSize)
+        let result = PlacementEngine(page: page, allowedArea: input.allowedAnswerArea, occupancy: grid)
             .place(spec, context: context, pageStrokes: pageStrokes)
         for (index, placement) in result.placements.enumerated() {
             let blockDiagnostic =
