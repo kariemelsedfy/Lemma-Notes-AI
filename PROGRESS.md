@@ -25,7 +25,33 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M3-17 — Calibrating fully still renders answers in typeset
+status: In progress · claimed: Codex · 2026-08-10 · **blocker** · refs: PROGRESS.md M3-15, M3-16 · estimate: M
+Note: found on device — "I calibrated fully and when I finished it still wrote the 4 in
+typeset." Reported *after* M3-15 fixed the capture-wiping bug, so the first explanation is
+already spent. **Do not assume M3-16 fixes this**; confirm it.
+Check in this order, because each is cheaper than the next and the first two are free:
+1. **Was the bank saved at all?** `HandwritingStyleStore` writes to
+   `applicationSupportDirectory/handwriting-style.json`. If M3-16 stopped the user reaching
+   Save, there is no file and everything downstream is correct behaviour. Check the file
+   exists and its `characterCount`.
+2. **Does the bank contain digits?** Every answer the canned provider returns is `4`.
+   `HandwritingInkRenderer` falls back **per block**, so a bank without `4` draws every
+   answer in typeset no matter how good the letters are. `bank.canRender("4")` is the whole
+   question. This has already fooled us once (M3-15).
+3. **Is the preference stuck?** `HandwritingStylePreference.resolved(bank:)` returns
+   `isExplicit ? choice : .mine`. Once the user has *ever* tapped a style, `isExplicit` is
+   true forever, so an early tap on "typeset" pins it — and picking "my handwriting" later
+   only helps if that tap actually wrote the preference.
+4. **Is the renderer reaching the pipeline?** `pipeline.renderer = inkRenderer` is assigned
+   per Ask in `ask()`, and `inkRenderer` is recomputed by the parent. Verify the renderer at
+   the moment of the Ask is a `HandwritingInkRenderer`, not a `TypesetInkRenderer`.
+A one-line log of `(bank == nil, characterCount, canRender("4"), resolved style, renderer
+type)` at the top of `ask()` answers 1–4 in a single device run. Worth adding first.
+Acceptance:
+- [ ] The above is narrowed to one cause with evidence, not inference
+- [ ] A calibrated user's answers are drawn in their hand
+- [ ] Whatever the cause, the app says why it fell back rather than silently degrading
 
 ## Review
 
@@ -324,34 +350,6 @@ Acceptance:
 - [x] The summary scrolls, so any length of list is reachable
 - [x] Save sits outside the scroll view and cannot be pushed off-screen
 - [ ] **Confirm on device**: finish a calibration that misses characters, and reach Save
-
-### M3-17 — Calibrating fully still renders answers in typeset
-status: Ready · **blocker** · refs: PROGRESS.md M3-15, M3-16 · estimate: M
-Note: found on device — "I calibrated fully and when I finished it still wrote the 4 in
-typeset." Reported *after* M3-15 fixed the capture-wiping bug, so the first explanation is
-already spent. **Do not assume M3-16 fixes this**; confirm it.
-Check in this order, because each is cheaper than the next and the first two are free:
-1. **Was the bank saved at all?** `HandwritingStyleStore` writes to
-   `applicationSupportDirectory/handwriting-style.json`. If M3-16 stopped the user reaching
-   Save, there is no file and everything downstream is correct behaviour. Check the file
-   exists and its `characterCount`.
-2. **Does the bank contain digits?** Every answer the canned provider returns is `4`.
-   `HandwritingInkRenderer` falls back **per block**, so a bank without `4` draws every
-   answer in typeset no matter how good the letters are. `bank.canRender("4")` is the whole
-   question. This has already fooled us once (M3-15).
-3. **Is the preference stuck?** `HandwritingStylePreference.resolved(bank:)` returns
-   `isExplicit ? choice : .mine`. Once the user has *ever* tapped a style, `isExplicit` is
-   true forever, so an early tap on "typeset" pins it — and picking "my handwriting" later
-   only helps if that tap actually wrote the preference.
-4. **Is the renderer reaching the pipeline?** `pipeline.renderer = inkRenderer` is assigned
-   per Ask in `ask()`, and `inkRenderer` is recomputed by the parent. Verify the renderer at
-   the moment of the Ask is a `HandwritingInkRenderer`, not a `TypesetInkRenderer`.
-A one-line log of `(bank == nil, characterCount, canRender("4"), resolved style, renderer
-type)` at the top of `ask()` answers 1–4 in a single device run. Worth adding first.
-Acceptance:
-- [ ] The above is narrowed to one cause with evidence, not inference
-- [ ] A calibrated user's answers are drawn in their hand
-- [ ] Whatever the cause, the app says why it fell back rather than silently degrading
 
 ### M2-16 — After calibrating, every Ask draws nothing
 status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
