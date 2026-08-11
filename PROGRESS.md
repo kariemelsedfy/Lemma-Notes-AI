@@ -25,7 +25,37 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M2-17 — The answer's size and placement do not track what was asked about
+status: In progress · claimed: Codex · 2026-08-10 · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
+Note: reported three times on device, most recently as "there are still errors with the size
+and the placement of the 4 relative to what I am asking." **Survived M2-16**, so the
+stale-layer explanation is wrong or incomplete.
+**Two theories have been proposed and both were wrong. Do not propose a third from reading
+the code — instrument it.** Every simulator path tried so far produces a correctly sized
+answer, which is itself the most useful fact here: whatever causes it is not reproducible
+from the models alone, so it depends on real ink, a real lasso, or real page state.
+Ruled out **by measurement**, so do not re-spend time here:
+- *Page position.* Frames are identical (16×35) with the selection at three different places
+  on the page, including hard against the right edge.
+- *Occupancy fallback.* The free-space search preserves the size it is handed; it relocates,
+  it does not shrink.
+- *Generated ink skewing the estimate.* `StyleStatsEstimator.xHeight(of:)` discards
+  zero-height strokes, and typeset ink is entirely horizontal hatch lines, so it contributes
+  nothing rather than dragging the median down.
+- *A zero x-height collapsing the frame.* Fixed and floored in M2-15; a selection of pure
+  generated ink now yields 14×31 rather than 1×1.
+**The next step is a device log, not another hypothesis.** At the top of `AskPipeline.place`,
+record per Ask: `context.anchor.xHeight`, `context.style.xHeight`,
+`PlacementEngine.usableXHeight(for:)`, the block's measured size, the chosen frame, and
+`usedFallback`. Ask several times at different handwriting sizes and find which of those
+stops tracking the input. Note the user's observation that it is *sometimes* right — so
+capture the good cases too; the difference between them is the answer.
+Latest device evidence: the real-handwriting `4` is recognisable but too small and appears
+at the bottom-right of the selection. Size is the priority; placement is secondary.
+Acceptance:
+- [ ] A log from a real device showing where the chain stops tracking the selection
+- [ ] The cause named with evidence
+- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
 
 ## Review
 
@@ -364,36 +394,6 @@ Acceptance:
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
-
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Ready · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
-Note: reported three times on device, most recently as "there are still errors with the size
-and the placement of the 4 relative to what I am asking." **Survived M2-16**, so the
-stale-layer explanation is wrong or incomplete.
-**Two theories have been proposed and both were wrong. Do not propose a third from reading
-the code — instrument it.** Every simulator path tried so far produces a correctly sized
-answer, which is itself the most useful fact here: whatever causes it is not reproducible
-from the models alone, so it depends on real ink, a real lasso, or real page state.
-Ruled out **by measurement**, so do not re-spend time here:
-- *Page position.* Frames are identical (16×35) with the selection at three different places
-  on the page, including hard against the right edge.
-- *Occupancy fallback.* The free-space search preserves the size it is handed; it relocates,
-  it does not shrink.
-- *Generated ink skewing the estimate.* `StyleStatsEstimator.xHeight(of:)` discards
-  zero-height strokes, and typeset ink is entirely horizontal hatch lines, so it contributes
-  nothing rather than dragging the median down.
-- *A zero x-height collapsing the frame.* Fixed and floored in M2-15; a selection of pure
-  generated ink now yields 14×31 rather than 1×1.
-**The next step is a device log, not another hypothesis.** At the top of `AskPipeline.place`,
-record per Ask: `context.anchor.xHeight`, `context.style.xHeight`,
-`PlacementEngine.usableXHeight(for:)`, the block's measured size, the chosen frame, and
-`usedFallback`. Ask several times at different handwriting sizes and find which of those
-stops tracking the input. Note the user's observation that it is *sometimes* right — so
-capture the good cases too; the difference between them is the answer.
-Acceptance:
-- [ ] A log from a real device showing where the chain stops tracking the selection
-- [ ] The cause named with evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
 
 ### M3-18 — Repair sheets make missed characters too small to write
 status: Ready · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
