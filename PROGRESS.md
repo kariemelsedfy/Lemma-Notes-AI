@@ -461,11 +461,12 @@ Acceptance:
 - [ ] Superseded — see M2-24
 
 ### M2-24 — Ask for an allowed answer area after the question selection
-status: Ready · depends: M3-20 · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
+status: Ready · depends: M2-24A, M2-24B · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
 Note: the answer location is a user decision, not an OCR inference. Keep the question lasso
 for reading and sizing, then immediately prompt for a second lasso that marks the hard region
 inside which the answer may be rendered. Split the interaction/state-machine work if the
-implementation would exceed the 400-line PR limit.
+implementation would exceed the 400-line PR limit. Split into M2-24A/B before implementation;
+the parent closes after both subtasks and the physical-device confirmation are complete.
 Acceptance:
 - [ ] Ask distinctly prompts for question ink, then for the allowed answer area
 - [ ] The second lasso is stored as page-space geometry and shown with a distinct overlay
@@ -474,6 +475,25 @@ Acceptance:
 - [ ] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
 - [ ] Tests cannot accidentally substitute the question bounds for the answer-area bounds
 - [ ] A fresh physical-iPad run confirms the two selections feel distinct and predictable
+
+### M2-24A — Constrain placement to the user-marked answer area
+status: In progress · claimed: Codex · 2026-08-11 · depends: M3-20 · refs: AI_PIPELINE.md §4, ADR-016 · estimate: M
+Note: pure placement and pipeline contract only. The app interaction that captures the area
+is M2-24B, keeping both changes below the 400-line PR limit.
+Acceptance:
+- [ ] Every non-mark block is wholly inside the supplied page-space answer rectangle
+- [ ] Occupied and multi-block searches remain inside that rectangle
+- [ ] A block that cannot fit is unplaced without shrinking or escaping
+- [ ] Tests use visibly different question and answer bounds
+
+### M2-24B — Capture and present the second Ask lasso
+status: Ready · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
+Acceptance:
+- [ ] Ask visibly prompts question selection, then answer-area selection
+- [ ] The two page-space regions have distinct overlays and cannot be conflated
+- [ ] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
+- [ ] The captured answer rectangle reaches the placement pipeline
+- [ ] A fresh physical-iPad run confirms the interaction
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15
