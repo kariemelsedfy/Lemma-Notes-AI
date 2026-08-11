@@ -461,7 +461,7 @@ Acceptance:
 - [ ] Superseded — see M2-24
 
 ### M2-24 — Ask for an allowed answer area after the question selection
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · depends: M2-24A, M2-24B · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · depends: M2-24A, M2-24B · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
 Note: the answer location is a user decision, not an OCR inference. Keep the question lasso
 for reading and sizing, then immediately prompt for a second lasso that marks the hard region
 inside which the answer may be rendered. Split the interaction/state-machine work if the
@@ -474,7 +474,7 @@ Acceptance:
 - [x] An answer that cannot fit asks for a larger/different area instead of shrinking or escaping
 - [x] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
 - [x] Tests cannot accidentally substitute the question bounds for the answer-area bounds
-- [ ] A fresh physical-iPad run confirms the two selections feel distinct and predictable
+- [x] A fresh physical-iPad run confirms the two selections feel distinct and predictable
 
 ### M2-24A — Constrain placement to the user-marked answer area
 status: Done · completed: Codex · 2026-08-11 · depends: M3-20 · refs: AI_PIPELINE.md §4, ADR-016 · estimate: M
@@ -489,7 +489,7 @@ Acceptance:
 - [x] Tests use visibly different question and answer bounds
 
 ### M2-24B — Capture and present the second Ask lasso
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
 Note: Ask now advances through explicit question and answer-area capture stages. The question
 keeps its accent lasso; the answer area is shown as the exact green rectangular boundary the
 placement engine enforces. A no-room result returns to answer-area capture without discarding
@@ -499,7 +499,7 @@ Acceptance:
 - [x] The two page-space regions have distinct overlays and cannot be conflated
 - [x] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
 - [x] The captured answer rectangle reaches the placement pipeline
-- [ ] A fresh physical-iPad run confirms the interaction
+- [x] A fresh physical-iPad run confirms the interaction
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15

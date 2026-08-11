@@ -11,6 +11,19 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Codex · M2-24 — two-stage answer placement passed on the physical iPad
+
+The user tested the exact fresh commit on the physical iPad and reported that the interaction
+works perfectly. Ask's question lasso, second green answer-area selection, and constrained
+handwritten answer are therefore device-confirmed; M2-24 and M2-24B are closed.
+
+The M3 blind panel remains the human milestone gate. While it waits on outside reviewers, the
+next agent-owned task is M1-07C, the stale-snapshot export defect already observed in a real
+PNG.
+
+**Verification:** fresh source export ✅ · regenerated workspace ✅ · new DerivedData ✅ ·
+signed physical build ✅ · installed and launched ✅ · human-confirmed ✅
+
 ## 2026-08-11 · Codex · M2-24 — explicit answer-area interaction is ready for Pencil testing
 
 Ask now has two visible capture stages: first the question lasso, then a green allowed answer
