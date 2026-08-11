@@ -15,6 +15,7 @@ struct VirtualizedPageStack: View {
     /// Recomputed by the parent whenever the style preference or the glyph bank changes,
     /// so a switch takes effect on the next Ask without rebuilding the pipeline.
     let inkRenderer: any SuggestionInkRendering
+    let handwritingStatus: HandwritingStyleStatus
 
     @State private var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
@@ -40,11 +41,13 @@ struct VirtualizedPageStack: View {
     init(
         document: StoredDocument? = nil,
         autosave: PageAutosave? = nil,
-        inkRenderer: any SuggestionInkRendering = TypesetInkRenderer()
+        inkRenderer: any SuggestionInkRendering = TypesetInkRenderer(),
+        handwritingStatus: HandwritingStyleStatus = .defaultTypeset
     ) {
         notebookID = document?.manifest.id
         self.autosave = autosave
         self.inkRenderer = inkRenderer
+        self.handwritingStatus = handwritingStatus
         let pages = document?.pages ?? []
         pageIDs = pages.map(\.metadata.pageID)
         pageSizes = Dictionary(
@@ -93,6 +96,7 @@ struct VirtualizedPageStack: View {
                     AskBar(
                         phase: askModel.phase,
                         explanation: askModel.explanation,
+                        renderingNotice: askModel.renderingNotice,
                         onVerb: { ask($0) },
                         onCancel: { cancelAsk() },
                         onAccept: { acceptSuggestion() },

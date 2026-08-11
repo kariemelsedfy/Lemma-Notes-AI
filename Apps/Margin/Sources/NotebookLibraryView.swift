@@ -77,7 +77,8 @@ struct NotebookLibraryView: View {
                 VirtualizedPageStack(
                     document: document,
                     autosave: library.autosave,
-                    inkRenderer: stylePreference.renderer(bank: handwriting.bank)
+                    inkRenderer: stylePreference.renderer(bank: handwriting.bank),
+                    handwritingStatus: stylePreference.status(bank: handwriting.bank)
                 )
                 .onDisappear { flushEdits() }
                 .id(selectedNotebookID)

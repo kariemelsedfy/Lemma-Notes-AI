@@ -1,3 +1,4 @@
+import Handwriting
 import InkCore
 import Intelligence
 import XCTest
@@ -84,6 +85,27 @@ final class AskPipelineTests: XCTestCase {
         XCTAssertTrue(harness.engine.strokes.isEmpty)
     }
 
+    func testMissingHandwritingGlyphFallbackIsExplained() async throws {
+        let renderer = HandwritingInkRenderer(bank: Self.bank(letters: "x"))
+        let harness = try Harness(renderer: renderer)
+
+        try await harness.runToDecision()
+
+        XCTAssertEqual(harness.model.phase, .awaitingDecision)
+        XCTAssertEqual(harness.model.renderingNotice, .missingHandwritingCharacters)
+    }
+
+    func testKnownCalibratedDigitIsDrawnAsHandwriting() async throws {
+        let renderer = HandwritingInkRenderer(bank: Self.bank(letters: "4"))
+        let harness = try Harness(renderer: renderer)
+
+        try await harness.runToDecision()
+
+        XCTAssertEqual(harness.model.phase, .awaitingDecision)
+        XCTAssertNil(harness.model.renderingNotice)
+        XCTAssertEqual(harness.suggestions.strokes.count, 1)
+    }
+
     func testNoRequestIsMadeWithoutASelection() async throws {
         let harness = try Harness()
         harness.model.selectionChanged(hasSelection: false)
@@ -107,7 +129,10 @@ final class AskPipelineTests: XCTestCase {
         let pipeline: AskPipeline
         let input: AskPipeline.PageInput
 
-        init(registerFixture: Bool = true) throws {
+        init(
+            registerFixture: Bool = true,
+            renderer: any SuggestionInkRendering = TypesetInkRenderer()
+        ) throws {
             let pageSize = CGSize(width: 1668, height: 2388)
             let strokes = [Self.stroke(in: CGRect(x: 100, y: 100, width: 220, height: 26))]
             input = AskPipeline.PageInput(
@@ -125,7 +150,12 @@ final class AskPipelineTests: XCTestCase {
             )
             let key = SpecRequest(context: context, intent: .answer).cacheKey
             provider = MockProvider(fixtures: registerFixture ? [key: Self.answerSpec] : [:])
-            pipeline = AskPipeline(provider: provider, model: model, suggestions: suggestions)
+            pipeline = AskPipeline(
+                provider: provider,
+                renderer: renderer,
+                model: model,
+                suggestions: suggestions
+            )
             model.selectionChanged(hasSelection: true)
         }
 
@@ -170,4 +200,31 @@ final class AskPipelineTests: XCTestCase {
             explanation: "Addition."
         )
     }
+
+    private static func bank(letters: String) -> GlyphBank {
+        var bank = GlyphBank(capturedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        for character in letters {
+            bank.add(
+                Glyph(
+                    character: String(character),
+                    strokes: [glyphStroke],
+                    advanceWidth: 0.6,
+                    entryPoint: .zero,
+                    exitPoint: CGPoint(x: 0.5, y: 0)
+                )
+            )
+        }
+        return bank
+    }
+
+    private static let glyphStroke = GlyphStroke(points: [
+        GlyphPoint(location: .zero, timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
+        GlyphPoint(
+            location: CGPoint(x: 0.5, y: -1),
+            timeOffset: 0.1,
+            force: 0.5,
+            altitude: 1,
+            azimuth: 0
+        ),
+    ])
 }

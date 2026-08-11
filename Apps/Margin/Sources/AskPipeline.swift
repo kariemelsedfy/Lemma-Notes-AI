@@ -113,6 +113,15 @@ final class AskPipeline {
             return
         }
 
+        let usedMissingGlyphFallback =
+            (renderer as? HandwritingInkRenderer).map { handwritingRenderer in
+                result.placements.contains {
+                    handwritingRenderer.requiresMissingGlyphFallback(for: $0)
+                }
+            } ?? false
+        model.renderedWithNotice(
+            usedMissingGlyphFallback ? .missingHandwritingCharacters : nil
+        )
         suggestions.present(ink, requestID: SpecRequest(context: context).cacheKey)
         model.apply(.placed(result))
     }

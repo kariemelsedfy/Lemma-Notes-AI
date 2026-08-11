@@ -2,8 +2,14 @@ import DesignSystem
 import DocumentStore
 import InkCore
 import Intelligence
+import OSLog
 import PencilKit
 import SwiftUI
+
+private let handwritingAskLogger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Margin",
+    category: "Handwriting"
+)
 
 /// The Ask half of the page stack: running a request, showing its answer, and committing
 /// or discarding it.
@@ -19,6 +25,16 @@ extension VirtualizedPageStack {
     /// Runs one Ask against the canned provider.
     func ask(_ verb: AskVerb) {
         guard let selection = askSelection.selection else { return }
+        // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
+        // an unsaved bank, missing `4`, a pinned preference, and a stale renderer in one run.
+        let rendererName = String(describing: type(of: inkRenderer))
+        let diagnostic =
+            "Ask style bankMissing=\(handwritingStatus.bankMissing) "
+            + "characterCount=\(handwritingStatus.characterCount) "
+            + "canRenderCannedAnswer=\(handwritingStatus.canRenderCannedAnswer) "
+            + "selected=\(handwritingStatus.selected.rawValue) "
+            + "resolved=\(handwritingStatus.resolved.rawValue) renderer=\(rendererName)"
+        handwritingAskLogger.info("\(diagnostic, privacy: .public)")
         // Reused only while it still writes into the layer this view reads. `@State` keeps
         // that true; this makes it self-healing rather than merely true, because the failure
         // it guards against is silent — the pipeline succeeds, the ink lands in an orphaned

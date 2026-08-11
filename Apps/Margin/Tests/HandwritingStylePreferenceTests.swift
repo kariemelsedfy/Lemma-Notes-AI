@@ -36,13 +36,26 @@ final class HandwritingStylePreferenceTests: XCTestCase {
         XCTAssertTrue(preference.renderer(bank: nil) is TypesetInkRenderer)
     }
 
-    func testAPartialBankAlsoResolvesToTypeset() {
+    func testABankMissingAnUnrelatedLetterStillUsesHandwritingForKnownContent() {
         let preference = HandwritingStylePreference(defaults: defaults)
         preference.choice = .mine
+        let bank = Self.bank(letters: "abcdefghijklmnopqrstuvwxy4")
 
-        // Abandoning calibration after two sheets is allowed; rendering answers from it
-        // would be mostly fallback anyway, so it is not offered as "my handwriting".
-        XCTAssertEqual(preference.resolved(bank: Self.bank(letters: "abc")), .typeset)
+        // A single rejected lowercase glyph used to disable the entire bank, even though
+        // the renderer falls back per block and this bank can draw the actual answer.
+        XCTAssertTrue(bank.canRender("4"))
+        XCTAssertEqual(preference.resolved(bank: bank), .mine)
+        XCTAssertTrue(preference.renderer(bank: bank) is HandwritingInkRenderer)
+        XCTAssertEqual(
+            preference.status(bank: bank),
+            HandwritingStyleStatus(
+                bankMissing: false,
+                characterCount: 26,
+                canRenderCannedAnswer: true,
+                selected: .mine,
+                resolved: .mine
+            )
+        )
     }
 
     func testCalibratingPromotesAUserWhoNeverChoseAStyle() {

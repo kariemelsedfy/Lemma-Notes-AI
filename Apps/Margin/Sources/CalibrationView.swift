@@ -17,6 +17,7 @@ struct CalibrationView: View {
     /// Bumped to clear the canvas; the writing surface owns its own ink otherwise.
     @State private var generation = 0
     @State private var summary: CalibrationSession.Outcome?
+    @State private var saveErrorPresented = false
 
     var body: some View {
         NavigationStack {
@@ -25,8 +26,11 @@ struct CalibrationView: View {
                     CalibrationSummaryView(outcome: summary) { characters in
                         repair(characters)
                     } onFinish: {
-                        store.save(summary.bank)
-                        dismiss()
+                        if store.save(summary.bank) {
+                            dismiss()
+                        } else {
+                            saveErrorPresented = true
+                        }
                     }
                 } else if let sheet = session.current {
                     sheetView(sheet)
@@ -43,6 +47,11 @@ struct CalibrationView: View {
                     // is kept rather than thrown away.
                     Button("calibration.leave") { finish() }
                 }
+            }
+            .alert("calibration.save.failed.title", isPresented: $saveErrorPresented) {
+                Button("library.ok", role: .cancel) {}
+            } message: {
+                Text("calibration.save.failed.message")
             }
         }
     }

@@ -33,6 +33,7 @@
 "ask.verb.check" = "Check";
 "ask.verb.ask" = "Ask a question";
 "ask.state.working" = "Working…";
+"ask.notice.missing-handwriting-characters" = "Typeset was used because your handwriting sample is missing a character in this answer.";
 "ask.cancel" = "Cancel";
 "ask.keep" = "Keep";
 "ask.discard" = "Discard";
@@ -60,6 +61,8 @@
 "calibration.skip" = "Skip this";
 "calibration.next" = "Next";
 "calibration.finish" = "Save";
+"calibration.save.failed.title" = "Couldn’t save your handwriting";
+"calibration.save.failed.message" = "Your calibration is still open. Try Save again.";
 "calibration.summary.captured %lld" = "Captured %lld characters.";
 "calibration.summary.unclear" = "These are still missing. Answers that use them will be written in the typeset style instead of your hand.";
 "calibration.repair %lld" = "Write these %lld again";

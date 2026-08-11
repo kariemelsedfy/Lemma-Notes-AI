@@ -21,7 +21,7 @@ final class HandwritingStyleStoreTests: XCTestCase {
 
     func testABankSurvivesARelaunch() throws {
         let store = HandwritingStyleStore(url: url)
-        store.save(Self.bank(letters: "abc"))
+        XCTAssertTrue(store.save(Self.bank(letters: "abc")))
 
         // A fresh store is what the next launch sees.
         XCTAssertEqual(HandwritingStyleStore(url: url).bank?.characterCount, 3)
@@ -44,13 +44,12 @@ final class HandwritingStyleStoreTests: XCTestCase {
         XCTAssertNil(HandwritingStyleStore(url: url).bank)
     }
 
-    func testAPartialBankDoesNotClaimItCanRenderHandwriting() {
+    func testAPartialBankCanRenderTheCharactersItContains() {
         let store = HandwritingStyleStore(url: url)
         store.save(Self.bank(letters: "abc"))
 
-        // Three letters and a fallback for the rest would look worse than the typeset
-        // style used consistently.
-        XCTAssertFalse(store.canRenderHandwriting)
+        // The renderer decides per block whether the bank has every required glyph.
+        XCTAssertTrue(store.canRenderHandwriting)
     }
 
     func testAFullAlphabetCanRenderHandwriting() {
@@ -65,7 +64,7 @@ final class HandwritingStyleStoreTests: XCTestCase {
         // instead is the worst outcome available.
         let store = HandwritingStyleStore(url: URL(fileURLWithPath: "/nonexistent-directory/style.json"))
 
-        store.save(Self.bank(letters: "abc"))
+        XCTAssertFalse(store.save(Self.bank(letters: "abc")))
 
         XCTAssertNotNil(store.lastError)
         XCTAssertNil(store.bank)

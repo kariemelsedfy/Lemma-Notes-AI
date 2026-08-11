@@ -10,6 +10,7 @@ import SwiftUI
 final class AskBarModel: ObservableObject {
     @Published private(set) var state: AskState = .idle
     @Published private(set) var hasSelection = false
+    @Published private(set) var renderingNotice: AskRenderingNotice?
 
     /// Kept so a retry can reissue the same verb without asking the user again.
     private(set) var lastVerb: AskVerb?
@@ -35,6 +36,7 @@ final class AskBarModel: ObservableObject {
 
     func selectionChanged(hasSelection: Bool) {
         self.hasSelection = hasSelection
+        renderingNotice = nil
         // A new selection abandons whatever the last one was doing; a stale answer
         // pointing at ink the user is no longer looking at is worse than no answer.
         if !hasSelection || state.isCancellable {
@@ -46,8 +48,13 @@ final class AskBarModel: ObservableObject {
     @discardableResult
     func begin(_ verb: AskVerb) -> Bool {
         guard hasSelection else { return false }
+        renderingNotice = nil
         lastVerb = verb
         return apply(.begin)
+    }
+
+    func renderedWithNotice(_ notice: AskRenderingNotice?) {
+        renderingNotice = notice
     }
 
     @discardableResult
