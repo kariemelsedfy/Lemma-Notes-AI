@@ -25,20 +25,25 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M2-22 — The selected-area image never reaches anything that can read it
-status: In progress · claimed: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
-Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
-`SelectionRasterizer` can produce the PNGs, but the shipping `AskPipeline` never calls it.
-The provider therefore receives normalized stroke geometry and no visual or OCR reading of
-what the user selected. The canned provider hides this by always answering `4`.
-Acceptance:
-- [ ] The lasso crop is rasterized from the actual page drawing and flattened on white
-- [ ] The bounded neighborhood is rasterized at its requested scale
-- [ ] On-device recognition supplies a best-effort selected-area transcript and confidence
-- [ ] The provider request carries the pixels/transcript without logging or retaining them
-- [ ] Tests exercise the shipping Ask path, not a reconstructed rasterization path
+_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
 
 ## Review
+
+### M2-22 — The selected-area image never reaches anything that can read it
+status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
+the shipping `AskPipeline` now renders both from an exact `PKDrawing` snapshot. Vision reads
+the flattened crop locally with language correction disabled so literal math is preserved;
+providers receive both PNGs plus the best-effort transcript/confidence only for the request
+lifetime. A real Vision fixture reads `2+2=4` correctly in 0.34s on the development Mac.
+The app still uses `CannedSpecProvider`, so this changes what future providers can reason
+over, not the hardcoded answer it visibly returns today. PR publication awaits GitHub login.
+Acceptance:
+- [x] The lasso crop is rasterized from the actual page drawing and flattened on white
+- [x] The bounded neighborhood is rasterized at its requested scale
+- [x] On-device recognition supplies a best-effort selected-area transcript and confidence
+- [x] The provider request carries the pixels/transcript without logging or retaining them
+- [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
 ### M3-18 — Repair sheets make missed characters too small to write
 status: Review · implemented: Codex · 2026-08-10 · needs-device-verification · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
@@ -75,7 +80,7 @@ a 24.4pt handwritten answer (94%; width fit accounts for the remainder). Privacy
 record anchor/style/usable x-height, block frame, fallback, and final ink bounds for the
 required device comparison. The bottom-right position is the current `.atAnchor` policy—one
 word gap after the last selected glyph on its baseline—and remains flagged for M2-22's OCR
-anchor refinement rather than being treated as the sizing bug.
+work and M2-23's anchor refinement rather than being treated as the sizing bug.
 Acceptance:
 - [ ] A log from a real device showing the fixed chain at multiple handwriting sizes
 - [x] The cause named with failing-test and simulator evidence
@@ -429,6 +434,20 @@ Acceptance:
 - [ ] Per-character samples are deduplicated and capped with a documented replacement policy
 - [ ] Synthesis actually rotates among variants deterministically for a fixed seed
 - [ ] The glyph bank still has no upload path
+
+### M2-23 — Refine answer placement from the recognized selection
+status: Ready · depends: M2-22 · refs: AI_PIPELINE.md §4 · estimate: M
+Note: the reported bottom-right answer position is the current geometry-only `.atAnchor`
+policy: one word gap after the last selected stroke on its estimated baseline. M2-22 now
+provides a transcript, but deliberately does not pretend its discarded Vision boxes can
+locate a trailing `=`. Preserve per-observation boxes, map them from crop to page coordinates,
+and refine only when the recognition is confident; otherwise keep today's reversible anchor.
+Acceptance:
+- [ ] A confident trailing `=` anchors the answer after that glyph on its baseline
+- [ ] Vision crop boxes map back to page coordinates with crop padding and scale covered
+- [ ] Low-confidence or boxless recognition keeps the geometry anchor unchanged
+- [ ] Placement remains on-page and occupancy fallback still wins when the line is full
+- [ ] Physical-iPad comparison covers tight and loose lassos around the same expression
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15

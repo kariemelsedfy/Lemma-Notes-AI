@@ -38,6 +38,32 @@ suite, 124 tests ✅ · focused Margin simulator tests for pre-calibration types
 handwriting ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ ·
 physical iPad: pending fresh install and user comparison
 
+## 2026-08-10 · Codex · M2-22 — the selected ink finally reaches the reader
+
+The crop bounds were not the bug: M2-05B computed them and M2-05C could render them. The
+shipping `AskPipeline` simply never called either path, so `CannedSpecProvider` received
+normalized stroke geometry and no image or transcript. Its unconditional `4` hid the gap.
+
+Ask now snapshots the exact page `PKDrawing`, rasterizes both requested regions through the
+existing white-flattening path, and runs Vision locally over the crop with language correction
+off so arithmetic stays literal. `SpecRequest` carries both images and a conservative reading
+(ordered transcript plus the weakest observation confidence) for the call lifetime. Pixels
+join the stable cache digest; neither pixels nor transcript enter logs, and the provider
+contract explicitly forbids retaining them. ADR-015 records that public-contract change.
+
+The first integration test deliberately failed because `PageInput` had only reconstructed
+strokes. The replacement test drives the shipping pipeline with a recording wrapper around a
+real `PencilKitInkEngine`, proving the exact crop/neighborhood bounds and scales reach the
+page exporter and the resulting PNGs/reading reach a provider. A real Vision fixture reads
+`2+2=4` correctly in 0.34s on this Mac. Vision still returns nothing for very short strings;
+that is represented honestly as an empty transcript at confidence zero while the provider
+still receives the primary crop.
+
+**Verification:** red shipping-path test before implementation ✅ · Intelligence 128 tests ✅ ·
+Margin simulator 137 tests ✅ · `./scripts/test.sh` build/package suite ✅ · `./scripts/lint.sh`
+0 violations across 129 files ✅ · physical device: not required for the plumbing; real-writer
+quality belongs to M4's golden set
+
 ## 2026-08-10 · Codex · M3-18 — repair prompts now stop at 26
 
 The user supplied the product rule from a real calibration: **no more than 26 characters on
