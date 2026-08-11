@@ -29,6 +29,21 @@ _(empty — nothing is claimed. Pick the highest-priority unblocked task in **Re
 
 ## Review
 
+### M3-18 — Repair sheets make missed characters too small to write
+status: Review · implemented: Codex · 2026-08-10 · needs-device-verification · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
+Note: the repair flow now deduplicates the requested characters, chunks them in order at 26,
+assigns each chunk a unique sheet ID, and moves to the first appended sheet. A 62-character
+fixture produces 26/26/10 without loss or duplication; a 30-character fixture proves both
+repair pages merge into one bank. A full repair page measures the same ≥64pt boxes as the
+first 26-letter page in the fixture. The UI now labels progress as “Sheet n of total,” with
+the appended repair pages included. Physical Apple Pencil sizing remains to be confirmed.
+Acceptance:
+- [x] A repair sheet contains at most 26 characters
+- [x] Larger repair sets paginate without dropping or duplicating characters
+- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests; device confirmation pending
+- [x] Progress makes it clear when more than one repair sheet remains
+- [x] Captures from every repair sheet merge into the existing bank
+
 ### M2-17 — The answer's size and placement do not track what was asked about
 status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
 Note: the 2026-08-11 device retest found a separate pre-calibration regression: a 26pt
@@ -388,20 +403,6 @@ Acceptance:
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
-
-### M3-18 — Repair sheets make missed characters too small to write
-status: Ready · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
-Note: device-confirmed after M3-17. A calibration captured 26 characters and put every
-remaining character on one repair sheet. The guide boxes became too small for practical
-Apple Pencil input. The user set the product rule: **at most 26 repair characters per
-sheet**. The referenced screenshot was not available in the workspace, so reproduce from
-the reported character count and an oversized repair set.
-Acceptance:
-- [ ] A repair sheet contains at most 26 characters
-- [ ] Larger repair sets paginate without dropping or duplicating characters
-- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass
-- [ ] Progress makes it clear when more than one repair sheet remains
-- [ ] Captures from every repair sheet merge into the existing bank
 
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Ready · refs: AI_PIPELINE.md §1, M2-05C · estimate: M

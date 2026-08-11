@@ -60,6 +60,7 @@
 "calibration.clear" = "Clear";
 "calibration.skip" = "Skip this";
 "calibration.next" = "Next";
+"calibration.progress %lld %lld" = "Sheet %lld of %lld";
 "calibration.finish" = "Save";
 "calibration.save.failed.title" = "Couldn’t save your handwriting";
 "calibration.save.failed.message" = "Your calibration is still open. Try Save again.";

@@ -38,6 +38,27 @@ suite, 124 tests ✅ · focused Margin simulator tests for pre-calibration types
 handwriting ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ ·
 physical iPad: pending fresh install and user comparison
 
+## 2026-08-10 · Codex · M3-18 — repair prompts now stop at 26
+
+The user supplied the product rule from a real calibration: **no more than 26 characters on
+one repair page.** The old `CalibrationSession.repair` appended the entire missing set as a
+single guide-box sheet, so a bank that captured only 26 characters could put most of the
+original script into one cramped page.
+
+Repair now deduplicates once, preserves order, and appends consecutive 26-character chunks
+with unique IDs. A 62-character fixture produces exactly 26/26/10 and reconstructs the
+original list with no drops or duplicates. A second fixture writes all 30 characters across
+two repair pages and proves every one reaches the same bank. At the reported cap, guide
+boxes measure the same size as the original 26-letter alphabet page (64pt in the fixture).
+
+The progress bar now has localized “Sheet n of total” copy. Its total grows when repair
+pages are appended, and a test pins the first and second repair positions so adding more
+than one page cannot look like an endless retry.
+
+**Verification:** focused repair suite, 10 tests ✅ · 62-character order/cap fixture ✅ ·
+multi-page bank merge fixture ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations
+across 127 files ✅ · device tested: no, physical Pencil box-size confirmation still needed
+
 ## 2026-08-10 · Codex · M2-17 — calibration size was masquerading as answer size
 
 **The cause is measured now.** Placement correctly doubled its frame when the selected

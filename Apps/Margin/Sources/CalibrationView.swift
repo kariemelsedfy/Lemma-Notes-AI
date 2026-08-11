@@ -60,8 +60,14 @@ struct CalibrationView: View {
 
     private func sheetView(_ sheet: CalibrationSheet.Sheet) -> some View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
-            ProgressView(value: session.progress)
-                .tint(MarginColor.accent)
+            HStack(spacing: MarginSpacing.medium) {
+                ProgressView(value: session.progress)
+                    .tint(MarginColor.accent)
+                Text("calibration.progress \(session.stepNumber) \(session.stepCount)")
+                    .font(MarginTypography.caption)
+                    .foregroundStyle(MarginColor.secondaryText)
+                    .fixedSize()
+            }
 
             Text(sheet.instruction)
                 .font(MarginTypography.body)
@@ -128,7 +134,7 @@ struct CalibrationView: View {
         generation += 1
     }
 
-    /// Takes the user to one sheet holding exactly the characters still needed.
+    /// Takes the user to repair-only sheets holding exactly the characters still needed.
     ///
     /// The old behaviour rewound to the sheet a character came from, which meant walking
     /// forward through every later sheet again — the thing §3.2 explicitly does not ask for,
