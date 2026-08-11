@@ -11,6 +11,36 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Codex · M2-17 — calibration size was masquerading as answer size
+
+**The cause is measured now.** Placement correctly doubled its frame when the selected
+writing's x-height changed from 18 to 36 points, but the generated handwritten glyph stayed
+at exactly 1×. `Synthesizer.layout` used `bank.style.stats.xHeight` as a preferred maximum,
+so the size a person happened to write during calibration silently became the maximum size
+of every future answer. That explains why the user's recognisable `4` was still too small.
+
+Synthesis now accepts a target x-height, `HandwritingInkRenderer` passes the selected ink's
+local measurement through wrapping and rendering, and `AskPipeline` makes rendering use the
+same usable x-height chosen by placement. The regression now measures a 2× glyph for a 2×
+selection. At the app seam, a 26pt selected stroke produces a 24.4pt handwritten answer
+(94%); the remaining fit is the one-character frame's width constraint, not calibration.
+
+**Placement was a separate observation.** The simulator log shows `usedFallback=false`; the
+answer is placed one word gap after the selected line's last glyph because the canned spec
+requests `.atAnchor`. That naturally looks like the selection's bottom-right. I did not
+change it under a sizing task. M2-22's crop/OCR work is where the intended trailing-`=`
+anchor can be derived from what the selection actually says.
+
+The app now logs only numeric geometry: anchor/style/usable x-height, measured frame,
+fallback state, and final ink bounds. It logs no ink, crop, transcription, or answer. This
+is intentionally left in Review until the user can ask beside small and large real Pencil
+writing on a physical iPad and confirm the relative size there.
+
+**Verification:** pre-fix regression 1× instead of 2× ✅ · post-fix regression 2× ✅ ·
+Handwriting and Intelligence package suites ✅ · full Margin iPad simulator suite, 135 tests
+✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · device
+tested: no, needs user verification
+
 ## 2026-08-10 · Codex · M3-17 — the bank had the answer and we rejected the bank
 
 **Device result:** the app now writes the `4` captured with Apple Pencil rather than the
