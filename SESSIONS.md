@@ -11,6 +11,36 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Claude · M3-16, and a handover to whoever is next
+
+**Three reports from a full device calibration:** an error on the summary screen that "wanted to display something bigger than the widget"; the answer's size and placement still not tracking the question; and, after calibrating fully, answers *still* drawn in typeset.
+
+### The summary overflow was mine, from the previous PR
+
+`CharacterChips` laid the outstanding characters out in a plain `HStack`, which does not wrap. That was fine while it showed only `rejected` — nought to three characters. M3-15, one PR earlier, changed it to rejected **plus** missing, which is unbounded: skipping the optional maths sheet alone adds eighteen. It ran off the side of the sheet.
+
+**I widened what a component displayed without checking what bounded it.** The old input was small for a reason I did not look up, and the new one is not.
+
+**The part that matters more than the layout:** `store.save(summary.bank)` runs *only* from the Save button on that screen. If the summary overflows, Save can go out of reach — and a calibration that is never saved is indistinguishable from one that never worked. **That is very plausibly the whole of the "still typeset" report**, and it means M3-15's fix has still never actually been exercised end to end. Save now sits outside the scroll view, where nothing can push it away.
+
+Fixed with a wrapping `Text` rather than a wrapping chip layout, and said so in the comment: chips need a real container (`Layout`, or a `Grid` with a computed column count), and an `HStack` is not one.
+
+### What I did not fix, and what I would tell the next person
+
+**M3-17 (typeset after calibrating) is not confirmed fixed.** M3-16 is the leading explanation and it is cheap to check first, but the last time I assumed one bug explained another I was wrong. `PROGRESS.md` has the four candidates in cost order, and a single log line at the top of `ask()` — bank present, character count, `canRender("4")`, resolved style, renderer type — settles all four in one device run.
+
+**M2-17 (size and placement) has now defeated two hypotheses of mine.** Position and occupancy: both ruled out by measurement. Stale suggestion layer: wrong, it survived M2-16. Zero x-height: real, fixed in M2-15, and not this. **Every simulator path I have built produces a correctly sized answer**, which is the most informative fact available — whatever this is depends on real ink, a real lasso, or real page state, and will not be found by reading `PlacementEngine` again.
+
+The user's phrasing is worth taking literally: *sometimes* right, *sometimes* too small. **Capture the good cases as well as the bad ones**; the difference between them is the answer, and a log of only the failures will not show it.
+
+### The pattern, stated once for the record
+
+Four defects fixed this week, all found by a user in minutes, none visible to 400+ tests. The tests are not thin — they are aimed at the models, and every one of these bugs lived in the seams: PencilKit's renderer, SwiftUI's view identity, a `UIViewRepresentable`, a layout container. **Reproduce with a fixture and measure before forming a theory.** Everything I fixed in one attempt, I measured first. Everything that took two, I reasoned about first.
+
+**Verification:** `xcodebuild test` iPad simulator, 133 tests ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · device tested: no — **and the two blockers can only be closed on a device**
+
+---
+
 ## 2026-08-10 · Claude · M3-15 — three reports, one bug, and a message that lied
 
 **User report:** "I taught it my handwriting and it said it captured all 26 characters, but then it wrote in typeset and didn't memorise my handwriting." Plus, separately, "when it says you missed a couple of characters and I go to fill them in, it asks me to fill all characters from the start again."

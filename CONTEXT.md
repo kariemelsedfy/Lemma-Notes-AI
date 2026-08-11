@@ -4,39 +4,81 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-09 · by: Claude · Milestone: **M3 complete except the human gate**
+**Last updated:** 2026-08-10 · by: Claude · Milestone: **M3 blocked on three device bugs, then the human gate**
 
-**Generated ink is an input to this app, not just an output.** It lands on the page, so the
-lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELINE.md` §1
-`pageText`). Three defects so far come from generated ink being structurally unlike a
-person's — thinner than PencilKit draws (M2-13), then bolder (M2-13B), then perfectly flat
-and therefore measuring as a zero x-height (M2-15). Ask what a new kind of generated stroke
-looks like *to the app* before shipping it.
+## Handover, 2026-08-10
 
-**The Ask path now works end to end on a device** (confirmed 2026-08-10): lasso, ask, an
-answer drawn in place, sized in proportion to the writing it answers, and it stays when kept.
-Getting there took four defects the suite could not see — M1-12B, M2-13, M2-13B, M2-15 —
-every one found by a user in minutes.
+**Read this section, then §1a. The work is now driven by device reports, not by the board.**
+
+The Ask loop works on a device — lasso, ask, an answer drawn in place, and it stays when kept.
+Four defects had to be fixed to get that far (M1-12B, M2-13, M2-13B, M2-15), **every one found
+by a user in minutes and none visible to 400+ tests.** That ratio is the single most important
+thing to know about this codebase right now.
+
+**Three bugs are open from the most recent device session, and two of them block M3:**
+
+| | | |
+|---|---|---|
+| **M3-17** | Calibrating fully still renders answers in typeset | **blocker** |
+| **M2-17** | The answer's size and placement do not track what was asked about | **blocker** |
+| **M3-16** | Calibration summary overflowed and could hide Save | fixed, unverified |
+
+**M3-16 may be the cause of M3-17** — Save is the only thing that writes the bank, and an
+overflowing summary can put it out of reach. Confirm that before investigating further.
+
+**M2-17 has had two hypotheses proposed and both were wrong.** Every simulator path produces a
+correctly sized answer. `PROGRESS.md` lists what has been ruled out *by measurement* — do not
+re-spend that time, and do not offer a third theory from reading the code. The next step is a
+device log; the exact fields to record are in the task.
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
-Real providers are M4, and no M4 task has been filed yet.
+Real providers are M4, and **no M4 task has been filed yet**.
+
+**Generated ink is an input to this app, not just an output.** It lands on the page, so the
+lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELINE.md` §1
+`pageText`). Four defects so far come from generated ink being structurally unlike a person's
+— thinner than PencilKit draws (M2-13), then bolder (M2-13B), then perfectly flat and so
+measuring as a zero x-height (M2-15), and its hatch strokes making the eraser behave
+differently (M2-18). Ask what a new kind of generated stroke looks like *to the app* before
+shipping it.
+
+## 1a. If you are picking this up cold
+
+1. `AGENTS.md`, then this file, then the open tasks named above in `PROGRESS.md`.
+2. **Reproduce before theorising.** Every bug in this project that was fixed quickly was
+   fixed by building a fixture and measuring; every one that took two attempts was reasoned
+   about first. The last four `SESSIONS.md` entries are worth ten minutes for that pattern
+   alone.
+3. **Numbers in doc comments are measured, not guessed** — `InkRenderingLimits`,
+   `TypesetStyle.nibToHeightRatio`, `insetToNibRatio`. If you change one, re-measure it and
+   update the table beside it.
+4. Anything touching a `PKCanvasView`, a `UIViewRepresentable`, or SwiftUI view identity is
+   **outside what XCTest can reach here**. Three bugs have lived there. The shell checks in
+   `scripts/` are the substitute, and a device is the test.
 
 ---
 
 ## 1. Where we are
 
-**M3 is feature-complete on the agent side. The only thing left in it is M3-10, and only a human can run it.**
+**M3 is feature-complete on the agent side, but not usable until M3-17 and M2-17 are fixed.**
+The blind panel (M3-10) is still the milestone gate and still needs a human, but there is no
+point running it while a calibrated user's answers come out in typeset.
 
 M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple Developer account. M3 built the whole handwriting path: a typeset fallback, an OCR legibility harness, calibration capture over seven guided sheets, guide-box segmentation, glyph-bank storage, the synthesizer, line breaking, the three §8 styles, and an automated similarity metric.
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: M3-10, the blind similarity panel.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
+**Next action: M3-17, then M2-17, then M3-10.** The panel judges handwriting similarity, and
+right now a calibrated device does not produce handwriting to judge.
+
+**M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
 Two things to know before running it. Nobody has yet *looked* at generated ink in a real hand — the whole path is verified by tests, never by eye. And if the panel says it looks mechanical, **M3-08C is the first place to look**: `Variation` currently reaches only vertical jitter and drift, not glyph-sample selection, so a bank with four samples per letter behaves identically to one with a single sample.
 
-Device work is collected in `DEVICE_SESSION.md`; the newest item is **M3-02B**, timing a real calibration pass against §3.1's three-minute budget.
+Device work is collected in `DEVICE_SESSION.md`. **The user is the only route to a device**;
+every finding in the last week came from them, so write device instructions as if for someone
+who has not read the code — because they have not.
 
 ## 2. What exists
 
