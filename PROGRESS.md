@@ -25,39 +25,29 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M3-17 — Calibrating fully still renders answers in typeset
-status: In progress · claimed: Codex · 2026-08-10 · **blocker** · refs: PROGRESS.md M3-15, M3-16 · estimate: M
-Note: found on device — "I calibrated fully and when I finished it still wrote the 4 in
-typeset." Reported *after* M3-15 fixed the capture-wiping bug, so the first explanation is
-already spent. **Do not assume M3-16 fixes this**; confirm it.
-Check in this order, because each is cheaper than the next and the first two are free:
-1. **Was the bank saved at all?** `HandwritingStyleStore` writes to
-   `applicationSupportDirectory/handwriting-style.json`. If M3-16 stopped the user reaching
-   Save, there is no file and everything downstream is correct behaviour. Check the file
-   exists and its `characterCount`.
-2. **Does the bank contain digits?** Every answer the canned provider returns is `4`.
-   `HandwritingInkRenderer` falls back **per block**, so a bank without `4` draws every
-   answer in typeset no matter how good the letters are. `bank.canRender("4")` is the whole
-   question. This has already fooled us once (M3-15).
-3. **Is the preference stuck?** `HandwritingStylePreference.resolved(bank:)` returns
-   `isExplicit ? choice : .mine`. Once the user has *ever* tapped a style, `isExplicit` is
-   true forever, so an early tap on "typeset" pins it — and picking "my handwriting" later
-   only helps if that tap actually wrote the preference.
-4. **Is the renderer reaching the pipeline?** `pipeline.renderer = inkRenderer` is assigned
-   per Ask in `ask()`, and `inkRenderer` is recomputed by the parent. Verify the renderer at
-   the moment of the Ask is a `HandwritingInkRenderer`, not a `TypesetInkRenderer`.
-A one-line log of `(bank == nil, characterCount, canRender("4"), resolved style, renderer
-type)` at the top of `ask()` answers 1–4 in a single device run. Worth adding first.
-Acceptance:
-- [ ] The above is narrowed to one cause with evidence, not inference
-- [ ] A calibrated user's answers are drawn in their hand
-- [ ] Whatever the cause, the app says why it fell back rather than silently degrading
+_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M3-17 — Calibrating fully still renders answers in typeset
+status: Done · completed: Codex · 2026-08-10 · refs: PROGRESS.md M3-15, M3-16 · estimate: M
+Note: reproduced with a bank that contained the canned answer `4` but lacked one unrelated
+lowercase letter: `bank.canRender("4")` was true while style resolution returned `typeset`.
+`HandwritingStylePreference` required the entire lowercase alphabet before it would create a
+`HandwritingInkRenderer`, contradicting the renderer's deliberate per-block fallback. A
+nearly complete calibration therefore looked wholly unused. Any non-empty bank now reaches
+the handwriting renderer; only an answer containing a genuinely missing glyph falls back,
+and the Ask bar explains that fallback. Save failures also leave calibration open with an
+error instead of dismissing it. Device-confirmed: the answer used the `4` written with the
+Apple Pencil, not the typeset glyph.
+Acceptance:
+- [x] The cause was narrowed with a failing test: known `4`, unrelated missing glyph, wrong renderer
+- [x] A calibrated user's answers are drawn in their hand
+- [x] The app says why a specific answer fell back instead of silently degrading
 
 ### M0-03R — CI app-test reliability
 status: Done · completed: Codex · 2026-07-29 · refs: .github/workflows/ci.yml · estimate: S
@@ -331,7 +321,7 @@ Acceptance:
 - [x] The summary lists rejected *and* missing together, with one button to write them all
 - [x] The summary says plainly that answers using missing characters are drawn in typeset
 - [x] Repairing merges into the existing capture rather than disturbing it
-- [ ] **Confirm on device**: calibrate, repair the gaps, ask — the answer is in your hand
+- [x] **Confirmed on device 2026-08-10**: repaired `4` reached the bank and Ask used it
 
 ### M3-16 — The calibration summary overflows and can hide the Save button
 status: Done · completed: Claude · 2026-08-10 · refs: HANDWRITING.md §3.2 · estimate: S
@@ -349,7 +339,7 @@ Acceptance:
 - [x] The character list wraps instead of running off the side
 - [x] The summary scrolls, so any length of list is reachable
 - [x] Save sits outside the scroll view and cannot be pushed off-screen
-- [ ] **Confirm on device**: finish a calibration that misses characters, and reach Save
+- [x] **Confirmed on device 2026-08-10**: missing characters and Save were reachable
 
 ### M2-16 — After calibrating, every Ask draws nothing
 status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
@@ -370,7 +360,7 @@ the *previous* answer displays ink of the wrong size for the new question.
 Acceptance:
 - [x] The layer is `@State`, so one instance survives the rebuild
 - [x] The pipeline is reused only while it still writes into the layer the view reads
-- [ ] **Confirm on device**: calibrate, then ask — the answer appears
+- [x] **Confirmed on device 2026-08-10**: calibrate, Ask, and the handwritten answer appears
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
@@ -404,6 +394,48 @@ Acceptance:
 - [ ] A log from a real device showing where the chain stops tracking the selection
 - [ ] The cause named with evidence
 - [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
+
+### M3-18 — Repair sheets make missed characters too small to write
+status: Ready · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
+Note: device-confirmed after M3-17. A calibration captured 26 characters and put every
+remaining character on one repair sheet. The guide boxes became too small for practical
+Apple Pencil input. The user set the product rule: **at most 26 repair characters per
+sheet**. The referenced screenshot was not available in the workspace, so reproduce from
+the reported character count and an oversized repair set.
+Acceptance:
+- [ ] A repair sheet contains at most 26 characters
+- [ ] Larger repair sets paginate without dropping or duplicating characters
+- [ ] Repair boxes remain large enough for the same Pencil input used on the first pass
+- [ ] Progress makes it clear when more than one repair sheet remains
+- [ ] Captures from every repair sheet merge into the existing bank
+
+### M2-22 — The selected-area image never reaches anything that can read it
+status: Ready · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
+`SelectionRasterizer` can produce the PNGs, but the shipping `AskPipeline` never calls it.
+The provider therefore receives normalized stroke geometry and no visual or OCR reading of
+what the user selected. The canned provider hides this by always answering `4`.
+Acceptance:
+- [ ] The lasso crop is rasterized from the actual page drawing and flattened on white
+- [ ] The bounded neighborhood is rasterized at its requested scale
+- [ ] On-device recognition supplies a best-effort selected-area transcript and confidence
+- [ ] The provider request carries the pixels/transcript without logging or retaining them
+- [ ] Tests exercise the shipping Ask path, not a reconstructed rasterization path
+
+### M3-19 — Learn extra glyph variants from the user's ordinary writing
+status: Ready · future · depends: M2-22, M3-08C · refs: HANDWRITING.md §4.1 · estimate: L
+Note: requested direction. When a high-confidence selection contains a user-written `2`
+or `3`, keep the aligned on-device stroke sample so later synthesis can vary between real
+versions without extending initial calibration. The bank already stores multiple samples;
+the missing work is trustworthy character-to-stroke alignment, sample selection, and safe
+bounded accumulation. This is biometric-adjacent data and never leaves the device.
+Acceptance:
+- [ ] Only high-confidence user-authored ink is eligible; generated/provenance strokes are excluded
+- [ ] Character-to-stroke alignment fails closed rather than teaching the wrong glyph
+- [ ] New samples retain pressure, tilt, azimuth, timing, and pen lifts
+- [ ] Per-character samples are deduplicated and capped with a documented replacement policy
+- [ ] Synthesis actually rotates among variants deterministically for a fixed seed
+- [ ] The glyph bank still has no upload path
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15
