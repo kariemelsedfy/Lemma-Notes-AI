@@ -25,7 +25,7 @@ Three follow-ups came from that same device run:
 | | | |
 |---|---|---|
 | **M2-17** | Handwritten and pre-calibration typeset sizing fixed in tests; physical-iPad confirmation pending | review |
-| **M3-18** | More than 26 missed characters makes repair boxes impractically small | next |
+| **M3-18** | Repair sets paginate at 26; physical-Pencil sizing confirmation pending | review |
 | **M2-22** | The selected-area crop is never rasterized or read in the shipping Ask path | next |
 
 **M2-17 has two measured causes and two implemented fixes.** Captured handwriting used to cap
@@ -76,7 +76,7 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: M3-18 and M2-22 while M2-17 awaits the user's device check, then M3-10.** The
+**Next action: M2-22 while M2-17 and M3-18 await the user's device checks, then M3-10.** The
 panel judges handwriting similarity, and a consistently undersized glyph would bias that
 verdict.
 
