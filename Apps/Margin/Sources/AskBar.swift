@@ -1,3 +1,4 @@
+import DesignSystem
 import Intelligence
 import SwiftUI
 
@@ -29,6 +30,16 @@ enum AskBarPhase: Equatable {
             self = .failed(failure)
         case .committed, .discarded:
             self = hasSelection ? .offeringVerbs : .hidden
+        }
+    }
+}
+
+enum AskRenderingNotice: Equatable {
+    case missingHandwritingCharacters
+
+    var messageKey: LocalizedStringKey {
+        switch self {
+        case .missingHandwritingCharacters: "ask.notice.missing-handwriting-characters"
         }
     }
 }
@@ -86,6 +97,7 @@ extension AskFailure {
 struct AskBar: View {
     let phase: AskBarPhase
     let explanation: String?
+    var renderingNotice: AskRenderingNotice?
     var onVerb: (AskVerb) -> Void = { _ in }
     var onCancel: () -> Void = {}
     var onAccept: () -> Void = {}
@@ -141,12 +153,22 @@ struct AskBar: View {
 
     private var decision: some View {
         HStack(spacing: 12) {
-            if let explanation, !explanation.isEmpty {
-                // The explanation is shown, never inked, unless the user asks for it
-                // (`AI_PIPELINE.md` §3).
-                Text(explanation)
-                    .lineLimit(2)
-                    .accessibilityLabel(explanation)
+            if (explanation?.isEmpty == false) || renderingNotice != nil {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let explanation, !explanation.isEmpty {
+                        // The explanation is shown, never inked, unless the user asks for it
+                        // (`AI_PIPELINE.md` §3).
+                        Text(explanation)
+                            .lineLimit(2)
+                            .accessibilityLabel(explanation)
+                    }
+                    if let renderingNotice {
+                        Text(renderingNotice.messageKey)
+                            .font(.caption)
+                            .foregroundStyle(MarginColor.secondaryText)
+                            .lineLimit(2)
+                    }
+                }
             }
             Button("ask.keep", action: onAccept)
                 .buttonStyle(.borderedProminent)

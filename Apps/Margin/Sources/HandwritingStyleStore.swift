@@ -23,22 +23,25 @@ final class HandwritingStyleStore: ObservableObject {
 
     /// Whether generated ink can be rendered in the user's own hand.
     ///
-    /// A bank with three letters in it is worse than the typeset style, so this asks for
-    /// enough of the alphabet to be worth switching to.
+    /// Coverage is checked per answer by `HandwritingInkRenderer`; one captured character
+    /// is therefore enough to make the style available for content using that character.
     var canRenderHandwriting: Bool {
         guard let bank else { return false }
-        return bank.canRender("abcdefghijklmnopqrstuvwxyz")
+        return bank.characterCount > 0
     }
 
-    func save(_ bank: GlyphBank) {
+    @discardableResult
+    func save(_ bank: GlyphBank) -> Bool {
         do {
             try store.write(bank, to: url)
             self.bank = bank
             lastError = nil
+            return true
         } catch {
             // Surfaced rather than swallowed: silently losing three minutes of the user's
             // handwriting and showing them the typeset style anyway is the worst outcome.
             lastError = String(describing: error)
+            return false
         }
     }
 

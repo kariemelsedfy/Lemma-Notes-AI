@@ -28,6 +28,19 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         bank.canRender(text)
     }
 
+    /// Whether this placed text must use the typeset fallback because its glyphs are absent.
+    ///
+    /// The app asks before presenting the result so it can explain a visible style change;
+    /// the missing characters themselves stay out of diagnostics and logs.
+    public func requiresMissingGlyphFallback(for placement: BlockPlacement) -> Bool {
+        switch placement.block.content {
+        case .inline(let run): !bank.canRender(run.value)
+        case .lines(let lines): !lines.allSatisfy { bank.canRender($0.run.value) }
+        case .note(let note): !bank.canRender(note.text)
+        case .plot, .marks: false
+        }
+    }
+
     public func strokes(for placement: BlockPlacement, style: StyleStats, seed: UInt64 = 0) throws -> [InkStroke] {
         switch placement.block.content {
         case .inline(let run):

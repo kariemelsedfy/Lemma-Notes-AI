@@ -11,6 +11,43 @@ unless you check.
 
 ---
 
+## 2026-08-10 · Codex · M3-17 — the bank had the answer and we rejected the bank
+
+**Device result:** the app now writes the `4` captured with Apple Pencil rather than the
+typeset glyph. The same run captured 26 characters, offered the missing set for repair,
+accepted a rewritten `4`, saved, and produced visible suggestion ink. This also closes the
+device checks on M3-15, M3-16 and M2-16.
+
+**The cause was a global gate in front of a per-block fallback.** I reproduced a bank that
+could render `4` but lacked one unrelated lowercase letter. `bank.canRender("4")` was true;
+`HandwritingStylePreference.resolved(bank:)` still returned `typeset` because it required
+all 26 lowercase letters before constructing a handwriting renderer. A nearly complete
+calibration therefore looked entirely unused. The failing test recorded exactly that pair
+of facts before the gate changed.
+
+Any non-empty bank now reaches `HandwritingInkRenderer`, which already checks coverage per
+answer. When an answer really contains a missing glyph, the Ask bar says why it used typeset
+instead of changing styles silently. A failed bank write also leaves calibration open and
+shows a retryable error. The one-line Ask diagnostic records only bank presence, character
+count, whether the canned answer is supported, selected/resolved style, and renderer type;
+it logs no ink, crop, transcription, or answer.
+
+**New device findings:** the repair flow puts too many missed characters on one sheet and
+makes every guide box too small; capped repair pagination is M3-18. The handwritten `4` is
+recognisably the user's but too small, and its bottom-right placement is worth measuring;
+M2-17 remains the blocker. The shipping Ask path also never rasterizes the crop it computed,
+so nothing can decipher the selection; M2-22 records that seam. The user's requested future
+direction—learning additional variants from ordinary selected writing—is M3-19, explicitly
+on-device and excluding generated ink.
+
+The named screenshot of the repair sheet was not present in the workspace or Spotlight
+index, so M3-18 is filed from the precise device report (more than 26 characters on one
+sheet) rather than claiming visual inspection.
+
+**Verification:** failing reproduction before the fix ✅ · `./scripts/test.sh` ✅ · full iPad
+simulator app suite ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · real iPad:
+captured Pencil `4` used by Ask ✅
+
 ## 2026-08-10 · Claude · M3-16, and a handover to whoever is next
 
 **Three reports from a full device calibration:** an error on the summary screen that "wanted to display something bigger than the widget"; the answer's size and placement still not tracking the question; and, after calibrating fully, answers *still* drawn in typeset.

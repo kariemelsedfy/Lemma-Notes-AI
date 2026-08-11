@@ -29,6 +29,24 @@ enum HandwritingStyleChoice: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+/// Content-free state recorded when an Ask starts, so device diagnostics can identify
+/// style-selection failures without logging handwriting, transcription, or answers.
+struct HandwritingStyleStatus: Equatable, Sendable {
+    let bankMissing: Bool
+    let characterCount: Int
+    let canRenderCannedAnswer: Bool
+    let selected: HandwritingStyleChoice
+    let resolved: HandwritingStyleChoice
+
+    static let defaultTypeset = HandwritingStyleStatus(
+        bankMissing: true,
+        characterCount: 0,
+        canRenderCannedAnswer: false,
+        selected: .typeset,
+        resolved: .typeset
+    )
+}
+
 /// The selected style, remembered across launches.
 @MainActor
 final class HandwritingStylePreference: ObservableObject {
@@ -58,8 +76,22 @@ final class HandwritingStylePreference: ObservableObject {
     /// A stored preference for "my handwriting" with no bank behind it must not produce
     /// blank ink, so it degrades to typeset rather than failing.
     func resolved(bank: GlyphBank?) -> HandwritingStyleChoice {
-        guard let bank, bank.canRender("abcdefghijklmnopqrstuvwxyz") else { return .typeset }
+        // Do not require an unrelated complete alphabet here. Calibration deliberately
+        // permits missing characters, and `HandwritingInkRenderer` already falls back per
+        // block when an answer uses one. The old alphabet gate made a missing `z` force a
+        // known `4` into typeset, so a nearly complete calibration appeared not to work.
+        guard let bank, bank.characterCount > 0 else { return .typeset }
         return isExplicit ? choice : .mine
+    }
+
+    func status(bank: GlyphBank?) -> HandwritingStyleStatus {
+        HandwritingStyleStatus(
+            bankMissing: bank == nil,
+            characterCount: bank?.characterCount ?? 0,
+            canRenderCannedAnswer: bank?.canRender("4") ?? false,
+            selected: choice,
+            resolved: resolved(bank: bank)
+        )
     }
 
     /// The renderer for the resolved style.
