@@ -25,7 +25,18 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+### M2-22 — The selected-area image never reaches anything that can read it
+status: In progress · claimed: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
+`SelectionRasterizer` can produce the PNGs, but the shipping `AskPipeline` never calls it.
+The provider therefore receives normalized stroke geometry and no visual or OCR reading of
+what the user selected. The canned provider hides this by always answering `4`.
+Acceptance:
+- [ ] The lasso crop is rasterized from the actual page drawing and flattened on white
+- [ ] The bounded neighborhood is rasterized at its requested scale
+- [ ] On-device recognition supplies a best-effort selected-area transcript and confidence
+- [ ] The provider request carries the pixels/transcript without logging or retaining them
+- [ ] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
 ## Review
 
@@ -403,19 +414,6 @@ Acceptance:
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
-
-### M2-22 — The selected-area image never reaches anything that can read it
-status: Ready · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
-Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
-`SelectionRasterizer` can produce the PNGs, but the shipping `AskPipeline` never calls it.
-The provider therefore receives normalized stroke geometry and no visual or OCR reading of
-what the user selected. The canned provider hides this by always answering `4`.
-Acceptance:
-- [ ] The lasso crop is rasterized from the actual page drawing and flattened on white
-- [ ] The bounded neighborhood is rasterized at its requested scale
-- [ ] On-device recognition supplies a best-effort selected-area transcript and confidence
-- [ ] The provider request carries the pixels/transcript without logging or retaining them
-- [ ] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
 ### M3-19 — Learn extra glyph variants from the user's ordinary writing
 status: Ready · future · depends: M2-22, M3-08C · refs: HANDWRITING.md §4.1 · estimate: L
