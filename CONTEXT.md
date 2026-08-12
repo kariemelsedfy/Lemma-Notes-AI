@@ -255,6 +255,13 @@ who has not read the code — because they have not.
    Two sessions have now lost time rediscovering this. Verify in the scratch tree, commit
    from this one.
 
+   **Copying *into* this tree fails the same way, and quietly.** `cp` over a dataless
+   placeholder can return `Operation timed out` — so a `for f in …; do cp …; done` loop
+   carries on and commits a partial change. It happened on 2026-08-12: the source fix landed
+   without the test file that pinned it, and CI would have been the first to notice. Delete
+   the target first (`rm -f "$f" && cat src > "$f"`), and **check `git show --stat` against
+   the files you meant to change before pushing**, not after.
+
    **It also hits git's own files.** `.git/info/exclude` went dataless mid-session, which makes
    *every* git command fail with `cannot use .git/info/exclude as an exclude file`; it is
    comment-only in every git template, so recreating it is safe. `.githooks/pre-commit` went
