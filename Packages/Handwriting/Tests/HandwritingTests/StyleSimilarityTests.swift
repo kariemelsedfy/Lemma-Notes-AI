@@ -109,15 +109,16 @@ final class StyleSimilarityTests: XCTestCase {
         XCTAssertTrue(StyleSimilarity.evaluate(real: real, generated: generated).meetsTarget)
     }
 
-    func testCosineCannotSeeTheDifferenceBetweenNaturalAndNeat() throws {
+    func testCosineCannotSeeTheDifferenceBetweenTwoVariationsOfOneHand() throws {
         let bank = try Self.bank()
         let frame = CGRect(x: 0, y: 0, width: 400, height: 60)
         let natural = try Synthesizer.strokes(for: "water", in: frame, bank: bank, variation: .natural, seed: 1)
-        let neat = try Synthesizer.strokes(for: "water", in: frame, bank: bank, variation: .neat, seed: 1)
+        let steadier = try Synthesizer.strokes(
+            for: "water", in: frame, bank: bank, variation: Synthesizer.Variation(scale: 0.4), seed: 1)
 
-        // §8's neat style is a tidier version of the *same* hand, and this metric still
-        // cannot resolve that. Recorded rather than hidden, because it bounds what the
-        // metric is for: it separates different writers, not two settings of one writer.
+        // Two variances of the *same* hand, which this metric cannot resolve. Recorded rather
+        // than hidden, because it bounds what the metric is for: it separates different
+        // writers, not two settings of one writer.
         //
         // **One of the two original causes is now fixed.** `Variation` used to scale only
         // vertical jitter and drift — under a point at this size — and M3-08C extended it to
@@ -127,13 +128,18 @@ final class StyleSimilarityTests: XCTestCase {
         // which is the wrong resolution for sub-point wobble. That is M3-09B's problem.
         //
         // This fixture also has a single sample per character, so the largest part of
-        // M3-08C — which glyph gets chosen — cannot move here at all. `SynthesizerTests`
+        // M3-08C — which glyph gets chosen — cannot move here at all. `VariationTests`
         // measures that against a bank whose samples differ visibly.
-        XCTAssertEqual(StyleSimilarity.similarity(natural, neat), 1, accuracy: 0.001)
+        //
+        // M3-08D withdrew the style that made these two scales user-visible. The blind spot
+        // outlives it: M3-19 will vary the scale with bank size, and this says in advance
+        // that `StyleSimilarity` will not notice.
+        XCTAssertEqual(StyleSimilarity.similarity(natural, steadier), 1, accuracy: 0.001)
 
         // The ink itself does differ — so this is a blind spot in the measurement, not a
         // no-op in the synthesizer.
-        XCTAssertNotEqual(natural.map { $0.points.map(\.location) }, neat.map { $0.points.map(\.location) })
+        XCTAssertNotEqual(
+            natural.map { $0.points.map(\.location) }, steadier.map { $0.points.map(\.location) })
     }
 
     // MARK: - Fixtures

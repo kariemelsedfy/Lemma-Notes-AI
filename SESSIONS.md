@@ -11,6 +11,75 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M2-18 confirmed, and M3-08D — the neat style measured well and died anyway
+
+Two device results, one good and one that closes a feature.
+
+**M2-18 passed all four checks.** Erasing any part of a generated answer removes the whole
+answer, own handwriting still erases by stroke, one undo brings the answer back whole, and a
+second undo steps back past it. That is the last box, so M2-18 is Done. Worth remembering that
+the undo half only became true after M2-26 took the undo stack off PencilKit entirely — the
+version of M2-18 that first reached the device did not survive contact with a real
+`UIUndoManager`, and no test in this repo could have told us.
+
+**M3-08C's last box came back negative and the feature was withdrawn** at the user's request:
+"doesn't look different at all from the handwriting option, and I don't even want this feature."
+Two styles ship now — *My handwriting* and *Typeset*. Filed and completed as M3-08D.
+
+**The part worth carrying forward is that the measurement was not wrong.** M3-08C reported the
+styles 15.4pt apart at a 30pt x-height and I believed it. It is a true number about a
+**five-sample bank**. The same measurement on a **one-sample** bank gives **1.19pt** — and §3.1
+calibration collects roughly one sample per character, so a real user's bank is the second case.
+Both numbers were in the M3-08C notes before the test; what I got right was writing the caveat
+into DEVICE_SESSION §8 *in advance* ("if they look identical, that is evidence for M3-19, not
+evidence M3-08C did nothing"), which is what let the negative result be interpreted in one
+message instead of triggering another round of tuning.
+
+**The generalisable version:** a fixture that is more generous than production will report a
+feature working when it cannot possibly work for a user. The fixture was not wrong either —
+five samples per character is a legitimate bank. It just was not *this* user's bank, and
+nothing in the test said which one it was modelling. When a measurement depends on how much
+data a user has accumulated, say what you assumed they had.
+
+**What I deliberately did not remove.** Only the *style* went, not M3-08C's code. Sample
+selection, spacing and per-glyph slant scale with `Variation` at `.natural` too, and that is
+what stops a multi-sample bank rendering identically to a single-sample one — the headline
+defect M3-08C was filed for. It now looks like dead code: the app only ever passes `.natural`,
+so the narrowing branch is exercised only by tests. **Deleting it as unused would silently undo
+M3-08C and re-starve M3-19**, so the doc comments on `Variation` and `select` say so at the two
+places someone would go to delete them. The tests that justified the style all survive, driven
+by an explicit `Variation(scale: 0.4)` instead of a named style.
+
+**Migration, which is the one thing here that could have shipped as a silent bug.** Deleting an
+enum case with a `String` raw value means `init(rawValue: "neat")` returns nil — and the
+fallback behind that expression is `?? .typeset`, which means *never calibrated*. So a user who
+calibrated and picked a handwriting style would have been quietly dropped to a typeface, and
+neither the compiler nor any existing test would have said a word. `neat` is now a named
+`withdrawn` constant that maps to `.mine`. Mutation-verified: removing the migration line fails
+that test and only that test. There is also a test that an *unrecognized* value still falls
+back to typeset, so the migration cannot over-apply. **Any future case removal from a persisted
+enum needs the same pair of tests.**
+
+The raw value is deliberately *not* rewritten on migration — it is idempotent to re-read, and
+it keeps the original preference on disk for whenever §8's third style comes back.
+
+**Where the neat style actually stands.** Deferred, not iced. Its entire effect is choosing
+among samples the user does not have yet, so it is blocked on M3-19 (learning extra glyph
+variants from ordinary writing), which this session promoted from "requested direction" to the
+thing several starved features are waiting on. Re-measure before re-adding it; do not assume
+the 15.4pt figure will reappear.
+
+**Verification:** Handwriting 137/137 ✅ · Intelligence 132/132 ✅ · app 173/173 ✅ (170 before:
+one neat test removed, four added) · mutation check on the migration ✅ · `./scripts/lint.sh`
+clean ✅. Device build was fresh off the top of the stack per §0.
+
+**Surprises and gotchas.** OneDrive dematerialized `Tuist.swift` and `.githooks/pre-commit`
+again — `generate.sh` failed with "Operation timed out" opening a file that is right there.
+`git archive HEAD | tar -x` into the scratchpad is still the reliable way to get a hydrated
+tree, and `git -c core.hooksPath=<empty dir>` plus running lint and tests by hand is still the
+way past the dead hook. This has now cost time in three separate sessions; it is worth someone
+deciding whether this repo should live outside OneDrive.
+
 ## 2026-08-11 · Claude · M3-01B — the two renderers were never held to the same bar
 
 Filed as "the corpus is only 8 strings". The actual defect was worse and easy to miss:

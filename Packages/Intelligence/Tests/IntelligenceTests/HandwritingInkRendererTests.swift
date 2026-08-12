@@ -4,7 +4,7 @@ import XCTest
 
 @testable import Intelligence
 
-/// `HANDWRITING.md` §8 ships three styles over one pipeline. These tests care about the
+/// `HANDWRITING.md` §8 ships two styles over one pipeline. These tests care about the
 /// two ways that goes wrong: drawing nothing, and drawing half a block in each style.
 final class HandwritingInkRendererTests: XCTestCase {
 
@@ -36,24 +36,24 @@ final class HandwritingInkRendererTests: XCTestCase {
         XCTAssertEqual(scale, 2, accuracy: 0.05)
     }
 
-    func testNeatDiffersFromNaturalButStaysInTheSameFrame() throws {
+    /// The renderer must pass `Variation` through to the synthesizer and keep the result in
+    /// the frame it was given, whatever the variance. M3-08D leaves the app asking only for
+    /// `.natural`, but this is the seam where a variation could be dropped on the floor —
+    /// and it once was, which is how M3-08 shipped with every answer typeset.
+    func testAReducedVariationDiffersFromNaturalButStaysInTheSameFrame() throws {
         let bank = try Self.bank()
         let placement = Self.placement(text: "sum")
 
         let natural = try HandwritingInkRenderer(bank: bank, variation: .natural)
             .strokes(for: placement, style: Self.style, seed: 7)
-        let neat = try HandwritingInkRenderer(bank: bank, variation: .neat)
+        let steadier = try HandwritingInkRenderer(bank: bank, variation: Synthesizer.Variation(scale: 0.4))
             .strokes(for: placement, style: Self.style, seed: 7)
 
         // Compared by geometry, not by `==`: every `InkStroke` gets a fresh id, so the
-        // obvious `XCTAssertNotEqual(natural, neat)` passes even when the two renders are
-        // pixel-identical. It did, and hid how small the difference actually is.
-        //
-        // §8 asks for "variance reduced ~60%". What `Variation` currently scales is
-        // vertical jitter and baseline drift only — not sample choice, spacing or slant —
-        // so the difference here is under a point. Filed as M3-08C.
-        XCTAssertNotEqual(Self.geometry(natural), Self.geometry(neat))
-        XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: neat)))
+        // obvious `XCTAssertNotEqual(natural, steadier)` passes even when the two renders are
+        // pixel-identical. It did, and hid how small the difference actually was (M3-08C).
+        XCTAssertNotEqual(Self.geometry(natural), Self.geometry(steadier))
+        XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: steadier)))
     }
 
     func testTheSameSeedDrawsTheSameInkTwice() throws {

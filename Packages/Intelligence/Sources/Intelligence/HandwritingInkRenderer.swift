@@ -5,9 +5,9 @@ import InkCore
 
 /// Draws placed blocks in the user's own hand.
 ///
-/// The other half of `HANDWRITING.md` §8's three styles; `TypesetInkRenderer` is the third.
-/// Which one is in use is the app's choice, and this type does not know or care whether it
-/// was picked as "my handwriting" or "neat" — that is entirely the `Variation`.
+/// One of `HANDWRITING.md` §8's two shipping styles; `TypesetInkRenderer` is the other.
+/// Which one is in use is the app's choice, and this type does not know or care at what
+/// variance it was asked for — that is entirely the `Variation`.
 public struct HandwritingInkRenderer: SuggestionInkRendering {
     private let bank: GlyphBank
     private let variation: Synthesizer.Variation

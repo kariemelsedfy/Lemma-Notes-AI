@@ -47,6 +47,38 @@ Acceptance:
 
 ## Done
 
+### M3-08D — Withdraw the "neater version of mine" style
+status: Done · completed: Claude · device-confirmed: human · 2026-08-12 · refs: HANDWRITING.md §8, PROGRESS.md M3-08C, M3-19 · estimate: S
+Note: **a product decision taken on the device, not a defect.** Asked to compare the two
+handwriting styles against a real one-pass bank, the user reported "doesn't look different at
+all from the handwriting option, and I don't even want this feature" — two styles, my
+handwriting and typeset. Deferred to a later version rather than iced: the reason it looks
+identical is known and fixable.
+**The measurement and the verdict do not disagree.** M3-08C's 15.4pt separation was measured
+on a five-sample bank; the same measurement on a one-sample bank gives **1.19pt**, and §3.1's
+calibration collects about one sample per character. The style's whole effect is choosing among
+samples the user does not have yet. So this is not "neat does nothing", it is "neat cannot do
+anything until M3-19 grows the bank" — which is the order to reconsider it in.
+**Nothing was removed from the synthesizer.** `Variation` still takes an arbitrary scale and
+still reaches sample selection, spacing and per-glyph slant. That is not neat-specific: it is
+what makes a multi-sample bank render differently from a single-sample one **at `.natural`**,
+the only style the app now asks for, and deleting it as "unused" would silently undo M3-08C.
+The doc comments on `Variation` and `select` say so where someone would go to delete them.
+The tests that justified the style all survive, driven by an explicit `Variation(scale: 0.4)`
+rather than a named style, because the knob still has to mean what it says for M3-19.
+Restoring the style is one case in `HandwritingStyleChoice` plus one constant.
+Acceptance:
+- [x] The style picker offers exactly two options — asserted on `allCases`, which is what the
+      picker iterates, so the test fails if a case is added without a decision
+- [x] A stored `neat` preference migrates to the user's own hand, never silently to typeset —
+      `init(rawValue:)` returns nil for a withdrawn case and the fallback behind it means
+      "never calibrated"; mutation-verified (deleting the migration line fails that test alone)
+- [x] An unrecognized stored value still falls back to typeset, so the migration cannot
+      over-apply
+- [x] `Variation`'s reach into sample selection, spacing and slant survives
+- [x] `HANDWRITING.md` §8 says two styles and records why the third went, and what would
+      have to be true to bring it back
+
 ### M3-20 — Repeated handwritten answers collapse or distort
 status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
 Note: after three correct handwritten answers, the physical-device recording showed later
@@ -444,6 +476,12 @@ or `3`, keep the aligned on-device stroke sample so later synthesis can vary bet
 versions without extending initial calibration. The bank already stores multiple samples;
 the missing work is trustworthy character-to-stroke alignment, sample selection, and safe
 bounded accumulation. This is biometric-adjacent data and never leaves the device.
+**M3-08D raised this task's priority and gave it a second job.** The neat style was withdrawn
+because a one-pass bank holds roughly one sample per character, and at one sample the whole
+variance mechanism is worth about a point — invisible, as the device confirmed. Everything
+downstream of "how many samples does this bank hold" is currently starved: sample selection
+(M3-08C) has nothing to select between, and §8's third style cannot come back until it does.
+Reconsider the neat style once this ships, and measure again before re-adding it.
 Acceptance:
 - [ ] Only high-confidence user-authored ink is eligible; generated/provenance strokes are excluded
 - [ ] Character-to-stroke alignment fails closed rather than teaching the wrong glyph
@@ -524,7 +562,7 @@ Acceptance:
 - [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
 
 ### M2-18 — Erasing generated ink behaves differently from erasing your own
-status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · refs: PROGRESS.md M2-13B · estimate: S
+status: Done · implemented: Codex · device-confirmed: human · 2026-08-12 · refs: PROGRESS.md M2-13B · estimate: S
 Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
 by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
 removing pixels in a radius."
@@ -551,6 +589,12 @@ test added here should split the eraser cases back into their own file.
 **The undo box cannot be ticked without hardware:** it depends on the `UIUndoManager` a
 `PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4). It needs the same device
 run as the grouped-erase check.
+Claude 2026-08-12, from the device: **confirmed, all four checks.** The user ran the §7
+sequence on a fresh build and reported it "works perfectly as expected" — a generated answer
+erases as one object, own handwriting still erases by stroke, one undo restores the whole
+answer, and a second undo steps back past it rather than into a half-erased state. Note that
+the undo half only became true after M2-26 took the undo stack off PencilKit entirely; the
+version of this task that first reached the device did not survive contact.
 Claude 2026-08-11, from the device: **this branch shipped a jetsam kill.** Creating a notebook
 took the app to 717MB (`per-process-limit`, confirmed in the device JetsamEvent report) and the
 system killed it — reported as "everytime I try to add a new note it closes the app".
@@ -565,7 +609,7 @@ loop only closes once a real `PKCanvasView` is in the circuit.
 Acceptance:
 - [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
 - [x] Erasing handwriting is unchanged
-- [ ] Undo restores the whole answer in one step — device-only, queued with the erase check
+- [x] Undo restores the whole answer in one step — confirmed on device 2026-08-12
 
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
@@ -1294,11 +1338,16 @@ Acceptance:
 - [ ] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`
 
 ### M3-08 — Neat style
-status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8 · estimate: S
+status: Done · completed: Claude · 2026-08-08 · **superseded by M3-08D 2026-08-12** · refs: HANDWRITING.md §8 · estimate: S
 Note: the glyph bank with variance reduced ~60%. §8 expects several early testers to prefer
 this *over* their real hand for answers, which would itself be a finding worth recording.
+**It was a finding, and it went the other way: the user could not see the style at all and
+asked for it to be removed (M3-08D).** The acceptance boxes below are left ticked because they
+were true — the style shipped and was selectable — but the style is no longer in the app. The
+half of this task that mattered and survives is the second box: connecting the glyph bank to
+the Ask pipeline at all.
 Acceptance:
-- [x] Selectable alongside "My handwriting" and "Typeset"
+- [x] Selectable alongside "My handwriting" and "Typeset" — true when written; withdrawn by M3-08D
 - [x] The user's hand actually reaches the Ask pipeline — `HandwritingInkRenderer` was the
       missing half of §8, and until now every answer was typeset regardless of the bank
 - [ ] Existing generated blocks re-render on switch — **not done**, filed as M3-08B
@@ -1307,6 +1356,10 @@ Acceptance:
 status: Ready · refs: HANDWRITING.md §8 · estimate: M
 Note: §8 promises this and says why it is possible — "because we keep the spec that produced
 them". We do keep it, in the page metadata `PageElement` written by `SuggestionProvenance`.
+**M3-08D makes this more valuable, not less.** With the neat style gone the only remaining
+switch is handwriting ↔ typeset, which is the one switch where the difference is unmissable —
+so stale blocks after a switch are correspondingly more obvious than they would have been
+between two settings of one hand.
 What is missing is the reverse path: find the strokes an element owns, delete them, re-render
 the spec in the new style, and put them back — an edit to committed ink, which is a different
 and more dangerous operation than presenting a suggestion. Deliberately not bundled into
@@ -1329,9 +1382,10 @@ Acceptance:
       baseline rather than an absolute
 - [x] Every feature named, so a drop can be attributed to a property
 - [ ] Reported alongside the OCR legibility number in CI — filed as M3-09B
-Known blind spot: it cannot tell `Variation.natural` from `.neat`. Two causes, both real —
+Known blind spot: it cannot tell one `Variation` scale from another. Two causes, both real —
 see M3-08C, and the fact that medians over a whole sample are the wrong resolution for
-sub-point wobble.
+sub-point wobble. M3-08D removed the user-visible style that made this concrete, but not the
+blind spot: M3-19 will vary the scale with bank size and `StyleSimilarity` will not see it.
 
 ### M3-09B — Snapshot tests, and printing the evaluation numbers
 status: Ready · refs: HANDWRITING.md §7 · estimate: M
@@ -1352,7 +1406,7 @@ Acceptance:
 - [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
 
 ### M3-08C — `Variation` barely varies anything
-status: Review · implemented: Claude · 2026-08-11 · refs: HANDWRITING.md §8, §4.1 · estimate: M
+status: Done · implemented: Claude · device-confirmed: human · 2026-08-12 · refs: HANDWRITING.md §8, §4.1, PROGRESS.md M3-08D · estimate: M
 Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
 but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
 drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
@@ -1371,12 +1425,22 @@ point before. A test pins the floor.
 Note for whoever runs M3-10: the gain is proportional to how many samples a bank holds, so a
 one-pass calibration benefits least. `StyleSimilarity` still cannot resolve the two styles —
 that is M3-09B's resolution problem, not this one.
+Claude 2026-08-12, from the device: **the side-by-side box came back negative, and the style
+was withdrawn (M3-08D) rather than iterated on.** Against a real one-pass bank the user could
+not tell the two styles apart at all. That is consistent with the numbers rather than a
+contradiction of them — 15.4pt was measured on a five-sample bank and the one-sample figure is
+1.19pt, so on the bank a real user actually has, this change is worth about a point. The
+caveat written into DEVICE_SESSION §8 before the test ("if they look identical that is
+evidence for M3-19, not evidence M3-08C did nothing") is the reading that held up.
+**The code stays and is not dead.** Sample selection, spacing and slant apply at `.natural`
+too, which is what stops a multi-sample bank rendering like a single-sample one — the headline
+defect this task was filed for. Only the second *style* went; the fix did not.
 Acceptance:
 - [x] `Variation` biases sample selection toward the writer's most typical glyph
 - [x] Horizontal spacing and per-glyph slant scale with it too
-- [ ] The difference is visible side by side, not just measurable — **needs eyes, not a test**;
-      15.4pt at a 30pt x-height should be obvious, but "looks like two settings of one hand"
-      is a human call and belongs with M3-10
+- [x] The difference is visible side by side, not just measurable — **answered on device
+      2026-08-12: no, not on a one-pass bank.** Closed by withdrawing the style (M3-08D);
+      revisit after M3-19, which is the thing that would make it visible
 
 ### M3-10 — Blind similarity panel *(the gate)*
 status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M

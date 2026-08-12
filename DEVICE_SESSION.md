@@ -172,17 +172,26 @@ fixed but unverified on hardware:
 
 - Does the answer look like your handwriting? Say what gives it away — that answer is
   worth more than any number in this file.
-- Switch to "A neater version of mine" in the same menu and ask again. **I expect you to
-  see almost no difference**: `Variation` currently only reaches vertical jitter and
-  baseline drift, not which sample of each letter gets used. If you *can* tell them apart,
-  say so — that would contradict the measurement (M3-08C).
+- The only other style is **Typeset**, in the same menu. It is meant to look like nobody's
+  handwriting; the check is that it is clean and correctly sized, not that it resembles you.
+  (§8 once specified a third, "a neater version of mine". It was withdrawn on 2026-08-12 —
+  M3-08D — after it proved indistinguishable from your own hand on a one-pass bank.)
 
-**This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If it looks
-obviously mechanical here, fix M3-08C before recruiting anyone.
+**This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If the answer
+looks obviously mechanical here, say so before anyone recruits a panel — and note that the
+lever with the most left in it is M3-19, which grows the bank this all reads from.
 
-## 7. M2-18 — erasing a generated answer, and undoing it
+## 7. ~~M2-18 — erasing a generated answer, and undoing it~~ — **passed 2026-08-12** ✅
 
-**~5 minutes, and it is the one item blocking M2-18 from Done.** You reported this yourself:
+All four checks confirmed on device: a generated answer erases as one object, own handwriting
+still erases by stroke, **one** undo restores the whole answer, and a second undo steps back
+past it rather than into a half-erased state. M2-18 is Done. Kept below as the regression
+script — this is the sequence to re-run if erase or undo is ever touched again.
+
+<details>
+<summary>The original checklist</summary>
+
+You reported this yourself:
 "when I delete things I wrote it deletes by shape or stroke, but when I delete something the
 AI wrote it deletes like a rubber removing pixels in a radius." Both used the same vector
 eraser; the difference is that a typeset `4` is ~50 hatch scanlines, so erasing took them one
@@ -209,32 +218,20 @@ two strokes have identical fingerprints the eraser refuses to act, because prese
 ink beats tidying a generated group. Note it and move on — it is a known tradeoff, not a
 regression.
 
-## 8. M3-08C — do the two handwriting styles actually look different?
+</details>
 
-**~3 minutes, and it is the one box M3-08C cannot close itself.** You need a saved calibration
-for this; if you have one already, no need to redo it.
+## 8. ~~M3-08C — do the two handwriting styles look different?~~ — **answered 2026-08-12: no**
 
-`Variation` used to reach only vertical jitter, so "My handwriting" and "A neater version of
-mine" were separated by under a point across a whole word — invisible. It now also chooses
-*which sample* of each letter gets drawn, biased toward your steadiest version, and varies
-spacing and per-glyph slant. Measured, the two styles now differ by about 15pt at a 30pt
-writing size.
+Asked against a real one-pass bank, the verdict was "doesn't look different at all". **The
+style was withdrawn rather than iterated on** — see M3-08D. The app now offers two styles, *My
+handwriting* and *Typeset*, and there is nothing to compare here any more.
 
-- Ask something, keep the answer, and note what it looks like.
-- Switch style in the library toolbar between **"My handwriting"** and **"A neater version of
-  mine"**, and ask the same thing again.
-- **Can you tell them apart?** That is the entire question. "Neat" should read as the same
-  hand on a better day — steadier letters, more even spacing — not as a different person and
-  not as a font.
-
-**A caveat that matters for the answer.** The gain is proportional to how many samples of each
-letter your bank holds, and one calibration pass collects few. If the two look nearly identical
-to you, that is evidence for M3-19 (collecting extra variants from your ordinary writing)
-rather than evidence that M3-08C did nothing — say which it looks like.
-
-**Previous session's report said this would be the place to look if the handwriting read as
-mechanical.** If it still does after this change, that is worth knowing before anyone recruits
-the M3-10 panel.
+Worth keeping for whoever picks up M3-19: the negative result agreed with the numbers rather
+than contradicting them. M3-08C measured 15.4pt of separation on a **five-sample** bank; on a
+**one-sample** bank the same measurement gives 1.19pt, and calibration collects about one
+sample per character. The style's entire effect is choosing between samples that do not exist
+yet. So the thing to fix was never the style — it is M3-19, and the neat style is worth
+re-measuring only after that ships.
 
 ---
 
