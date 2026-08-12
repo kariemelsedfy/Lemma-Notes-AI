@@ -38,11 +38,10 @@ import Foundation
 /// Both were 100% while the harness drew `size` as a line width, i.e. ink about a third
 /// heavier than any user has ever seen.
 ///
-/// **Neither remaining miss is a letterform.** Both are Vision splitting one rendered line into
-/// two blocks: `the sequence is bounded` comes back as `bounded / the sequence is` — reading
-/// order, filed as M3-23 — and `convert to a percentage` gains a stray `i` at the split. Check
-/// `meanSimilarity` before chasing a drop here; a real legibility regression moves it, and
-/// these two barely do.
+/// **After M3-23 fixed reading order: typeset back to 100%, synthesizer 97.92%** (mean 0.9983).
+/// The one remaining miss is not a letterform either — `convert to a percentage` gains a stray
+/// `i` where Vision splits the line. Check `meanSimilarity` before chasing a drop here; a real
+/// legibility regression moves it, and this one barely does.
 enum LegibilityCorpus {
     static let prose: [String] = [
         "The derivative is 2x",

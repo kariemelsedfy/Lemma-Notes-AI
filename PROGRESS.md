@@ -1176,7 +1176,7 @@ Acceptance:
       rather than a constant, with a documented fallback for a repair sheet that has none
 
 ### M3-23 — One line read back out of order
-status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
 Note: exposed by M3-22's remeasurement. Vision sometimes returns one rendered line as two text
 blocks, and `HandwritingTranscript.text(from:)` orders blocks by `midY` with a fixed 0.02 band —
 so two fragments of the *same* line whose boxes differ in height (one has ascenders, the other a
@@ -1189,14 +1189,28 @@ question. That path is unexercised today only because the shipping provider is c
 Likely fix: treat blocks as the same line when their boxes *overlap vertically* by most of
 their height, rather than when their midpoints are within a fixed epsilon. Order within a line
 by `minX` as now.
+Claude 2026-08-12: blocks are grouped into lines by **vertical overlap against the shorter
+box** — half or more and they are one line — then ordered by `minX` within the line. The old
+comparator was also not a strict weak ordering, which `sorted(by:)` requires: with an epsilon
+band, two boxes can each tie with a third and not with each other, so the result was undefined
+rather than merely wrong.
+**One deliberate behaviour change beyond ordering:** fragments of one line now join with a
+space rather than a newline, because Vision returning a line in pieces does not make it two
+lines. That changed the expectation in `testTranscriptOrdersRecognitionsByLineThenColumn`; the
+ordering assertion it was written for is untouched, and the reason is in a comment above it.
+Typeset legibility returns to **100%** — the reordering was its only miss (M3-22).
 Acceptance:
-- [ ] Two fragments of one line are ordered left to right regardless of their relative heights
-- [ ] Genuinely stacked lines still read top to bottom, including tight line spacing
-- [ ] A fixture reproduces the `the sequence is bounded` case before the fix
-- [ ] `SelectionReading`'s transcript is covered, not just the harness
+- [x] Two fragments of one line are ordered left to right regardless of their relative heights
+- [x] Genuinely stacked lines still read top to bottom, including tight line spacing — the
+      overlapping-descender case is a test, at a fifth of a box height
+- [x] A fixture reproduces the `the sequence is bounded` case before the fix — mutation-verified
+      against the old comparator, which fails it and the end-to-end reader test
+- [x] `SelectionReading`'s transcript is covered, not just the harness — the new Intelligence
+      test renders that sentence, reads it through `OnDeviceSelectionReader`, and fails with
+      `bounded / the sequence is` on the old code
 
 ### M3-22 — The OCR harness does not rasterize the width the page draws
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
+status: Done · completed: Claude · merged: PR #97 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
 Note: `InkRasterizer` draws `InkPoint.size` straight into `CGContext.setLineWidth`, but the
 page draws `2 × size − 4` (`InkRenderingLimits`). So every legibility number in this repo is
 measured on ink roughly a size-to-drawn conversion heavier than what a user sees, and any

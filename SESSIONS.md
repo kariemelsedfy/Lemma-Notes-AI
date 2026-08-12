@@ -11,6 +11,40 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-23 — a sentence read backwards, on the path that feeds the model
+
+Third in the chain that started with a `g` reading as a `9`. Each fix exposed the next defect,
+which is worth noticing as a pattern: **making one instrument honest makes the next fault
+visible.** M3-01C fixed the bank, which let M3-21 see the weight, which forced M3-22 to fix the
+harness, which surfaced this.
+
+**The defect.** `HandwritingTranscript` ordered Vision's blocks by `midY` against a fixed 0.02
+epsilon. Vision routinely returns one written line as two or three blocks, and two fragments of
+the *same* line have different box heights — one has ascenders, the other a descender — so
+their midpoints differ by more than the epsilon and they sort as two lines, sometimes in the
+wrong order. `the sequence is bounded` came back `bounded / the sequence is`.
+
+**The part that makes it more than a test artefact:** `SelectionReading` builds the transcript
+that goes to a provider with the same function (`AI_PIPELINE.md` §1). A scrambled reading of the
+question is a confident answer to a question nobody asked. That path is unexercised today only
+because the shipping provider is canned, so this would have gone live with M4 and looked like a
+model failure. There is now a test that renders the sentence, reads it through
+`OnDeviceSelectionReader`, and fails on the old code.
+
+**A second, quieter bug in the same three lines.** The epsilon comparator was not a strict weak
+ordering — with a band, two boxes can each tie with a third and not with each other — and
+`sorted(by:)` requires one. The output was undefined, not merely wrong. If you write a
+comparator with a tolerance in it, you have probably done this too; group first, then sort.
+
+**Fixed by grouping on vertical overlap** against the shorter box, which is the property that
+actually distinguishes "same line" from "next line": fragments of one line overlap almost
+entirely, consecutive lines overlap by a descender at most.
+
+**Method, again.** Prototyped during CI on the previous PR, so the estimate was measured before
+the task was claimed. Two of the last three tasks were sized wrong in their own filed notes —
+M3-22 said "not a one-line change, expect the numbers to move" and needed no re-sweep at all.
+Read a filed estimate as a hypothesis.
+
 ## 2026-08-12 · Claude · M3-22 — the harness now draws what the page draws, and it can finally see invisible ink
 
 Direct follow-up to M3-21, and the cheapest high-value change I have made in this repo.
