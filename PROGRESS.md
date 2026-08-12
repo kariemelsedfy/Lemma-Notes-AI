@@ -29,23 +29,29 @@ _(empty)_
 
 ## Review
 
+_(empty)_
+
+## Done
+
 ### M2-22 — The selected-area image never reaches anything that can read it
-status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+status: Done · implemented: Codex · closed-by: Claude · 2026-08-12 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
 Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
 the shipping `AskPipeline` now renders both from an exact `PKDrawing` snapshot. Vision reads
 the flattened crop locally with language correction disabled so literal math is preserved;
 providers receive both PNGs plus the best-effort transcript/confidence only for the request
 lifetime. A real Vision fixture reads `2+2=4` correctly in 0.34s on the development Mac.
 The app still uses `CannedSpecProvider`, so this changes what future providers can reason
-over, not the hardcoded answer it visibly returns today. PR publication awaits GitHub login.
+over, not the hardcoded answer it visibly returns today. PR publication awaited GitHub login.
+Claude 2026-08-12: **that login now works, and this code is on `main`** — it went in with the
+squash of PR #95 along with everything else that had accumulated locally, so there is no
+separate PR to point at. Verified `SelectionReading.swift` and its tests are on `origin/main`.
+Its transcript assembly gained a reading-order fix since (M3-23).
 Acceptance:
 - [x] The lasso crop is rasterized from the actual page drawing and flattened on white
 - [x] The bounded neighborhood is rasterized at its requested scale
 - [x] On-device recognition supplies a best-effort selected-area transcript and confidence
 - [x] The provider request carries the pixels/transcript without logging or retaining them
 - [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
-
-## Done
 
 ### M3-08D — Withdraw the "neater version of mine" style
 status: Done · completed: Claude · device-confirmed: human · 2026-08-12 · refs: HANDWRITING.md §8, PROGRESS.md M3-08C, M3-19 · estimate: S
@@ -822,7 +828,7 @@ Acceptance:
 - [ ] The redundant second `applyExternally` per undo is gone
 
 ### M2-26 — A persistent undo control in the canvas
-status: Review · implemented: Claude · device-confirmed: human · 2026-08-11 · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
+status: Done · implemented: Claude · device-confirmed: human · closed-by: Claude · 2026-08-12 · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
 Note: found while writing M2-18's device instructions — the app had **no undo affordance at
 all.** PencilKit registered stroke undo and M2-18 registered a grouped-erase undo, but the only
 way to reach either was the iPadOS three-finger gesture: undiscoverable, and unusable for anyone
@@ -843,7 +849,10 @@ Acceptance:
       final defect was PencilKit restoring its own internal drawing on the next Pencil input;
       the fix rebuilds the canvas. Post-fix instrumentation: 28 undos, 29 gestures, 0
       resurrections, against 3 in half the time before it
-- [ ] Undo of a grouped generated-answer erase in one step — still untested (M2-18)
+- [x] Undo of a grouped generated-answer erase in one step — **confirmed on device
+      2026-08-12** with M2-18's §7 sequence: one undo restores the whole answer, a second
+      steps back past it. `CanvasUndoController` is on `origin/main`; like M2-22 it never got
+      its own PR, having merged with the backlog squash in #95
 
 ### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
@@ -1063,7 +1072,7 @@ Expand each into tasks at the start of its milestone, not before. Writing 200 sp
 
 **M3 Handwriting synthesis v1** — expanded below.
 
-**M4 Real intelligence** — Foundation Models provider (T0), PCC provider (T1), cloud proxy + provider (T2), routing policy, prompts v1, streaming, speculative execution, cache, failure states, golden set capture (200 samples, 15 writers), `evalrunner`, metrics dashboard.
+**M4 Real intelligence** — **expanded below** (2026-08-12). Foundation Models provider (T0), PCC provider (T1), cloud proxy + provider (T2), routing policy, prompts v1, streaming, speculative execution, cache, failure states, golden set capture (200 samples, 15 writers), `evalrunner`, metrics dashboard.
 
 **M5 Plots, math layout, check** — LaTeX parser, box model, fractions/radicals/scripts/big operators/matrices, stretchy delimiters, plot sampler and hand-drawn renderer, correction marks, margin notes.
 
@@ -1588,6 +1597,166 @@ Acceptance:
 - [ ] ≥60% "plausibly mine" at M3 (≥75% at 1.0)
 - [ ] Below 40% after two iterations → pivot to typeset per R-01, and say so out loud
 - [ ] Result recorded in SESSIONS.md whichever way it goes
+
+---
+
+## Ready — M4: Real intelligence
+
+**Filed 2026-08-12 by Claude**, per this file's own rule that a milestone is expanded at its
+start. Nothing here is claimed, and **M3-10's verdict should land first** — if the blind panel
+fails R-01 the product pivots to typeset output, which changes what the prompts ask for and
+removes handwriting from the pitch, but does not change the tier structure below.
+
+**What M4 replaces.** `CannedSpecProvider` answers every request with the same hardcoded spec,
+so the app always writes `4`. That is M2's stated exit condition, not a bug. Everything below
+the provider boundary — validation, placement, rendering, failure states — is built and tested
+against it, so M4 is genuinely about the model and not about the pipeline.
+
+**Two human decisions block the paid tier, and neither blocks starting.** Q6 (which frontier
+provider, and whether a second is worth the abstraction cost at 1.0) gates M4-08. M0-07 (the
+Developer Program, and the Small Business Program with it) gates M4-07, because PCC's zero cost
+depends on that enrolment. T0 needs neither.
+
+### M4-01 — Confirm the Foundation Models API before writing a line against it
+status: Ready · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
+Note: **do this first and separately.** `AGENTS.md` §2 names a fabricated Apple API as the most
+common failure mode in this codebase, and §5 of the pipeline doc makes two claims that are
+themselves unverified: that `PrivateCloudComputeLanguageModel` is the T1 surface, and that the
+`LanguageModel` protocol lets Apple's model, Claude and Gemini sit behind one Swift API so a
+provider swap is "close to a one-line change". If that second claim is wrong, `SpecProvider`
+stays the seam and M4-08 is a larger task than it looks.
+Deliverable is a written note, not code: exact symbols, signatures, availability annotations,
+and what a refusal or a guardrail violation looks like as a Swift error.
+Acceptance:
+- [ ] Every symbol M4-02 and M4-07 will use is quoted from Apple's current documentation, with
+      the iPadOS version that introduced it
+- [ ] The §5 claim about one protocol spanning three vendors is confirmed or corrected in
+      `AI_PIPELINE.md` itself
+- [ ] A throwaway target compiles against the real framework, proving availability on this
+      toolchain rather than in prose
+- [ ] Anything that cannot be verified is written down as unverified rather than assumed
+
+### M4-02 — T0 provider: the on-device model
+status: Ready · depends: M4-01 · refs: AI_PIPELINE.md §5, §3 · estimate: L
+Note: the first real provider. It must satisfy the existing contract exactly — return a
+`ValidatedSpec` and nothing else, so `SpecValidator` cannot be bypassed (invariant 1) — and it
+is the tier that runs offline and in Private Mode, so it is also the floor the product degrades
+to rather than an optimisation.
+Split before implementing if it exceeds ~400 lines; the natural seam is request construction
+versus response decoding.
+Acceptance:
+- [ ] Implements `SpecProvider` against the real on-device model
+- [ ] Malformed, truncated and guardrail-refused responses fail closed as §8 failures, with a
+      fuzz test over the decoder — the model is now an untrusted input
+- [ ] Runs with no network at all, proven by a test that would fail if a request escaped
+- [ ] No page content, transcript or answer reaches any log (invariant, `AGENTS.md` §7)
+- [ ] Latency measured on device and recorded against §9's ≤2.5s p50 time-to-first-ink
+
+### M4-03 — Routing policy
+status: Ready · depends: M4-04 · refs: AI_PIPELINE.md §5 · estimate: M
+Note: `(intent, contentComplexity, confidence, connectivity, entitlement, region,
+userPrivacyPreference) -> Tier`, pure and in one file, because §5 says so and because a routing
+decision scattered across call sites is untestable and unauditable. Pure logic with no provider
+dependency, so it can land before the providers it routes to.
+Acceptance:
+- [ ] One pure function, exhaustively unit-tested over the input space
+- [ ] Offline and Private Mode force T0; no path reaches T1 or T2 from either
+- [ ] A region where Apple Intelligence is unavailable routes without crashing and without
+      silently sending content somewhere the user did not agree to (M4-04 supplies the facts)
+- [ ] Every decision is explainable — the tier and the reason, as a loggable name with no content
+
+### M4-04 — Resolve Q7: where Apple Intelligence is actually available
+status: Ready · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
+Note: §5 flags EU and mainland China as historical gaps and says to confirm before committing to
+the routing policy. If T0/T1 cannot serve a region, T2 carries it entirely, which changes both
+the economics (`BUSINESS.md`) and the consent flow (5.1.2(i)) for those users.
+Acceptance:
+- [ ] Current availability confirmed against Apple's documentation, with the date checked
+- [ ] The consequence for routing is written into `AI_PIPELINE.md` §5, not just noted here
+- [ ] Q7 moves to `DECISIONS.md`
+
+### M4-05 — Prompts v1, versioned and hashed
+status: Ready · depends: M4-01 · refs: AI_PIPELINE.md §10, §3 · estimate: M
+Note: §10 has the structure that works — contract first, image roles, stroke data as
+disambiguation, transcribe-then-solve, explicit permission to decline, brevity. Prompts live in
+`Intelligence/Prompts/*.md` as resources and are referenced **by hash** in eval results, so a
+metrics change can be attributed to a prompt change rather than argued about.
+Acceptance:
+- [ ] Prompts are resources, not string literals, and their hash reaches the eval output
+- [ ] The output contract in the prompt matches `AI_PIPELINE.md` §3 exactly — asserted by a
+      test that fails when the schema changes and the prompt does not
+- [ ] Declining is explicitly permitted and is exercised by a test case
+- [ ] No user content in the prompt files themselves
+
+### M4-06 — `evalrunner` and the metrics JSON
+status: Ready · refs: AI_PIPELINE.md §9, ARCHITECTURE.md §9 · estimate: M
+Note: §9 wanted this at M2 "so quality is measurable from day one", and it does not exist. It
+can be built and proven against `MockProvider` before any real model, which is the point —
+build the ruler before the thing it measures, as M3-01 did for legibility.
+Acceptance:
+- [ ] `Tools/evalrunner` runs a set against any `SpecProvider`, including the mock
+- [ ] Emits the §9 metrics as JSON that CI can diff between runs
+- [ ] Read accuracy, intent accuracy, decline rate and legibility are computed by code, not by
+      eye; correctness and placement error are recorded as human-judged fields
+- [ ] Runs in CI against the mock, so the harness itself cannot rot
+
+### M4-06B — Capture the golden set
+status: Ready · owner: human · needs-device-verification · depends: M4-06 · refs: AI_PIPELINE.md §9 · estimate: L
+Note: ≥200 real handwritten selections from ≥15 writers, distributed 40% arithmetic/algebra, 20%
+calculus, 10% chemistry/physics notation, 15% prose continuation, 10% plots, 5% deliberate
+garbage the model must decline. **Only a human can collect this**, and it is the single largest
+non-code dependency in M4 — every metric target in §9 is meaningless without it.
+Worth pairing with M3-10's panel: both need recruiting people who are not you.
+Acceptance:
+- [ ] ≥200 selections from ≥15 writers, including deliberately messy ones
+- [ ] The §9 distribution is met, and recorded
+- [ ] Human transcription and intent labels accompany each sample
+- [ ] Stored so that no sample leaves the device without its writer's consent
+
+### M4-07 — T1 provider: Apple PCC
+status: Blocked · blocker: M0-07 (Small Business Program enrolment is what makes PCC free) · depends: M4-01, M4-02 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
+Acceptance:
+- [ ] Implements `SpecProvider` against the PCC surface confirmed by M4-01
+- [ ] Falls back to T0 rather than failing when PCC is unavailable
+- [ ] Eligibility for the free tier is verified and the date recorded — §5 says to re-verify annually
+- [ ] Same fail-closed decoding and no-content-logging guarantees as M4-02
+
+### M4-08 — T2 provider and the proxy
+status: Blocked · blocker: Q6 (which frontier provider) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, BUSINESS.md, AGENTS.md §7 · estimate: L
+Note: the only tier that sends a user's work to a third party, so it carries the obligations the
+others do not: the 5.1.2(i) consent assertion in the provider layer (M4-09), server-side
+entitlement (M6), and a per-action cost that shows up in `BUSINESS.md`'s unit economics. Never
+send a whole page — only the selection crop and bounded neighborhood (`AGENTS.md` §7).
+Acceptance:
+- [ ] The proxy never sees an API key belonging to the client, and the client never holds one
+- [ ] Only the crop, the bounded neighborhood and the spec contract cross the boundary
+- [ ] A test proves a request cannot be issued without a recorded consent (M4-09)
+- [ ] Timeout, transport and offline map onto the §8 failure states already built
+
+### M4-09 — Assert third-party AI consent in the provider layer
+status: Ready · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S
+Note: invariant 8 says the 5.1.2(i) consent check lives **in the provider layer, not the UI**,
+precisely so a new call site cannot bypass it. Worth building before T2 rather than with it: it
+is a small piece of load-bearing structure, and building it under deadline beside a new network
+client is how it ends up in the UI instead.
+Acceptance:
+- [ ] Any provider that transmits content asserts consent before the request is constructed
+- [ ] A provider added without the assertion fails a test, not a review
+- [ ] On-device providers are unaffected — no consent prompt for work that never leaves
+
+### M4-10 — Speculative execution, streaming and the spec cache
+status: Ready · depends: M4-02 · refs: AI_PIPELINE.md §7 · estimate: M
+Note: §7's items 1, 2 and 4 — start on selection close using the predicted intent, render each
+block as it validates, and cache on crop hash + intent. Item 3, the write-on animation, is
+already filed as M2-17. Cap speculation at one in-flight request and disable it on metered
+credits, or a mispredicted verb costs the user money.
+Acceptance:
+- [ ] One speculative request at most, cancelled and re-issued when the user picks another verb
+- [ ] Speculation is off when credits are metered
+- [ ] Identical crop hash + intent returns the cached spec without a request
+- [ ] The cache holds no page content beyond what the spec already carries, and is cleared with
+      the notebook
+
 
 ---
 
