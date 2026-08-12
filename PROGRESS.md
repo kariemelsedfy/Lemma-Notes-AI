@@ -1176,7 +1176,7 @@ Acceptance:
       rather than a constant, with a documented fallback for a repair sheet that has none
 
 ### M3-23 — One line read back out of order
-status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
+status: In progress · claimed: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
 Note: exposed by M3-22's remeasurement. Vision sometimes returns one rendered line as two text
 blocks, and `HandwritingTranscript.text(from:)` orders blocks by `midY` with a fixed 0.02 band —
 so two fragments of the *same* line whose boxes differ in height (one has ascenders, the other a
@@ -1196,7 +1196,7 @@ Acceptance:
 - [ ] `SelectionReading`'s transcript is covered, not just the harness
 
 ### M3-22 — The OCR harness does not rasterize the width the page draws
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
+status: Done · completed: Claude · merged: PR #97 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
 Note: `InkRasterizer` draws `InkPoint.size` straight into `CGContext.setLineWidth`, but the
 page draws `2 × size − 4` (`InkRenderingLimits`). So every legibility number in this repo is
 measured on ink roughly a size-to-drawn conversion heavier than what a user sees, and any
