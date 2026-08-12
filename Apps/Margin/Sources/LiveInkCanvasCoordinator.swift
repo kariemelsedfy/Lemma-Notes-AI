@@ -13,6 +13,7 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     private let pageID: UUID
     private let pageSize: CGSize
     private let drawingStore: PageDrawingStore
+    private let undoController: CanvasUndoController?
     private weak var canvasView: PKCanvasView?
     private var eraserStart: Snapshot?
     private var didSuppressUndoRegistration = false
@@ -20,14 +21,22 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     private var finalizationTask: Task<Void, Never>?
     private var isApplyingDrawing = false
 
-    init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
+    init(
+        pageID: UUID,
+        pageSize: CGSize,
+        drawingStore: PageDrawingStore,
+        undoController: CanvasUndoController? = nil
+    ) {
         self.pageID = pageID
         self.pageSize = pageSize
         self.drawingStore = drawingStore
+        self.undoController = undoController
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !isApplyingDrawing else { return }
+        self.canvasView = canvasView
+        undoController?.adopt(canvasView)
         reconcile(canvasView)
         if eraserDidEnd {
             scheduleEraserFinalization(on: canvasView)
@@ -35,6 +44,10 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
+        // Adopted for every tool, not just the eraser: undo must follow the page the user is
+        // touching, and this is the only callback that identifies it unambiguously.
+        self.canvasView = canvasView
+        undoController?.adopt(canvasView)
         guard canvasView.tool is PKEraserTool, eraserStart == nil,
             let metadata = drawingStore.metadata(for: pageID)
         else { return }

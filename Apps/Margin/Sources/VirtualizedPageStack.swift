@@ -21,6 +21,7 @@ struct VirtualizedPageStack: View {
     @StateObject var selectionStore = PageSelectionStore()
     @StateObject var askSelection = AskSelectionCoordinator()
     @StateObject var askModel = AskBarModel()
+    @StateObject private var undoController = CanvasUndoController()
     /// **`@State`, not a plain `let`.** A `View` is a value: the parent rebuilds this struct
     /// on every render, and a `let` initialised inline would hand back a *fresh, empty*
     /// `SuggestionLayer` each time. `askPipeline` is `@State` and survives that rebuild, so
@@ -121,6 +122,16 @@ struct VirtualizedPageStack: View {
 
                 HStack(spacing: 12) {
                     ToolPalette(selectedTool: $selectedTool, selectedPen: $selectedPen)
+                    Button {
+                        undoController.undo()
+                    } label: {
+                        Label("canvas.undo", systemImage: "arrow.uturn.backward")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .disabled(!undoController.canUndo)
+                    .accessibilityLabel("canvas.undo")
                     Button(action: invokeAsk) {
                         Label("ask.action", systemImage: "sparkles")
                             .frame(minHeight: 44)
@@ -138,6 +149,8 @@ struct VirtualizedPageStack: View {
         }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
+            // `UndoManager.canUndo` is not observable; every edit path bumps `revision`.
+            undoController.refresh()
         }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else {
@@ -155,6 +168,7 @@ struct VirtualizedPageStack: View {
                 pageID: pageID,
                 pageSize: pageSizes[pageID] ?? pageSize,
                 drawingStore: drawingStore,
+                undoController: undoController,
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
@@ -199,6 +213,7 @@ private struct LivePageView: View {
     let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     let selection: PageSelection?
@@ -215,6 +230,7 @@ private struct LivePageView: View {
                 pageID: pageID,
                 pageSize: pageSize,
                 drawingStore: drawingStore,
+                undoController: undoController,
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 askSelection: askSelection
@@ -265,12 +281,18 @@ struct LiveInkCanvas: UIViewRepresentable {
     let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     @ObservedObject var askSelection: AskSelectionCoordinator
 
     func makeCoordinator() -> LiveInkCanvasCoordinator {
-        LiveInkCanvasCoordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+        LiveInkCanvasCoordinator(
+            pageID: pageID,
+            pageSize: pageSize,
+            drawingStore: drawingStore,
+            undoController: undoController
+        )
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -284,6 +306,7 @@ struct LiveInkCanvas: UIViewRepresentable {
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
+        undoController.adopt(canvasView)
         return canvasView
     }
 
