@@ -25,8 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M3-01B — Extend the corpus and enforce 95% on real renderers
-claimed: Claude · 2026-08-11 · see the full entry under Ready — M3
+_(empty)_
 
 ## Review
 
@@ -1082,12 +1081,38 @@ Acceptance:
       regression floor, since it is throwaway code M3-00 deletes
 
 ### M3-01B — Extend the corpus and enforce 95% on real renderers
-status: In progress · claimed: Claude · 2026-08-11 · refs: HANDWRITING.md §7 · estimate: S
+status: Review · implemented: Claude · 2026-08-11 · refs: HANDWRITING.md §7 · estimate: S
 Note: the corpus is 8 strings, enough to prove the harness works. §7's 95% bar needs a
 corpus worth asserting against, and it must stay prose-only until M5 — see M3-11.
+Claude 2026-08-11: the two renderers had drifted to *separate* corpora of eight and five
+strings, so they were not held to the same bar at all and a single unlucky recognition moved
+the rate 12 or 20 points. Both now measure against one 44-string `LegibilityCorpus`, with
+guards asserting its breadth, that every string is renderable by the fixture alphabet, that
+none is too short to score, and that no math notation creeps in before M5 (M3-11).
+**Measured: typeset 100% exact, synthesizer 95.45%** — and the synthesizer's margin is one
+string wide, with both misses the same `g`/`9` confusion. Filed as M3-01C.
 Acceptance:
-- [ ] A corpus broad enough that 95% means something (≥40 strings)
-- [ ] M3-00 and M3-05 each assert ≥95% against it
+- [x] A corpus broad enough that 95% means something (44 strings)
+- [x] M3-00 and M3-05 each assert ≥95% against it — the *same* it, which was the real gap
+
+### M3-01C — The synthesized `g` reads as a `9`
+status: Ready · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B · estimate: S
+Note: measured while widening the corpus (M3-01B). The synthesizer scores 95.45% against §7's
+95% bar — 42 of 44 — and **both misses are the same confusion**: `integral` → `inte9ral`,
+`take logs of both sides` → `take lo9s of both sides`. M2-13B met this exact string when it
+settled the fill inset at 0.4 instead of 0.5, so it is a long-standing property of the typeset
+letterform rather than something new.
+Two consequences. The bar is met by one string's margin, so an added `g` word can fail the
+suite without any regression. And a real user's handwritten `g` may or may not share the
+problem — this is measured through a *typeset-derived* bank, so it says more about
+`TypesetStyle`'s `g` than about anyone's hand.
+Worth checking whether the descender loop closes too far; a `9` is a `g` whose tail has joined
+its bowl. Do not tune against `LegibilityHarness` alone — it uses Core Graphics, and M2-13
+records what tuning against a renderer the user never sees costs (CONTEXT invariant 11).
+Acceptance:
+- [ ] The cause is identified by measuring the rendered `g`, not by guessing
+- [ ] `g` reads as `g` in the corpus strings that currently miss
+- [ ] Typeset legibility stays at 100% and the weight work of M2-13B is not undone
 
 ### M3-11 — Math legibility needs the M5 layout, not a better font
 status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S
