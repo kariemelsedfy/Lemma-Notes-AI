@@ -234,6 +234,12 @@ private struct LivePageView: View {
                 selectedPen: selectedPen,
                 askSelection: askSelection
             )
+            // Rebuilt on an undo. A `PKCanvasView` restores its own internal drawing when real
+            // Pencil input arrives, which brought back everything that had just been undone —
+            // measured on device: canvas reported 0 strokes, then 20 on the next stroke. A
+            // fresh canvas has no internal history to restore, and this is the only mechanism
+            // that does not depend on guessing PencilKit's internals.
+            .id(drawingStore.externalGeneration)
             if let selection {
                 PageSelectionOverlay(selection: selection)
             }

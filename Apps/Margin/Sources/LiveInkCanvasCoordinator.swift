@@ -137,6 +137,9 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     func applyExternally(_ drawing: PKDrawing, to canvasView: PKCanvasView) {
         isApplyingDrawing = true
         canvasView.drawing = drawing
+        // Free insurance alongside the canvas rebuild: drop PencilKit's own registrations so
+        // there is one less place for it to restore a drawing we have replaced.
+        canvasView.undoManager?.removeAllActions()
         isApplyingDrawing = false
         appliedRevision = drawingStore.revision(for: pageID)
         // Reads the canvas *back* deliberately: if PencilKit did not take the assignment, this

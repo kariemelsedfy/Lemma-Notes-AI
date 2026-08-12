@@ -19,6 +19,15 @@ final class PageDrawingStore: ObservableObject {
     private var revisionsByPageID: [UUID: Int] = [:]
     /// Bumped on every edit so the view has something to observe without diffing ink.
     @Published private(set) var revision = 0
+    /// Bumped only when a page is rewritten by something other than its own canvas — an undo.
+    ///
+    /// **A `PKCanvasView` keeps an internal drawing that survives assigning `drawing`.**
+    /// Measured on device: after an undo the canvas reported 0 strokes at `didBeginUsingTool`,
+    /// and the first real Pencil input rebuilt it to 20 — the 19 undone strokes plus the new
+    /// one. The public property had taken our value; PencilKit's own model had not. Live pages
+    /// key their canvas on this counter so an undo builds a *fresh* canvas, which has no
+    /// internal history left to restore.
+    @Published private(set) var externalGeneration = 0
     private var dirtyPageIDs: Set<UUID> = []
 
     init(inkData: [UUID: Data] = [:], metadata: [UUID: PageMetadata] = [:]) {
@@ -46,6 +55,12 @@ final class PageDrawingStore: ObservableObject {
     /// only when the store has since moved — an undo, or any other programmatic edit.
     func revision(for pageID: UUID) -> Int {
         revisionsByPageID[pageID] ?? 0
+    }
+
+    /// Call when a page is rewritten from outside its canvas, so the canvas is rebuilt rather
+    /// than corrected. See `externalGeneration`.
+    func markExternalChange() {
+        externalGeneration += 1
     }
 
     func save(
