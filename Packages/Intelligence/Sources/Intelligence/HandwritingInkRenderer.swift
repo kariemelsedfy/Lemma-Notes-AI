@@ -5,9 +5,9 @@ import InkCore
 
 /// Draws placed blocks in the user's own hand.
 ///
-/// The other half of `HANDWRITING.md` §8's three styles; `TypesetInkRenderer` is the third.
-/// Which one is in use is the app's choice, and this type does not know or care whether it
-/// was picked as "my handwriting" or "neat" — that is entirely the `Variation`.
+/// One of `HANDWRITING.md` §8's two shipping styles; `TypesetInkRenderer` is the other.
+/// Which one is in use is the app's choice, and this type does not know or care at what
+/// variance it was asked for — that is entirely the `Variation`.
 public struct HandwritingInkRenderer: SuggestionInkRendering {
     private let bank: GlyphBank
     private let variation: Synthesizer.Variation
@@ -26,6 +26,19 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
     /// and half in a typeface is more obviously wrong than either style used consistently.
     public func canRender(_ text: String) -> Bool {
         bank.canRender(text)
+    }
+
+    /// Whether this placed text must use the typeset fallback because its glyphs are absent.
+    ///
+    /// The app asks before presenting the result so it can explain a visible style change;
+    /// the missing characters themselves stay out of diagnostics and logs.
+    public func requiresMissingGlyphFallback(for placement: BlockPlacement) -> Bool {
+        switch placement.block.content {
+        case .inline(let run): !bank.canRender(run.value)
+        case .lines(let lines): !lines.allSatisfy { bank.canRender($0.run.value) }
+        case .note(let note): !bank.canRender(note.text)
+        case .plot, .marks: false
+        }
     }
 
     public func strokes(for placement: BlockPlacement, style: StyleStats, seed: UInt64 = 0) throws -> [InkStroke] {
@@ -64,14 +77,15 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
             // Measured against **one line's height**, not the block's. `Synthesizer`
             // scales text to fit the box it is given, so measuring inside the full block
             // returns every word at several times its drawn width.
-            let advance = LineBreaker.lineAdvance(style: bank.style.stats, frame: frame)
-            let lines = try LineBreaker.lines(for: text, in: frame, style: bank.style.stats) { candidate in
+            let advance = LineBreaker.lineAdvance(style: style, frame: frame)
+            let lines = try LineBreaker.lines(for: text, in: frame, style: style) { candidate in
                 (try? Synthesizer.strokes(
                     for: candidate,
                     in: CGRect(x: 0, y: 0, width: 100_000, height: advance),
                     bank: bank,
                     variation: variation,
-                    seed: seed
+                    seed: seed,
+                    targetXHeight: style.xHeight
                 )).map { InkLineGrouping.bounds(of: $0).width } ?? 0
             }
             return try lines.enumerated().flatMap { index, line in
@@ -80,7 +94,8 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                     in: line.frame,
                     bank: bank,
                     variation: variation,
-                    seed: seed &+ UInt64(index)
+                    seed: seed &+ UInt64(index),
+                    targetXHeight: style.xHeight
                 )
             }
         } catch Synthesizer.Error.missingGlyphs {
@@ -126,7 +141,8 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                 in: lineFrame,
                 bank: bank,
                 variation: variation,
-                seed: seed &+ UInt64(index)
+                seed: seed &+ UInt64(index),
+                targetXHeight: style.xHeight
             )
         }
     }

@@ -94,7 +94,7 @@ final class ContentWrappingTests: XCTestCase {
 
     func testALongAnswerIsPlacedRatherThanRefused() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(
             try Self.spec(text: Self.longAnswer, placement: .belowSelection),
@@ -110,7 +110,7 @@ final class ContentWrappingTests: XCTestCase {
 
     func testAPlacedBlockStaysOnThePage() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(
             try Self.spec(text: Self.longAnswer, placement: .belowSelection),
@@ -123,7 +123,7 @@ final class ContentWrappingTests: XCTestCase {
 
     func testAnAnchoredBlockWrapsToWhatIsLeftOfTheLine() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(
             try Self.spec(text: Self.longAnswer, placement: .atAnchor),

@@ -126,21 +126,60 @@ final class LegibilityHarnessTests: XCTestCase {
         XCTAssertGreaterThan(report.meanSimilarity, 0.9)
     }
 
+    // MARK: - The corpus itself (M3-01B)
+
+    /// 95% of eight strings is "seven of eight"; one unlucky recognition swings it 12 points.
+    /// The bar only means something over a corpus wide enough that a single miss cannot.
+    func testTheCorpusIsBroadEnoughForTheBarToMeanSomething() {
+        XCTAssertGreaterThanOrEqual(LegibilityCorpus.prose.count, 40)
+    }
+
+    /// Every string must be renderable by the fixture banks, which hold `a-z A-Z 0-9` only.
+    /// A comma would throw `missingGlyphs` — a confusing crash rather than a low score — and
+    /// this says so at the corpus instead of at whichever test happened to hit it.
+    func testEveryCorpusStringCanActuallyBeRendered() {
+        let renderable = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ")
+        for text in LegibilityCorpus.prose {
+            let unsupported = Set(text).subtracting(renderable)
+            XCTAssertTrue(unsupported.isEmpty, "\(text) uses \(unsupported.sorted())")
+        }
+    }
+
+    /// Below this the harness scores nothing, so a short string would silently not count.
+    func testEveryCorpusStringIsLongEnoughToScore() {
+        for text in LegibilityCorpus.prose {
+            XCTAssertGreaterThanOrEqual(
+                text.count, LegibilityHarness.minimumMeasurableLength, "\(text) is too short to score")
+        }
+    }
+
+    /// A corpus with no `g`, `p`, `q`, `y` or `j` in it cannot see where a bank seats the
+    /// letters that hang below the line — which is exactly the defect that reached the 95%
+    /// bar and read as a letterform problem for a day (M3-01C).
+    func testTheCorpusExercisesDescenders() {
+        for descender in "gpqyj" {
+            XCTAssertTrue(
+                LegibilityCorpus.prose.contains { $0.contains(descender) },
+                "No corpus string contains `\(descender)`")
+        }
+    }
+
+    /// Prose only until M5 renders real notation — see `LegibilityCorpus` and M3-11.
+    func testTheCorpusCarriesNoMathNotation() {
+        let notation = Set("^_+=*/\\{}[]<>")
+        for text in LegibilityCorpus.prose {
+            XCTAssertTrue(
+                Set(text).isDisjoint(with: notation),
+                "\(text) carries notation the harness cannot fairly score until M5")
+        }
+    }
+
     // MARK: - Fixtures
 
-    private static let proseCorpus = [
-        "The derivative is 2x",
-        "the quick brown fox",
-        "integral",
-        "2+2=4",
-        "123456",
-        "Let u equal x squared",
-        "substitute and simplify",
-        "area under the curve",
-    ]
+    /// Shared with `SynthesizerTests`, so both renderers face the same bar (M3-01B).
+    private static let proseCorpus = LegibilityCorpus.prose
 
-    /// Wide enough that the font is not squeezed to illegibility by its own fitting.
     private static func frame(for text: String) -> CGRect {
-        CGRect(x: 0, y: 0, width: CGFloat(max(text.count, 4)) * 60, height: 90)
+        LegibilityCorpus.frame(for: text, scale: 60)
     }
 }

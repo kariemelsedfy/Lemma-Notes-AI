@@ -4,7 +4,7 @@ import XCTest
 
 @testable import Margin
 
-/// `HANDWRITING.md` §8's three styles. The failure this guards against is silent: a stored
+/// `HANDWRITING.md` §8's styles. The failure this guards against is silent: a stored
 /// preference for a style that cannot be drawn, producing an answer with no ink in it.
 @MainActor
 final class HandwritingStylePreferenceTests: XCTestCase {
@@ -21,9 +21,9 @@ final class HandwritingStylePreferenceTests: XCTestCase {
     }
 
     func testAChoiceSurvivesARelaunch() {
-        HandwritingStylePreference(defaults: defaults).choice = .neat
+        HandwritingStylePreference(defaults: defaults).choice = .mine
 
-        XCTAssertEqual(HandwritingStylePreference(defaults: defaults).choice, .neat)
+        XCTAssertEqual(HandwritingStylePreference(defaults: defaults).choice, .mine)
     }
 
     func testWithoutABankEveryChoiceResolvesToTypeset() {
@@ -36,13 +36,26 @@ final class HandwritingStylePreferenceTests: XCTestCase {
         XCTAssertTrue(preference.renderer(bank: nil) is TypesetInkRenderer)
     }
 
-    func testAPartialBankAlsoResolvesToTypeset() {
+    func testABankMissingAnUnrelatedLetterStillUsesHandwritingForKnownContent() {
         let preference = HandwritingStylePreference(defaults: defaults)
         preference.choice = .mine
+        let bank = Self.bank(letters: "abcdefghijklmnopqrstuvwxy4")
 
-        // Abandoning calibration after two sheets is allowed; rendering answers from it
-        // would be mostly fallback anyway, so it is not offered as "my handwriting".
-        XCTAssertEqual(preference.resolved(bank: Self.bank(letters: "abc")), .typeset)
+        // A single rejected lowercase glyph used to disable the entire bank, even though
+        // the renderer falls back per block and this bank can draw the actual answer.
+        XCTAssertTrue(bank.canRender("4"))
+        XCTAssertEqual(preference.resolved(bank: bank), .mine)
+        XCTAssertTrue(preference.renderer(bank: bank) is HandwritingInkRenderer)
+        XCTAssertEqual(
+            preference.status(bank: bank),
+            HandwritingStyleStatus(
+                bankMissing: false,
+                characterCount: 26,
+                canRenderCannedAnswer: true,
+                selected: .mine,
+                resolved: .mine
+            )
+        )
     }
 
     func testCalibratingPromotesAUserWhoNeverChoseAStyle() {
@@ -63,13 +76,42 @@ final class HandwritingStylePreferenceTests: XCTestCase {
         XCTAssertEqual(preference.resolved(bank: Self.fullBank), .typeset)
     }
 
-    func testNeatUsesTheBankWithReducedVariance() {
-        let preference = HandwritingStylePreference(defaults: defaults)
-        preference.choice = .neat
+    // MARK: - The withdrawn neat style (M3-08D)
 
-        XCTAssertEqual(preference.resolved(bank: Self.fullBank), .neat)
+    func testTheStylePickerOffersExactlyTwoStyles() {
+        // The picker is `ForEach(HandwritingStyleChoice.allCases)`, so this is what the user
+        // sees. M3-08D withdrew the third after the device session found it indistinguishable.
+        XCTAssertEqual(HandwritingStyleChoice.allCases, [.mine, .typeset])
+    }
+
+    func testAStoredNeatPreferenceBecomesTheirOwnHandRatherThanTypeset() {
+        // A build that shipped `neat` wrote this. `init(rawValue:)` returns nil for it now,
+        // and the fallback behind that means "never calibrated" — so without the migration
+        // someone who calibrated *and* picked a handwriting style silently gets a typeface.
+        defaults.set(HandwritingStyleChoice.withdrawn, forKey: "handwriting.style")
+
+        let preference = HandwritingStylePreference(defaults: defaults)
+
+        XCTAssertEqual(preference.choice, .mine)
+        XCTAssertEqual(preference.resolved(bank: Self.fullBank), .mine)
         XCTAssertTrue(preference.renderer(bank: Self.fullBank) is HandwritingInkRenderer)
-        XCTAssertLessThan(HandwritingStyleChoice.neat.variation.scale, HandwritingStyleChoice.mine.variation.scale)
+    }
+
+    func testMigratingAWithdrawnStyleStillCountsAsAnExplicitChoice() {
+        defaults.set(HandwritingStyleChoice.withdrawn, forKey: "handwriting.style")
+
+        // Otherwise `resolved` would treat them as a defaulted user and the promotion path
+        // would decide for them — right answer today, wrong reason, and wrong the moment
+        // `resolved` learns another rule.
+        XCTAssertTrue(HandwritingStylePreference(defaults: defaults).isExplicit)
+    }
+
+    func testAnUnrecognizedStoredStyleStillFallsBackToTypeset() {
+        // The migration must not turn every unreadable value into handwriting; a bank may
+        // not exist at all.
+        defaults.set("something-we-never-shipped", forKey: "handwriting.style")
+
+        XCTAssertEqual(HandwritingStylePreference(defaults: defaults).choice, .typeset)
     }
 
     // MARK: - Fixtures

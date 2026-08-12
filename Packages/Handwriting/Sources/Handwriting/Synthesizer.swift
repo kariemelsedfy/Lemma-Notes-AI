@@ -20,13 +20,16 @@ public enum Synthesizer {
         case degenerateFrame
     }
 
-    /// Knobs the styles in `HANDWRITING.md` §8 differ on.
+    /// How much of the writer's measured range is in play.
+    ///
+    /// §8 used this to separate three styles. M3-08D withdrew the middle one — "a neater
+    /// version of mine" — so the app now only ever asks for `.natural`. The knob stays
+    /// public and arbitrary rather than collapsing to a boolean: it is what M3-19 will turn
+    /// down as a bank grows, what the tests use to prove selection narrows toward the
+    /// steadiest glyph, and all a restored neat style would need.
     public struct Variation: Equatable, Sendable {
         /// "My handwriting": the writer's measured variance, unmodified.
         public static let natural = Variation(scale: 1)
-        /// "Neat version of mine": §8 puts this at roughly 60% less variance. Several
-        /// early testers are expected to prefer it *over* their real hand for answers.
-        public static let neat = Variation(scale: 0.4)
 
         /// Multiplier on every source of randomness. Zero is mechanical.
         public let scale: CGFloat
@@ -37,12 +40,16 @@ public enum Synthesizer {
     }
 
     /// Renders `text` into `frame`, sitting on its baseline.
+    ///
+    /// - Parameter targetXHeight: The local writing size to match. When omitted, direct
+    ///   synthesis uses the size recorded during calibration.
     public static func strokes(
         for text: String,
         in frame: CGRect,
         bank: GlyphBank,
         variation: Variation = .natural,
-        seed: UInt64 = 0
+        seed: UInt64 = 0,
+        targetXHeight: CGFloat? = nil
     ) throws -> [InkStroke] {
         guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
         let missing = bank.missingCharacters(in: text)
@@ -51,8 +58,8 @@ public enum Synthesizer {
 
         let style = bank.style.stats
         var generator = SeededGenerator(seed: seed)
-        let chosen = select(text, from: bank, using: &generator)
-        let metrics = layout(chosen, style: style, in: frame)
+        let chosen = select(text, from: bank, variation: variation, using: &generator)
+        let metrics = layout(chosen, style: style, targetXHeight: targetXHeight, in: frame)
 
         var strokes: [InkStroke] = []
         var clock: TimeInterval = 0
@@ -60,7 +67,7 @@ public enum Synthesizer {
 
         for entry in chosen {
             defer {
-                pen.x += (entry.advance + metrics.letterGap) * metrics.xHeight
+                pen.x += (entry.advance + entry.gap) * metrics.xHeight
             }
             guard let glyph = entry.glyph else { continue }
 
@@ -70,7 +77,9 @@ public enum Synthesizer {
             let jitter = generator.symmetric(metrics.xHeight * 0.035 * variation.scale)
             // Slow sinusoidal drift so the baseline is not laser-straight (§4 step 5).
             let drift = sin(pen.x / max(metrics.xHeight * 12, 1)) * metrics.xHeight * 0.02 * variation.scale
-            let lean = tan(style.slant)
+            // Per-glyph slant. A writer's letters do not all lean by the same angle, and a
+            // single fixed shear is one of the tells the §7 panel is asked to spot.
+            let lean = tan(style.slant + entry.slantOffset)
 
             for glyphStroke in glyph.strokes {
                 let points = glyphStroke.points.map { point -> InkPoint in
@@ -109,49 +118,145 @@ public enum Synthesizer {
     private struct Chosen {
         let glyph: Glyph?
         let advance: CGFloat
+        /// Space before the next glyph, in x-heights. Per glyph, not per line: uneven spacing
+        /// is a large part of what separates a hand from a font.
+        let gap: CGFloat
+        /// Added to the writer's measured slant for this glyph, in radians.
+        let slantOffset: CGFloat
     }
 
     /// Picks a sample per character, **never the same sample twice in a row** for the same
     /// character (§4.1). Repeating one `e` through a word is the loudest tell there is.
+    ///
+    /// `variation` decides how much of the writer's range is in play. Samples are ranked most
+    /// typical first, and the pool is narrowed towards that most typical glyph as the scale
+    /// falls, so a lower scale draws the writer's steadiest letters rather than merely
+    /// jittering less.
+    ///
+    /// **This matters at `.natural` too, which is the only scale the app ships (M3-08D).**
+    /// Before M3-08C, `Variation` reached only vertical jitter and baseline drift — sample
+    /// selection was not wired to anything, so a bank with four samples per letter rendered
+    /// exactly like a bank with one, and every extra sample calibration collected was dead
+    /// weight. Removing this narrowing to "simplify" now that only one scale ships would put
+    /// that back.
     private static func select(
         _ text: String,
         from bank: GlyphBank,
+        variation: Variation,
         using generator: inout SeededGenerator
     ) -> [Chosen] {
         var lastIndexByCharacter: [String: Int] = [:]
+        var rankedByCharacter: [String: [Glyph]] = [:]
         return text.map { character in
+            // Drawn for every character, spaces included, so a given seed lays out the same
+            // way regardless of which branch a character takes.
+            let gap = letterGap + generator.symmetric(letterGapJitter * variation.scale)
+            let slantOffset = generator.symmetric(slantJitter * variation.scale)
             guard character != " " else {
-                return Chosen(glyph: nil, advance: spaceAdvance)
+                return Chosen(glyph: nil, advance: spaceAdvance, gap: gap, slantOffset: 0)
             }
-            let samples = bank.samples(for: character)
-            guard !samples.isEmpty else { return Chosen(glyph: nil, advance: spaceAdvance) }
 
-            var index = Int(generator.next() % UInt64(samples.count))
-            if samples.count > 1, index == lastIndexByCharacter[String(character)] {
-                index = (index + 1) % samples.count
+            let key = String(character)
+            let ranked: [Glyph]
+            if let cached = rankedByCharacter[key] {
+                ranked = cached
+            } else {
+                ranked = rankedByTypicality(bank.samples(for: character))
+                rankedByCharacter[key] = ranked
             }
-            lastIndexByCharacter[String(character)] = index
-            let glyph = samples[index]
-            return Chosen(glyph: glyph, advance: glyph.advanceWidth)
+            guard !ranked.isEmpty else {
+                return Chosen(glyph: nil, advance: spaceAdvance, gap: gap, slantOffset: 0)
+            }
+
+            let pool = poolSize(ranked.count, variation: variation)
+            var index = pool > 1 ? Int(generator.next() % UInt64(pool)) : 0
+            if pool > 1, index == lastIndexByCharacter[key] {
+                index = (index + 1) % pool
+            }
+            lastIndexByCharacter[key] = index
+            let glyph = ranked[index]
+            return Chosen(glyph: glyph, advance: glyph.advanceWidth, gap: gap, slantOffset: slantOffset)
         }
+    }
+
+    /// The writer's samples for one character, most typical first.
+    ///
+    /// Typicality is distance from the mean of that character's own samples over advance width
+    /// and ink box — the medoid idea, kept to measurements the bank already holds. Ties break
+    /// on capture order so a fixed seed always renders identically.
+    private static func rankedByTypicality(_ samples: [Glyph]) -> [Glyph] {
+        guard samples.count > 2 else { return samples }
+        let features: [[CGFloat]] = samples.map(feature)
+        let count = CGFloat(features.count)
+
+        var mean = [CGFloat](repeating: 0, count: featureCount)
+        for row in features {
+            for axis in 0..<featureCount {
+                mean[axis] += row[axis] / count
+            }
+        }
+
+        var ranked: [(offset: Int, distance: CGFloat)] = []
+        ranked.reserveCapacity(samples.count)
+        for index in samples.indices {
+            var spread: CGFloat = 0
+            for axis in 0..<featureCount {
+                let delta = features[index][axis] - mean[axis]
+                spread += delta * delta
+            }
+            ranked.append((offset: index, distance: spread))
+        }
+        ranked.sort { left, right in
+            if left.distance == right.distance {
+                return left.offset < right.offset
+            }
+            return left.distance < right.distance
+        }
+        return ranked.map { samples[$0.offset] }
+    }
+
+    private static let featureCount = 3
+
+    private static func feature(of glyph: Glyph) -> [CGFloat] {
+        let box = glyph.bounds
+        guard !box.isNull else { return [glyph.advanceWidth, 0, 0] }
+        return [glyph.advanceWidth, box.width, box.height]
+    }
+
+    /// How many of the ranked samples are eligible. One at zero scale — always the writer's
+    /// steadiest letter — widening to all of them at `.natural`.
+    private static func poolSize(_ count: Int, variation: Variation) -> Int {
+        guard count > 1 else { return count }
+        let requested = Int((CGFloat(count) * variation.scale).rounded())
+        return min(count, max(1, requested))
     }
 
     /// A word space, in x-heights.
     private static let spaceAdvance: CGFloat = 0.42
 
+    /// Base space between glyphs, in x-heights.
+    private static let letterGap: CGFloat = 0.06
+    /// Spread of the per-glyph gap. Deliberately small — §4.1 warns that excess noise reads as
+    /// "shaky", which is a different tell from "mechanical".
+    private static let letterGapJitter: CGFloat = 0.018
+    /// Spread of the per-glyph slant, in radians: about ±2.3° at `.natural`.
+    private static let slantJitter: CGFloat = 0.04
+
     // MARK: - Layout
 
     private struct Metrics {
         let xHeight: CGFloat
-        /// Extra space between glyphs, in x-heights, from the writer's own hand.
-        let letterGap: CGFloat
         /// Baseline origin.
         let origin: CGPoint
     }
 
-    private static func layout(_ chosen: [Chosen], style: StyleStats, in frame: CGRect) -> Metrics {
-        let letterGap: CGFloat = 0.06
-        let totalAdvance = chosen.reduce(0) { $0 + $1.advance + letterGap }
+    private static func layout(
+        _ chosen: [Chosen],
+        style: StyleStats,
+        targetXHeight: CGFloat?,
+        in frame: CGRect
+    ) -> Metrics {
+        let totalAdvance = chosen.reduce(0) { $0 + $1.advance + $1.gap }
         // How far the tallest ascender rises and the deepest descender falls, in x-heights.
         let rise = chosen.compactMap { $0.glyph?.bounds.minY }.min().map { -$0 } ?? 1
         let fall = chosen.compactMap { $0.glyph?.bounds.maxY }.max() ?? 0
@@ -159,12 +264,16 @@ public enum Synthesizer {
         // Fit on whichever axis binds, so nothing leaves the rectangle placement reserved.
         let byWidth = totalAdvance > 0 ? frame.width / totalAdvance : .greatestFiniteMagnitude
         let byHeight = (rise + fall) > 0 ? frame.height / (rise + fall) : .greatestFiniteMagnitude
-        let preferred = style.xHeight > 0 ? style.xHeight : frame.height * 0.5
+        // The bank records how large the writer happened to write on the calibration
+        // sheet. It describes the source sample, not the size of every future answer.
+        // A caller rendering beside page ink supplies that ink's local x-height; direct
+        // synthesis keeps the bank measurement as its backwards-compatible default.
+        let requested = targetXHeight ?? style.xHeight
+        let preferred = requested > 0 ? requested : frame.height * 0.5
         let xHeight = min(preferred, byWidth, byHeight)
 
         return Metrics(
             xHeight: xHeight,
-            letterGap: letterGap,
             origin: CGPoint(x: frame.minX, y: frame.maxY - fall * xHeight)
         )
     }

@@ -116,12 +116,15 @@ PageScrollView (UIScrollView)
       └── PageView  (one per page, recycled)
            ├── PaperLayer      (CALayer, ruled/grid rendering)
            ├── PKCanvasView    (the ink)
-           ├── OverlayLayer    (selection lasso, suggestion highlight, anchors)
+           ├── OverlayLayer    (question lasso, allowed-answer region, suggestion highlight)
            └── SuggestionLayer (generated-but-unaccepted ink, drawn at 70% alpha)
 ```
 
 - Only pages within ±1 screen of the viewport keep a live `PKCanvasView`; others render to a cached image. Without this, 50-page documents thrash memory.
 - Suggested ink lives in a **separate** `PKDrawing` until accepted. On accept, strokes are appended to the page drawing in one undo-group. On reject, the suggestion drawing is discarded. This makes "one undo removes the whole generation" trivial.
+- Ask uses two page-space selections with different responsibilities: the first lasso chooses
+  question ink; the second marks the allowed answer region. Placement must remain inside the
+  second region. Never use the question bounds as an implicit answer region (ADR-016).
 - Zoom range 25%–400%. Ink is vector so it stays crisp.
 
 ### 4.1 The occupancy grid
@@ -139,7 +142,7 @@ Keep it incremental. A full recompute per query will drop frames on dense pages.
 
 - All ink mutation on the main actor. `PKCanvasView` is not thread-safe.
 - Synthesis, layout, raster export, and network are `async` off-main; results are applied on main in a single transaction.
-- The AI request lifecycle is a state machine: `idle → extracting → classifying → requesting → streaming → rendering → awaitingDecision → committed|discarded`. Model it explicitly as an enum with associated values; do not scatter booleans. Every transition is logged.
+- The AI request lifecycle is a state machine: `idle → selectingQuestion → selectingAnswerArea → extracting → classifying → requesting → streaming → rendering → awaitingDecision → committed|discarded`. Model it explicitly as an enum with associated values; do not scatter booleans. Every transition is logged.
 - Cancellation must work at every stage: user keeps writing → cancel the in-flight request silently.
 
 ---

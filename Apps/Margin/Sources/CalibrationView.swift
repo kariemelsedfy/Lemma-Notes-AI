@@ -17,6 +17,7 @@ struct CalibrationView: View {
     /// Bumped to clear the canvas; the writing surface owns its own ink otherwise.
     @State private var generation = 0
     @State private var summary: CalibrationSession.Outcome?
+    @State private var saveErrorPresented = false
 
     var body: some View {
         NavigationStack {
@@ -25,8 +26,11 @@ struct CalibrationView: View {
                     CalibrationSummaryView(outcome: summary) { characters in
                         repair(characters)
                     } onFinish: {
-                        store.save(summary.bank)
-                        dismiss()
+                        if store.save(summary.bank) {
+                            dismiss()
+                        } else {
+                            saveErrorPresented = true
+                        }
                     }
                 } else if let sheet = session.current {
                     sheetView(sheet)
@@ -44,6 +48,11 @@ struct CalibrationView: View {
                     Button("calibration.leave") { finish() }
                 }
             }
+            .alert("calibration.save.failed.title", isPresented: $saveErrorPresented) {
+                Button("library.ok", role: .cancel) {}
+            } message: {
+                Text("calibration.save.failed.message")
+            }
         }
     }
 
@@ -51,8 +60,14 @@ struct CalibrationView: View {
 
     private func sheetView(_ sheet: CalibrationSheet.Sheet) -> some View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
-            ProgressView(value: session.progress)
-                .tint(MarginColor.accent)
+            HStack(spacing: MarginSpacing.medium) {
+                ProgressView(value: session.progress)
+                    .tint(MarginColor.accent)
+                Text("calibration.progress \(session.stepNumber) \(session.stepCount)")
+                    .font(MarginTypography.caption)
+                    .foregroundStyle(MarginColor.secondaryText)
+                    .fixedSize()
+            }
 
             Text(sheet.instruction)
                 .font(MarginTypography.body)
@@ -119,7 +134,7 @@ struct CalibrationView: View {
         generation += 1
     }
 
-    /// Takes the user to one sheet holding exactly the characters still needed.
+    /// Takes the user to repair-only sheets holding exactly the characters still needed.
     ///
     /// The old behaviour rewound to the sheet a character came from, which meant walking
     /// forward through every later sheet again — the thing §3.2 explicitly does not ask for,

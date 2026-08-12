@@ -120,6 +120,21 @@ final class SelectionContextTests: XCTestCase {
         XCTAssertEqual(context.anchor.xHeight, 20, accuracy: 0.001)
     }
 
+    func testHorizontalMathMarksCannotCollapseTheAnchorHeight() throws {
+        for height in [CGFloat(30), 60, 150] {
+            let strokes = Self.mathStrokes(height: height)
+            let bounds = InkLineGrouping.bounds(of: strokes)
+            let loop = Self.loop(around: bounds.insetBy(dx: -20, dy: -20))
+
+            let context = try XCTUnwrap(
+                SelectionContextBuilder.build(strokes: strokes, loop: loop, pageSize: pageSize)
+            )
+
+            XCTAssertLessThan(context.style.xHeight, 8, "This fixture must reproduce the old collapse.")
+            XCTAssertEqual(context.anchor.xHeight, height, accuracy: 0.001)
+        }
+    }
+
     func testExtractionIsDeterministic() throws {
         let strokes = [
             Self.stroke(in: CGRect(x: 100, y: 100, width: 200, height: 20)),
@@ -141,6 +156,47 @@ final class SelectionContextTests: XCTestCase {
             InkPoint(location: CGPoint(x: rect.minX, y: rect.minY), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
             InkPoint(location: CGPoint(x: rect.maxX, y: rect.maxY), timeOffset: 1, force: 0.5, altitude: 1, azimuth: 0),
         ])
+    }
+
+    /// Digit-sized strokes mixed with Pencil-wobbled horizontal operators. Scaling this
+    /// fixture used to leave the estimated x-height below the same 8pt layout floor.
+    private static func mathStrokes(height: CGFloat) -> [InkStroke] {
+        [
+            stroke(in: CGRect(x: 100, y: 100, width: height * 0.67, height: height)),
+            stroke(
+                in: CGRect(
+                    x: 100 + height * 0.92,
+                    y: 100 + height * 0.3,
+                    width: height * 0.07,
+                    height: height * 0.6
+                )
+            ),
+            stroke(
+                in: CGRect(
+                    x: 100 + height * 0.75,
+                    y: 100 + height * 0.48,
+                    width: height * 0.4,
+                    height: height * 0.03
+                )
+            ),
+            stroke(in: CGRect(x: 100 + height * 1.33, y: 100, width: height * 0.67, height: height)),
+            stroke(
+                in: CGRect(
+                    x: 100 + height * 2.25,
+                    y: 100 + height * 0.43,
+                    width: height * 0.33,
+                    height: height * 0.01
+                )
+            ),
+            stroke(
+                in: CGRect(
+                    x: 100 + height * 2.25,
+                    y: 100 + height * 0.63,
+                    width: height * 0.33,
+                    height: height * 0.025
+                )
+            ),
+        ]
     }
 
     private static func loop(around rect: CGRect) -> [CGPoint] {

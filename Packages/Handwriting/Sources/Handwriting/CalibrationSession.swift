@@ -45,6 +45,14 @@ public struct CalibrationSession: Equatable, Sendable {
 
     public var isComplete: Bool { index >= sheets.count }
 
+    /// One-based position shown beside progress, including repair sheets appended later.
+    public var stepNumber: Int {
+        sheets.isEmpty ? 0 : min(index + 1, sheets.count)
+    }
+
+    /// Total number of first-pass and repair sheets currently in the flow.
+    public var stepCount: Int { sheets.count }
+
     /// For the progress indicator. Calibration is a chore, and a user who cannot see the
     /// end of it abandons partway — which ADR-014 permits but the bank is worse for.
     public var progress: Double {
@@ -71,12 +79,12 @@ public struct CalibrationSession: Equatable, Sendable {
         skipped.remove(sheetID)
     }
 
-    /// Appends a sheet holding exactly `characters` and moves to it.
+    /// Appends sheets holding exactly `characters` and moves to the first one.
     ///
     /// The repair path from `HANDWRITING.md` §3.2. Rewinding to the sheet a character came
     /// from means re-walking the whole script, which is both tedious and — before the guard
-    /// above — destructive. One sheet with only the characters still needed is what §3.2
-    /// actually asks for.
+    /// above — destructive. Repair-only sheets are what §3.2 actually asks for, capped so
+    /// no sheet shrinks its boxes below a practical Pencil-writing size (M3-18).
     ///
     /// Appended rather than replacing the original: `outcome(capturedAt:)` filters `missing`
     /// and `rejected` against what reached the bank, so a character captured here stops being
@@ -88,8 +96,16 @@ public struct CalibrationSession: Equatable, Sendable {
 
         var seen: Set<Character> = []
         let unique = wanted.filter { seen.insert($0).inserted }
-        sheets.append(CalibrationSheet.repair(unique, id: (sheets.map(\.id).max() ?? 0) + 1))
-        index = sheets.count - 1
+        var nextID = (sheets.map(\.id).max() ?? 0) + 1
+        let firstRepairIndex = sheets.count
+        var start = 0
+        while start < unique.count {
+            let end = min(start + CalibrationSheet.maximumRepairCharacters, unique.count)
+            sheets.append(CalibrationSheet.repair(Array(unique[start..<end]), id: nextID))
+            start = end
+            nextID += 1
+        }
+        index = firstRepairIndex
         return true
     }
 

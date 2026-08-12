@@ -73,15 +73,16 @@ final class SynthesizerTests: XCTestCase {
 
     // MARK: - Variation
 
-    func testNeatVariesLessThanNatural() throws {
+    func testALowerVariationVariesLessThanNatural() throws {
         let bank = try Self.bank()
 
         let natural = try Synthesizer.strokes(for: "nnnnnnnn", in: frame, bank: bank, variation: .natural, seed: 3)
-        let neat = try Synthesizer.strokes(for: "nnnnnnnn", in: frame, bank: bank, variation: .neat, seed: 3)
+        let steadier = try Synthesizer.strokes(
+            for: "nnnnnnnn", in: frame, bank: bank, variation: Synthesizer.Variation(scale: 0.4), seed: 3)
 
-        // §8 describes "neat" as the same hand with variance reduced; several testers are
-        // expected to prefer it for answers.
-        XCTAssertLessThan(Self.baselineSpread(of: neat), Self.baselineSpread(of: natural))
+        // The app ships only `.natural` since M3-08D withdrew the neat style, but the scale
+        // has to keep meaning what it says: M3-19 turns it down as a bank grows.
+        XCTAssertLessThan(Self.baselineSpread(of: steadier), Self.baselineSpread(of: natural))
     }
 
     func testZeroVariationRemovesEverySourceOfRandomness() throws {
@@ -176,13 +177,8 @@ final class SynthesizerTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    private static let corpus = [
-        "The derivative is 2x",
-        "the quick brown fox",
-        "integral",
-        "substitute and simplify",
-        "area under the curve",
-    ]
+    /// Shared with `LegibilityHarnessTests`, so both renderers face the same bar (M3-01B).
+    private static let corpus = LegibilityCorpus.prose
 
     private static func frame(for text: String) -> CGRect {
         CGRect(x: 0, y: 0, width: CGFloat(max(text.count, 4)) * 34, height: 80)

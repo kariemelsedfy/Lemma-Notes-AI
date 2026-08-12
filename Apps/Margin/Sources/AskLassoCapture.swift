@@ -13,6 +13,8 @@ import SwiftUI
 struct AskLassoCapture: View {
     /// Called with the drawn polyline in page coordinates.
     let onComplete: ([CGPoint]) -> Void
+    var tint: Color = .accentColor
+    var label: LocalizedStringKey = "ask.lasso.question.capture"
 
     @State private var points: [CGPoint] = []
 
@@ -26,7 +28,7 @@ struct AskLassoCapture: View {
             }
             context.stroke(
                 path,
-                with: .color(.accentColor),
+                with: .color(tint),
                 style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, dash: [6, 4])
             )
         }
@@ -42,6 +44,6 @@ struct AskLassoCapture: View {
                     onComplete(drawn)
                 }
         )
-        .accessibilityLabel("ask.lasso.capture")
+        .accessibilityLabel(label)
     }
 }

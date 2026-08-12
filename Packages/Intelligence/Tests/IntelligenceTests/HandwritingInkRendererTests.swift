@@ -4,7 +4,7 @@ import XCTest
 
 @testable import Intelligence
 
-/// `HANDWRITING.md` §8 ships three styles over one pipeline. These tests care about the
+/// `HANDWRITING.md` §8 ships two styles over one pipeline. These tests care about the
 /// two ways that goes wrong: drawing nothing, and drawing half a block in each style.
 final class HandwritingInkRendererTests: XCTestCase {
 
@@ -16,24 +16,44 @@ final class HandwritingInkRendererTests: XCTestCase {
         XCTAssertFalse(strokes.isEmpty)
     }
 
-    func testNeatDiffersFromNaturalButStaysInTheSameFrame() throws {
+    func testGlyphSizeTracksTheSelectedWritingsXHeightInsteadOfCalibrationSize() throws {
+        let renderer = HandwritingInkRenderer(bank: try Self.bank(letters: "s"))
+        let smallStyle = Self.style(xHeight: 18)
+        let largeStyle = Self.style(xHeight: 36)
+        let smallPlacement = Self.placement(
+            content: .inline(SpecRun(kind: .text, value: "s")),
+            frame: CGRect(x: 40, y: 60, width: 100, height: smallStyle.xHeight * 1.4)
+        )
+        let largePlacement = Self.placement(
+            content: .inline(SpecRun(kind: .text, value: "s")),
+            frame: CGRect(x: 40, y: 60, width: 200, height: largeStyle.xHeight * 1.4)
+        )
+
+        let small = try renderer.strokes(for: smallPlacement, style: smallStyle, seed: 1)
+        let large = try renderer.strokes(for: largePlacement, style: largeStyle, seed: 1)
+        let scale = InkLineGrouping.bounds(of: large).height / InkLineGrouping.bounds(of: small).height
+
+        XCTAssertEqual(scale, 2, accuracy: 0.05)
+    }
+
+    /// The renderer must pass `Variation` through to the synthesizer and keep the result in
+    /// the frame it was given, whatever the variance. M3-08D leaves the app asking only for
+    /// `.natural`, but this is the seam where a variation could be dropped on the floor —
+    /// and it once was, which is how M3-08 shipped with every answer typeset.
+    func testAReducedVariationDiffersFromNaturalButStaysInTheSameFrame() throws {
         let bank = try Self.bank()
         let placement = Self.placement(text: "sum")
 
         let natural = try HandwritingInkRenderer(bank: bank, variation: .natural)
             .strokes(for: placement, style: Self.style, seed: 7)
-        let neat = try HandwritingInkRenderer(bank: bank, variation: .neat)
+        let steadier = try HandwritingInkRenderer(bank: bank, variation: Synthesizer.Variation(scale: 0.4))
             .strokes(for: placement, style: Self.style, seed: 7)
 
         // Compared by geometry, not by `==`: every `InkStroke` gets a fresh id, so the
-        // obvious `XCTAssertNotEqual(natural, neat)` passes even when the two renders are
-        // pixel-identical. It did, and hid how small the difference actually is.
-        //
-        // §8 asks for "variance reduced ~60%". What `Variation` currently scales is
-        // vertical jitter and baseline drift only — not sample choice, spacing or slant —
-        // so the difference here is under a point. Filed as M3-08C.
-        XCTAssertNotEqual(Self.geometry(natural), Self.geometry(neat))
-        XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: neat)))
+        // obvious `XCTAssertNotEqual(natural, steadier)` passes even when the two renders are
+        // pixel-identical. It did, and hid how small the difference actually was (M3-08C).
+        XCTAssertNotEqual(Self.geometry(natural), Self.geometry(steadier))
+        XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: steadier)))
     }
 
     func testTheSameSeedDrawsTheSameInkTwice() throws {
@@ -114,6 +134,18 @@ final class HandwritingInkRendererTests: XCTestCase {
         meanForce: 0.55,
         strokeWidth: 3
     )
+
+    private static func style(xHeight: CGFloat) -> StyleStats {
+        StyleStats(
+            xHeight: xHeight,
+            slant: style.slant,
+            lineSpacing: xHeight * 1.7,
+            baselineDrift: style.baselineDrift,
+            meanVelocity: style.meanVelocity,
+            meanForce: style.meanForce,
+            strokeWidth: style.strokeWidth
+        )
+    }
 
     private static func placement(text: String) -> BlockPlacement {
         placement(

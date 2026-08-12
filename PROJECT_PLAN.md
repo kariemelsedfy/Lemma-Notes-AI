@@ -200,7 +200,7 @@ Foundation Models framework (on-device LLM, no API key, no per-token cost) requi
 
 | ID | Risk | Likelihood | Impact | Mitigation | Kill criterion |
 |---|---|---|---|---|---|
-| R-01 | Handwriting synthesis looks uncanny/bad; users reject it | High | Fatal | Use user's own glyphs; heavy layout tuning; offer "neat print" fallback style | If at end of M3 blind panel "plausibly mine" <40% after two iterations, **pivot to typeset-inline output** (clean vector text sized to the page) and drop handwriting matching from the pitch |
+| R-01 | Handwriting synthesis looks uncanny/bad; users reject it | High | Fatal | Use user's own glyphs; heavy layout tuning; typeset fallback style always available. **The "neat print" style is no longer part of this mitigation** — withdrawn 2026-08-12 (M3-08D) as indistinguishable from the user's own hand on a one-pass bank; the remaining lever is M3-19, growing the bank | If at end of M3 blind panel "plausibly mine" <40% after two iterations, **pivot to typeset-inline output** (clean vector text sized to the page) and drop handwriting matching from the pitch |
 | R-02 | Apple ships this in Notes | Medium | Severe | Compete on breadth (any subject), continuation, and being a real notebook app | Not a kill — a repositioning trigger |
 | R-03 | Recognition accuracy on messy handwriting is too low | Medium | Severe | Send both raster and stroke-order data; use the neighborhood context; make failure graceful ("I couldn't read this — retry?") | If golden-set intent+read accuracy <85% at M4 with frontier models, the product is not ready |
 | R-04 | Notebook substrate takes far longer than planned | High | Severe | PencilKit instead of a custom engine; cut PDF annotation to post-1.0 if M1 slips >2 weeks | — |

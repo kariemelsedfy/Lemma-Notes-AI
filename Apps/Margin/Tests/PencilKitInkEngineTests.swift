@@ -122,6 +122,26 @@ final class PencilKitInkEngineTests: XCTestCase {
 
     // MARK: - Editing contract
 
+    func testLoadedPencilStrokesGetUniqueIDsSoALassoCannotSelectTheWholePage() throws {
+        let engine = PencilKitInkEngine()
+        engine.canvasView.drawing = PKDrawing(strokes: [
+            try XCTUnwrap(PKStroke(Self.stroke(size: nil, y: 20), color: .black)),
+            try XCTUnwrap(PKStroke(Self.stroke(size: nil, y: 80), color: .black)),
+        ])
+
+        let loaded = engine.strokes
+        let loop = [
+            CGPoint(x: -10, y: 10), CGPoint(x: 50, y: 10),
+            CGPoint(x: 50, y: 30), CGPoint(x: -10, y: 30),
+        ]
+        let selection = SelectionGeometry.select(strokes: loaded, in: loop)
+        let selected = loaded.filter { selection.strokeIDs.contains($0.id) }
+
+        XCTAssertEqual(Set(loaded.map(\.id)).count, 2)
+        XCTAssertEqual(selected.count, 1)
+        XCTAssertEqual(selected.first?.points.first?.location.y, 20)
+    }
+
     func testErasingRemovesOnlyTheIdentifiedStrokes() throws {
         let engine = PencilKitInkEngine()
         let first = Self.stroke(size: nil)
@@ -198,14 +218,14 @@ final class PencilKitInkEngineTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    private static func stroke(size: CGSize?) -> InkStroke {
-        InkStroke(points: [point(x: 0, size: size), point(x: 40, size: size)])
+    private static func stroke(size: CGSize?, y vertical: CGFloat = 20) -> InkStroke {
+        InkStroke(points: [point(x: 0, y: vertical, size: size), point(x: 40, y: vertical, size: size)])
     }
 
-    private static func point(x horizontal: CGFloat, size: CGSize?) -> InkPoint {
+    private static func point(x horizontal: CGFloat, y vertical: CGFloat = 20, size: CGSize?) -> InkPoint {
         if let size {
             return InkPoint(
-                location: CGPoint(x: horizontal, y: 20),
+                location: CGPoint(x: horizontal, y: vertical),
                 timeOffset: 0,
                 force: 0.6,
                 altitude: 1,
@@ -213,6 +233,12 @@ final class PencilKitInkEngineTests: XCTestCase {
                 size: size
             )
         }
-        return InkPoint(location: CGPoint(x: horizontal, y: 20), timeOffset: 0, force: 0.6, altitude: 1, azimuth: 0)
+        return InkPoint(
+            location: CGPoint(x: horizontal, y: vertical),
+            timeOffset: 0,
+            force: 0.6,
+            altitude: 1,
+            azimuth: 0
+        )
     }
 }

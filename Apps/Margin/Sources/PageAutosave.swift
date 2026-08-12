@@ -64,6 +64,21 @@ actor PageAutosave {
         }
     }
 
+    /// Flushes for an operation that cannot safely continue with stale disk state.
+    ///
+    /// Ordinary background autosave retains failed work for a later retry. Export must
+    /// instead surface that failure, because rendering the old package would silently
+    /// omit the user's newest ink.
+    func flushForExport() async throws {
+        await flush()
+        guard !pending.isEmpty else { return }
+        throw lastError ?? PageAutosaveError.flushFailed
+    }
+
     /// True when edits are waiting to be written.
     var hasPendingWork: Bool { !pending.isEmpty }
+}
+
+enum PageAutosaveError: Error {
+    case flushFailed
 }

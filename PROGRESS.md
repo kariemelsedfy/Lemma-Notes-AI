@@ -25,13 +25,120 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty — nothing is claimed. Pick the highest-priority unblocked task in **Ready**.)_
+_(empty)_
 
 ## Review
 
-_(empty)_
+### M2-22 — The selected-area image never reaches anything that can read it
+status: Review · implemented: Codex · 2026-08-10 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
+Note: `SelectionContextBuilder` computes crop and neighborhood raster requests, and
+the shipping `AskPipeline` now renders both from an exact `PKDrawing` snapshot. Vision reads
+the flattened crop locally with language correction disabled so literal math is preserved;
+providers receive both PNGs plus the best-effort transcript/confidence only for the request
+lifetime. A real Vision fixture reads `2+2=4` correctly in 0.34s on the development Mac.
+The app still uses `CannedSpecProvider`, so this changes what future providers can reason
+over, not the hardcoded answer it visibly returns today. PR publication awaits GitHub login.
+Acceptance:
+- [x] The lasso crop is rasterized from the actual page drawing and flattened on white
+- [x] The bounded neighborhood is rasterized at its requested scale
+- [x] On-device recognition supplies a best-effort selected-area transcript and confidence
+- [x] The provider request carries the pixels/transcript without logging or retaining them
+- [x] Tests exercise the shipping Ask path, not a reconstructed rasterization path
 
 ## Done
+
+### M3-08D — Withdraw the "neater version of mine" style
+status: Done · completed: Claude · device-confirmed: human · 2026-08-12 · refs: HANDWRITING.md §8, PROGRESS.md M3-08C, M3-19 · estimate: S
+Note: **a product decision taken on the device, not a defect.** Asked to compare the two
+handwriting styles against a real one-pass bank, the user reported "doesn't look different at
+all from the handwriting option, and I don't even want this feature" — two styles, my
+handwriting and typeset. Deferred to a later version rather than iced: the reason it looks
+identical is known and fixable.
+**The measurement and the verdict do not disagree.** M3-08C's 15.4pt separation was measured
+on a five-sample bank; the same measurement on a one-sample bank gives **1.19pt**, and §3.1's
+calibration collects about one sample per character. The style's whole effect is choosing among
+samples the user does not have yet. So this is not "neat does nothing", it is "neat cannot do
+anything until M3-19 grows the bank" — which is the order to reconsider it in.
+**Nothing was removed from the synthesizer.** `Variation` still takes an arbitrary scale and
+still reaches sample selection, spacing and per-glyph slant. That is not neat-specific: it is
+what makes a multi-sample bank render differently from a single-sample one **at `.natural`**,
+the only style the app now asks for, and deleting it as "unused" would silently undo M3-08C.
+The doc comments on `Variation` and `select` say so where someone would go to delete them.
+The tests that justified the style all survive, driven by an explicit `Variation(scale: 0.4)`
+rather than a named style, because the knob still has to mean what it says for M3-19.
+Restoring the style is one case in `HandwritingStyleChoice` plus one constant.
+Acceptance:
+- [x] The style picker offers exactly two options — asserted on `allCases`, which is what the
+      picker iterates, so the test fails if a case is added without a decision
+- [x] A stored `neat` preference migrates to the user's own hand, never silently to typeset —
+      `init(rawValue:)` returns nil for a withdrawn case and the fallback behind it means
+      "never calibrated"; mutation-verified (deleting the migration line fails that test alone)
+- [x] An unrecognized stored value still falls back to typeset, so the migration cannot
+      over-apply
+- [x] `Variation`'s reach into sample selection, spacing and slant survives
+- [x] `HANDWRITING.md` §8 says two styles and records why the third went, and what would
+      have to be true to bring it back
+
+### M3-20 — Repeated handwritten answers collapse or distort
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §4, AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: after three correct handwritten answers, the physical-device recording showed later
+`4`s becoming tiny and detached, then severely enlarged/distorted. The saved glyph was
+healthy. `synchronizeStrokeIDs()` used `repeatElement(UUID(), count:)`, which evaluates the
+UUID once and gave every loaded page stroke the same ID. A lasso around one stroke therefore
+fed the whole accumulated page into sizing and placement. Loaded strokes now receive distinct
+IDs; the iOS regression selects exactly one of two loaded strokes. The user confirmed repeated
+Ask now works perfectly on the fresh accumulated-page device build.
+Acceptance:
+- [x] The repeated-Ask failure is reproduced with measured geometry before the fix
+- [x] Consecutive answers keep the captured glyph's aspect ratio and follow the selected writing's visible height
+- [x] Tight and loose lassos around the same source strokes produce the same answer size
+- [x] The already-confirmed typeset sizing and calibration repair pagination remain unchanged
+- [x] A fresh physical-iPad build is installed and human-confirmed
+
+### M2-17 — The answer's size and placement do not track what was asked about
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: AI_PIPELINE.md §4, DEVICE_SESSION.md §0 · estimate: M
+Note: real `2+2=` selections at roughly 30pt, 60pt, and 150pt originally rendered the same
+7.2pt `4`. Pencil wobble gave horizontal `+`/`=` bars tiny nonzero heights, so the stroke-level
+estimator returned 0.825/1.65/4.125pt and every selection hit the 8pt floor. The anchor now
+uses its visible line height as a lower bound. The typeset path was device-confirmed first;
+M3-20's loaded-stroke identity repair removed the remaining accumulated-page contamination.
+The user confirmed the fresh physical build now sizes repeated handwritten answers correctly.
+Acceptance:
+- [x] A real-device comparison covers multiple handwriting sizes on an accumulated page
+- [x] The cause is named with failing-test and simulator evidence
+- [x] Answers are sized relative to the writing they answer at every tested handwriting size
+
+### M3-18 — Repair sheets make missed characters too small to write
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · refs: HANDWRITING.md §3.2, PROGRESS.md M3-15 · estimate: M
+Note: the repair flow now deduplicates the requested characters, chunks them in order at 26,
+assigns each chunk a unique sheet ID, and moves to the first appended sheet. A 62-character
+fixture produces 26/26/10 without loss or duplication; a 30-character fixture proves both
+repair pages merge into one bank. A full repair page measures the same ≥64pt boxes as the
+first 26-letter page in the fixture. The UI now labels progress as “Sheet n of total,” with
+the appended repair pages included. The user confirmed on the physical iPad that the
+26-character repair pages are practical to write in and look good.
+Acceptance:
+- [x] A repair sheet contains at most 26 characters
+- [x] Larger repair sets paginate without dropping or duplicating characters
+- [x] Repair boxes remain large enough for the same Pencil input used on the first pass — measured equal in tests and device-confirmed
+- [x] Progress makes it clear when more than one repair sheet remains
+- [x] Captures from every repair sheet merge into the existing bank
+
+### M3-17 — Calibrating fully still renders answers in typeset
+status: Done · completed: Codex · 2026-08-10 · refs: PROGRESS.md M3-15, M3-16 · estimate: M
+Note: reproduced with a bank that contained the canned answer `4` but lacked one unrelated
+lowercase letter: `bank.canRender("4")` was true while style resolution returned `typeset`.
+`HandwritingStylePreference` required the entire lowercase alphabet before it would create a
+`HandwritingInkRenderer`, contradicting the renderer's deliberate per-block fallback. A
+nearly complete calibration therefore looked wholly unused. Any non-empty bank now reaches
+the handwriting renderer; only an answer containing a genuinely missing glyph falls back,
+and the Ask bar explains that fallback. Save failures also leave calibration open with an
+error instead of dismissing it. Device-confirmed: the answer used the `4` written with the
+Apple Pencil, not the typeset glyph.
+Acceptance:
+- [x] The cause was narrowed with a failing test: known `4`, unrelated missing glyph, wrong renderer
+- [x] A calibrated user's answers are drawn in their hand
+- [x] The app says why a specific answer fell back instead of silently degrading
 
 ### M0-03R — CI app-test reliability
 status: Done · completed: Codex · 2026-07-29 · refs: .github/workflows/ci.yml · estimate: S
@@ -226,6 +333,19 @@ Acceptance:
 - [x] The selected notebook exposes accessible PDF and PNG export actions
 - [x] Successful exports open the system share sheet with a temporary output file
 - [x] Export failures display a localized, recoverable error
+
+### M1-07C — Export uses the notebook snapshot from before the current edits
+status: Done · completed: Codex · 2026-08-11 · refs: PROGRESS.md M1-07A, M1-05D · estimate: S
+Note: reported indirectly by the M2-17 evidence file. The shared PNG contained ruled paper
+but no ink, while the same on-device notebook package held 63 current strokes. The export
+toolbar closes over the `StoredDocument` loaded before `PageDrawingStore` edits and does not
+flush/reload it before rendering. Export now flushes pending work, fails closed if that write
+does not succeed, reloads the package, and only then renders either format.
+Acceptance:
+- [x] Export flushes pending autosave work and reloads the current persisted document
+- [x] PNG and PDF opened from an actively edited notebook contain its latest ink
+- [x] A regression test exports after an edit made later than the original document snapshot
+
 ### M1-08 — Occupancy grid
 status: Done · completed: Codex · 2026-07-29 · refs: ARCHITECTURE.md §4.1 · estimate: M
 Acceptance:
@@ -305,7 +425,7 @@ Acceptance:
 - [x] The summary lists rejected *and* missing together, with one button to write them all
 - [x] The summary says plainly that answers using missing characters are drawn in typeset
 - [x] Repairing merges into the existing capture rather than disturbing it
-- [ ] **Confirm on device**: calibrate, repair the gaps, ask — the answer is in your hand
+- [x] **Confirmed on device 2026-08-10**: repaired `4` reached the bank and Ask used it
 
 ### M3-16 — The calibration summary overflows and can hide the Save button
 status: Done · completed: Claude · 2026-08-10 · refs: HANDWRITING.md §3.2 · estimate: S
@@ -323,35 +443,7 @@ Acceptance:
 - [x] The character list wraps instead of running off the side
 - [x] The summary scrolls, so any length of list is reachable
 - [x] Save sits outside the scroll view and cannot be pushed off-screen
-- [ ] **Confirm on device**: finish a calibration that misses characters, and reach Save
-
-### M3-17 — Calibrating fully still renders answers in typeset
-status: Ready · **blocker** · refs: PROGRESS.md M3-15, M3-16 · estimate: M
-Note: found on device — "I calibrated fully and when I finished it still wrote the 4 in
-typeset." Reported *after* M3-15 fixed the capture-wiping bug, so the first explanation is
-already spent. **Do not assume M3-16 fixes this**; confirm it.
-Check in this order, because each is cheaper than the next and the first two are free:
-1. **Was the bank saved at all?** `HandwritingStyleStore` writes to
-   `applicationSupportDirectory/handwriting-style.json`. If M3-16 stopped the user reaching
-   Save, there is no file and everything downstream is correct behaviour. Check the file
-   exists and its `characterCount`.
-2. **Does the bank contain digits?** Every answer the canned provider returns is `4`.
-   `HandwritingInkRenderer` falls back **per block**, so a bank without `4` draws every
-   answer in typeset no matter how good the letters are. `bank.canRender("4")` is the whole
-   question. This has already fooled us once (M3-15).
-3. **Is the preference stuck?** `HandwritingStylePreference.resolved(bank:)` returns
-   `isExplicit ? choice : .mine`. Once the user has *ever* tapped a style, `isExplicit` is
-   true forever, so an early tap on "typeset" pins it — and picking "my handwriting" later
-   only helps if that tap actually wrote the preference.
-4. **Is the renderer reaching the pipeline?** `pipeline.renderer = inkRenderer` is assigned
-   per Ask in `ask()`, and `inkRenderer` is recomputed by the parent. Verify the renderer at
-   the moment of the Ask is a `HandwritingInkRenderer`, not a `TypesetInkRenderer`.
-A one-line log of `(bank == nil, characterCount, canRender("4"), resolved style, renderer
-type)` at the top of `ask()` answers 1–4 in a single device run. Worth adding first.
-Acceptance:
-- [ ] The above is narrowed to one cause with evidence, not inference
-- [ ] A calibrated user's answers are drawn in their hand
-- [ ] Whatever the cause, the app says why it fell back rather than silently degrading
+- [x] **Confirmed on device 2026-08-10**: missing characters and Save were reachable
 
 ### M2-16 — After calibrating, every Ask draws nothing
 status: Done · completed: Claude · 2026-08-10 · refs: ARCHITECTURE.md §4 · estimate: S
@@ -372,40 +464,81 @@ the *previous* answer displays ink of the wrong size for the new question.
 Acceptance:
 - [x] The layer is `@State`, so one instance survives the rebuild
 - [x] The pipeline is reused only while it still writes into the layer the view reads
-- [ ] **Confirm on device**: calibrate, then ask — the answer appears
+- [x] **Confirmed on device 2026-08-10**: calibrate, Ask, and the handwritten answer appears
 Not unit-tested, and deliberately so: SwiftUI view identity is not observable from XCTest,
 so there is no way to make a test rebuild the struct the way the framework does. The guard
 in `ask()` is the substitute, and the device is the test.
 
-### M2-17 — The answer's size and placement do not track what was asked about
-status: Ready · **blocker** · refs: AI_PIPELINE.md §4 · estimate: M
-Note: reported three times on device, most recently as "there are still errors with the size
-and the placement of the 4 relative to what I am asking." **Survived M2-16**, so the
-stale-layer explanation is wrong or incomplete.
-**Two theories have been proposed and both were wrong. Do not propose a third from reading
-the code — instrument it.** Every simulator path tried so far produces a correctly sized
-answer, which is itself the most useful fact here: whatever causes it is not reproducible
-from the models alone, so it depends on real ink, a real lasso, or real page state.
-Ruled out **by measurement**, so do not re-spend time here:
-- *Page position.* Frames are identical (16×35) with the selection at three different places
-  on the page, including hard against the right edge.
-- *Occupancy fallback.* The free-space search preserves the size it is handed; it relocates,
-  it does not shrink.
-- *Generated ink skewing the estimate.* `StyleStatsEstimator.xHeight(of:)` discards
-  zero-height strokes, and typeset ink is entirely horizontal hatch lines, so it contributes
-  nothing rather than dragging the median down.
-- *A zero x-height collapsing the frame.* Fixed and floored in M2-15; a selection of pure
-  generated ink now yields 14×31 rather than 1×1.
-**The next step is a device log, not another hypothesis.** At the top of `AskPipeline.place`,
-record per Ask: `context.anchor.xHeight`, `context.style.xHeight`,
-`PlacementEngine.usableXHeight(for:)`, the block's measured size, the chosen frame, and
-`usedFallback`. Ask several times at different handwriting sizes and find which of those
-stops tracking the input. Note the user's observation that it is *sometimes* right — so
-capture the good cases too; the difference between them is the answer.
+### M3-19 — Learn extra glyph variants from the user's ordinary writing
+status: Ready · future · depends: M2-22, M3-08C · refs: HANDWRITING.md §4.1 · estimate: L
+Note: requested direction. When a high-confidence selection contains a user-written `2`
+or `3`, keep the aligned on-device stroke sample so later synthesis can vary between real
+versions without extending initial calibration. The bank already stores multiple samples;
+the missing work is trustworthy character-to-stroke alignment, sample selection, and safe
+bounded accumulation. This is biometric-adjacent data and never leaves the device.
+**M3-08D raised this task's priority and gave it a second job.** The neat style was withdrawn
+because a one-pass bank holds roughly one sample per character, and at one sample the whole
+variance mechanism is worth about a point — invisible, as the device confirmed. Everything
+downstream of "how many samples does this bank hold" is currently starved: sample selection
+(M3-08C) has nothing to select between, and §8's third style cannot come back until it does.
+Reconsider the neat style once this ships, and measure again before re-adding it.
 Acceptance:
-- [ ] A log from a real device showing where the chain stops tracking the selection
-- [ ] The cause named with evidence
-- [ ] Answers are sized and placed relative to the writing they answer, at any handwriting size
+- [ ] Only high-confidence user-authored ink is eligible; generated/provenance strokes are excluded
+- [ ] Character-to-stroke alignment fails closed rather than teaching the wrong glyph
+- [ ] New samples retain pressure, tilt, azimuth, timing, and pen lifts
+- [ ] Per-character samples are deduplicated and capped with a documented replacement policy
+- [ ] Synthesis actually rotates among variants deterministically for a fixed seed
+- [ ] The glyph bank still has no upload path
+
+### M2-23 — Refine answer placement from the recognized selection
+status: Icebox · superseded-by: M2-24 · decided: human · 2026-08-11 · refs: AI_PIPELINE.md §4 · estimate: M
+Note: the reported bottom-right answer position is the current geometry-only `.atAnchor`
+policy. The human decided that placement should not be inferred from the question: after
+selecting the question, the user explicitly marks the allowed answer area. M2-24 replaces
+this task. Recognition boxes may still improve reading, but they no longer own placement.
+Acceptance:
+- [ ] Superseded — see M2-24
+
+### M2-24 — Ask for an allowed answer area after the question selection
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · depends: M2-24A, M2-24B · refs: AI_PIPELINE.md §4, ARCHITECTURE.md §4, ADR-016 · estimate: L
+Note: the answer location is a user decision, not an OCR inference. Keep the question lasso
+for reading and sizing, then immediately prompt for a second lasso that marks the hard region
+inside which the answer may be rendered. Split the interaction/state-machine work if the
+implementation would exceed the 400-line PR limit. Split into M2-24A/B before implementation;
+the parent closes after both subtasks and the physical-device confirmation are complete.
+Acceptance:
+- [x] Ask distinctly prompts for question ink, then for the allowed answer area
+- [x] The second lasso is stored as page-space geometry and shown with a distinct overlay
+- [x] Placement never returns a rectangle outside that area or overlapping occupied ink
+- [x] An answer that cannot fit asks for a larger/different area instead of shrinking or escaping
+- [x] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
+- [x] Tests cannot accidentally substitute the question bounds for the answer-area bounds
+- [x] A fresh physical-iPad run confirms the two selections feel distinct and predictable
+
+### M2-24A — Constrain placement to the user-marked answer area
+status: Done · completed: Codex · 2026-08-11 · depends: M3-20 · refs: AI_PIPELINE.md §4, ADR-016 · estimate: M
+Note: pure placement and pipeline contract only. The app interaction that captures the area
+is M2-24B, keeping both changes below the 400-line PR limit. The placement engine now
+requires a page-space allowed rectangle, clips it to the page, searches only within it,
+and reports blocks that cannot fit without changing the question-derived writing size.
+Acceptance:
+- [x] Every non-mark block is wholly inside the supplied page-space answer rectangle
+- [x] Occupied and multi-block searches remain inside that rectangle
+- [x] A block that cannot fit is unplaced without shrinking or escaping
+- [x] Tests use visibly different question and answer bounds
+
+### M2-24B — Capture and present the second Ask lasso
+status: Done · completed: Codex · device-confirmed: human · 2026-08-11 · depends: M2-24A · refs: ARCHITECTURE.md §4, ADR-016 · estimate: M
+Note: Ask now advances through explicit question and answer-area capture stages. The question
+keeps its accent lasso; the answer area is shown as the exact green rectangular boundary the
+placement engine enforces. A no-room result returns to answer-area capture without discarding
+the question.
+Acceptance:
+- [x] Ask visibly prompts question selection, then answer-area selection
+- [x] The two page-space regions have distinct overlays and cannot be conflated
+- [x] Cancel, retry, touch, Pencil, keyboard, and accessibility paths have defined transitions
+- [x] The captured answer rectangle reaches the placement pipeline
+- [x] A fresh physical-iPad run confirms the interaction
 
 ### M3-14 — Missed characters send you through the whole calibration flow again
 status: Done · completed: Claude · 2026-08-10 · see M3-15
@@ -429,7 +562,7 @@ Acceptance:
 - [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
 
 ### M2-18 — Erasing generated ink behaves differently from erasing your own
-status: Ready · refs: PROGRESS.md M2-13B · estimate: S
+status: Done · implemented: Codex · device-confirmed: human · 2026-08-12 · refs: PROGRESS.md M2-13B · estimate: S
 Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
 by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
 removing pixels in a radius."
@@ -441,10 +574,42 @@ Options, in rough order of cost: group a block's strokes so erasing any one eras
 (provenance already records which strokes came from one Ask, so the data exists); or treat
 generated ink as a single object until edited. Worth deciding alongside M3-08B, which has the
 same "edits to committed generated ink" question.
+Implemented the provenance-group option: losing any unambiguous stroke fingerprint from one
+generated element removes the element's other strokes, while ambiguous fingerprints fail
+closed to preserve ink. The live page store now owns current metadata so a later edit cannot
+overwrite accepted provenance with the notebook-opening snapshot. PencilKit undo registration
+is suppressed only for the eraser gesture and replaced by one snapshot restore after its final
+delayed drawing callback.
+Claude 2026-08-11: the eraser tests were merged into `SuggestionProvenanceTests` to share its
+fixtures, which dropped the two-answers-in-one-gesture case — the only cover for `resolve`
+handling more than one removed element. Restored and mutation-tested (`.prefix(1)` on the
+`referencesToRemove` chain fails that case alone, 12 of 13 still green). Fixtures moved to an
+extension to stay under `type_body_length`; the class is ~2 lines under the limit, so the next
+test added here should split the eraser cases back into their own file.
+**The undo box cannot be ticked without hardware:** it depends on the `UIUndoManager` a
+`PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4). It needs the same device
+run as the grouped-erase check.
+Claude 2026-08-12, from the device: **confirmed, all four checks.** The user ran the §7
+sequence on a fresh build and reported it "works perfectly as expected" — a generated answer
+erases as one object, own handwriting still erases by stroke, one undo restores the whole
+answer, and a second undo steps back past it rather than into a half-erased state. Note that
+the undo half only became true after M2-26 took the undo stack off PencilKit entirely; the
+version of this task that first reached the device did not survive contact.
+Claude 2026-08-11, from the device: **this branch shipped a jetsam kill.** Creating a notebook
+took the app to 717MB (`per-process-limit`, confirmed in the device JetsamEvent report) and the
+system killed it — reported as "everytime I try to add a new note it closes the app".
+`reconcile` stored a drawing rebuilt with `PKDrawing(strokes:)` on every callback, including the
+first on a freshly opened page. A rebuilt drawing is equal stroke-for-stroke but does **not**
+encode to the same bytes (measured: 42 different bytes when empty, 318 for one stroke), and
+`updateUIView` reassigns the canvas by comparing `dataRepresentation()` — so it reassigned, the
+delegate fired, and each pass rendered a full-page preview. Fixed by storing the canvas's own
+drawing whenever nothing is erased. Three regression tests fail against the previous coordinator.
+None of the 151 existing tests could see it: the eraser logic was correct in isolation and the
+loop only closes once a real `PKCanvasView` is in the circuit.
 Acceptance:
-- [ ] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
-- [ ] Erasing handwriting is unchanged
-- [ ] Undo restores the whole answer in one step
+- [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
+- [x] Erasing handwriting is unchanged
+- [x] Undo restores the whole answer in one step — confirmed on device 2026-08-12
 
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
@@ -626,7 +791,7 @@ status: Dropped · note: superseded — device use answered Q8 without needing t
 status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
 Note: built against the current API only — `pencilInteractionDidTap:` has been deprecated
 since iOS 17.5. The gestures themselves **cannot fire in a simulator**; confirming they do
-on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-18.
+on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-25.
 Acceptance:
 - [x] `UIPencilInteraction` squeeze arms the Ask lasso, honouring an explicit `.ignore`
 - [x] Double-tap defers to the system preference unless the user opted in
@@ -639,8 +804,53 @@ Acceptance:
 - [ ] Double-tap does what the system setting says, and nothing app-specific
 - [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
 
-### M2-18 — Onboarding toggle for the double-tap override
+### M2-27 — The canvas blinks when you undo
+status: Ready · found: human · 2026-08-11 · refs: PROGRESS.md M2-26 · estimate: S
+Note: reported on device — "when I click undo everything kinda blinks for a second", explicitly
+**not urgent**. It is the cost of M2-26's fix: an undo rebuilds the `PKCanvasView` (keyed on
+`PageDrawingStore.externalGeneration`) because PencilKit otherwise restores its own internal
+drawing on the next Pencil input. The diagnostics log also shows `applyExternally` running
+twice per undo — once from `makeUIView` on the fresh canvas, once from `updateUIView` — so
+there is a redundant assignment to remove before anything more elaborate.
+Do not "fix" this by going back to assigning `drawing` on the existing canvas; that is the
+resurrection bug, measured. Look instead at making the rebuild invisible: retaining the ink
+preview underneath during the swap, or finding a PencilKit call that genuinely resets its
+internal model.
+Acceptance:
+- [ ] Undo does not visibly flash the page
+- [ ] Undone strokes still do not return when writing afterwards — the M2-26 device evidence is the bar
+- [ ] The redundant second `applyExternally` per undo is gone
+
+### M2-26 — A persistent undo control in the canvas
+status: Review · implemented: Claude · device-confirmed: human · 2026-08-11 · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
+Note: found while writing M2-18's device instructions — the app had **no undo affordance at
+all.** PencilKit registered stroke undo and M2-18 registered a grouped-erase undo, but the only
+way to reach either was the iPadOS three-finger gesture: undiscoverable, and unusable for anyone
+with limited dexterity. M2-18's acceptance ("undo restores the whole answer in one step") had
+nothing a user could press. Same shape as M2-19 (Ask button that had never worked) and M2-16
+(suggestion layer written to but never displayed): one half of a feature built and verified while
+the other half was never wired up.
+`CanvasUndoController` adopts whichever canvas the user last touched, since the live window keeps
+a `PKCanvasView` for the visible page and both neighbours. Redo is deliberately not included —
+it was not requested, and it is a separate decision about whether the canvas wants a full
+undo/redo pair.
+Acceptance:
+- [x] An undo control is visible in the canvas chrome and takes Command–Z
+- [x] It disables when there is nothing to undo
+- [x] Undo targets the page being written on, not an off-screen neighbour
+- [x] Copy is localized (`canvas.undo`)
+- [x] **Confirmed on device 2026-08-11** — "it's working perfectly now", after five rounds. The
+      final defect was PencilKit restoring its own internal drawing on the next Pencil input;
+      the fix rebuilds the canvas. Post-fix instrumentation: 28 undos, 29 gestures, 0
+      resurrections, against 3 in half the time before it
+- [ ] Undo of a grouped generated-answer erase in one step — still untested (M2-18)
+
+### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Note: **renumbered from M2-18 by Claude 2026-08-11.** Two different tasks were both filed as
+M2-18 — this one and the generated-ink eraser — and `PROGRESS.md` claims are the only lock we
+have, so the ID had to be unambiguous. The eraser kept M2-18 because the claim commit and git
+history already reference it.
 Note: `PencilActionPolicy(overridesDoubleTap:)` exists and is tested but is always
 constructed with the default, so the override is currently unreachable. Onboarding does
 not exist yet (M7).
@@ -915,12 +1125,77 @@ Acceptance:
       regression floor, since it is throwaway code M3-00 deletes
 
 ### M3-01B — Extend the corpus and enforce 95% on real renderers
-status: Ready · refs: HANDWRITING.md §7 · estimate: S
+status: Review · implemented: Claude · 2026-08-11 · refs: HANDWRITING.md §7 · estimate: S
 Note: the corpus is 8 strings, enough to prove the harness works. §7's 95% bar needs a
 corpus worth asserting against, and it must stay prose-only until M5 — see M3-11.
+Claude 2026-08-11: the two renderers had drifted to *separate* corpora of eight and five
+strings, so they were not held to the same bar at all and a single unlucky recognition moved
+the rate 12 or 20 points. Both now measure against one 44-string `LegibilityCorpus`, with
+guards asserting its breadth, that every string is renderable by the fixture alphabet, that
+none is too short to score, and that no math notation creeps in before M5 (M3-11).
+**Measured: typeset 100% exact, synthesizer 95.45%** — and the synthesizer's margin is one
+string wide, with both misses the same `g`/`9` confusion. Filed as M3-01C.
 Acceptance:
-- [ ] A corpus broad enough that 95% means something (≥40 strings)
-- [ ] M3-00 and M3-05 each assert ≥95% against it
+- [x] A corpus broad enough that 95% means something (44 strings)
+- [x] M3-00 and M3-05 each assert ≥95% against it — the *same* it, which was the real gap
+
+### M3-01C — The synthesized `g` reads as a `9`
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B, HANDWRITING.md §3.2 · estimate: S
+Note: **the filed diagnosis was wrong, and so was mine until I measured.** The task guessed at
+the typeset letterform — "the descender loop closes too far" — and every hypothesis in that
+family is refuted: typeset reads all six `g` words exactly at 100%, thinning the nib makes the
+synthesizer *worse* (7/9 → 2/9 at half weight), the bank's capture size changes nothing
+(5/7 at every reference frame from 120pt to 44pt), and rendering larger makes it worse, not
+better. Weight, density and size are all innocent.
+**The cause is `GlyphNormalizer`, which seated every glyph's lowest ink on the baseline.** For
+a letter that stands on the line that is right; for one that hangs below it, it lifts the body
+into the band above. Measured against the fixture bank: `g` normalized to y −1.44…0 where a
+real `9` is −1.36…0 — **the same geometry**, full height standing on the line, which is what a
+digit is. Vision agreed. It was never only `g`: under the old seating `adjacent` reads back
+`adlacent` and `project` reads `Prolect`, so `j` was equally broken, and `p q y` with them.
+Nothing caught it because `Synthesizer.layout` handles descenders correctly — `fall` is
+computed from `bounds.maxY` — so the branch that puts ink below the baseline was simply never
+reached. Every glyph in every bank had `maxY == 0`. **A dead branch in the consumer is evidence
+about the producer**; that is the transferable part of this one.
+The baseline is now inferred per character class from the writer's own measured x-height, and
+`GuideBoxSegmenter` measures the median tail depth across a sheet for `j β φ`, whose own ink
+cannot place them. §3.1's guide boxes are squares and carry no baseline, which is why this has
+to be inferred at all — `HANDWRITING.md` §3.2 now says so.
+The two strings M3-01B named were the *marginal* cases and pass on this machine today; the
+corpus gained four descender strings that fail **reliably** under the old seating (93.75%,
+below the bar) and pass with it fixed.
+Acceptance:
+- [x] The cause is identified by measuring the rendered `g`, not by guessing — four hypotheses
+      refuted by measurement before the fifth was confirmed
+- [x] `g` reads as `g`: the four new descender strings go 5/8 → 8/8, and the corpus 93.75% →
+      100%. Mutation-verified — reverting only the seating fails the descender tests and the
+      §7 bar, and nothing else
+- [x] Typeset legibility stays at 100% and M2-13B's weight work is untouched — no constant in
+      `TypesetStyle` changed
+- [x] `p q y j` are fixed with `g`, and `j` takes its depth from the writer's own descenders
+      rather than a constant, with a documented fallback for a repair sheet that has none
+
+### M3-21 — The writer's pen weight does not scale with the size the answer renders at
+status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, CONTEXT.md invariant 11 · estimate: S
+Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
+defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
+`Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
+The bank stores that width alongside the x-height the writer used on the calibration sheet, so
+the pair describes weight *at capture size*; an answer sized to page ink (M2-17) is routinely
+rendered at a different size, and comes out proportionally bolder or thinner than the writer's
+own hand. At a 12pt answer x-height a 3.0 `size` draws 2.0pt of ink — a sixth of the letter.
+The glyph *shapes* are normalized to x-height 1; their weight is not, which is the
+inconsistency.
+Two traps. Scaling must go through `InkRenderingLimits.drawnWidth(forSize:)` and back:
+`drawn = 2 × size − 4` is affine, so scaling a raw `size` by k does not scale the ink by k
+(invariant 11). And `LegibilityHarness` draws `size` directly as a Core Graphics line width, so
+it will *not* show you the page's behaviour — do not tune this against the OCR number (M2-13).
+Acceptance:
+- [ ] Rendered weight holds a constant ratio to rendered x-height across sizes, measured
+- [ ] The conversion goes through drawn width, not raw `size`, with a test that would fail if
+      someone scales the size directly
+- [ ] Legibility does not regress on the §7 corpus, and the descender fix (M3-01C) still holds
+- [ ] A bank captured at one size renders legibly at half and double it
 
 ### M3-11 — Math legibility needs the M5 layout, not a better font
 status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S
@@ -1102,11 +1377,16 @@ Acceptance:
 - [ ] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`
 
 ### M3-08 — Neat style
-status: Done · completed: Claude · 2026-08-08 · refs: HANDWRITING.md §8 · estimate: S
+status: Done · completed: Claude · 2026-08-08 · **superseded by M3-08D 2026-08-12** · refs: HANDWRITING.md §8 · estimate: S
 Note: the glyph bank with variance reduced ~60%. §8 expects several early testers to prefer
 this *over* their real hand for answers, which would itself be a finding worth recording.
+**It was a finding, and it went the other way: the user could not see the style at all and
+asked for it to be removed (M3-08D).** The acceptance boxes below are left ticked because they
+were true — the style shipped and was selectable — but the style is no longer in the app. The
+half of this task that mattered and survives is the second box: connecting the glyph bank to
+the Ask pipeline at all.
 Acceptance:
-- [x] Selectable alongside "My handwriting" and "Typeset"
+- [x] Selectable alongside "My handwriting" and "Typeset" — true when written; withdrawn by M3-08D
 - [x] The user's hand actually reaches the Ask pipeline — `HandwritingInkRenderer` was the
       missing half of §8, and until now every answer was typeset regardless of the bank
 - [ ] Existing generated blocks re-render on switch — **not done**, filed as M3-08B
@@ -1115,6 +1395,10 @@ Acceptance:
 status: Ready · refs: HANDWRITING.md §8 · estimate: M
 Note: §8 promises this and says why it is possible — "because we keep the spec that produced
 them". We do keep it, in the page metadata `PageElement` written by `SuggestionProvenance`.
+**M3-08D makes this more valuable, not less.** With the neat style gone the only remaining
+switch is handwriting ↔ typeset, which is the one switch where the difference is unmissable —
+so stale blocks after a switch are correspondingly more obvious than they would have been
+between two settings of one hand.
 What is missing is the reverse path: find the strokes an element owns, delete them, re-render
 the spec in the new style, and put them back — an edit to committed ink, which is a different
 and more dangerous operation than presenting a suggestion. Deliberately not bundled into
@@ -1137,9 +1421,10 @@ Acceptance:
       baseline rather than an absolute
 - [x] Every feature named, so a drop can be attributed to a property
 - [ ] Reported alongside the OCR legibility number in CI — filed as M3-09B
-Known blind spot: it cannot tell `Variation.natural` from `.neat`. Two causes, both real —
+Known blind spot: it cannot tell one `Variation` scale from another. Two causes, both real —
 see M3-08C, and the fact that medians over a whole sample are the wrong resolution for
-sub-point wobble.
+sub-point wobble. M3-08D removed the user-visible style that made this concrete, but not the
+blind spot: M3-19 will vary the scale with bank size and `StyleSimilarity` will not see it.
 
 ### M3-09B — Snapshot tests, and printing the evaluation numbers
 status: Ready · refs: HANDWRITING.md §7 · estimate: M
@@ -1160,7 +1445,7 @@ Acceptance:
 - [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
 
 ### M3-08C — `Variation` barely varies anything
-status: Ready · refs: HANDWRITING.md §8, §4.1 · estimate: M
+status: Done · implemented: Claude · device-confirmed: human · 2026-08-12 · refs: HANDWRITING.md §8, §4.1, PROGRESS.md M3-08D · estimate: M
 Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
 but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
 drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
@@ -1168,10 +1453,33 @@ It does *not* reach sample selection — which glyph sample gets used, the singl
 source of natural variation — nor spacing, slant or size. So "neat" is currently close to a
 no-op, and the sample-selection gap also means a bank with several samples per letter behaves
 identically to one with a single sample.
+Claude 2026-08-11: samples are ranked most-typical-first — distance from the mean of that
+character's own samples over advance width and ink box, ties broken on capture order so a seed
+still renders identically — and the eligible pool narrows toward that glyph as the scale falls.
+Zero scale always draws the writer's steadiest letter. Spacing and per-glyph slant scale too,
+both small: §4.1 warns that excess noise reads as "shaky", which is a different tell from
+"mechanical". Measured mean maximum displacement between the styles across twenty seeds:
+**1.19pt with one sample per character, 15.4pt with five** at a 30pt x-height, against under a
+point before. A test pins the floor.
+Note for whoever runs M3-10: the gain is proportional to how many samples a bank holds, so a
+one-pass calibration benefits least. `StyleSimilarity` still cannot resolve the two styles —
+that is M3-09B's resolution problem, not this one.
+Claude 2026-08-12, from the device: **the side-by-side box came back negative, and the style
+was withdrawn (M3-08D) rather than iterated on.** Against a real one-pass bank the user could
+not tell the two styles apart at all. That is consistent with the numbers rather than a
+contradiction of them — 15.4pt was measured on a five-sample bank and the one-sample figure is
+1.19pt, so on the bank a real user actually has, this change is worth about a point. The
+caveat written into DEVICE_SESSION §8 before the test ("if they look identical that is
+evidence for M3-19, not evidence M3-08C did nothing") is the reading that held up.
+**The code stays and is not dead.** Sample selection, spacing and slant apply at `.natural`
+too, which is what stops a multi-sample bank rendering like a single-sample one — the headline
+defect this task was filed for. Only the second *style* went; the fix did not.
 Acceptance:
-- [ ] `Variation` biases sample selection toward the writer's most typical glyph
-- [ ] Horizontal spacing and per-glyph slant scale with it too
-- [ ] The difference is visible side by side, not just measurable
+- [x] `Variation` biases sample selection toward the writer's most typical glyph
+- [x] Horizontal spacing and per-glyph slant scale with it too
+- [x] The difference is visible side by side, not just measurable — **answered on device
+      2026-08-12: no, not on a one-pass bank.** Closed by withdrawing the style (M3-08D);
+      revisit after M3-19, which is the thing that would make it visible
 
 ### M3-10 — Blind similarity panel *(the gate)*
 status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M

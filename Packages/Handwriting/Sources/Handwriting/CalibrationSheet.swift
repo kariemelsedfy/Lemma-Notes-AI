@@ -53,6 +53,9 @@ public enum CalibrationSheet {
     /// "robot repeating the identical 'e'" tell.
     public static let highFrequencyLetters = "eariotns"
 
+    /// Largest repair prompt that still leaves room for practical Pencil-sized boxes.
+    public static let maximumRepairCharacters = 26
+
     public static let sheets: [Sheet] = [
         Sheet(
             id: 0,

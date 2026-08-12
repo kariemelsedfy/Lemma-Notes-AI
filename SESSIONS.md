@@ -11,6 +11,688 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-01C — the `g` was never the problem; the baseline was
+
+The filed task said to look at the typeset `g`'s descender loop. That was a guess, it was in
+the task, and it was wrong. Worth reading if you are about to act on a diagnosis someone else
+wrote down confidently.
+
+**Four hypotheses died to measurement before the fifth was even proposed.** Typeset reads all
+six `g` words exactly, so the letterform is fine. Thinning the nib made the synthesizer
+*worse* — 7/9 → 2/9 at half weight — which killed the M2-13B-shaped "it is too bold" theory
+and its opposite. Sweeping the fixture bank's capture frame from 120pt to 44pt changed nothing
+at all, 5/7 every time. Rendering *larger* made it worse. Weight, density and size were all
+innocent, and each took about five minutes to rule out because the harness already existed.
+
+**The cause: `GlyphNormalizer` seated every glyph's lowest ink on the baseline.** Right for a
+letter that stands on the line, wrong for one that hangs below it — it lifts the body into the
+band above. Measured: `g` normalized to y −1.44…0 against a real `9` at −1.36…0. That is not
+"similar to a 9", it is *a digit's geometry*: full height, standing on the line. Vision was
+reading it correctly; the bank was lying to it. `j` was equally broken (`adjacent` →
+`adlacent`, `project` → `Prolect`), and `p q y` with them.
+
+**The tell I want the next person to recognise.** `Synthesizer.layout` already handled
+descenders properly — it computes `fall` from `bounds.maxY` and lowers the origin by it. That
+code was correct, complete, and *unreachable*: no glyph in any bank had ever had `maxY > 0`.
+A dead branch in a consumer is evidence about its producer. If I had noticed that before
+running the sweeps I would have got here in ten minutes instead of ninety.
+
+**What I nearly shipped instead.** My first real hypothesis was that the synthesizer never
+scales the writer's pen width with the size it renders at — `nib(for:)` returns
+`style.strokeWidth` flat — so an answer rendered smaller than calibration comes out
+proportionally bolder. That is *also true*, it is a real defect, and it is not this one; the
+sweep says fixing it alone would have made the `g` worse. I left it alone rather than bundling
+a plausible-sounding change into a fix I could prove. Filed as M3-21.
+
+**On the corpus.** M3-01B named `integral` and `take logs of both sides` as the two misses.
+Both pass on this machine today — they are the marginal cases, which is exactly why the bar
+looked "one string wide" rather than broken. The four descender strings added here fail
+*reliably* under the old seating (93.75%, below §7's bar) and pass with it fixed. When you
+widen a corpus to pin a defect, check that your new strings fail before the fix rather than
+merely containing the letter you suspect.
+
+**Environment, again.** This checkout could not build at all — `Packages/InkCore/Package.swift`
+came back as a dataless OneDrive placeholder (CONTEXT §4.5). The `git archive HEAD | tar -x`
+escape works and cost about a minute; `.githooks/pre-commit` was dataless too, so commits
+needed `-c core.hooksPath` and `scripts/lint.sh` run by hand. Third session in a row to hit
+this. Also note `grep -r` over the real checkout *hangs* rather than failing, which burned two
+minutes — search the hydrated tree, not this one.
+
+## 2026-08-12 · Claude · M2-18 confirmed, and M3-08D — the neat style measured well and died anyway
+
+Two device results, one good and one that closes a feature.
+
+**M2-18 passed all four checks.** Erasing any part of a generated answer removes the whole
+answer, own handwriting still erases by stroke, one undo brings the answer back whole, and a
+second undo steps back past it. That is the last box, so M2-18 is Done. Worth remembering that
+the undo half only became true after M2-26 took the undo stack off PencilKit entirely — the
+version of M2-18 that first reached the device did not survive contact with a real
+`UIUndoManager`, and no test in this repo could have told us.
+
+**M3-08C's last box came back negative and the feature was withdrawn** at the user's request:
+"doesn't look different at all from the handwriting option, and I don't even want this feature."
+Two styles ship now — *My handwriting* and *Typeset*. Filed and completed as M3-08D.
+
+**The part worth carrying forward is that the measurement was not wrong.** M3-08C reported the
+styles 15.4pt apart at a 30pt x-height and I believed it. It is a true number about a
+**five-sample bank**. The same measurement on a **one-sample** bank gives **1.19pt** — and §3.1
+calibration collects roughly one sample per character, so a real user's bank is the second case.
+Both numbers were in the M3-08C notes before the test; what I got right was writing the caveat
+into DEVICE_SESSION §8 *in advance* ("if they look identical, that is evidence for M3-19, not
+evidence M3-08C did nothing"), which is what let the negative result be interpreted in one
+message instead of triggering another round of tuning.
+
+**The generalisable version:** a fixture that is more generous than production will report a
+feature working when it cannot possibly work for a user. The fixture was not wrong either —
+five samples per character is a legitimate bank. It just was not *this* user's bank, and
+nothing in the test said which one it was modelling. When a measurement depends on how much
+data a user has accumulated, say what you assumed they had.
+
+**What I deliberately did not remove.** Only the *style* went, not M3-08C's code. Sample
+selection, spacing and per-glyph slant scale with `Variation` at `.natural` too, and that is
+what stops a multi-sample bank rendering identically to a single-sample one — the headline
+defect M3-08C was filed for. It now looks like dead code: the app only ever passes `.natural`,
+so the narrowing branch is exercised only by tests. **Deleting it as unused would silently undo
+M3-08C and re-starve M3-19**, so the doc comments on `Variation` and `select` say so at the two
+places someone would go to delete them. The tests that justified the style all survive, driven
+by an explicit `Variation(scale: 0.4)` instead of a named style.
+
+**Migration, which is the one thing here that could have shipped as a silent bug.** Deleting an
+enum case with a `String` raw value means `init(rawValue: "neat")` returns nil — and the
+fallback behind that expression is `?? .typeset`, which means *never calibrated*. So a user who
+calibrated and picked a handwriting style would have been quietly dropped to a typeface, and
+neither the compiler nor any existing test would have said a word. `neat` is now a named
+`withdrawn` constant that maps to `.mine`. Mutation-verified: removing the migration line fails
+that test and only that test. There is also a test that an *unrecognized* value still falls
+back to typeset, so the migration cannot over-apply. **Any future case removal from a persisted
+enum needs the same pair of tests.**
+
+The raw value is deliberately *not* rewritten on migration — it is idempotent to re-read, and
+it keeps the original preference on disk for whenever §8's third style comes back.
+
+**Where the neat style actually stands.** Deferred, not iced. Its entire effect is choosing
+among samples the user does not have yet, so it is blocked on M3-19 (learning extra glyph
+variants from ordinary writing), which this session promoted from "requested direction" to the
+thing several starved features are waiting on. Re-measure before re-adding it; do not assume
+the 15.4pt figure will reappear.
+
+**Verification:** Handwriting 137/137 ✅ · Intelligence 132/132 ✅ · app 173/173 ✅ (170 before:
+one neat test removed, four added) · mutation check on the migration ✅ · `./scripts/lint.sh`
+clean ✅. Device build was fresh off the top of the stack per §0.
+
+**Surprises and gotchas.** OneDrive dematerialized `Tuist.swift` and `.githooks/pre-commit`
+again — `generate.sh` failed with "Operation timed out" opening a file that is right there.
+`git archive HEAD | tar -x` into the scratchpad is still the reliable way to get a hydrated
+tree, and `git -c core.hooksPath=<empty dir>` plus running lint and tests by hand is still the
+way past the dead hook. This has now cost time in three separate sessions; it is worth someone
+deciding whether this repo should live outside OneDrive.
+
+## 2026-08-11 · Claude · M3-01B — the two renderers were never held to the same bar
+
+Filed as "the corpus is only 8 strings". The actual defect was worse and easy to miss:
+**`TypesetStyle` and `Synthesizer` were measured against two *different* corpora** — eight
+strings and five — so §7's 95% never compared them. And 95% of eight is "seven of eight": one
+unlucky recognition swings the rate 12 points, which makes the number nearly meaningless.
+
+Both now measure against one 44-string `LegibilityCorpus`, kept in the test target rather than
+`Sources` so evaluation data does not ship in the app. Four guards on the corpus itself: it
+stays ≥40 strings, every string is renderable by the fixture alphabet (a comma throws
+`missingGlyphs` — a crash, not a low score), none is too short for the harness to count, and no
+math notation appears before M5 renders real notation (M3-11 explains why that would make the
+bar unmeetable for reasons unrelated to the renderers).
+
+**Measured: typeset 100% exact with mean similarity 1.0; synthesizer 95.45%, 42 of 44.**
+
+The interesting part is that second number. The margin is *one string*, and the two misses are
+not random — both are `g` read as `9`: `integral` → `inte9ral`, and `take logs of both sides` →
+`take lo9s of both sides`. That is the identical failure M2-13B met when it settled the fill
+inset at 0.4 rather than 0.5, so it is a property of the typeset letterform, long-standing and
+not introduced here. Filed as M3-01C and written on the corpus type itself, because the
+practical consequence is a trap: **adding one more `g` word fails the suite with nothing having
+regressed**, and the next person should read that as the known weakness rather than hunt a
+phantom.
+
+Worth stating plainly for whoever picks up M3-01C: this measures the synthesizer through a
+*typeset-derived* bank, so it says more about `TypesetStyle`'s `g` than about anyone's hand. A
+real writer's `g` may be fine. Do not tune it against `LegibilityHarness` alone either — that
+draws with Core Graphics, and CONTEXT invariant 11 records what tuning against a renderer the
+user never sees cost last time.
+
+**Verification:** Handwriting 137/137 ✅ · app 170/170 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 136 files ✅. The corpus is ~5x larger, so the two
+legibility tests now take about 3s each rather than well under one — still inside budget.
+
+## 2026-08-11 · Claude · M3-08C — `Variation` now reaches the thing that matters
+
+Picked up overnight, chosen because it needs no device: pure `Handwriting`, so `swift test`
+answers everything except the last acceptance box.
+
+The task was filed as "neat barely differs from natural". The more interesting half is that
+**`Variation` never reached sample selection**, so a bank with four samples per letter rendered
+identically to one with a single sample. Every extra sample calibration collects was dead
+weight, and M3-19 — learning extra variants from ordinary writing — would have had nothing to
+feed. Fixing the styles and unblocking that are the same change.
+
+Samples are ranked most-typical-first (distance from the mean of that character's own samples
+over advance width and ink box; ties break on capture order so a seed still renders
+identically), and the eligible pool narrows toward that glyph as the scale falls. Zero scale
+always draws the writer's steadiest letter. Spacing and per-glyph slant scale with it too,
+both deliberately small — §4.1 warns that excess noise reads as "shaky", a different tell from
+"mechanical", and it would have been easy to overshoot here.
+
+**Measured, because "barely differs" was the whole complaint:** mean maximum displacement
+between the two styles across twenty seeds is 1.19pt with one sample per character and
+**15.4pt with five**, at a 30pt x-height. It was under a point. A test pins the floor at 4pt so
+this cannot quietly return to being a no-op.
+
+Two things worth knowing next time:
+
+- **The existing fixture could not have caught this.** `SynthesizerTests.bank` varies only
+  `advanceWidth`, which moves a glyph's *neighbours* rather than the glyph — so no assertion
+  over rendered ink can see which sample was chosen. The new tests use a bank whose samples
+  differ in height. A fixture that cannot express the bug is worth checking for before
+  concluding a behaviour is untested.
+- **`StyleSimilarityTests` recorded this defect and named two causes.** One is now fixed, so
+  its assertion that the embeddings are byte-identical is no longer true; the cosine still
+  cannot resolve the styles, because the second cause stands — medians over whole samples are
+  the wrong resolution for sub-point wobble (M3-09B). I updated the test rather than relaxing
+  it. That entry was the most useful thing I read all task: a test that documents a limitation,
+  with its causes, is worth more than one that just passes.
+
+Four of the seven new tests fail against the previous synthesizer — checked before believing
+them, which is the habit the M2-26 session bought.
+
+**Verification:** Handwriting 133/133 ✅ · app 170/170 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 135 files ✅ · the "visible side by side" box needs a
+human and belongs with M3-10
+
+## 2026-08-11 · Claude · M2-26 — five rounds on one undo bug, and what finally found it
+
+**Read this one for the method, not the fix.** The fix is four lines; getting to it took five
+device round-trips, and four of them were wasted because I reasoned from symptoms instead of
+measuring. The one that worked took twenty minutes of instrumentation.
+
+The user asked for a persistent undo button. What followed, in order:
+
+1. The button disabled itself after every Ask. Cause: `PKCanvasView.undoManager` resolves
+   through the responder chain, so a canvas not yet in a window has none — and `makeUIView`
+   runs before attachment. Treating "no manager" as "nothing to undo" blanked it on every
+   page rebuild.
+2. Pressing it changed nothing visible. Cause: `acceptSuggestion` commits straight to
+   `PageDrawingStore`, so PencilKit's stack had never seen the answer; its one entry restored
+   a state identical to the visible one. Fixed by owning the stack — which also made undo
+   testable, since PencilKit's cannot be asserted outside a window.
+3. Pen strokes were not undoable while accepted answers were. Cause: **PencilKit's final
+   drawing callback arrives after `didEndUsingTool`**, so committing the entry at tool-end ran
+   before the ink landed and it was dropped as "nothing changed". The eraser survived only
+   because its debounce delayed the commit past that callback.
+4. Undone strokes came back on the next stroke. I guessed twice — a byte comparison, then a
+   gesture-window rewrite. **The second guess shipped a regression that ate handwriting**: it
+   re-synced the canvas against the store at gesture start, and writing two strokes quickly
+   means the store legitimately lags, so it wiped the stroke just written. Reverted within
+   minutes of the report.
+5. Then I instrumented instead of guessing, and the log answered it in one pass:
+
+       76.787  beginUsingTool     canvas=0  store=0
+       76.840  endUsingTool       canvas=0  store=0
+       76.857  drawingDidChange   canvas=20 store=0
+
+   One stroke drawn, nineteen resurrected. **`PKCanvasView`'s public `drawing` had taken our
+   value while its internal model had not**, and real Pencil input rebuilt from that internal
+   model. That single fact explains everything the earlier attempts could not: why it needed a
+   physical Pencil, why it was intermittent, why no test saw it, and why checking canvas
+   against store at gesture start neither caught it nor could — at that instant the two agree.
+
+The fix is to stop assigning into a canvas that will not let go: an undo bumps
+`PageDrawingStore.externalGeneration`, live pages key their `PKCanvasView` on it, and a fresh
+canvas has no internal history to restore. Deterministic, and it assumes nothing about
+PencilKit's internals — which is the standard I should have held from round two.
+
+**Verified rather than assumed:** the post-fix log records 28 undos and 29 gestures with zero
+resurrections; the pre-fix log had three in half the time. The user confirmed it.
+
+**Three PencilKit facts came out of this, all measured, all now in CONTEXT §3:**
+`dataRepresentation()` is only stable for the same instance (two fresh empty drawings encode
+to 42 *different* bytes); the final drawing callback lands after `didEndUsingTool`; and the
+canvas keeps an internal drawing that survives assigning `drawing`.
+
+**How to instrument this again** — the tooling is worth more than the fix. Write counts to
+`Documents/` in the app container (never ink — AGENTS §7), then
+`devicectl device copy from --domain-type appDataContainer --domain-identifier edu.bowdoin.margin
+--source Documents/<file> --destination <local file>`. The destination must be a *file path*,
+not a directory. `log stream` cannot target a connected device on this macOS, and
+`devicectl process launch --console` holds a usage assertion that kills the app when it
+detaches — it manufactures a second `signal 9` that looks exactly like the bug you are chasing.
+The container file needs no tether and survives the app being killed.
+
+Left behind: M2-27, the brief blink when the canvas rebuilds. The user saw it and explicitly
+deprioritised it. The log shows `applyExternally` running twice per undo — start there.
+
+## 2026-08-11 · Claude · M2-18 device run — a jetsam kill, and the missing undo button
+
+**The branch shipped a crash that 151 green tests could not see, and the user found it in
+about a minute.** That ratio again (CONTEXT handover, 2026-08-10).
+
+Report: "everytime I try to add a new note it closes the app." The console said `signal 9`,
+which is not a Swift crash — a `fatalError` prints to stderr and raises SIGTRAP. The user
+supplied the missing word: *"terminated by the operating system because it is using too much
+memory."* The device's JetsamEvent report confirmed it — **717MB, `per-process-limit`.**
+
+The mechanism is worth remembering because it is entirely non-obvious. `PKDrawing(strokes:)`
+returns a drawing that is equal stroke-for-stroke but **does not encode to the same bytes** —
+measured: an empty drawing re-encodes to 42 different bytes, a one-stroke drawing to 318.
+M2-18's `reconcile` stored such a reconstruction on *every* callback, including the first one
+on a freshly opened page with no erasing involved. `VirtualizedPageStack.updateUIView` decides
+whether to reassign the canvas by comparing `dataRepresentation()`, so the difference never
+resolved: reassign → delegate fires → store another reconstruction → reassign. Each pass
+rendered a full-page 3MB preview, and ~230 passes hit the limit. 717 ÷ 3.1 ≈ 230, which is how
+I knew the theory was right before fixing anything.
+
+**Two lessons.** First, `signal 9` means look for jetsam or watchdog, never for a Swift bug —
+I lost time reading error-handling paths that were all correct. Second, my `--console` launch
+holds a usage assertion and kills the app when it detaches, so it manufactures a *second*
+signal 9 that looks exactly like the one you are chasing. Launch without `--console` and pull
+`--domain-type systemCrashLogs` afterwards instead; that is what actually produced the answer.
+
+Then, writing the device instructions, I went looking for the undo control and there wasn't
+one. Grep every app source: PencilKit registers stroke undo, M2-18 registers a grouped-erase
+undo, and **nothing in the UI could reach either.** Only the iPadOS three-finger gestures,
+which are undiscoverable and unusable with limited dexterity. M2-18's acceptance box "undo
+restores the whole answer in one step" had nothing a user could press. The human asked for a
+persistent button, so M2-26 adds one. **This is the third instance of the same pattern** —
+M2-19's dead Ask button, M2-16's orphaned suggestion layer — and it is worth naming as a class:
+*this project keeps building and verifying one half of a feature.* When a task says "X works",
+check that a user can reach X.
+
+Redo is deliberately absent: not requested, and a separate decision.
+
+**Verification:** app tests 159/159 ✅ · `./scripts/lint.sh` 0 violations across 134 files ✅ ·
+the three loop regression tests confirmed failing against the previous coordinator ✅ · grouped
+erase and one-step undo on the physical iPad still pending
+
+**Two more OneDrive casualties**, beyond CONTEXT §4 trap 5: `.git/info/exclude` and
+`.githooks/pre-commit` both went dataless mid-session. The first makes *every* git command fail
+(`cannot use .git/info/exclude as an exclude file`) — it is comment-only in every git template,
+so recreating it is safe. The second cannot be read, moved, or restored, so the pre-commit hook
+had to be skipped via `git -c core.hooksPath=<empty dir>`; lint and tests were run by hand in
+the hydrated checkout instead. Expect this to keep happening to arbitrary files.
+
+## 2026-08-11 · Claude · M2-18 — restore the coverage a test merge dropped
+
+Picked this up with an uncommitted working tree: `GeneratedInkEraserTests.swift` (5 tests)
+deleted and 4 of its tests re-homed in `SuggestionProvenanceTests.swift`, where they can share
+the `page()` fixture. The merge is a reasonable idea, but it **silently lost one test** —
+`testOneGestureCanRemoveTwoGeneratedAnswersWithoutTouchingHandwriting`, the only cover for
+`GeneratedInkEraser.resolve` handling more than one removed element.
+
+I restored it rather than trusting the reading. Mutation-testing earns the claim: adding
+`.prefix(1)` to the `referencesToRemove` chain — a plausible regression that handles only the
+first erased answer — leaves 12 of the 13 tests green and fails exactly the restored one. The
+gap was real, and nothing else in the suite covered it.
+
+That addition then pushed the merged class to 252 lines, over SwiftLint's 250-line
+`type_body_length`. The fixtures moved into an `extension` in the same file, which keeps the
+merge and its shared fixtures while clearing the rule. Worth knowing the merge sits ~2 lines
+under a hard CI gate: **the next test added to this class will break lint again**, and the
+answer then is to split the eraser cases back into their own file, not to keep extending.
+
+**The OneDrive trap in CONTEXT.md §4 is worse than "the formatting script times out."**
+`SuggestionProvenance.swift` and `DocumentPackageStore.swift` are dataless and will not
+hydrate — repeated `cat` never brings them down — so `xcodebuild` fails with `Error opening
+input file (Operation timed out)` and **no test can run in this checkout at all.** 61 loose
+objects under `.git/objects` are dataless too, so `git clone` also fails (`copy-fd: read
+returned: Operation timed out`). What works: packfiles are intact, so `git archive HEAD | tar
+-x -C <dir>` produces a fully hydrated tree. Copy the modified files in, `tuist generate`, and
+run there. That is the whole recipe, and it cost an hour to find twice — once for Codex, once
+for me.
+
+Two things I did not do. I did not touch the `PageDrawingStore`/undo implementation: it is
+Codex's and it is sound. And I reverted the in-place edit of Codex's M2-18 session entry that
+came with the tree — this file says append-only at the top, and the edit was deleting the
+OneDrive note that turned out to be the most valuable thing in it.
+
+**Still open, unchanged by this session:** M2-18's third acceptance box, "Undo restores the
+whole answer in one step," is unticked and **cannot be ticked from here** — it depends on the
+real `UIUndoManager` a `PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4).
+It needs the physical iPad, together with the grouped-erase check already queued.
+
+**Verification:** app tests 151/151 ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0
+violations across 131 files ✅ · mutation test confirms the restored case fails a real
+regression ✅ · all of it run in a `git archive` checkout, not this one · physical iPad
+eraser/undo still pending
+
+## 2026-08-11 · Codex · M2-18 — generated answers erase as one group
+
+PencilKit was behaving consistently: its vector eraser removed one stroke, but the typeset
+answer's visible shapes are dozens of hatch strokes. The canvas now detects a missing stroke
+through the generated element's persisted fingerprints and removes the rest of that answer.
+Ordinary handwriting remains on PencilKit's vector path. Ambiguous fingerprints fail closed
+so an attribution collision can never delete user ink.
+
+The implementation also fixes a provenance lifecycle defect found while tracing the erase:
+the live drawing store retained only the notebook-opening metadata, so a later autosave could
+overwrite the generated element recorded at acceptance. Drawing and current metadata now move
+through the store and autosave atomically. An eraser gesture suppresses PencilKit's internal
+undo registrations until its delayed final drawing callback, then registers one snapshot
+restore for the entire gesture.
+
+Physical Pencil input and the real canvas undo manager are the remaining checks. OneDrive
+timed out on two unrelated dataless Swift files during the local formatting script, so the
+exact changed-file hashes were checked against the fully hydrated verification checkout;
+the complete lint script passed there.
+
+**Verification:** focused grouped-erase tests 5/5 ✅ · app tests 151/151 ✅ · full
+`./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 132 files ✅ · physical
+iPad eraser/undo pending
+
+## 2026-08-11 · Codex · M1-07C — export now uses the current notebook
+
+The export toolbar captured the `StoredDocument` that opened the canvas and kept using it
+after `PageDrawingStore` had persisted newer ink. This explains the user's evidence PNG: its
+paper came from the old snapshot while the package already contained the current strokes.
+
+Export now establishes one strict order for both formats: flush pending autosave work, refuse
+to continue if the write remains pending, reload the package, then render. The regression
+starts with an empty stale document, records later PencilKit ink, and proves both PNG and PDF
+receive the reloaded bytes. A second test deletes the package before the flush and verifies
+the exporter is never called with stale content.
+
+OneDrive had evicted `PageAutosave.swift` into a dataless placeholder and timed out whenever
+the patch tool read it. The exact patch was applied and tested in the isolated mirror, then
+the validated file replaced that one tracked placeholder; no unrelated file was touched.
+
+**Verification:** focused export tests ✅ · app tests 146/146 ✅ · full
+`./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 129 files ✅
+
+## 2026-08-11 · Codex · M2-24 — two-stage answer placement passed on the physical iPad
+
+The user tested the exact fresh commit on the physical iPad and reported that the interaction
+works perfectly. Ask's question lasso, second green answer-area selection, and constrained
+handwritten answer are therefore device-confirmed; M2-24 and M2-24B are closed.
+
+The M3 blind panel remains the human milestone gate. While it waits on outside reviewers, the
+next agent-owned task is M1-07C, the stale-snapshot export defect already observed in a real
+PNG.
+
+**Verification:** fresh source export ✅ · regenerated workspace ✅ · new DerivedData ✅ ·
+signed physical build ✅ · installed and launched ✅ · human-confirmed ✅
+
+## 2026-08-11 · Codex · M2-24 — explicit answer-area interaction is ready for Pencil testing
+
+Ask now has two visible capture stages: first the question lasso, then a green allowed answer
+area on the same page. The green overlay is the exact rectangular boundary supplied to
+placement. Answer frames retain the question-derived writing size, remain inside that area and
+avoid occupied ink; content that cannot fit produces a choose-another-area action instead of
+shrinking or escaping. Choosing again preserves the question and recaptures only the answer
+area. Cancel, retry, keyboard and accessibility transitions are defined and covered where
+automation can reach them.
+
+The interaction and placement work were split into M2-24A/B before implementation to keep each
+task below the 400-line limit. The simulator build and 144 app tests pass. A three-point but
+zero-area second lasso was initially accepted; a regression now rejects it before placement.
+Physical Pencil input is the remaining verification and must not be claimed from the simulator.
+
+**Verification:** simulator app tests 144/144 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 129 files ✅ · fresh physical-iPad build pending
+
+## 2026-08-11 · Codex · M3-20/M2-17 — accumulated-page retest passed
+
+The user ran the fresh physical-iPad build against the repeated-Ask scenario and reported that
+it is working perfectly. This closes both M3-20's loaded-stroke identity defect and M2-17's
+remaining handwritten-size verification; the pre-calibration typeset size and 26-character
+repair pages had already been confirmed in the preceding run.
+
+The next implementation task is M2-24: after selecting the question, prompt for a distinct
+allowed answer area as decided in ADR-016. That UI is not part of the confirmed build.
+
+**Verification:** fresh physical-iPad accumulated-page repeated Ask ✅ · human-confirmed ✅
+
+## 2026-08-11 · Codex · M3-20 — fresh identity-fix build is on the iPad
+
+The manual-test handoff used a brand-new source directory, regenerated workspace, and
+brand-new DerivedData directory. OneDrive timed out both a normal `git clone` and a direct
+source-tree copy, so the fresh source directory was populated from the isolated mirror that
+had just compiled and passed the focused regression. SHA-1 checks confirmed the two changed
+Swift files matched the clean committed checkout byte for byte before generation.
+
+The physical-device build signed successfully, installed over `edu.bowdoin.margin`, and
+launched. Installing over the app preserved the user's notebooks and handwriting calibration;
+there was no uninstall or data reset. Xcode was opened on the regenerated workspace at
+`/private/tmp/lemma-manual-source.DhU74a/Margin.xcworkspace`.
+
+**Verification:** fresh source directory ✅ · regenerated workspace ✅ · new DerivedData
+`/private/tmp/lemma-manual-derived.Sw1PrC` ✅ · signed physical build ✅ · installed and
+launched ✅ · app data preserved ✅ · human accumulated-page comparison pending
+
+## 2026-08-11 · Codex · M3-20 — loaded strokes shared one identity
+
+The user's recording was the crucial clue: handwritten answers worked on a sparse page, then
+became tiny and detached as accepted answers accumulated, and a later narrow selection made a
+huge distorted `4`. With the user's prior authorization, I copied only the affected notebook
+and glyph bank to a private temporary directory for local read-only measurement. Nothing was
+committed, uploaded, or logged as content. The bank's single `4` sample was healthy. The saved
+page instead contained four near-identical tiny generated glyphs and one enormous one.
+
+Replaying the current context/renderer code against isolated source-stroke groups produced
+correct proportional answers. Replaying selections contaminated with old distant strokes
+reproduced the saved tiny geometry and detached placement. The identity path explained why:
+when a fresh `PencilKitInkEngine` loaded an existing drawing, `synchronizeStrokeIDs()` appended
+`repeatElement(UUID(), count:)`. Swift evaluates that UUID expression once, so every loaded
+stroke received the same ID. Selecting any one matching stroke made the context builder admit
+the entire accumulated page.
+
+The adapter now creates a fresh UUID for each loaded stroke. An iOS regression externally
+loads two strokes, verifies two identities, lassos one, and requires exactly one selection.
+The test was red by construction before the fix (`Set(ids).count == 1`) and passes afterward.
+The full package/build suite is green from the isolated source mirror; the focused iOS test
+passes on an iPad simulator. The original OneDrive checkout again timed out while Xcode and
+swift-format read unrelated files, so those same checks were repeated successfully off-drive.
+
+The user also made placement a product decision: after the question lasso, Ask must prompt for
+a second user-marked allowed answer area. ADR-016 records the two-region contract and M2-24
+replaces M2-23's inferred trailing-`=` anchor. That interaction is intentionally separate from
+this narrow identity fix and is not present in this build.
+
+**Verification:** measured device fixture/replay ✅ · focused iOS regression 1/1 ✅ ·
+`swift test --package-path Packages/InkCore` 31/31 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 129 files ✅ · fresh signed device handoff pending
+
+## 2026-08-11 · Codex · M2-17 — real maths strokes exposed the 8pt sizing floor
+
+The user's fresh physical-device retest disproved the earlier fix: small, normal, and large
+`2+2=` selections still received the same tiny `4`. The earlier regression fixture was one
+diagonal stroke, which guarantees that a stroke-level height estimator returns the selected
+height and therefore could not reproduce real maths.
+
+With the user's authorization, I copied only the affected notebook from the connected iPad
+to a private temporary directory and inspected counts and bounds locally. Nothing was added
+to the repository or uploaded. The three user-written groups were roughly 37pt, 61pt, and
+165pt tall, while their generated answers were all about 8–9pt. A synthetic three-scale
+fixture then reproduced the exact internal chain: nominal writing heights of 30/60/150pt
+were estimated as 0.825/1.65/4.125pt, and all became the same 8pt placement and 7.2pt ink.
+
+The cause was Pencil wobble in nominally horizontal `+` and `=` strokes. Their vertical
+extent is not exactly zero, so the stroke-level estimator treated those tiny bars as the
+short body of the writing. `SelectionContextBuilder` now treats the last line's visible
+height as a lower bound for the answer anchor. The regression explicitly proves its raw
+style estimate remains below 8pt at all three scales while its anchor correctly remains
+30/60/150pt.
+
+The evidence file named `Margin-<notebook id>.png` was an app PNG export, not an iPad screen
+capture. It contains ruled paper but no ink even though the current on-device package holds
+63 strokes. The export toolbar renders the `StoredDocument` snapshot it captured before
+live canvas edits; M1-07C now tracks the separate flush-and-reload fix.
+
+**Verification:** focused `SelectionContextTests` 13/13 ✅ · all 129 Intelligence tests ✅ ·
+full `./scripts/test.sh` (isolated source mirror, because OneDrive blocked Xcode's coordinated
+workspace read) ✅ · `./scripts/lint.sh` 0 violations across 129 files ✅ · app test target
+compiled ✅ · Xcode simulator test launch blocked by the local runner waiting for workers to
+materialize on two simulators · fresh device handoff pending
+
+## 2026-08-11 · Codex · M2-17 — manual tests always get an empty DerivedData build
+
+The user made the test protocol explicit: every request for manual verification must begin
+with a genuinely fresh Xcode build. This is now a repository rule in `AGENTS.md` §8, the
+first instruction in `DEVICE_SESSION.md` §0, and an environment invariant in `CONTEXT.md`
+§4. “Fresh” means regenerate with the signing configuration, create a brand-new DerivedData
+directory, build the current branch for the connected device, install that exact `.app`,
+launch it, and open the regenerated workspace in Xcode before handing the test to the human.
+
+The rule deliberately separates build state from app-data state. Installing over the app
+keeps notebooks and the on-device glyph bank. Uninstalling is reserved for tests that
+explicitly need clean app data, and the human must be warned before those local records are
+erased.
+
+For this sizing retest I repeated the entire sequence after documenting it. The new build
+used `/private/tmp/lemma-manual-test-derived.PELWbE`, signed successfully, installed over
+`edu.bowdoin.margin`, and launched on the connected iPad mini. Xcode was opened on the
+regenerated workspace. No earlier `.app` or DerivedData directory was reused.
+
+**Verification:** `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 129 files
+✅ · clean signed physical-device build ✅ · exact artifact installed and launched ✅ · app
+data preserved ✅ · manual size comparison pending
+
+## 2026-08-11 · Codex · M2-17 — the screenshot was from before calibration
+
+The user's latest detail split one apparent sizing bug into two: the tiny `4` in the new
+screenshot was generated before Teach Handwriting, so it could only have come from
+`TypesetInkRenderer`. The prior M2-17 correction was real but covered the captured-handwriting
+path. The app fixture reproduced the remaining defect exactly: 26pt selected ink, a 16.12pt
+wide placement frame, and a 17.6pt typeset answer (68%).
+
+The typeset renderer itself was not arbitrarily choosing a tiny font. It honestly fitted
+Helvetica into the rectangle placement reserved. `NominalContentMeasurer` reserved only
+0.62 x-heights per character, ignoring the font's side bearings, and a 1.4 x-height line box,
+which was too short once the width stopped binding. The nominal frame now uses a measured
+0.98 advance and 1.52 ink height. Package and app regressions require the visible typeset
+answer to be 98–105% of the selected ink and still lie inside its placement. The calibrated
+`4` regression is run alongside it so the already-working handwriting path stays intact.
+
+I first added a renderer-only size test with a sufficiently wide frame; it passed before the
+fix. That was useful evidence, not a reproduction: it proved the renderer could draw at the
+right size when placement gave it enough room. The end-to-end placement/render test was the
+one that failed at 17.6pt and turned green after measurement changed. Placement location was
+not changed; the bottom-right-looking `.atAnchor` policy remains separate work.
+
+**Verification:** pre-fix package regression 17.6/26pt ❌ as intended · post-fix Intelligence
+suite, 124 tests ✅ · focused Margin simulator tests for pre-calibration typeset and captured
+handwriting ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ ·
+physical iPad: pending fresh install and user comparison
+
+## 2026-08-10 · Codex · M2-22 — the selected ink finally reaches the reader
+
+The crop bounds were not the bug: M2-05B computed them and M2-05C could render them. The
+shipping `AskPipeline` simply never called either path, so `CannedSpecProvider` received
+normalized stroke geometry and no image or transcript. Its unconditional `4` hid the gap.
+
+Ask now snapshots the exact page `PKDrawing`, rasterizes both requested regions through the
+existing white-flattening path, and runs Vision locally over the crop with language correction
+off so arithmetic stays literal. `SpecRequest` carries both images and a conservative reading
+(ordered transcript plus the weakest observation confidence) for the call lifetime. Pixels
+join the stable cache digest; neither pixels nor transcript enter logs, and the provider
+contract explicitly forbids retaining them. ADR-015 records that public-contract change.
+
+The first integration test deliberately failed because `PageInput` had only reconstructed
+strokes. The replacement test drives the shipping pipeline with a recording wrapper around a
+real `PencilKitInkEngine`, proving the exact crop/neighborhood bounds and scales reach the
+page exporter and the resulting PNGs/reading reach a provider. A real Vision fixture reads
+`2+2=4` correctly in 0.34s on this Mac. Vision still returns nothing for very short strings;
+that is represented honestly as an empty transcript at confidence zero while the provider
+still receives the primary crop.
+
+**Verification:** red shipping-path test before implementation ✅ · Intelligence 128 tests ✅ ·
+Margin simulator 137 tests ✅ · `./scripts/test.sh` build/package suite ✅ · `./scripts/lint.sh`
+0 violations across 129 files ✅ · physical device: not required for the plumbing; real-writer
+quality belongs to M4's golden set
+
+## 2026-08-10 · Codex · M3-18 — repair prompts now stop at 26
+
+The user supplied the product rule from a real calibration: **no more than 26 characters on
+one repair page.** The old `CalibrationSession.repair` appended the entire missing set as a
+single guide-box sheet, so a bank that captured only 26 characters could put most of the
+original script into one cramped page.
+
+Repair now deduplicates once, preserves order, and appends consecutive 26-character chunks
+with unique IDs. A 62-character fixture produces exactly 26/26/10 and reconstructs the
+original list with no drops or duplicates. A second fixture writes all 30 characters across
+two repair pages and proves every one reaches the same bank. At the reported cap, guide
+boxes measure the same size as the original 26-letter alphabet page (64pt in the fixture).
+
+The progress bar now has localized “Sheet n of total” copy. Its total grows when repair
+pages are appended, and a test pins the first and second repair positions so adding more
+than one page cannot look like an endless retry.
+
+**Verification:** focused repair suite, 10 tests ✅ · 62-character order/cap fixture ✅ ·
+multi-page bank merge fixture ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations
+across 127 files ✅ · device tested: no, physical Pencil box-size confirmation still needed
+
+## 2026-08-10 · Codex · M2-17 — calibration size was masquerading as answer size
+
+**The cause is measured now.** Placement correctly doubled its frame when the selected
+writing's x-height changed from 18 to 36 points, but the generated handwritten glyph stayed
+at exactly 1×. `Synthesizer.layout` used `bank.style.stats.xHeight` as a preferred maximum,
+so the size a person happened to write during calibration silently became the maximum size
+of every future answer. That explains why the user's recognisable `4` was still too small.
+
+Synthesis now accepts a target x-height, `HandwritingInkRenderer` passes the selected ink's
+local measurement through wrapping and rendering, and `AskPipeline` makes rendering use the
+same usable x-height chosen by placement. The regression now measures a 2× glyph for a 2×
+selection. At the app seam, a 26pt selected stroke produces a 24.4pt handwritten answer
+(94%); the remaining fit is the one-character frame's width constraint, not calibration.
+
+**Placement was a separate observation.** The simulator log shows `usedFallback=false`; the
+answer is placed one word gap after the selected line's last glyph because the canned spec
+requests `.atAnchor`. That naturally looks like the selection's bottom-right. I did not
+change it under a sizing task. M2-22's crop/OCR work is where the intended trailing-`=`
+anchor can be derived from what the selection actually says.
+
+The app now logs only numeric geometry: anchor/style/usable x-height, measured frame,
+fallback state, and final ink bounds. It logs no ink, crop, transcription, or answer. This
+is intentionally left in Review until the user can ask beside small and large real Pencil
+writing on a physical iPad and confirm the relative size there.
+
+**Verification:** pre-fix regression 1× instead of 2× ✅ · post-fix regression 2× ✅ ·
+Handwriting and Intelligence package suites ✅ · full Margin iPad simulator suite, 135 tests
+✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · device
+tested: no, needs user verification
+
+## 2026-08-10 · Codex · M3-17 — the bank had the answer and we rejected the bank
+
+**Device result:** the app now writes the `4` captured with Apple Pencil rather than the
+typeset glyph. The same run captured 26 characters, offered the missing set for repair,
+accepted a rewritten `4`, saved, and produced visible suggestion ink. This also closes the
+device checks on M3-15, M3-16 and M2-16.
+
+**The cause was a global gate in front of a per-block fallback.** I reproduced a bank that
+could render `4` but lacked one unrelated lowercase letter. `bank.canRender("4")` was true;
+`HandwritingStylePreference.resolved(bank:)` still returned `typeset` because it required
+all 26 lowercase letters before constructing a handwriting renderer. A nearly complete
+calibration therefore looked entirely unused. The failing test recorded exactly that pair
+of facts before the gate changed.
+
+Any non-empty bank now reaches `HandwritingInkRenderer`, which already checks coverage per
+answer. When an answer really contains a missing glyph, the Ask bar says why it used typeset
+instead of changing styles silently. A failed bank write also leaves calibration open and
+shows a retryable error. The one-line Ask diagnostic records only bank presence, character
+count, whether the canned answer is supported, selected/resolved style, and renderer type;
+it logs no ink, crop, transcription, or answer.
+
+**New device findings:** the repair flow puts too many missed characters on one sheet and
+makes every guide box too small; capped repair pagination is M3-18. The handwritten `4` is
+recognisably the user's but too small, and its bottom-right placement is worth measuring;
+M2-17 remains the blocker. The shipping Ask path also never rasterizes the crop it computed,
+so nothing can decipher the selection; M2-22 records that seam. The user's requested future
+direction—learning additional variants from ordinary selected writing—is M3-19, explicitly
+on-device and excluding generated ink.
+
+The named screenshot of the repair sheet was not present in the workspace or Spotlight
+index, so M3-18 is filed from the precise device report (more than 26 characters on one
+sheet) rather than claiming visual inspection.
+
+**Verification:** failing reproduction before the fix ✅ · `./scripts/test.sh` ✅ · full iPad
+simulator app suite ✅ · `./scripts/lint.sh` 0 violations across 127 files ✅ · real iPad:
+captured Pencil `4` used by Ask ✅
+
 ## 2026-08-10 · Claude · M3-16, and a handover to whoever is next
 
 **Three reports from a full device calibration:** an error on the summary screen that "wanted to display something bigger than the widget"; the answer's size and placement still not tracking the question; and, after calibrating fully, answers *still* drawn in typeset.

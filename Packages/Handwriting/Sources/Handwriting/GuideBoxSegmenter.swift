@@ -85,12 +85,18 @@ public enum GuideBoxSegmenter {
     ///
     /// Returns the dropped characters too, so calibration can ask for them again instead
     /// of silently producing a bank with holes in it.
+    ///
+    /// The sheet is normalized as a set rather than one capture at a time because `j`'s
+    /// baseline is not readable from `j` alone — its dot rises above the x-height band, so
+    /// the ink's top says nothing about where the line runs. The writer's `g p q y` do say,
+    /// and they are on the same sheet (M3-01C).
     public static func glyphs(
         from captures: [Capture],
         xHeight: CGFloat
     ) -> (glyphs: [Glyph], rejected: [Character]) {
         var glyphs: [Glyph] = []
         var rejected: [Character] = []
+        let depth = descenderDepth(from: captures, xHeight: xHeight)
 
         for capture in captures {
             guard capture.confidence >= minimumConfidence else {
@@ -101,7 +107,8 @@ public enum GuideBoxSegmenter {
                 let glyph = try? GlyphNormalizer.glyph(
                     for: capture.character,
                     from: capture.strokes,
-                    xHeight: xHeight
+                    xHeight: xHeight,
+                    descenderDepth: depth
                 )
             else {
                 rejected.append(capture.character)
@@ -110,6 +117,29 @@ public enum GuideBoxSegmenter {
             glyphs.append(glyph)
         }
         return (glyphs, rejected)
+    }
+
+    /// How far below the line this writer's tails hang, in points, from the descenders whose
+    /// baseline their own ink establishes.
+    ///
+    /// The median, not the mean: one capture where the writer overshot the box would
+    /// otherwise drag every `j` on the sheet down with it. `nil` when the sheet holds no
+    /// such descender — a repair sheet of just `j`, say — and `GlyphNormalizer` falls back to
+    /// a documented typeface proportion there rather than to zero, which is the seating this
+    /// replaces.
+    static func descenderDepth(from captures: [Capture], xHeight: CGFloat) -> CGFloat? {
+        guard xHeight > 0 else { return nil }
+        let depths =
+            captures
+            .filter { $0.confidence >= minimumConfidence }
+            .filter { GlyphNormalizer.bodyHeightDescenders.contains($0.character) }
+            .map { InkLineGrouping.bounds(of: $0.strokes) }
+            .filter { !$0.isNull }
+            .map { $0.maxY - ($0.minY + xHeight) }
+            .filter { $0 > 0 }
+            .sorted()
+        guard !depths.isEmpty else { return nil }
+        return depths[depths.count / 2]
     }
 
     // MARK: - Geometry

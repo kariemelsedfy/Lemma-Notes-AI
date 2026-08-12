@@ -7,58 +7,101 @@ import XCTest
 final class PlacementEngineTests: XCTestCase {
     private let page = CGRect(x: 0, y: 0, width: 1668, height: 2388)
 
-    func testAtAnchorPlacesToTheRightOfTheLastGlyphOnItsBaseline() throws {
+    func testQuestionBoundsCannotSubstituteForTheAllowedAnswerArea() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let answerArea = CGRect(x: 1_000, y: 700, width: 320, height: 240)
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: Self.grid())
+
+        let result = engine.place(try Self.spec(placement: .atAnchor), context: context)
+
+        let placement = try XCTUnwrap(result.placements.first)
+        XCTAssertTrue(answerArea.contains(placement.frame))
+        XCTAssertFalse(context.selectionBounds.intersects(placement.frame))
+    }
+
+    func testOccupiedAnswerAreaSearchNeverEscapesItsBoundary() throws {
+        let context = try Self.context()
+        let answerArea = CGRect(x: 900, y: 600, width: 360, height: 300)
+        var grid = Self.grid()
+        grid.reserve(CGRect(x: answerArea.minX, y: answerArea.minY, width: answerArea.width, height: 80))
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: grid)
+
+        let result = engine.place(try Self.spec(placement: .nearestFree), context: context)
+
+        let placement = try XCTUnwrap(result.placements.first)
+        XCTAssertTrue(answerArea.contains(placement.frame))
+        XCTAssertGreaterThanOrEqual(placement.frame.minY, answerArea.minY + 80)
+    }
+
+    func testAnswerThatCannotFitIsUnplacedInsteadOfShrunkOrEscaped() throws {
+        let context = try Self.context()
+        let answerArea = CGRect(x: 1_100, y: 900, width: 4, height: 4)
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: Self.grid())
+
+        let result = engine.place(try Self.spec(placement: .atAnchor), context: context)
+
+        XCTAssertTrue(result.placements.isEmpty)
+        XCTAssertEqual(result.unplaced.count, 1)
+    }
+
+    func testAtAnchorStartsAtTheLeadingEdgeOfTheAllowedArea() throws {
+        let context = try Self.context()
+        let answerArea = CGRect(x: 700, y: 500, width: 400, height: 300)
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: Self.grid())
 
         let result = engine.place(try Self.spec(placement: .atAnchor), context: context)
 
         let placement = try XCTUnwrap(result.placements.first)
         XCTAssertFalse(placement.usedFallback)
-        XCTAssertGreaterThan(placement.frame.minX, context.anchor.point.x)
-        XCTAssertEqual(placement.frame.maxY, context.anchor.baseline, accuracy: 0.001)
+        XCTAssertEqual(placement.frame.minX, answerArea.minX, accuracy: 0.001)
+        XCTAssertEqual(placement.frame.minY, answerArea.minY, accuracy: 0.001)
         XCTAssertTrue(result.isComplete)
     }
 
-    func testAtAnchorFallsBackWhenTheLineIsAlreadyFull() throws {
+    func testAtAnchorFallsBackInsideTheAreaWhenItsLeadingBandIsFull() throws {
         let context = try Self.context()
+        let answerArea = CGRect(x: 700, y: 500, width: 400, height: 300)
         var grid = Self.grid()
-        // Ink filling the whole band to the right of the anchor.
-        grid.reserve(CGRect(x: context.anchor.point.x, y: 0, width: 1400, height: 400))
-        let engine = PlacementEngine(page: page, occupancy: grid)
+        grid.reserve(CGRect(x: answerArea.minX, y: answerArea.minY, width: answerArea.width, height: 80))
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: grid)
 
         let result = engine.place(try Self.spec(placement: .atAnchor), context: context)
 
         let placement = try XCTUnwrap(result.placements.first)
         XCTAssertTrue(placement.usedFallback)
         XCTAssertEqual(placement.requested, .atAnchor)
-        XCTAssertGreaterThan(placement.frame.minY, 400)
+        XCTAssertTrue(answerArea.contains(placement.frame))
+        XCTAssertGreaterThanOrEqual(placement.frame.minY, answerArea.minY + 80)
     }
 
-    func testBelowSelectionAlignsToTheLastLineIndentation() throws {
+    func testBelowSelectionUsesTheAnswerAreaNotTheQuestionIndentation() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let answerArea = CGRect(x: 800, y: 600, width: 400, height: 300)
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: Self.grid())
 
         let result = engine.place(try Self.spec(placement: .belowSelection), context: context)
 
         let placement = try XCTUnwrap(result.placements.first)
-        XCTAssertEqual(placement.frame.minX, context.anchor.lineBounds.minX, accuracy: 0.001)
-        XCTAssertGreaterThan(placement.frame.minY, context.selectionBounds.minY)
+        XCTAssertEqual(placement.frame.minX, answerArea.minX, accuracy: 0.001)
+        XCTAssertNotEqual(placement.frame.minX, context.anchor.lineBounds.minX)
+        XCTAssertTrue(answerArea.contains(placement.frame))
     }
 
-    func testRightOfSelectionClearsTheSelectionBounds() throws {
+    func testRightOfSelectionStillObeysTheMarkedAnswerArea() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let answerArea = CGRect(x: 900, y: 700, width: 400, height: 300)
+        let engine = PlacementEngine(page: page, allowedArea: answerArea, occupancy: Self.grid())
 
         let result = engine.place(try Self.spec(placement: .rightOfSelection), context: context)
 
         let placement = try XCTUnwrap(result.placements.first)
-        XCTAssertGreaterThan(placement.frame.minX, context.selectionBounds.maxX)
+        XCTAssertTrue(answerArea.contains(placement.frame))
+        XCTAssertFalse(context.selectionBounds.intersects(placement.frame))
     }
 
     func testNearestFreeSearchesRatherThanUsingASlot() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(try Self.spec(placement: .nearestFree), context: context)
 
@@ -69,7 +112,7 @@ final class PlacementEngineTests: XCTestCase {
 
     func testTwoBlocksNeverOverlap() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
         let block = SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .text, value: "same slot")))
         let spec = try SpecValidator.validate(Self.spec(blocks: [block, block, block]))
 
@@ -87,7 +130,7 @@ final class PlacementEngineTests: XCTestCase {
         let context = try Self.context()
         var grid = Self.grid()
         grid.reserve(page)
-        let engine = PlacementEngine(page: page, occupancy: grid)
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: grid)
 
         let result = engine.place(try Self.spec(placement: .atAnchor), context: context)
 
@@ -98,7 +141,7 @@ final class PlacementEngineTests: XCTestCase {
 
     func testMarksResolveToTheirTargetBoundsRatherThanFreeSpace() throws {
         let context = try Self.context()
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
         let mark = SpecMark(kind: .strike, target: .bounds(SpecRect(originX: 40, originY: 60, width: 120, height: 30)))
         let block = SpecBlock(placement: .atAnchor, content: .marks([mark]))
 
@@ -115,7 +158,7 @@ final class PlacementEngineTests: XCTestCase {
         ]
         let mark = SpecMark(kind: .circle, target: .strokeIndices([1]))
         let block = SpecBlock(placement: .atAnchor, content: .marks([mark]))
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(
             try SpecValidator.validate(Self.spec(blocks: [block])),
@@ -130,7 +173,7 @@ final class PlacementEngineTests: XCTestCase {
         let context = try Self.context()
         let mark = SpecMark(kind: .cross, target: .strokeIndices([99]))
         let block = SpecBlock(placement: .atAnchor, content: .marks([mark]))
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
 
         let result = engine.place(try SpecValidator.validate(Self.spec(blocks: [block])), context: context)
 
@@ -225,7 +268,7 @@ final class PlacementEngineTests: XCTestCase {
 
         XCTAssertGreaterThan(context.anchor.xHeight, 0, "a zero x-height collapses every frame downstream")
 
-        let engine = PlacementEngine(page: page, occupancy: Self.grid())
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: Self.grid())
         let placement = try XCTUnwrap(
             engine.place(try Self.spec(placement: .atAnchor), context: context).placements.first)
 

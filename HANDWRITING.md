@@ -68,6 +68,29 @@ The hard bit. For lines 1–5 the user writes into per-character guide boxes, so
 
 Show the user the segmented result and let them retap any glyph to rewrite it. This is a 20-line UI that saves enormous quality pain.
 
+**Where the baseline comes from.** A guide box is a square: it says which character was
+written, not where the writing line runs through it. Since §4 step 2 places each glyph "on
+the baseline with its natural vertical offset", segmentation has to supply that offset, and
+it derives one per character class rather than storing one:
+
+- Letters that stand on the line — x-height letters, ascenders, capitals, digits — keep the
+  bottom of their ink as the baseline.
+- `g p q y` (and `γ μ`) have no ascender, so the *top* of their ink is the top of the
+  x-height band: the baseline is one measured x-height below it, and everything under that
+  is tail.
+- `j β φ` rise above the x-height band as well as falling below it, so their own ink cannot
+  place them. They take the median tail depth measured from the writer's other descenders on
+  the same sheet, falling back to 0.44 x-heights — Helvetica's proportion — when a repair
+  sheet contains none.
+
+The inferred baseline is always clamped inside the captured ink, so a writer whose `y` has
+no tail is not pushed off the line.
+
+**This was wrong until M3-01C**, which seated every glyph's lowest ink on the baseline. That
+lifts a `g` into the band above the line, where it has a digit's geometry — full height,
+standing on the baseline — and Vision read synthesized `g`s back as `9`s. Math notation that
+straddles the baseline is deliberately not handled here; it belongs to M5's box model.
+
 ### 3.3 Style statistics
 
 Derived at calibration, stored with the bank, and re-estimated continuously from the user's real writing (a slow-moving exponential average, so the bank tracks their hand as it changes across a semester):
@@ -155,10 +178,19 @@ Snapshot tests in CI compare rendered PNGs against references with a small perce
 
 ## 8. Fallback styles
 
-Not everyone will do the calibration, and some handwriting won't reconstruct well. Ship three style options in Settings:
+Not everyone will do the calibration, and some handwriting won't reconstruct well. Ship two style options in Settings:
 
 1. **My handwriting** (glyph bank) — default once calibrated
-2. **Neat version of mine** — glyph bank with variance reduced ~60%; several early testers will prefer this for answers
-3. **Typeset** — clean vector text at matched size and color; the honest fallback, and also the right default in Exam Mode
+2. **Typeset** — clean vector text at matched size and color; the honest fallback, and also the right default in Exam Mode
 
 Users can switch at any time and re-render existing generated blocks, because we keep the spec that produced them.
+
+### The third style, and why it isn't here
+
+This section specified a **"neat version of mine"** — the glyph bank at ~60% variance — on the expectation that several early testers would prefer it over their real hand. **Withdrawn 2026-08-12 (M3-08D), deferred to a later version.**
+
+It was built (M3-08), found to be nearly a no-op (M3-08C), fixed so the two styles measured 15.4pt apart at a 30pt x-height, and then tried on device against a real one-pass bank. The verdict was *"doesn't look different at all"*.
+
+**The measurement and the verdict are both correct, and that is the point worth keeping.** The 15.4pt figure came from a five-sample bank; §3.1's calibration collects roughly one sample per character, and at one sample the same measurement gives **1.19pt**. The style's entire effect is choosing among samples the user does not yet have. So the honest reading is not "neat does nothing" but **"neat cannot do anything until banks are bigger"** — which is [M3-19](PROGRESS.md), learning extra variants from ordinary writing. Reconsider this style after M3-19 ships, not before.
+
+Nothing in the synthesizer was removed. `Synthesizer.Variation` still takes an arbitrary scale, and it still reaches sample selection, spacing and slant — that work is what makes a multi-sample bank render differently from a single-sample one **at `.natural`**, which is the only style the app now asks for. Restoring the third style is a case in `HandwritingStyleChoice` plus a constant.

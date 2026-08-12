@@ -2,9 +2,11 @@
 "tool.pen" = "Pen";
 "tool.eraser" = "Eraser";
 "tool.lasso" = "Selection lasso";
+"canvas.undo" = "Undo";
 
 "ask.action" = "Ask";
-"ask.hint" = "Draw a lasso around the work you want help with.";
+"ask.hint.question" = "Step 1 of 2: Draw around the work you want help with.";
+"ask.hint.answer-area" = "Step 2 of 2: Draw where the answer is allowed to go.";
 
 "library.title" = "Notebooks";
 "library.empty.title" = "Create your first notebook";
@@ -33,16 +35,18 @@
 "ask.verb.check" = "Check";
 "ask.verb.ask" = "Ask a question";
 "ask.state.working" = "Working…";
+"ask.notice.missing-handwriting-characters" = "Typeset was used because your handwriting sample is missing a character in this answer.";
 "ask.cancel" = "Cancel";
 "ask.keep" = "Keep";
 "ask.discard" = "Discard";
 "ask.retry" = "Try again";
+"ask.choose-area" = "Choose another area";
 "ask.dismiss" = "Dismiss";
 "ask.failure.unreadable" = "Couldn’t read that clearly. Check what it says, then try again.";
 "ask.failure.invalidSpec" = "Something went wrong — try again.";
 "ask.failure.offline" = "You’re offline, so this needs a connection.";
 "ask.failure.outOfCredits" = "You’re out of AI actions for now.";
-"ask.failure.noRoom" = "No room on the page. Make room, or use the next page.";
+"ask.failure.noRoom" = "The answer won’t fit there at your writing size. Choose a larger area.";
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t reach the model — try again.";
 
@@ -51,7 +55,10 @@
 "pen.blue" = "Blue pen";
 "pen.red" = "Red pen";
 "pen.green" = "Green pen";
-"ask.lasso.capture" = "Draw a lasso around the work you want help with";
+"ask.lasso.question.capture" = "Draw around the work you want help with";
+"ask.lasso.answer-area.capture" = "Draw where the answer is allowed to go";
+"ask.question.selected" = "Question area selected";
+"ask.answer-area.selected" = "Allowed answer area selected";
 
 "calibration.title" = "Your handwriting";
 "calibration.start" = "Teach it your handwriting";
@@ -59,12 +66,14 @@
 "calibration.clear" = "Clear";
 "calibration.skip" = "Skip this";
 "calibration.next" = "Next";
+"calibration.progress %lld %lld" = "Sheet %lld of %lld";
 "calibration.finish" = "Save";
+"calibration.save.failed.title" = "Couldn’t save your handwriting";
+"calibration.save.failed.message" = "Your calibration is still open. Try Save again.";
 "calibration.summary.captured %lld" = "Captured %lld characters.";
 "calibration.summary.unclear" = "These are still missing. Answers that use them will be written in the typeset style instead of your hand.";
 "calibration.repair %lld" = "Write these %lld again";
 "calibration.delete" = "Delete my handwriting";
 "style.title" = "Answers are written in";
 "style.mine" = "My handwriting";
-"style.neat" = "A neater version of mine";
 "style.typeset" = "Typeset";

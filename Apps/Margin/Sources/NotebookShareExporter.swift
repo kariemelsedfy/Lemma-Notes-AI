@@ -35,3 +35,20 @@ enum NotebookShareExporter {
 enum NotebookShareExportError: Error {
     case emptyNotebook
 }
+
+/// Establishes the ordering required for a current export: persist, reload, then render.
+@MainActor
+enum NotebookExportCoordinator {
+    typealias Exporter = @MainActor (StoredDocument, NotebookShareExporter.Format) throws -> URL
+
+    static func export(
+        notebookID: UUID,
+        format: NotebookShareExporter.Format,
+        library: NotebookLibrary,
+        exporter: Exporter = NotebookShareExporter.export
+    ) async throws -> URL {
+        try await library.autosave.flushForExport()
+        let currentDocument = try library.documentForExport(id: notebookID)
+        return try exporter(currentDocument, format)
+    }
+}

@@ -1,5 +1,6 @@
 import DocumentStore
 import InkCore
+import PencilKit
 import XCTest
 
 @testable import Margin
@@ -113,6 +114,97 @@ final class SuggestionProvenanceTests: XCTestCase {
         XCTAssertEqual(element.requestID, "req_2plus2")
     }
 
+    func testGeneratedEraserRemovesTheRestOfATouchedAnswer() {
+        let page = Self.page()
+        let metadata = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+        let afterPencilKit = [page.strokes[0], page.strokes[2]]
+
+        let result = GeneratedInkEraser.resolve(
+            previous: page.strokes.map(Self.stored),
+            current: afterPencilKit.map(Self.stored),
+            metadata: metadata)
+
+        XCTAssertEqual(result.strokeIndicesToRemove, [1])
+        XCTAssertEqual(result.metadata.elements.map(\.id), ["el_hand"])
+    }
+
+    func testGeneratedEraserLeavesOrdinaryHandwritingBehaviorAlone() throws {
+        let page = Self.page()
+        let metadata = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+        let afterPencilKit = Array(page.strokes.dropFirst())
+
+        let result = GeneratedInkEraser.resolve(
+            previous: page.strokes.map(Self.stored),
+            current: afterPencilKit.map(Self.stored),
+            metadata: metadata)
+
+        XCTAssertTrue(result.strokeIndicesToRemove.isEmpty)
+        let generated = try XCTUnwrap(result.metadata.elements.last)
+        XCTAssertEqual(generated.strokeReferences.map(\.index), [0, 1])
+    }
+
+    /// One eraser stroke can cross two answers. This is the only cover for `resolve` handling
+    /// more than one removed element, so a regression that stopped at the first would show here.
+    func testOneGestureRemovesTwoGeneratedAnswersWithoutTouchingHandwriting() {
+        let page = Self.page()
+        let secondAnswer = [Self.stroke(from: 420, to: 440), Self.stroke(from: 450, to: 470)]
+        let previous = page.strokes + secondAnswer
+        var metadata = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+        metadata.elements.append(
+            Self.generatedElement(id: "el_second", strokeIndices: [3, 4], in: previous))
+        // PencilKit's vector eraser takes one hatch stroke out of each answer.
+        let afterPencilKit = [previous[0], previous[2], previous[4]]
+
+        let result = GeneratedInkEraser.resolve(
+            previous: previous.map(Self.stored),
+            current: afterPencilKit.map(Self.stored),
+            metadata: metadata)
+
+        XCTAssertEqual(result.strokeIndicesToRemove, [1, 2])
+        XCTAssertEqual(result.metadata.elements.map(\.id), ["el_hand"])
+    }
+
+    func testGeneratedEraserNeverDeletesAnAmbiguousFingerprint() {
+        let page = Self.page()
+        let duplicate = page.strokes[1]
+        let previous = [page.strokes[0], duplicate, duplicate]
+        var metadata = page.metadata
+        metadata.elements.append(
+            PageElement(
+                id: "ambiguous",
+                kind: .generated,
+                bounds: PageBounds(horizontal: 0, vertical: 0, width: 10, height: 10),
+                strokeReferences: [
+                    StrokeReference(
+                        index: 1, fingerprint: StrokeFingerprint(stroke: Self.stored(duplicate)))
+                ]
+            ))
+
+        let result = GeneratedInkEraser.resolve(
+            previous: previous.map(Self.stored),
+            current: [page.strokes[0], duplicate].map(Self.stored),
+            metadata: metadata)
+
+        XCTAssertTrue(result.strokeIndicesToRemove.isEmpty)
+        XCTAssertEqual(result.metadata.elements.count, 2)
+        XCTAssertTrue(result.metadata.elements[1].strokeReferences.isEmpty)
+    }
+
+    @MainActor
+    func testDirtyPagePersistsLiveMetadataInsteadOfTheOpeningSnapshot() throws {
+        let page = Self.page()
+        let updated = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+        let store = PageDrawingStore(metadata: [Self.pageID: page.metadata])
+
+        store.save(PKDrawing(), metadata: updated, for: Self.pageID, pageSize: CGSize(width: 768, height: 1_024))
+
+        XCTAssertEqual(try XCTUnwrap(store.takeDirtyPages().first).metadata, updated)
+    }
+
     func testTheWholeRoundTripHoldsThroughSaveEditAndReload() throws {
         let page = Self.page()
         let metadata = SuggestionProvenance.recording(
@@ -137,8 +229,13 @@ final class SuggestionProvenanceTests: XCTestCase {
         XCTAssertEqual(element.requestID, "req_2plus2")
     }
 
-    // MARK: - Fixtures
+}
 
+// MARK: - Fixtures
+
+// In an extension so the merged eraser and provenance cases stay in one file without the
+// class body exceeding SwiftLint's `type_body_length`.
+extension SuggestionProvenanceTests {
     private static let acceptedAt = Date(timeIntervalSince1970: 1_800_000_000)
     private static let pageID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
 
@@ -175,6 +272,23 @@ final class SuggestionProvenanceTests: XCTestCase {
             requestID: "req_2plus2",
             strokeIDs: strokeIDs,
             bounds: CGRect(x: 320, y: 100, width: 50, height: 30),
+            acceptedAt: acceptedAt
+        )
+    }
+
+    /// A generated element whose fingerprints match `strokes`, for the second answer on a page —
+    /// `SuggestionProvenance.recording` only ever records the one Ask that just landed.
+    private static func generatedElement(
+        id: String, strokeIndices: [Int], in strokes: [InkStroke]
+    ) -> PageElement {
+        PageElement(
+            id: id,
+            kind: .generated,
+            bounds: PageBounds(horizontal: 420, vertical: 100, width: 50, height: 30),
+            strokeReferences: strokeIndices.map {
+                StrokeReference(index: $0, fingerprint: StrokeFingerprint(stroke: stored(strokes[$0])))
+            },
+            requestID: id,
             acceptedAt: acceptedAt
         )
     }

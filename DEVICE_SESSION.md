@@ -15,6 +15,17 @@ measured, not how it felt, except where the task explicitly asks how it felt.
 
 ## 0. Before you start
 
+**No manual test starts from a reused build.** Before each individual handoff to the human,
+regenerate the workspace, create a new DerivedData directory, build the current branch for
+the connected iPad, install that exact artifact, launch it, and open the regenerated
+workspace in Xcode. Reusing an earlier `.app`, Xcode's previous DerivedData, or an incremental
+device build is not an acceptable shortcut, even when only documentation changed.
+
+Installing the new build over the current app preserves notebooks and handwriting
+calibration. Uninstall first only when the test explicitly needs a clean app-data state, and
+warn that the uninstall deletes local notebooks and the glyph bank. “Fresh build” does not
+silently mean “erase user data.”
+
 **Set a signing team, once.** A device build will not sign without one. Find your team ID
 in Xcode → Settings → Accounts → your Apple ID → the ID column beside your team (a free
 Apple ID shows a "Personal Team"). Then:
@@ -59,7 +70,7 @@ arrive as expected.
 - **Squeeze** (Pencil Pro): arms the Ask lasso. If your system squeeze setting is "off",
   nothing should happen — that is deliberate, not a bug.
 - **Double-tap** (Pencil 2+): does whatever your system setting says, and nothing
-  app-specific. The opt-in override is not reachable yet (M2-18, needs onboarding).
+  app-specific. The opt-in override is not reachable yet (M2-25, needs onboarding).
 - **Pencil 1 or no Pencil**: nothing happens, nothing crashes.
 
 **Also worth a judgement:** squeeze is treated as Ask unless you explicitly set the system
@@ -106,23 +117,20 @@ first time anyone sees what the product is actually for.
 **M2-13, M2-13B, M2-14 and M2-15 are closed** — confirmed 2026-08-10: export works, accepted
 ink stays, and answers are sized in proportion to the writing they answer. ✅
 
-**Three things are open and only a device can close them. Do them in this order.**
+**Two fixes are open and only a device can close them. Do them in this order.**
 
-**1 — M3-16, the calibration summary.** Calibrate, and deliberately leave a few boxes blank
-(or skip the maths sheet). At the end the summary must show the missing characters *wrapped*
-inside the sheet, and the **Save** button must be visible and tappable. Save is the only thing
-that writes your handwriting to disk; if it is off-screen, the whole calibration is discarded
-without saying so.
+**1 — M3-18, repair-page sizing.** Calibrate and deliberately leave more than 26 boxes blank.
+The repair flow must split the missed characters into pages of at most 26, keep the boxes at
+the normal calibration size, and show **Sheet n of total**. Complete at least two repair pages
+and verify that the final missing-character list reflects captures from both pages.
 
-**2 — M3-17, typeset after calibrating.** Once Save works, calibrate fully, use the repair
-button for anything missed, then ask. The answer should be in your hand. **If it is still
-typeset, that is the blocker** — the diagnosis order is in `PROGRESS.md` M3-17, and the fastest
-route is one log line at the top of `ask()` rather than more guessing.
+**2 — M2-17, size and placement.** Write `2+2=` small, normal, and large, then ask about each.
+The handwritten answer should scale in proportion to the selected writing. Record which sizes
+look right and where the answer lands; bottom-right placement is still the simple geometric
+anchor and is tracked separately as M2-23.
 
-**3 — M2-17, size and placement.** Ask several times, at deliberately different handwriting
-sizes. **Write down the cases that come out right as well as the ones that come out wrong** —
-two theories have already failed, every simulator path produces a correct answer, and the
-difference between a good case and a bad one is the only remaining lead.
+**M3-16 and M3-17 are closed.** On 2026-08-10 the calibration summary saved successfully and
+the generated answer used the captured Apple Pencil `4` rather than the typeset fallback. ✅
 
 **Then M2-16:** calibrate, then ask. The answer must appear.
 Until 2026-08-10 finishing calibration silently broke every subsequent Ask — the generated
@@ -164,13 +172,66 @@ fixed but unverified on hardware:
 
 - Does the answer look like your handwriting? Say what gives it away — that answer is
   worth more than any number in this file.
-- Switch to "A neater version of mine" in the same menu and ask again. **I expect you to
-  see almost no difference**: `Variation` currently only reaches vertical jitter and
-  baseline drift, not which sample of each letter gets used. If you *can* tell them apart,
-  say so — that would contradict the measurement (M3-08C).
+- The only other style is **Typeset**, in the same menu. It is meant to look like nobody's
+  handwriting; the check is that it is clean and correctly sized, not that it resembles you.
+  (§8 once specified a third, "a neater version of mine". It was withdrawn on 2026-08-12 —
+  M3-08D — after it proved indistinguishable from your own hand on a one-pass bank.)
 
-**This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If it looks
-obviously mechanical here, fix M3-08C before recruiting anyone.
+**This is the dress rehearsal for M3-10**, the blind panel that is the M3 gate. If the answer
+looks obviously mechanical here, say so before anyone recruits a panel — and note that the
+lever with the most left in it is M3-19, which grows the bank this all reads from.
+
+## 7. ~~M2-18 — erasing a generated answer, and undoing it~~ — **passed 2026-08-12** ✅
+
+All four checks confirmed on device: a generated answer erases as one object, own handwriting
+still erases by stroke, **one** undo restores the whole answer, and a second undo steps back
+past it rather than into a half-erased state. M2-18 is Done. Kept below as the regression
+script — this is the sequence to re-run if erase or undo is ever touched again.
+
+<details>
+<summary>The original checklist</summary>
+
+You reported this yourself:
+"when I delete things I wrote it deletes by shape or stroke, but when I delete something the
+AI wrote it deletes like a rubber removing pixels in a radius." Both used the same vector
+eraser; the difference is that a typeset `4` is ~50 hatch scanlines, so erasing took them one
+at a time.
+
+Set up: write `2+2=` on a page, Ask, and keep the answer so it commits to the page. Write a
+word or two of your own beside it.
+
+- **Erase the answer.** Touch the eraser to *any part* of the generated answer. The whole
+  answer should go at once, not shred away scanline by scanline. This is the fix.
+- **Erase your own writing.** Unchanged from before — it should still erase by stroke/shape.
+  If your own ink starts disappearing in groups, that is a real bug: stop and say so.
+- **Undo once.** ⌘Z, or the undo control. **The entire answer should come back in one undo.**
+  This is the acceptance box that no test here can tick — it depends on the undo manager
+  PencilKit owns, which XCTest cannot reach. If it takes several undos, or brings the answer
+  back in pieces, or restores nothing, that is the finding.
+- **Then undo again.** It should step back to before the answer, not into a half-erased state.
+
+**Worth watching:** erasing two answers with one continuous eraser stroke. Both should go.
+That path is unit-tested but has never run on hardware.
+
+**If the answer only partly erases,** that is the deliberate failure mode, not a crash: when
+two strokes have identical fingerprints the eraser refuses to act, because preserving your
+ink beats tidying a generated group. Note it and move on — it is a known tradeoff, not a
+regression.
+
+</details>
+
+## 8. ~~M3-08C — do the two handwriting styles look different?~~ — **answered 2026-08-12: no**
+
+Asked against a real one-pass bank, the verdict was "doesn't look different at all". **The
+style was withdrawn rather than iterated on** — see M3-08D. The app now offers two styles, *My
+handwriting* and *Typeset*, and there is nothing to compare here any more.
+
+Worth keeping for whoever picks up M3-19: the negative result agreed with the numbers rather
+than contradicting them. M3-08C measured 15.4pt of separation on a **five-sample** bank; on a
+**one-sample** bank the same measurement gives 1.19pt, and calibration collects about one
+sample per character. The style's entire effect is choosing between samples that do not exist
+yet. So the thing to fix was never the style — it is M3-19, and the neat style is worth
+re-measuring only after that ships.
 
 ---
 
