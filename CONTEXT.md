@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 (late) · by: Claude · Milestone: **undo works on device; M2-18's grouped erase still unverified**
+**Last updated:** 2026-08-12 · by: Claude · Milestone: **M2-18 is device-confirmed; M3-10's blind panel is the only thing left in M3**
 
 ## Handover, 2026-08-10
 
@@ -94,7 +94,13 @@ stroke looks like *to the app* before shipping it.
    and a device is the test.
 5. **A green suite here means less than you think.** Every device session so far has found
    something the tests could not. Build for the iPad and use it before believing a feature.
-6. **When a device bug survives two fixes, stop reasoning and instrument.** M2-26 took five
+6. **A correct-looking branch that nothing reaches is evidence about whatever feeds it.**
+   `Synthesizer.layout` has always positioned descenders properly, and it had never once run
+   — no glyph in any bank had ink below the baseline, because `GlyphNormalizer` seated every
+   letter's lowest ink *on* it (M3-01C). The symptom surfaced two layers away as an OCR
+   confusion, `g` read as `9`. Before sweeping parameters, ask which branches of the code
+   your data can actually reach.
+7. **When a device bug survives two fixes, stop reasoning and instrument.** M2-26 took five
    round-trips; four were guesses from symptoms and one of them shipped a regression that ate
    handwriting. The fix came from twenty minutes of logging stroke counts to the app container.
    The recipe is in that session entry — it is reusable and it is the most valuable thing in it.
@@ -155,7 +161,7 @@ who has not read the code — because they have not.
 | CI | GitHub Actions macOS workflow; PR and `main` verification, including internal-import boundary enforcement. Package tests run on macOS, so anything `#if os(iOS)` must be tested from the app target instead |
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
 | Calibration | Seven guided sheets (§3.1) from the library toolbar. `CalibrationSession` builds a bank and reports what it could not capture; partial banks are kept, since ADR-014 makes leaving early legitimate |
-| Glyph bank | `GlyphBank` + `GlyphBankStore`, on device only, deletable in one tap. `GuideBoxSegmenter` assigns strokes to boxes and drops low-confidence captures rather than storing a bad glyph |
+| Glyph bank | `GlyphBank` + `GlyphBankStore`, on device only, deletable in one tap. `GuideBoxSegmenter` assigns strokes to boxes and drops low-confidence captures rather than storing a bad glyph. Descenders hang below the writing line, seated by character class from the writer's own measured x-height (M3-01C) — before that every glyph's lowest ink sat *on* the line, which gave a `g` a digit's geometry and made Vision read it as `9` |
 | Synthesizer | Concatenative from the bank (ADR-004), with per-glyph jitter, baseline drift and preserved pen-lifts. `LineBreaker` wraps to the writer's own line spacing. `Variation` reaches sample selection, spacing and per-glyph slant (M3-08C) — it previously reached only vertical jitter, so extra samples in a bank were dead weight |
 | Evaluation | `StyleSimilarity` — a hand-built feature vector, **not** the writer-ID embedding §7 names. A regression detector, not a certificate of realism |
 | Golden eval set | Does not exist (M4) |

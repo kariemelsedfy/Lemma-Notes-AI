@@ -153,6 +153,17 @@ final class LegibilityHarnessTests: XCTestCase {
         }
     }
 
+    /// A corpus with no `g`, `p`, `q`, `y` or `j` in it cannot see where a bank seats the
+    /// letters that hang below the line — which is exactly the defect that reached the 95%
+    /// bar and read as a letterform problem for a day (M3-01C).
+    func testTheCorpusExercisesDescenders() {
+        for descender in "gpqyj" {
+            XCTAssertTrue(
+                LegibilityCorpus.prose.contains { $0.contains(descender) },
+                "No corpus string contains `\(descender)`")
+        }
+    }
+
     /// Prose only until M5 renders real notation — see `LegibilityCorpus` and M3-11.
     func testTheCorpusCarriesNoMathNotation() {
         let notation = Set("^_+=*/\\{}[]<>")

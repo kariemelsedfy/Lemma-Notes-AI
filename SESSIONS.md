@@ -11,6 +11,53 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-01C — the `g` was never the problem; the baseline was
+
+The filed task said to look at the typeset `g`'s descender loop. That was a guess, it was in
+the task, and it was wrong. Worth reading if you are about to act on a diagnosis someone else
+wrote down confidently.
+
+**Four hypotheses died to measurement before the fifth was even proposed.** Typeset reads all
+six `g` words exactly, so the letterform is fine. Thinning the nib made the synthesizer
+*worse* — 7/9 → 2/9 at half weight — which killed the M2-13B-shaped "it is too bold" theory
+and its opposite. Sweeping the fixture bank's capture frame from 120pt to 44pt changed nothing
+at all, 5/7 every time. Rendering *larger* made it worse. Weight, density and size were all
+innocent, and each took about five minutes to rule out because the harness already existed.
+
+**The cause: `GlyphNormalizer` seated every glyph's lowest ink on the baseline.** Right for a
+letter that stands on the line, wrong for one that hangs below it — it lifts the body into the
+band above. Measured: `g` normalized to y −1.44…0 against a real `9` at −1.36…0. That is not
+"similar to a 9", it is *a digit's geometry*: full height, standing on the line. Vision was
+reading it correctly; the bank was lying to it. `j` was equally broken (`adjacent` →
+`adlacent`, `project` → `Prolect`), and `p q y` with them.
+
+**The tell I want the next person to recognise.** `Synthesizer.layout` already handled
+descenders properly — it computes `fall` from `bounds.maxY` and lowers the origin by it. That
+code was correct, complete, and *unreachable*: no glyph in any bank had ever had `maxY > 0`.
+A dead branch in a consumer is evidence about its producer. If I had noticed that before
+running the sweeps I would have got here in ten minutes instead of ninety.
+
+**What I nearly shipped instead.** My first real hypothesis was that the synthesizer never
+scales the writer's pen width with the size it renders at — `nib(for:)` returns
+`style.strokeWidth` flat — so an answer rendered smaller than calibration comes out
+proportionally bolder. That is *also true*, it is a real defect, and it is not this one; the
+sweep says fixing it alone would have made the `g` worse. I left it alone rather than bundling
+a plausible-sounding change into a fix I could prove. Filed as M3-21.
+
+**On the corpus.** M3-01B named `integral` and `take logs of both sides` as the two misses.
+Both pass on this machine today — they are the marginal cases, which is exactly why the bar
+looked "one string wide" rather than broken. The four descender strings added here fail
+*reliably* under the old seating (93.75%, below §7's bar) and pass with it fixed. When you
+widen a corpus to pin a defect, check that your new strings fail before the fix rather than
+merely containing the letter you suspect.
+
+**Environment, again.** This checkout could not build at all — `Packages/InkCore/Package.swift`
+came back as a dataless OneDrive placeholder (CONTEXT §4.5). The `git archive HEAD | tar -x`
+escape works and cost about a minute; `.githooks/pre-commit` was dataless too, so commits
+needed `-c core.hooksPath` and `scripts/lint.sh` run by hand. Third session in a row to hit
+this. Also note `grep -r` over the real checkout *hangs* rather than failing, which burned two
+minutes — search the hydrated tree, not this one.
+
 ## 2026-08-12 · Claude · M2-18 confirmed, and M3-08D — the neat style measured well and died anyway
 
 Two device results, one good and one that closes a feature.

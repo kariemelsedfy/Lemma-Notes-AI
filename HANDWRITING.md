@@ -68,6 +68,29 @@ The hard bit. For lines 1–5 the user writes into per-character guide boxes, so
 
 Show the user the segmented result and let them retap any glyph to rewrite it. This is a 20-line UI that saves enormous quality pain.
 
+**Where the baseline comes from.** A guide box is a square: it says which character was
+written, not where the writing line runs through it. Since §4 step 2 places each glyph "on
+the baseline with its natural vertical offset", segmentation has to supply that offset, and
+it derives one per character class rather than storing one:
+
+- Letters that stand on the line — x-height letters, ascenders, capitals, digits — keep the
+  bottom of their ink as the baseline.
+- `g p q y` (and `γ μ`) have no ascender, so the *top* of their ink is the top of the
+  x-height band: the baseline is one measured x-height below it, and everything under that
+  is tail.
+- `j β φ` rise above the x-height band as well as falling below it, so their own ink cannot
+  place them. They take the median tail depth measured from the writer's other descenders on
+  the same sheet, falling back to 0.44 x-heights — Helvetica's proportion — when a repair
+  sheet contains none.
+
+The inferred baseline is always clamped inside the captured ink, so a writer whose `y` has
+no tail is not pushed off the line.
+
+**This was wrong until M3-01C**, which seated every glyph's lowest ink on the baseline. That
+lifts a `g` into the band above the line, where it has a digit's geometry — full height,
+standing on the baseline — and Vision read synthesized `g`s back as `9`s. Math notation that
+straddles the baseline is deliberately not handled here; it belongs to M5's box model.
+
 ### 3.3 Style statistics
 
 Derived at calibration, stored with the bank, and re-estimated continuously from the user's real writing (a slow-moving exponential average, so the bank tracks their hand as it changes across a semester):

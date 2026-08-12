@@ -20,15 +20,20 @@ import Foundation
 /// The strings are what this app actually renders: worked steps and short answers a student
 /// would find in a margin.
 ///
-/// **Measured 2026-08-11 over these 44 strings:** `TypesetStyle` 100% exact (mean similarity
-/// 1.0); `Synthesizer` through a typeset-derived bank **95.45%** — 42 of 44, against a 95% bar.
+/// **Descenders are deliberately over-represented** — `g p q y j` across the last four
+/// strings. M3-01B measured the synthesizer at 95.45% here and recorded both misses as a
+/// `g`/`9` confusion of the *letterform*; M3-01C found the real cause in `GlyphNormalizer`,
+/// which seated every glyph's lowest ink on the baseline and so lifted a `g` into a digit's
+/// geometry. Under that seating these four strings read back `a 9ood approximation`,
+/// `adlacent angles are equal` and `Prolect onto the y axis`.
 ///
-/// That margin is one string wide, and it is not random. **Both misses are the same
-/// confusion, `g` read as `9`** (`integral` → `inte9ral`, `take logs of both sides` →
-/// `take lo9s of both sides`) — the identical failure M2-13B hit when it settled the fill
-/// inset at 0.4 rather than 0.5. So adding another word containing `g` can drop the
-/// synthesizer below the bar without anything having regressed. If that happens, read it as
-/// the known `g`/`9` weakness (M3-01C) before suspecting the renderer.
+/// The two strings M3-01B named (`integral`, `take logs of both sides`) were the *marginal*
+/// cases — they pass or fail with the recognition — which is why the bar looked one string
+/// wide rather than broken. If you are widening this corpus again, add words that fail
+/// **reliably**, not ones that fail sometimes.
+///
+/// **Measured 2026-08-12 over these 48 strings:** `TypesetStyle` 100% exact (mean similarity
+/// 1.0); `Synthesizer` through a typeset-derived bank 100%, against a 95% bar.
 enum LegibilityCorpus {
     static let prose: [String] = [
         "The derivative is 2x",
@@ -75,6 +80,11 @@ enum LegibilityCorpus {
         "estimate before calculating",
         "show your working",
         "the graph is symmetric",
+        // Descenders, which is where the bank's seating shows (M3-01C).
+        "a good approximation",
+        "adjacent angles are equal",
+        "project onto the y axis",
+        "the graph of y equals x",
     ]
 
     /// Wide enough that the renderer is not squeezed to illegibility by its own fitting, which

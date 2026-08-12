@@ -25,8 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M3-01C — The synthesized `g` reads as a `9`
-status: In progress · claimed: Claude · 2026-08-12 · see the full entry under **Ready — M3**
+_(empty)_
 
 ## Review
 
@@ -1141,23 +1140,62 @@ Acceptance:
 - [x] M3-00 and M3-05 each assert ≥95% against it — the *same* it, which was the real gap
 
 ### M3-01C — The synthesized `g` reads as a `9`
-status: In progress · claimed: Claude · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B · estimate: S
-Note: measured while widening the corpus (M3-01B). The synthesizer scores 95.45% against §7's
-95% bar — 42 of 44 — and **both misses are the same confusion**: `integral` → `inte9ral`,
-`take logs of both sides` → `take lo9s of both sides`. M2-13B met this exact string when it
-settled the fill inset at 0.4 instead of 0.5, so it is a long-standing property of the typeset
-letterform rather than something new.
-Two consequences. The bar is met by one string's margin, so an added `g` word can fail the
-suite without any regression. And a real user's handwritten `g` may or may not share the
-problem — this is measured through a *typeset-derived* bank, so it says more about
-`TypesetStyle`'s `g` than about anyone's hand.
-Worth checking whether the descender loop closes too far; a `9` is a `g` whose tail has joined
-its bowl. Do not tune against `LegibilityHarness` alone — it uses Core Graphics, and M2-13
-records what tuning against a renderer the user never sees costs (CONTEXT invariant 11).
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B, HANDWRITING.md §3.2 · estimate: S
+Note: **the filed diagnosis was wrong, and so was mine until I measured.** The task guessed at
+the typeset letterform — "the descender loop closes too far" — and every hypothesis in that
+family is refuted: typeset reads all six `g` words exactly at 100%, thinning the nib makes the
+synthesizer *worse* (7/9 → 2/9 at half weight), the bank's capture size changes nothing
+(5/7 at every reference frame from 120pt to 44pt), and rendering larger makes it worse, not
+better. Weight, density and size are all innocent.
+**The cause is `GlyphNormalizer`, which seated every glyph's lowest ink on the baseline.** For
+a letter that stands on the line that is right; for one that hangs below it, it lifts the body
+into the band above. Measured against the fixture bank: `g` normalized to y −1.44…0 where a
+real `9` is −1.36…0 — **the same geometry**, full height standing on the line, which is what a
+digit is. Vision agreed. It was never only `g`: under the old seating `adjacent` reads back
+`adlacent` and `project` reads `Prolect`, so `j` was equally broken, and `p q y` with them.
+Nothing caught it because `Synthesizer.layout` handles descenders correctly — `fall` is
+computed from `bounds.maxY` — so the branch that puts ink below the baseline was simply never
+reached. Every glyph in every bank had `maxY == 0`. **A dead branch in the consumer is evidence
+about the producer**; that is the transferable part of this one.
+The baseline is now inferred per character class from the writer's own measured x-height, and
+`GuideBoxSegmenter` measures the median tail depth across a sheet for `j β φ`, whose own ink
+cannot place them. §3.1's guide boxes are squares and carry no baseline, which is why this has
+to be inferred at all — `HANDWRITING.md` §3.2 now says so.
+The two strings M3-01B named were the *marginal* cases and pass on this machine today; the
+corpus gained four descender strings that fail **reliably** under the old seating (93.75%,
+below the bar) and pass with it fixed.
 Acceptance:
-- [ ] The cause is identified by measuring the rendered `g`, not by guessing
-- [ ] `g` reads as `g` in the corpus strings that currently miss
-- [ ] Typeset legibility stays at 100% and the weight work of M2-13B is not undone
+- [x] The cause is identified by measuring the rendered `g`, not by guessing — four hypotheses
+      refuted by measurement before the fifth was confirmed
+- [x] `g` reads as `g`: the four new descender strings go 5/8 → 8/8, and the corpus 93.75% →
+      100%. Mutation-verified — reverting only the seating fails the descender tests and the
+      §7 bar, and nothing else
+- [x] Typeset legibility stays at 100% and M2-13B's weight work is untouched — no constant in
+      `TypesetStyle` changed
+- [x] `p q y j` are fixed with `g`, and `j` takes its depth from the writer's own descenders
+      rather than a constant, with a documented fallback for a repair sheet that has none
+
+### M3-21 — The writer's pen weight does not scale with the size the answer renders at
+status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, CONTEXT.md invariant 11 · estimate: S
+Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
+defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
+`Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
+The bank stores that width alongside the x-height the writer used on the calibration sheet, so
+the pair describes weight *at capture size*; an answer sized to page ink (M2-17) is routinely
+rendered at a different size, and comes out proportionally bolder or thinner than the writer's
+own hand. At a 12pt answer x-height a 3.0 `size` draws 2.0pt of ink — a sixth of the letter.
+The glyph *shapes* are normalized to x-height 1; their weight is not, which is the
+inconsistency.
+Two traps. Scaling must go through `InkRenderingLimits.drawnWidth(forSize:)` and back:
+`drawn = 2 × size − 4` is affine, so scaling a raw `size` by k does not scale the ink by k
+(invariant 11). And `LegibilityHarness` draws `size` directly as a Core Graphics line width, so
+it will *not* show you the page's behaviour — do not tune this against the OCR number (M2-13).
+Acceptance:
+- [ ] Rendered weight holds a constant ratio to rendered x-height across sizes, measured
+- [ ] The conversion goes through drawn width, not raw `size`, with a test that would fail if
+      someone scales the size directly
+- [ ] Legibility does not regress on the §7 corpus, and the descender fix (M3-01C) still holds
+- [ ] A bank captured at one size renders legibly at half and double it
 
 ### M3-11 — Math legibility needs the M5 layout, not a better font
 status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S
