@@ -11,6 +11,36 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-04 — the region caveat was half wrong, and the fix was to stop asking about regions
+
+Q7 has sat open since M4 was outlined: confirm Apple Intelligence's regional gaps before
+committing to a routing policy. It named "EU and mainland China".
+
+**Half of it was wrong.** Apple's own feature-availability page lists Apple Intelligence as
+available across most of the EU — France, Germany, Spain, Italy. What the EU lacks is the
+iOS/iPadOS 27 Siri feature set, which is a different thing from the Foundation Models
+framework, and belongs to Q12 rather than to T0. Mainland China is a genuine exclusion, with a
+Qwen-backed launch approved in July 2026 and, per reporting, no Private Cloud Compute.
+
+**Watch out for the news framing.** The first search told me confidently that Apple Intelligence
+is unavailable in the EU, and it was describing the Siri announcement, not the framework. Apple's
+own availability page said otherwise in one line. When a question is "is this API available
+here", the vendor's availability page beats coverage of the vendor.
+
+**The valuable output was not the table.** The obvious implementation of Q7 is a region check
+inside `RoutingPolicy`. That would have been wrong twice in the six weeks around this decision —
+once when China's approval landed, and again whenever the EU's 27-era negotiation resolves.
+`SystemLanguageModel.default.availability` answers the question that actually decides the route,
+per device, and stays right without maintenance. So M4-03's signature now takes `availability`
+where it took `region`, and ADR-017 records why, because "add a region table" is exactly the
+thing a future contributor will reach for.
+
+**The bit I want the next agent to take.** A research task's deliverable is usually a decision,
+not a document. I could have written the table into §5.2 and ticked the box; the table is the
+part that expires. The decision — never branch on region — is the part that does not.
+
+---
+
 ## 2026-08-12 · Claude · M4-01 — the pipeline doc described an SDK we do not have
 
 M4 is filed, and its first task was to check the Foundation Models API before anything is

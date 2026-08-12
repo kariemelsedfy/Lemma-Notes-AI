@@ -240,3 +240,45 @@ user's region instead of roaming the page or advancing to another page.
 
 **Revisit when.** Device testing shows the second selection adds more friction than certainty,
 or a future direct-manipulation preview lets the user position the answer more efficiently.
+
+---
+
+## ADR-017 — Tier availability is asked of the framework, never inferred from a region
+
+**Status:** Accepted · 2026-08-12 · decided by: Claude (M4-04, resolves Q7)
+
+**Context.** `AI_PIPELINE.md` §5 carried a standing caveat that Apple Intelligence has regional
+gaps — "EU and mainland China" — and instructed M4 to confirm availability before committing to
+a routing policy. The obvious implementation of that instruction is a region check inside
+`RoutingPolicy`: if the user is in region X, do not route to T0 or T1.
+
+Checked on 2026-08-12 (§5.2), the picture is both narrower and more volatile than the caveat.
+Apple lists Apple Intelligence as available across most of the EU, including France, Germany,
+Spain and Italy; what the EU lacks is the iOS/iPadOS 27 Siri feature set, which is not the
+Foundation Models framework. Mainland China is a genuine exclusion today, but it received
+regulatory approval in July 2026 with a Qwen-backed launch expected within months — reportedly
+without Private Cloud Compute.
+
+**Decision.** The routing policy does not branch on region. It asks
+`SystemLanguageModel.default.availability`, which reports `available` or `unavailable` with a
+reason (`deviceNotEligible`, `appleIntelligenceNotEnabled`, `modelNotReady`) for the device in
+front of it. `.unavailable` is a first-class route — the normal state for a mainland-China user
+today — and degrades to T2-with-consent or to an honest "not available here", never to a crash
+or an unresolved spinner.
+
+Region remains meaningful in two places, and only these: the unit economics in `BUSINESS.md`,
+because a region where every action is T2 inverts the blended-cost assumption; and the copy we
+show a user, because "your device cannot do this" and "this is not available in your country"
+are different sentences.
+
+**Consequences.** The policy stays pure and testable — availability is an input, not a lookup —
+and it cannot go stale. A hard-coded region table would have been wrong twice within the six
+weeks around this decision: once when China's approval landed, and again whenever the EU's
+27-era negotiation resolves. The cost is that we cannot answer "will this work in France?"
+without a device in France; we can only answer "will this work on this device?", which is the
+question that actually determines what happens.
+
+**Alternatives rejected.** A region allowlist in `RoutingPolicy` — rejected as a maintenance
+liability that is wrong the day it is written. Shipping region-gated feature flags from a server
+— rejected as premature: it needs the M4-08 proxy to exist, and it solves a problem the
+framework already answers correctly.

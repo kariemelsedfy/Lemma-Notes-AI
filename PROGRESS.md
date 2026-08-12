@@ -1677,7 +1677,7 @@ Acceptance:
 - [ ] Latency measured on device and recorded against §9's ≤2.5s p50 time-to-first-ink
 
 ### M4-03 — Routing policy
-status: Ready · depends: M4-04 · refs: AI_PIPELINE.md §5 · estimate: M
+status: Ready · depends: M4-04 (done) · refs: AI_PIPELINE.md §5, §5.2, DECISIONS.md ADR-017 · estimate: M
 Note: `(intent, contentComplexity, confidence, connectivity, entitlement, region,
 userPrivacyPreference) -> Tier`, pure and in one file, because §5 says so and because a routing
 decision scattered across call sites is untestable and unauditable. Pure logic with no provider
@@ -1685,19 +1685,31 @@ dependency, so it can land before the providers it routes to.
 Acceptance:
 - [ ] One pure function, exhaustively unit-tested over the input space
 - [ ] Offline and Private Mode force T0; no path reaches T1 or T2 from either
-- [ ] A region where Apple Intelligence is unavailable routes without crashing and without
-      silently sending content somewhere the user did not agree to (M4-04 supplies the facts)
+- [ ] The policy takes `availability` and **never a region** (ADR-017); a device where the
+      on-device model is unavailable routes without crashing and without silently sending
+      content somewhere the user did not agree to
 - [ ] Every decision is explainable — the tier and the reason, as a loggable name with no content
 
 ### M4-04 — Resolve Q7: where Apple Intelligence is actually available
-status: In progress · claimed: Claude · 2026-08-12 · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
 Note: §5 flags EU and mainland China as historical gaps and says to confirm before committing to
 the routing policy. If T0/T1 cannot serve a region, T2 carries it entirely, which changes both
 the economics (`BUSINESS.md`) and the consent flow (5.1.2(i)) for those users.
+Claude 2026-08-12: **the old caveat was wrong about the EU and right about China.** Apple lists
+Apple Intelligence as available across most of the EU, France, Germany, Spain and Italy
+included; what the EU lacks is the iOS/iPadOS 27 Siri feature set, which is not the Foundation
+Models framework — that belongs to Q12, not to T0. Mainland China is a real exclusion today,
+with a Qwen-backed launch approved in July 2026 and reportedly no PCC.
+**The useful output is a design decision, not the table: routing must not branch on region.**
+`SystemLanguageModel.default.availability` answers per device, stays right when Apple changes
+something, and makes `.unavailable` a first-class route rather than an error — which is the
+normal state for a mainland-China user today. ADR-017.
 Acceptance:
-- [ ] Current availability confirmed against Apple's documentation, with the date checked
-- [ ] The consequence for routing is written into `AI_PIPELINE.md` §5, not just noted here
-- [ ] Q7 moves to `DECISIONS.md`
+- [x] Current availability confirmed against Apple's feature-availability page, dated 2026-08-12,
+      with the two live regulatory situations noted as live rather than settled
+- [x] The consequence for routing is written into `AI_PIPELINE.md` §5.2 **and** into M4-03's
+      signature, which now takes `availability` where it took `region`
+- [x] Q7 resolved and recorded as **ADR-017**
 
 ### M4-05 — Prompts v1, versioned and hashed
 status: Ready · depends: M4-01 (done) · refs: AI_PIPELINE.md §10, §5.1, §3 · estimate: M
