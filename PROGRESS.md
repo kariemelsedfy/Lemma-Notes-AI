@@ -1618,7 +1618,7 @@ Developer Program, and the Small Business Program with it) gates M4-07, because 
 depends on that enrolment. T0 needs neither.
 
 ### M4-01 — Confirm the Foundation Models API before writing a line against it
-status: Ready · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
+status: In progress · claimed: Claude · 2026-08-12 · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
 Note: **do this first and separately.** `AGENTS.md` §2 names a fabricated Apple API as the most
 common failure mode in this codebase, and §5 of the pipeline doc makes two claims that are
 themselves unverified: that `PrivateCloudComputeLanguageModel` is the T1 surface, and that the
