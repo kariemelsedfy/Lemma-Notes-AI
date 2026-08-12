@@ -1176,7 +1176,7 @@ Acceptance:
       rather than a constant, with a documented fallback for a repair sheet that has none
 
 ### M3-22 — The OCR harness does not rasterize the width the page draws
-status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
+status: In progress · claimed: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
 Note: `InkRasterizer` draws `InkPoint.size` straight into `CGContext.setLineWidth`, but the
 page draws `2 × size − 4` (`InkRenderingLimits`). So every legibility number in this repo is
 measured on ink roughly a size-to-drawn conversion heavier than what a user sees, and any
@@ -1198,7 +1198,7 @@ Acceptance:
 - [ ] Invariant 11 is restated to say the harness agrees with the page
 
 ### M3-21 — The writer's pen weight does not scale with the size the answer renders at
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
+status: Done · completed: Claude · merged: PR #96 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
 Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
 defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
 `Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
