@@ -11,6 +11,37 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-12B — the renderer now says how wide it draws
+
+Fourth in today's chain. Placement reserved a frame from a flat 0.62 x-heights per character
+while rendering used each glyph's real advance, so for a proportional hand the reservation was
+systematically wrong in both directions — too wide for `illicit`, too narrow for `mmm`.
+
+**The structural half is more interesting than the arithmetic.** The obvious fix is a
+bank-aware measurer that the pipeline selects. But the reason this drifted is that *two*
+independent pieces of code held an opinion about one number, and picking a better second
+opinion leaves that arrangement in place. So `SuggestionInkRendering` now carries a `measurer`,
+defaulting to the nominal estimate: whoever is going to draw the ink is the one who says how
+big it will be. `AskPipeline` just asks `renderer.measurer`. A future renderer cannot forget to
+bring its measurement, because the protocol will hand it a default that is at least honest
+about being an estimate.
+
+Same principle one level down: the advance comes from `Synthesizer.advance(of:bank:)` rather
+than a copy of the synthesizer's gap and side-bearing constants in the measurer. Copying them
+would have worked today and drifted the next time someone tunes a gap.
+
+**One judgement worth recording.** The measurement uses the *un-jittered* layout with the most
+typical sample. Per-glyph gap noise is symmetric around `letterGap`, so the base value is the
+expected width — but more importantly, a reserved frame must not depend on which seed the
+answer happens to render with later. A frame that changes size with the seed is a frame that
+sometimes does not fit.
+
+**On the no-room path.** Every piece of it had tests and the join did not, which is the shape
+of several defects here. It now goes spec → placement → state machine in one test, with the
+same answer placed successfully in a larger area so the test is measuring room rather than some
+unrelated refusal. That second half took thirty seconds to write and is the difference between
+"the failure fires" and "the failure fires for the right reason".
+
 ## 2026-08-12 · Claude · M3-23 — a sentence read backwards, on the path that feeds the model
 
 Third in the chain that started with a `g` reading as a `9`. Each fix exposed the next defect,

@@ -1449,14 +1449,31 @@ Acceptance:
       it to the writer's pen is a different feature and belongs with M3-08C
 
 ### M3-12B — Measure through the glyph bank, and prove the no-room path
-status: In progress · claimed: Claude · 2026-08-12 · refs: AI_PIPELINE.md §4, §8 · estimate: M
+status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §4, §8 · estimate: M
 Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's
 real advance, so the two disagree — harmlessly today because the renderers wrap to the frame
 they are handed, but it means reserved frames are systematically the wrong width for a
 proportional hand.
+Claude 2026-08-12: **the measurement now hangs off the renderer**, rather than the pipeline
+choosing one. `SuggestionInkRendering` gained a `measurer` with the nominal estimate as its
+default; `HandwritingInkRenderer` returns one built from its own bank. Whoever draws the ink
+says how big it will be, which is the structural version of the fix — the previous arrangement
+let two independent pieces of code hold opinions about one number.
+The advance itself comes from `Synthesizer.advance(of:bank:)`, **not a copy of its constants**,
+for the same reason. It is the un-jittered layout using the most typical sample: gap noise is
+symmetric, so the base value is the expected width, and a reserved frame must not depend on
+which seed the answer later renders with.
+Measured: `iiii` and `mmmm` now differ by more than 1.5× where the nominal measurer called them
+identical, and a reserved frame contains its rendered ink at 80–100% fill across five strings.
+Math and any run holding a character the writer never wrote keep the nominal estimate, matching
+`HandwritingInkRenderer`'s per-block typeset fallback — a block drawn typeset is measured as
+typeset.
 Acceptance:
-- [ ] `ContentMeasuring` consults the bank's advances when a bank exists
-- [ ] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`
+- [x] `ContentMeasuring` consults the bank's advances when a bank exists — and the app uses it,
+      via `renderer.measurer`, so this is wired rather than merely available
+- [x] A test drives a genuinely un-fitting answer from spec to `AskFailure.noRoom`, with the
+      same answer placed successfully in a larger area so the test measures room and not a
+      refusal for some other reason
 
 ### M3-08 — Neat style
 status: Done · completed: Claude · 2026-08-08 · **superseded by M3-08D 2026-08-12** · refs: HANDWRITING.md §8 · estimate: S

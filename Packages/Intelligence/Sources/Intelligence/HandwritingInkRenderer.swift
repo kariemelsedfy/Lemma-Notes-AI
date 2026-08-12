@@ -24,6 +24,10 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
     ///
     /// Asked per block rather than per character: half a sentence in someone's handwriting
     /// and half in a typeface is more obviously wrong than either style used consistently.
+    /// Measured through the bank this renderer draws from, so the reserved frame describes
+    /// the writer's own proportional letters rather than a flat per-character estimate.
+    public var measurer: any ContentMeasuring { GlyphBankContentMeasurer(bank: bank) }
+
     public func canRender(_ text: String) -> Bool {
         bank.canRender(text)
     }

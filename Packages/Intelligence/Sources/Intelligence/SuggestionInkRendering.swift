@@ -9,6 +9,20 @@ import InkCore
 /// lets the pipeline be demoed before then.
 public protocol SuggestionInkRendering: Sendable {
     func strokes(for placement: BlockPlacement, style: StyleStats, seed: UInt64) throws -> [InkStroke]
+
+    /// How wide and tall this renderer's output will be, before any of it exists.
+    ///
+    /// **The renderer owns its own measurement on purpose.** `AI_PIPELINE.md` §4 reserves a
+    /// frame first and draws into it second, so two pieces of code have to agree about a size
+    /// that only one of them produces. Hanging the measurement off the renderer means the
+    /// answer comes from whoever is actually going to draw — a typeset block measured as
+    /// typeset, a handwritten one measured through the writer's own advances (M3-12B).
+    var measurer: any ContentMeasuring { get }
+}
+
+extension SuggestionInkRendering {
+    /// The character-count estimate, which is what a renderer with no better idea should use.
+    public var measurer: any ContentMeasuring { NominalContentMeasurer() }
 }
 
 /// Why a block could not be drawn.
