@@ -103,6 +103,10 @@ final class CanvasUndoController: ObservableObject {
         // path, and the two could disagree about which drawing was current.
         drawingStore.save(
             drawing, metadata: snapshot.metadata, for: snapshot.pageID, pageSize: snapshot.pageSize)
+        CanvasDiagnostics.record(
+            "UNDO", storeStrokes: drawing.strokes.count,
+            pageRevision: drawingStore.revision(for: snapshot.pageID),
+            note: "remaining=\(stack.count)")
         canUndo = !stack.isEmpty
     }
 
