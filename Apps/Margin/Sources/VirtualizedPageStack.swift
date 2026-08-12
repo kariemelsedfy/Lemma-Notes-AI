@@ -21,7 +21,7 @@ struct VirtualizedPageStack: View {
     @StateObject var selectionStore = PageSelectionStore()
     @StateObject var askSelection = AskSelectionCoordinator()
     @StateObject var askModel = AskBarModel()
-    @StateObject private var undoController = CanvasUndoController()
+    @StateObject var undoController = CanvasUndoController()
     /// **`@State`, not a plain `let`.** A `View` is a value: the parent rebuilds this struct
     /// on every render, and a `let` initialised inline would hand back a *fresh, empty*
     /// `SuggestionLayer` each time. `askPipeline` is `@State` and survives that rebuild, so
@@ -146,11 +146,10 @@ struct VirtualizedPageStack: View {
         .background(.background)
         .onAppear {
             visiblePageID = pageIDs.first
+            undoController.configure(store: drawingStore)
         }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
-            // `UndoManager.canUndo` is not observable; every edit path bumps `revision`.
-            undoController.refresh()
         }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else {
@@ -255,10 +254,6 @@ private struct LivePageView: View {
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
         .accessibilityLabel("Editable notebook page")
-        // By the time the page appears its canvas is in a window and can resolve an undo
-        // manager, which `makeUIView` could not. Without this the button keeps whatever state
-        // it held across a rebuild until the next edit.
-        .onAppear { undoController.refresh() }
     }
 }
 
@@ -310,8 +305,6 @@ struct LiveInkCanvas: UIViewRepresentable {
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
-        // Adopts the reference only: the canvas has no undo manager until SwiftUI attaches it
-        // to a window, so `refresh` deliberately declines to read one here.
         undoController.adopt(canvasView)
         return canvasView
     }

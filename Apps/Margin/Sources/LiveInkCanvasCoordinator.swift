@@ -2,21 +2,22 @@ import DocumentStore
 import Foundation
 import PencilKit
 
-/// Keeps PencilKit drawing changes, generated-ink grouping, metadata, and undo in one transaction.
+/// Keeps PencilKit drawing changes, generated-ink grouping, and metadata in one transaction.
+///
+/// Undo is not registered here. `CanvasUndoController` owns the stack and is driven from the
+/// gesture boundaries below, so one eraser stroke is one undo entry however many hatch strokes
+/// it consumed. The previous approach — suppressing PencilKit's own registration for the
+/// duration of a gesture and substituting a snapshot restore — depended on an undo manager
+/// that is absent whenever the page is being rebuilt, and could leave registration disabled
+/// if finalization returned early.
 @MainActor
 final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
-    private struct Snapshot {
-        let drawing: PKDrawing
-        let metadata: PageMetadata
-    }
-
     private let pageID: UUID
     private let pageSize: CGSize
     private let drawingStore: PageDrawingStore
     private let undoController: CanvasUndoController?
     private weak var canvasView: PKCanvasView?
-    private var eraserStart: Snapshot?
-    private var didSuppressUndoRegistration = false
+    private var isErasing = false
     private var eraserDidEnd = false
     private var finalizationTask: Task<Void, Never>?
     private var isApplyingDrawing = false
@@ -48,21 +49,17 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         // touching, and this is the only callback that identifies it unambiguously.
         self.canvasView = canvasView
         undoController?.adopt(canvasView)
-        guard canvasView.tool is PKEraserTool, eraserStart == nil,
-            let metadata = drawingStore.metadata(for: pageID)
-        else { return }
-
-        self.canvasView = canvasView
-        eraserStart = Snapshot(drawing: drawingStore.drawing(for: pageID), metadata: metadata)
+        undoController?.beginChange(pageID: pageID, pageSize: pageSize)
+        isErasing = canvasView.tool is PKEraserTool
         eraserDidEnd = false
-        if let undoManager = canvasView.undoManager, undoManager.isUndoRegistrationEnabled {
-            undoManager.disableUndoRegistration()
-            didSuppressUndoRegistration = true
-        }
     }
 
     func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
-        guard eraserStart != nil else { return }
+        guard isErasing else {
+            // Every other tool is finished the moment the Pencil lifts.
+            undoController?.commitChange()
+            return
+        }
         eraserDidEnd = true
         scheduleEraserFinalization(on: canvasView)
     }
@@ -113,7 +110,8 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     /// PencilKit can send its final drawing callback after `didEndUsingTool`; the short
-    /// debounce keeps undo registration suppressed until that last callback is reconciled.
+    /// debounce holds the gesture open so that last callback is reconciled before the undo
+    /// entry is committed, and the entry therefore covers the erase in full.
     private func scheduleEraserFinalization(on canvasView: PKCanvasView) {
         finalizationTask?.cancel()
         finalizationTask = Task { @MainActor [weak self, weak canvasView] in
@@ -123,44 +121,15 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         }
     }
 
+    /// The whole eraser gesture is one undo entry, taken here rather than per callback: a
+    /// typeset answer is dozens of hatch strokes and PencilKit reports them separately.
     private func finishEraserGesture(on canvasView: PKCanvasView) {
-        guard let start = eraserStart else { return }
+        guard isErasing else { return }
         reconcile(canvasView)
-        eraserStart = nil
+        isErasing = false
         eraserDidEnd = false
         finalizationTask = nil
-
-        guard let metadata = drawingStore.metadata(for: pageID) else { return }
-        let finish = Snapshot(drawing: drawingStore.drawing(for: pageID), metadata: metadata)
-        guard didSuppressUndoRegistration, let undoManager = canvasView.undoManager else { return }
-        undoManager.enableUndoRegistration()
-        didSuppressUndoRegistration = false
-        guard
-            start.drawing.dataRepresentation() != finish.drawing.dataRepresentation()
-                || start.metadata != finish.metadata
-        else { return }
-        registerUndo(restoring: start, inverse: finish, with: undoManager)
-    }
-
-    private func registerUndo(restoring snapshot: Snapshot, inverse: Snapshot, with undoManager: UndoManager) {
-        undoManager.registerUndo(withTarget: self) { coordinator in
-            coordinator.restore(snapshot, inverse: inverse)
-        }
-        undoManager.setActionName("Erase")
-    }
-
-    private func restore(_ snapshot: Snapshot, inverse: Snapshot) {
-        guard let canvasView, let undoManager = canvasView.undoManager else { return }
-        isApplyingDrawing = true
-        canvasView.drawing = snapshot.drawing
-        isApplyingDrawing = false
-        drawingStore.save(
-            snapshot.drawing,
-            metadata: snapshot.metadata,
-            for: pageID,
-            pageSize: pageSize
-        )
-        registerUndo(restoring: inverse, inverse: snapshot, with: undoManager)
+        undoController?.commitChange()
     }
 
     private func storedStrokes(in drawing: PKDrawing) -> [StoredStroke] {

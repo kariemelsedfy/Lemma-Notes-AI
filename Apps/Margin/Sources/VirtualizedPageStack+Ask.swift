@@ -136,6 +136,11 @@ extension VirtualizedPageStack {
             return
         }
 
+        // Before the ink lands, so one undo takes the whole answer back off the page. This
+        // commit never passes through a canvas gesture, which is why it needs recording
+        // explicitly — M2-09 recorded "one undo removes the whole generation" as done, but
+        // nothing here ever registered it, and undo could not reach an accepted answer at all.
+        undoController.recordChange(pageID: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         let committed = PKDrawing(strokes: drawingStore.drawing(for: pageID).strokes + pencilStrokes)
         let accepted = suggestions.acceptWithoutInserting()
         recordProvenance(accepted, on: pageID, in: committed)
