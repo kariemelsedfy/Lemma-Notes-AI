@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-12 · by: Claude · Milestone: **M2-18 is device-confirmed; M3-10's blind panel is the only thing left in M3**
+**Last updated:** 2026-08-12 (late) · by: Claude · Milestone: **M3's code work is done and merged; the blind panel (M3-10) is the gate and needs a human. M4 is now filed.**
 
 ## Handover, 2026-08-10
 
@@ -66,7 +66,10 @@ only, and providers are contractually forbidden to log or retain the images/tran
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
-Real providers are M4, and **no M4 task has been filed yet**.
+Real providers are M4, which is **now filed as eleven tasks** (2026-08-12). Start with M4-01,
+which verifies the Foundation Models API before anything is written against it — two claims in
+`AI_PIPELINE.md` §5 are themselves unverified. T0 needs no account and no vendor decision; T1
+waits on M0-07, and T2 on Q6.
 
 **Generated ink is an input to this app, not just an output.** It lands on the page, so the
 lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELINE.md` §1
@@ -116,11 +119,27 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: physically verify M2-18's grouped erase and one-step undo — now reachable via
-the M2-26 undo button — then run M3-10's human panel.** M2-24's two-stage Pencil interaction is device-confirmed, and M1-07C now
-reloads the current notebook before either export format.
+**Next action: run M3-10's human panel.** It is the only thing standing between M3 and a
+verdict, and no agent can run it. M2-18's grouped erase and one-step undo were confirmed on
+device on 2026-08-12, which closed the last device follow-up.
 
-**M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
+**2026-08-12, five merged fixes changed what the panel will see.** A chain of defects, each
+found by fixing the one before it, all in the path between a captured letter and ink on the
+page:
+
+| | |
+|---|---|
+| **M3-01C** | `GlyphNormalizer` seated every glyph's lowest ink on the baseline, so `g p q y j` were lifted into the band above — a `g` had a digit's geometry and Vision read it as `9` |
+| **M3-21** | The writer's pen width never scaled with the size an answer was drawn at, so small answers came out bolder than their hand and large ones spindlier |
+| **M3-22** | `InkRasterizer` drew `size` as a line width where the page draws `2 × size − 4`, so **every legibility number before this described ink a third heavier than anyone has seen** — and ink the page cannot draw is now not drawn here either, so invisible ink (M2-13) finally scores zero |
+| **M3-23** | Vision returns one written line as several blocks, and reading order sorted them by midpoint, so a sentence could come back reversed — on the path that feeds a provider, not just the harness |
+| **M3-12B** | Placement reserved frames from a flat per-character estimate while rendering used real advances; the renderer now owns its own measurement |
+
+**None of it has been seen on an iPad.** M3-21 changes the weight of every handwritten answer
+and M3-12B changes the size of every reserved frame, so the next device session should look at
+answer weight and position first.
+
+**M3-10, the blind similarity panel — the gate, and now the only thing left in M3.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
 The first device look found the output recognisably the user's, but too small. **M3-08C is
 done** (2026-08-11): `Variation` now reaches glyph-sample selection, spacing and per-glyph
