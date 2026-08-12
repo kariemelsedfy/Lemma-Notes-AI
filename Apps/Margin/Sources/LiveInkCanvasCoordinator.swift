@@ -39,6 +39,13 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         self.canvasView = canvasView
         undoController?.adopt(canvasView)
         reconcile(canvasView)
+        // Commit here, not at `didEndUsingTool`. PencilKit sends its final drawing callback
+        // *after* the tool ends, so committing there ran before the ink had landed: the store's
+        // revision had not moved, the entry was discarded as a no-op change, and pen strokes
+        // were silently not undoable. Only the eraser survived, because its debounce happened
+        // to delay the commit past this callback. `commitChange` clears the pending snapshot,
+        // so a gesture that reports many changes still yields exactly one entry.
+        undoController?.commitChange()
         if eraserDidEnd {
             scheduleEraserFinalization(on: canvasView)
         }
@@ -56,7 +63,8 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
 
     func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
         guard isErasing else {
-            // Every other tool is finished the moment the Pencil lifts.
+            // A fallback only: the commit normally happens on the drawing callback above. If
+            // that already ran this is a no-op, since the pending snapshot is cleared.
             undoController?.commitChange()
             return
         }

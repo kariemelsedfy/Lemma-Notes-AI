@@ -52,6 +52,59 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         XCTAssertEqual(subject.store.drawing(for: Self.pageID).dataRepresentation(), afterFirst)
     }
 
+    // MARK: - Undo entries
+
+    /// **PencilKit sends its final drawing callback after `didEndUsingTool`.** Committing the
+    /// undo entry on tool-end therefore ran before the ink had landed, the store's revision had
+    /// not moved, and the entry was dropped as "nothing changed" — so pen strokes were not
+    /// undoable while accepted AI answers were. This asserts the real callback order.
+    func testAPenStrokeIsUndoableEvenThoughTheInkLandsAfterTheToolEnds() {
+        let subject = Self.subject()
+        let undo = CanvasUndoController()
+        undo.configure(store: subject.store)
+        let coordinator = Self.coordinator(store: subject.store, undo: undo)
+
+        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
+        coordinator.canvasViewDidEndUsingTool(subject.canvas)
+        subject.canvas.drawing = Self.drawing()
+        coordinator.canvasViewDrawingDidChange(subject.canvas)
+
+        XCTAssertTrue(undo.canUndo, "a pen stroke must be undoable")
+    }
+
+    /// A gesture reports many drawing changes; it must still be one press to undo.
+    func testOneGestureLeavesOneUndoEntryHoweverManyCallbacksItReports() {
+        let subject = Self.subject()
+        let undo = CanvasUndoController()
+        undo.configure(store: subject.store)
+        let coordinator = Self.coordinator(store: subject.store, undo: undo)
+
+        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
+        for count in 1...5 {
+            subject.canvas.drawing = Self.drawing(strokes: count)
+            coordinator.canvasViewDrawingDidChange(subject.canvas)
+        }
+        coordinator.canvasViewDidEndUsingTool(subject.canvas)
+        undo.undo()
+
+        XCTAssertFalse(undo.canUndo, "five callbacks in one gesture must leave one entry")
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
+    }
+
+    /// A programmatic change with no gesture around it must not become an undo entry — the
+    /// accepted-answer case records its own, and a duplicate would need two presses.
+    func testAChangeOutsideAGestureIsNotRecorded() {
+        let subject = Self.subject()
+        let undo = CanvasUndoController()
+        undo.configure(store: subject.store)
+        let coordinator = Self.coordinator(store: subject.store, undo: undo)
+
+        subject.canvas.drawing = Self.drawing()
+        coordinator.canvasViewDrawingDidChange(subject.canvas)
+
+        XCTAssertFalse(undo.canUndo)
+    }
+
     // MARK: - Fixtures
 
     private static let pageID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
@@ -61,6 +114,13 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         let coordinator: LiveInkCanvasCoordinator
         let store: PageDrawingStore
         let canvas: PKCanvasView
+    }
+
+    private static func coordinator(
+        store: PageDrawingStore, undo: CanvasUndoController
+    ) -> LiveInkCanvasCoordinator {
+        LiveInkCanvasCoordinator(
+            pageID: pageID, pageSize: pageSize, drawingStore: store, undoController: undo)
     }
 
     private static func subject() -> Subject {
@@ -79,21 +139,24 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         )
     }
 
-    private static func drawing() -> PKDrawing {
-        let path = PKStrokePath(
-            controlPoints: (0..<4).map {
-                PKStrokePoint(
-                    location: CGPoint(x: Double($0) * 10, y: 0),
-                    timeOffset: Double($0) * 0.1,
-                    size: CGSize(width: 4, height: 4),
-                    opacity: 1,
-                    force: 1,
-                    azimuth: 0,
-                    altitude: 1
+    private static func drawing(strokes count: Int = 1) -> PKDrawing {
+        PKDrawing(
+            strokes: (0..<count).map { index in
+                let path = PKStrokePath(
+                    controlPoints: (0..<4).map {
+                        PKStrokePoint(
+                            location: CGPoint(x: Double($0) * 10, y: Double(index) * 10),
+                            timeOffset: Double($0) * 0.1,
+                            size: CGSize(width: 4, height: 4),
+                            opacity: 1,
+                            force: 1,
+                            azimuth: 0,
+                            altitude: 1
+                        )
+                    },
+                    creationDate: Date(timeIntervalSince1970: 1_800_000_000)
                 )
-            },
-            creationDate: Date(timeIntervalSince1970: 1_800_000_000)
-        )
-        return PKDrawing(strokes: [PKStroke(ink: PKInk(.pen, color: .black), path: path)])
+                return PKStroke(ink: PKInk(.pen, color: .black), path: path)
+            })
     }
 }

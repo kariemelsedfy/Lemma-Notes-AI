@@ -65,10 +65,14 @@ final class CanvasUndoController: ObservableObject {
     /// Keeps the pending snapshot only if the gesture actually altered the page, so resting the
     /// Pencil or a lasso that selects nothing does not leave a dead entry — one that arms the
     /// button and then appears to do nothing when pressed.
+    /// Safe to call more than once per gesture. The pending snapshot is consumed only when an
+    /// entry is actually pushed, because PencilKit reports the end of a gesture *before* the
+    /// ink lands: clearing it on the first call threw the snapshot away while the change was
+    /// still in flight, and the stroke silently became un-undoable.
     func commitChange() {
         guard !isRestoring, let snapshot = pending, let drawingStore else { return }
-        pending = nil
         guard drawingStore.revision != snapshot.revision else { return }
+        pending = nil
         push(snapshot)
     }
 
