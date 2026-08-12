@@ -1176,7 +1176,7 @@ Acceptance:
       rather than a constant, with a documented fallback for a repair sheet that has none
 
 ### M3-23 — One line read back out of order
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
+status: Done · completed: Claude · merged: PR #98 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
 Note: exposed by M3-22's remeasurement. Vision sometimes returns one rendered line as two text
 blocks, and `HandwritingTranscript.text(from:)` orders blocks by `midY` with a fixed 0.02 band —
 so two fragments of the *same* line whose boxes differ in height (one has ascenders, the other a
@@ -1449,7 +1449,7 @@ Acceptance:
       it to the writer's pen is a different feature and belongs with M3-08C
 
 ### M3-12B — Measure through the glyph bank, and prove the no-room path
-status: Ready · refs: AI_PIPELINE.md §4, §8 · estimate: M
+status: In progress · claimed: Claude · 2026-08-12 · refs: AI_PIPELINE.md §4, §8 · estimate: M
 Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's
 real advance, so the two disagree — harmlessly today because the renderers wrap to the frame
 they are handed, but it means reserved frames are systematically the wrong width for a
