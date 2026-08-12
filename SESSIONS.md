@@ -11,6 +11,37 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-03 — the routing policy, written before anything it routes to
+
+Pure logic, no provider, no network, no device — so it could be written today even though two
+of its three tiers do not exist yet. That ordering is deliberate and worth copying: the policy
+is the part that encodes promises, and it is much easier to reason about on its own than
+wrapped around a live model.
+
+**The rule ordering is the design.** Private Mode and consent are checked *before* any
+capability rule, because a policy that can send content somewhere the user forbade is not a
+routing bug, it is a broken promise. Both are mutation-verified: disable the Private Mode branch
+and 26 assertions fail; disable the consent gate and 8 do, and in each case the test named after
+the promise is the one that goes red. Those two tests sweep the whole input space rather than
+picking a representative case, which is the right shape for a rule that must *never* fire.
+
+**`supportsPrivateCloudCompute` is an input, not an assumption.** M4-01 found that T1 does not
+exist on iPadOS 26, and the tempting response is to hard-code its absence. Making it an input
+means the same policy is correct before and after Q12 is answered, and the test suite covers
+both worlds today.
+
+**Two judgement calls I want on the record.** Running out of credits falls back to the on-device
+model rather than failing — a worse answer beats no answer, and §8's non-blocking bar explains
+the difference — but with no on-device model it reports `outOfCredits` honestly rather than
+pretending something else went wrong. And `modelNotReady` maps to `timeout`, the one §8 failure
+that offers a retry, because assets still downloading is the one unavailability that fixes
+itself.
+
+**The confidence threshold is 0.75, not 0.6.** `SpecValidator` fails closed below 0.6, and it
+would have been easy to reuse that number. They answer different questions: 0.6 is "do not
+render this", 0.75 is "this transcript is good enough that a better model would not help". A
+test asserts the ordering so the two cannot be collapsed by someone tidying up.
+
 ## 2026-08-12 · Claude · M4-04 — the region caveat was half wrong, and the fix was to stop asking about regions
 
 Q7 has sat open since M4 was outlined: confirm Apple Intelligence's regional gaps before

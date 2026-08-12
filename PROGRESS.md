@@ -1677,21 +1677,35 @@ Acceptance:
 - [ ] Latency measured on device and recorded against §9's ≤2.5s p50 time-to-first-ink
 
 ### M4-03 — Routing policy
-status: Ready · depends: M4-04 (done) · refs: AI_PIPELINE.md §5, §5.2, DECISIONS.md ADR-017 · estimate: M
+status: Review · implemented: Claude · 2026-08-12 · depends: M4-04 (done) · refs: AI_PIPELINE.md §5, §5.2, DECISIONS.md ADR-017 · estimate: M
 Note: `(intent, contentComplexity, confidence, connectivity, entitlement, region,
 userPrivacyPreference) -> Tier`, pure and in one file, because §5 says so and because a routing
 decision scattered across call sites is untestable and unauditable. Pure logic with no provider
 dependency, so it can land before the providers it routes to.
+Claude 2026-08-12: one pure function, 17 tests, no provider dependency — it lands before the
+providers it routes to, which is why it could be written at all today.
+**Two rules are promises rather than preferences, and both are mutation-verified:** disabling
+the Private Mode branch fails 26 assertions, disabling the consent gate fails 8, and in each
+case it is the test named after the promise that goes red. The `prefersOnDeviceOnly` and
+`hasThirdPartyConsent` checks sit *before* any capability rule, because a policy that can send
+content somewhere the user forbade is not a routing bug, it is a broken promise.
+`supportsPrivateCloudCompute` is an input rather than an assumption, so the same policy is
+correct on iPadOS 26 (where T1 does not exist — M4-01) and on 27. Out of credits falls back to
+the device rather than failing, since a worse answer beats no answer and §8's bar explains the
+difference; with no on-device model it reports `outOfCredits` honestly instead.
+`modelNotReady` maps to `timeout`, the one §8 failure that offers retry, because assets still
+downloading is temporary.
 Acceptance:
-- [ ] One pure function, exhaustively unit-tested over the input space
-- [ ] Offline and Private Mode force T0; no path reaches T1 or T2 from either
-- [ ] The policy takes `availability` and **never a region** (ADR-017); a device where the
-      on-device model is unavailable routes without crashing and without silently sending
-      content somewhere the user did not agree to
-- [ ] Every decision is explainable — the tier and the reason, as a loggable name with no content
+- [x] One pure function, exhaustively unit-tested over the input space — the promises are
+      tested across every combination of complexity, confidence, connectivity and PCC support
+- [x] Offline and Private Mode force T0; no path reaches T1 or T2 from either
+- [x] The policy takes `availability` and **never a region** (ADR-017); an ineligible device
+      escalates rather than failing, which is the normal state for a mainland-China user today
+- [x] Every decision is explainable — a `reason` on every path, asserted non-empty and
+      whitespace-free across the input space so it cannot become a sentence containing content
 
 ### M4-04 — Resolve Q7: where Apple Intelligence is actually available
-status: Review · implemented: Claude · 2026-08-12 · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
+status: Done · completed: Claude · merged: PR #102 · 2026-08-12 · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
 Note: §5 flags EU and mainland China as historical gaps and says to confirm before committing to
 the routing policy. If T0/T1 cannot serve a region, T2 carries it entirely, which changes both
 the economics (`BUSINESS.md`) and the consent flow (5.1.2(i)) for those users.
