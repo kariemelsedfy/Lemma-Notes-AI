@@ -134,27 +134,22 @@ final class AskPipeline {
         input: PageInput,
         requestID: String
     ) {
-        // Content-free device evidence for M2-17. These measurements identify whether
-        // local handwriting size was lost during selection, placement, or rendering
-        // without logging the selected ink, its transcription, or the answer.
         let usableXHeight = PlacementEngine.usableXHeight(for: context)
-        let sizeDiagnostic =
-            "Ask size anchorXHeight=\(context.anchor.xHeight) "
-            + "styleXHeight=\(context.style.xHeight) usableXHeight=\(usableXHeight)"
-        answerPlacementLogger.info("\(sizeDiagnostic, privacy: .public)")
+        Self.logSize(context: context, usableXHeight: usableXHeight)
         var grid = OccupancyGrid(pageBounds: CGRect(origin: .zero, size: input.pageSize))
         for stroke in pageStrokes { grid.add(stroke: stroke) }
 
         let page = CGRect(origin: .zero, size: input.pageSize)
-        let result = PlacementEngine(page: page, allowedArea: input.allowedAnswerArea, occupancy: grid)
-            .place(spec, context: context, pageStrokes: pageStrokes)
-        for (index, placement) in result.placements.enumerated() {
-            let blockDiagnostic =
-                "Ask block index=\(index) measuredWidth=\(placement.frame.width) "
-                + "measuredHeight=\(placement.frame.height) frameX=\(placement.frame.minX) "
-                + "frameY=\(placement.frame.minY) usedFallback=\(placement.usedFallback)"
-            answerPlacementLogger.info("\(blockDiagnostic, privacy: .public)")
-        }
+        // Measured by whoever is going to draw it (M3-12B): a handwriting renderer reserves
+        // room through the writer's own glyph advances, a typeset one through its estimate.
+        let result = PlacementEngine(
+            page: page,
+            allowedArea: input.allowedAnswerArea,
+            occupancy: grid,
+            measurer: renderer.measurer
+        )
+        .place(spec, context: context, pageStrokes: pageStrokes)
+        Self.logBlocks(result.placements)
 
         // Placement may prefer the last line's anchor measurement over the selection-wide
         // style estimate. Rendering must use the same winning value or the reserved frame
@@ -194,6 +189,26 @@ final class AskPipeline {
         )
         suggestions.present(ink, requestID: requestID)
         model.apply(.placed(result))
+    }
+
+    /// Content-free device evidence for M2-17: whether the local handwriting size survived
+    /// selection, placement and rendering. Never the ink, the transcription, or the answer.
+    private static func logSize(context: SelectionContext, usableXHeight: CGFloat) {
+        let diagnostic =
+            "Ask size anchorXHeight=\(context.anchor.xHeight) "
+            + "styleXHeight=\(context.style.xHeight) usableXHeight=\(usableXHeight)"
+        answerPlacementLogger.info("\(diagnostic, privacy: .public)")
+    }
+
+    /// Geometry only, for the same reason: a frame is not content.
+    private static func logBlocks(_ placements: [BlockPlacement]) {
+        for (index, placement) in placements.enumerated() {
+            let diagnostic =
+                "Ask block index=\(index) measuredWidth=\(placement.frame.width) "
+                + "measuredHeight=\(placement.frame.height) frameX=\(placement.frame.minX) "
+                + "frameY=\(placement.frame.minY) usedFallback=\(placement.usedFallback)"
+            answerPlacementLogger.info("\(diagnostic, privacy: .public)")
+        }
     }
 
     /// Maps a provider error onto the designed failure states in `AI_PIPELINE.md` §8.

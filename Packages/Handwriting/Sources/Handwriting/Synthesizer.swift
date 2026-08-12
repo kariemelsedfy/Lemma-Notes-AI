@@ -113,6 +113,33 @@ public enum Synthesizer {
         bank.canRender(text)
     }
 
+    /// How wide this text will be drawn, in x-heights, before anything is synthesized.
+    ///
+    /// `AI_PIPELINE.md` §4 reserves a frame *before* rendering into it, and until now the
+    /// reservation came from a flat 0.62 x-heights per character while the rendering came from
+    /// each glyph's real advance. For a proportional hand those disagree in both directions —
+    /// `illicit` is reserved far too wide and `mmm` far too narrow (M3-12B).
+    ///
+    /// **Deliberately the un-jittered layout.** Per-glyph gap noise is symmetric around
+    /// `letterGap`, so the base value is the expected width; using a seed here would make a
+    /// reserved frame depend on which seed the answer later happened to render with.
+    /// The most typical sample is used for the same reason `Variation` ranks them that way.
+    ///
+    /// Returns `nil` when the bank cannot draw some character, because the block will then be
+    /// rendered by the typeset fallback (per block, never per character — `HANDWRITING.md` §8)
+    /// and measuring it through the bank would describe ink that is never drawn.
+    public static func advance(of text: String, bank: GlyphBank) -> CGFloat? {
+        guard bank.canRender(text) else { return nil }
+        return text.reduce(0) { total, character in
+            guard character != " " else { return total + spaceAdvance + letterGap }
+            // The same ranking `select` uses, so measuring and drawing agree on which sample.
+            guard let glyph = rankedByTypicality(bank.samples(for: character)).first else {
+                return total + spaceAdvance + letterGap
+            }
+            return total + glyph.advanceWidth + letterGap
+        }
+    }
+
     // MARK: - Glyph selection
 
     private struct Chosen {
