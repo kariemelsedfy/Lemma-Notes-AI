@@ -24,10 +24,18 @@ final class CanvasUndoController: ObservableObject {
 
     /// `UndoManager.canUndo` is not observable, so the chrome re-reads it whenever an edit
     /// lands. `PageDrawingStore.revision` is the signal — every edit path bumps it.
+    ///
+    /// **A canvas that is not in a window has no undo manager** — it resolves through the
+    /// responder chain, and `makeUIView` builds the canvas before SwiftUI attaches it
+    /// (measured: `undoManager` is nil detached, non-nil once added to a window). An absent
+    /// manager therefore means "ask again later", *not* "nothing to undo". Reporting the
+    /// latter made the button disappear every time SwiftUI rebuilt the page — most visibly
+    /// straight after an Ask — and it only returned once the user drew again, because that
+    /// re-adopted the by-then-attached canvas.
     func refresh() {
-        let value = canvasView?.undoManager?.canUndo ?? false
-        if value != canUndo {
-            canUndo = value
+        guard let undoManager = canvasView?.undoManager else { return }
+        if undoManager.canUndo != canUndo {
+            canUndo = undoManager.canUndo
         }
     }
 

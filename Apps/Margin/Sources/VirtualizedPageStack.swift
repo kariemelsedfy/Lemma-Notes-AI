@@ -255,6 +255,10 @@ private struct LivePageView: View {
         .clipShape(.rect(cornerRadius: 12))
         .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
         .accessibilityLabel("Editable notebook page")
+        // By the time the page appears its canvas is in a window and can resolve an undo
+        // manager, which `makeUIView` could not. Without this the button keeps whatever state
+        // it held across a rebuild until the next edit.
+        .onAppear { undoController.refresh() }
     }
 }
 
@@ -306,6 +310,8 @@ struct LiveInkCanvas: UIViewRepresentable {
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
+        // Adopts the reference only: the canvas has no undo manager until SwiftUI attaches it
+        // to a window, so `refresh` deliberately declines to read one here.
         undoController.adopt(canvasView)
         return canvasView
     }

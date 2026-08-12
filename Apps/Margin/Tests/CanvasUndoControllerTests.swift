@@ -1,4 +1,5 @@
 import PencilKit
+import UIKit
 import XCTest
 
 @testable import Margin
@@ -44,6 +45,33 @@ final class CanvasUndoControllerTests: XCTestCase {
 
         // `second` has no registered action of its own unless it shares a manager with `first`.
         XCTAssertEqual(controller.canUndo, second.undoManager?.canUndo ?? false)
+    }
+
+    /// The measured fact the controller is built around. A `PKCanvasView` resolves its undo
+    /// manager through the responder chain, so it has none until SwiftUI puts it in a window —
+    /// and `makeUIView` runs before that. Treating "no manager" as "nothing to undo" made the
+    /// button vanish on every page rebuild, most visibly right after an Ask.
+    func testACanvasOutsideAWindowHasNoUndoManager() {
+        XCTAssertNil(PKCanvasView(frame: CGRect(x: 0, y: 0, width: 768, height: 1_024)).undoManager)
+    }
+
+    func testAnAbsentUndoManagerDoesNotClearAKnownGoodAnswer() {
+        let controller = CanvasUndoController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 768, height: 1_024))
+        let attached = PKCanvasView(frame: window.bounds)
+        let root = UIViewController()
+        root.view.addSubview(attached)
+        window.rootViewController = root
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        attached.undoManager?.registerUndo(withTarget: self) { _ in }
+        controller.adopt(attached)
+        let known = controller.canUndo
+
+        // The rebuild: a brand-new canvas, not yet in the hierarchy.
+        controller.adopt(PKCanvasView(frame: window.bounds))
+
+        XCTAssertEqual(controller.canUndo, known, "a detached canvas must not reset the button")
     }
 
     func testRefreshTracksTheAdoptedCanvas() {
