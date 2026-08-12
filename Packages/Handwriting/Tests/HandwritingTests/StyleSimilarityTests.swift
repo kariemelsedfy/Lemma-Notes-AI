@@ -115,16 +115,21 @@ final class StyleSimilarityTests: XCTestCase {
         let natural = try Synthesizer.strokes(for: "water", in: frame, bank: bank, variation: .natural, seed: 1)
         let neat = try Synthesizer.strokes(for: "water", in: frame, bank: bank, variation: .neat, seed: 1)
 
-        // §8's neat style is a tidier version of the *same* hand, and this metric cannot
-        // resolve that — the embeddings come out byte-identical and the cosine reports
-        // 1.0. Recorded rather than hidden, because it bounds what the metric is for: it
-        // separates different writers, not two settings of one writer.
+        // §8's neat style is a tidier version of the *same* hand, and this metric still
+        // cannot resolve that. Recorded rather than hidden, because it bounds what the
+        // metric is for: it separates different writers, not two settings of one writer.
         //
-        // Two causes, both real. `Variation` currently scales only vertical jitter and
-        // drift, under a point at this size (M3-08C). And these features are medians and
-        // spreads over whole samples, which is the wrong resolution for sub-point wobble.
+        // **One of the two original causes is now fixed.** `Variation` used to scale only
+        // vertical jitter and drift — under a point at this size — and M3-08C extended it to
+        // sample selection, spacing and per-glyph slant. The embeddings are no longer
+        // byte-identical, but they differ far below what the cosine can see, because the
+        // remaining cause stands: these features are medians and spreads over whole samples,
+        // which is the wrong resolution for sub-point wobble. That is M3-09B's problem.
+        //
+        // This fixture also has a single sample per character, so the largest part of
+        // M3-08C — which glyph gets chosen — cannot move here at all. `SynthesizerTests`
+        // measures that against a bank whose samples differ visibly.
         XCTAssertEqual(StyleSimilarity.similarity(natural, neat), 1, accuracy: 0.001)
-        XCTAssertEqual(StyleSimilarity.embed(natural).features, StyleSimilarity.embed(neat).features)
 
         // The ink itself does differ — so this is a blind spot in the measurement, not a
         // no-op in the synthesizer.
