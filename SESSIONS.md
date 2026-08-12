@@ -11,6 +11,50 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M3-08C — `Variation` now reaches the thing that matters
+
+Picked up overnight, chosen because it needs no device: pure `Handwriting`, so `swift test`
+answers everything except the last acceptance box.
+
+The task was filed as "neat barely differs from natural". The more interesting half is that
+**`Variation` never reached sample selection**, so a bank with four samples per letter rendered
+identically to one with a single sample. Every extra sample calibration collects was dead
+weight, and M3-19 — learning extra variants from ordinary writing — would have had nothing to
+feed. Fixing the styles and unblocking that are the same change.
+
+Samples are ranked most-typical-first (distance from the mean of that character's own samples
+over advance width and ink box; ties break on capture order so a seed still renders
+identically), and the eligible pool narrows toward that glyph as the scale falls. Zero scale
+always draws the writer's steadiest letter. Spacing and per-glyph slant scale with it too,
+both deliberately small — §4.1 warns that excess noise reads as "shaky", a different tell from
+"mechanical", and it would have been easy to overshoot here.
+
+**Measured, because "barely differs" was the whole complaint:** mean maximum displacement
+between the two styles across twenty seeds is 1.19pt with one sample per character and
+**15.4pt with five**, at a 30pt x-height. It was under a point. A test pins the floor at 4pt so
+this cannot quietly return to being a no-op.
+
+Two things worth knowing next time:
+
+- **The existing fixture could not have caught this.** `SynthesizerTests.bank` varies only
+  `advanceWidth`, which moves a glyph's *neighbours* rather than the glyph — so no assertion
+  over rendered ink can see which sample was chosen. The new tests use a bank whose samples
+  differ in height. A fixture that cannot express the bug is worth checking for before
+  concluding a behaviour is untested.
+- **`StyleSimilarityTests` recorded this defect and named two causes.** One is now fixed, so
+  its assertion that the embeddings are byte-identical is no longer true; the cosine still
+  cannot resolve the styles, because the second cause stands — medians over whole samples are
+  the wrong resolution for sub-point wobble (M3-09B). I updated the test rather than relaxing
+  it. That entry was the most useful thing I read all task: a test that documents a limitation,
+  with its causes, is worth more than one that just passes.
+
+Four of the seven new tests fail against the previous synthesizer — checked before believing
+them, which is the habit the M2-26 session bought.
+
+**Verification:** Handwriting 133/133 ✅ · app 170/170 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 135 files ✅ · the "visible side by side" box needs a
+human and belongs with M3-10
+
 ## 2026-08-11 · Claude · M2-26 — five rounds on one undo bug, and what finally found it
 
 **Read this one for the method, not the fix.** The fix is four lines; getting to it took five

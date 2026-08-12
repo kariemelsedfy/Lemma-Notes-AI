@@ -25,8 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M3-08C — `Variation` barely varies anything
-claimed: Claude · 2026-08-11 · see the full entry under Ready — M3
+_(empty)_
 
 ## Review
 
@@ -1327,7 +1326,7 @@ Acceptance:
 - [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
 
 ### M3-08C — `Variation` barely varies anything
-status: In progress · claimed: Claude · 2026-08-11 · refs: HANDWRITING.md §8, §4.1 · estimate: M
+status: Review · implemented: Claude · 2026-08-11 · refs: HANDWRITING.md §8, §4.1 · estimate: M
 Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
 but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
 drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
@@ -1335,10 +1334,23 @@ It does *not* reach sample selection — which glyph sample gets used, the singl
 source of natural variation — nor spacing, slant or size. So "neat" is currently close to a
 no-op, and the sample-selection gap also means a bank with several samples per letter behaves
 identically to one with a single sample.
+Claude 2026-08-11: samples are ranked most-typical-first — distance from the mean of that
+character's own samples over advance width and ink box, ties broken on capture order so a seed
+still renders identically — and the eligible pool narrows toward that glyph as the scale falls.
+Zero scale always draws the writer's steadiest letter. Spacing and per-glyph slant scale too,
+both small: §4.1 warns that excess noise reads as "shaky", which is a different tell from
+"mechanical". Measured mean maximum displacement between the styles across twenty seeds:
+**1.19pt with one sample per character, 15.4pt with five** at a 30pt x-height, against under a
+point before. A test pins the floor.
+Note for whoever runs M3-10: the gain is proportional to how many samples a bank holds, so a
+one-pass calibration benefits least. `StyleSimilarity` still cannot resolve the two styles —
+that is M3-09B's resolution problem, not this one.
 Acceptance:
-- [ ] `Variation` biases sample selection toward the writer's most typical glyph
-- [ ] Horizontal spacing and per-glyph slant scale with it too
-- [ ] The difference is visible side by side, not just measurable
+- [x] `Variation` biases sample selection toward the writer's most typical glyph
+- [x] Horizontal spacing and per-glyph slant scale with it too
+- [ ] The difference is visible side by side, not just measurable — **needs eyes, not a test**;
+      15.4pt at a 30pt x-height should be obvious, but "looks like two settings of one hand"
+      is a human call and belongs with M3-10
 
 ### M3-10 — Blind similarity panel *(the gate)*
 status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
