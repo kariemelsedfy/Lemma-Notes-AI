@@ -65,6 +65,25 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
             current: storedStrokes(in: canvasView.drawing),
             metadata: metadata
         )
+        // Store the canvas's *own* drawing when there is nothing to erase. Rebuilding it with
+        // `PKDrawing(strokes:)` yields a drawing that is equal stroke-for-stroke but does not
+        // serialise to the same bytes — measured: an empty drawing re-encodes to 42 different
+        // bytes, a one-stroke drawing to 318. `VirtualizedPageStack.updateUIView` decides
+        // whether to reassign the canvas by comparing `dataRepresentation()`, so storing a
+        // reconstruction unconditionally made every edit — including the first callback on a
+        // freshly opened page — reassign the canvas, which fired this delegate again. That
+        // loop rendered a full-page preview per pass and took the app to 717MB and a jetsam
+        // kill on any new notebook.
+        guard !resolution.strokeIndicesToRemove.isEmpty else {
+            drawingStore.save(
+                canvasView.drawing,
+                metadata: resolution.metadata,
+                for: pageID,
+                pageSize: pageSize
+            )
+            return
+        }
+
         let resolvedDrawing = PKDrawing(
             strokes: canvasView.drawing.strokes.enumerated().compactMap {
                 resolution.strokeIndicesToRemove.contains($0.offset) ? nil : $0.element
@@ -75,11 +94,9 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
             for: pageID,
             pageSize: pageSize
         )
-        if !resolution.strokeIndicesToRemove.isEmpty {
-            isApplyingDrawing = true
-            canvasView.drawing = resolvedDrawing
-            isApplyingDrawing = false
-        }
+        isApplyingDrawing = true
+        canvasView.drawing = resolvedDrawing
+        isApplyingDrawing = false
     }
 
     /// PencilKit can send its final drawing callback after `didEndUsingTool`; the short
