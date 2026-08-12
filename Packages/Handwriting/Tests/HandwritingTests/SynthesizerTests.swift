@@ -176,13 +176,8 @@ final class SynthesizerTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    private static let corpus = [
-        "The derivative is 2x",
-        "the quick brown fox",
-        "integral",
-        "substitute and simplify",
-        "area under the curve",
-    ]
+    /// Shared with `LegibilityHarnessTests`, so both renderers face the same bar (M3-01B).
+    private static let corpus = LegibilityCorpus.prose
 
     private static func frame(for text: String) -> CGRect {
         CGRect(x: 0, y: 0, width: CGFloat(max(text.count, 4)) * 34, height: 80)
