@@ -218,6 +218,10 @@ final class AskPipeline {
             switch providerError {
             case .timeout: .timeout
             case .transport, .unknownFixture: .transport
+            // Nothing was sent, and the user is the only one who can change that. `unreadable`
+            // is the closest designed state — it shows what we have and asks for a decision —
+            // but the honest fix is consent copy of its own, which belongs with M6's flow.
+            case .thirdPartyConsentRequired: .unreadable
             }
         case is SpecValidationError:
             .invalidSpec
