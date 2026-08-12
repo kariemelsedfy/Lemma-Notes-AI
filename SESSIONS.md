@@ -11,6 +11,41 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M3-01B — the two renderers were never held to the same bar
+
+Filed as "the corpus is only 8 strings". The actual defect was worse and easy to miss:
+**`TypesetStyle` and `Synthesizer` were measured against two *different* corpora** — eight
+strings and five — so §7's 95% never compared them. And 95% of eight is "seven of eight": one
+unlucky recognition swings the rate 12 points, which makes the number nearly meaningless.
+
+Both now measure against one 44-string `LegibilityCorpus`, kept in the test target rather than
+`Sources` so evaluation data does not ship in the app. Four guards on the corpus itself: it
+stays ≥40 strings, every string is renderable by the fixture alphabet (a comma throws
+`missingGlyphs` — a crash, not a low score), none is too short for the harness to count, and no
+math notation appears before M5 renders real notation (M3-11 explains why that would make the
+bar unmeetable for reasons unrelated to the renderers).
+
+**Measured: typeset 100% exact with mean similarity 1.0; synthesizer 95.45%, 42 of 44.**
+
+The interesting part is that second number. The margin is *one string*, and the two misses are
+not random — both are `g` read as `9`: `integral` → `inte9ral`, and `take logs of both sides` →
+`take lo9s of both sides`. That is the identical failure M2-13B met when it settled the fill
+inset at 0.4 rather than 0.5, so it is a property of the typeset letterform, long-standing and
+not introduced here. Filed as M3-01C and written on the corpus type itself, because the
+practical consequence is a trap: **adding one more `g` word fails the suite with nothing having
+regressed**, and the next person should read that as the known weakness rather than hunt a
+phantom.
+
+Worth stating plainly for whoever picks up M3-01C: this measures the synthesizer through a
+*typeset-derived* bank, so it says more about `TypesetStyle`'s `g` than about anyone's hand. A
+real writer's `g` may be fine. Do not tune it against `LegibilityHarness` alone either — that
+draws with Core Graphics, and CONTEXT invariant 11 records what tuning against a renderer the
+user never sees cost last time.
+
+**Verification:** Handwriting 137/137 ✅ · app 170/170 ✅ · full `./scripts/test.sh` ✅ ·
+`./scripts/lint.sh` 0 violations across 136 files ✅. The corpus is ~5x larger, so the two
+legibility tests now take about 3s each rather than well under one — still inside budget.
+
 ## 2026-08-11 · Claude · M3-08C — `Variation` now reaches the thing that matters
 
 Picked up overnight, chosen because it needs no device: pure `Handwriting`, so `swift test`

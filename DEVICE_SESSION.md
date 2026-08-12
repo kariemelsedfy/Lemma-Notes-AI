@@ -209,6 +209,33 @@ two strokes have identical fingerprints the eraser refuses to act, because prese
 ink beats tidying a generated group. Note it and move on — it is a known tradeoff, not a
 regression.
 
+## 8. M3-08C — do the two handwriting styles actually look different?
+
+**~3 minutes, and it is the one box M3-08C cannot close itself.** You need a saved calibration
+for this; if you have one already, no need to redo it.
+
+`Variation` used to reach only vertical jitter, so "My handwriting" and "A neater version of
+mine" were separated by under a point across a whole word — invisible. It now also chooses
+*which sample* of each letter gets drawn, biased toward your steadiest version, and varies
+spacing and per-glyph slant. Measured, the two styles now differ by about 15pt at a 30pt
+writing size.
+
+- Ask something, keep the answer, and note what it looks like.
+- Switch style in the library toolbar between **"My handwriting"** and **"A neater version of
+  mine"**, and ask the same thing again.
+- **Can you tell them apart?** That is the entire question. "Neat" should read as the same
+  hand on a better day — steadier letters, more even spacing — not as a different person and
+  not as a font.
+
+**A caveat that matters for the answer.** The gain is proportional to how many samples of each
+letter your bank holds, and one calibration pass collects few. If the two look nearly identical
+to you, that is evidence for M3-19 (collecting extra variants from your ordinary writing)
+rather than evidence that M3-08C did nothing — say which it looks like.
+
+**Previous session's report said this would be the place to look if the handwriting read as
+mechanical.** If it still does after this change, that is worth knowing before anyone recruits
+the M3-10 panel.
+
 ---
 
 ## What to do with a surprise
