@@ -1618,7 +1618,7 @@ Developer Program, and the Small Business Program with it) gates M4-07, because 
 depends on that enrolment. T0 needs neither.
 
 ### M4-01 — Confirm the Foundation Models API before writing a line against it
-status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
+status: Done · completed: Claude · merged: PR #101 · 2026-08-12 · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
 Note: **do this first and separately.** `AGENTS.md` §2 names a fabricated Apple API as the most
 common failure mode in this codebase, and §5 of the pipeline doc makes two claims that are
 themselves unverified: that `PrivateCloudComputeLanguageModel` is the T1 surface, and that the
@@ -1690,7 +1690,7 @@ Acceptance:
 - [ ] Every decision is explainable — the tier and the reason, as a loggable name with no content
 
 ### M4-04 — Resolve Q7: where Apple Intelligence is actually available
-status: Ready · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
+status: In progress · claimed: Claude · 2026-08-12 · owner: agent research · refs: CONTEXT.md Q7, AI_PIPELINE.md §5 · estimate: S
 Note: §5 flags EU and mainland China as historical gaps and says to confirm before committing to
 the routing policy. If T0/T1 cannot serve a region, T2 carries it entirely, which changes both
 the economics (`BUSINESS.md`) and the consent flow (5.1.2(i)) for those users.
