@@ -25,7 +25,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-01B — Extend the corpus and enforce 95% on real renderers
+claimed: Claude · 2026-08-11 · see the full entry under Ready — M3
 
 ## Review
 
@@ -1081,7 +1082,7 @@ Acceptance:
       regression floor, since it is throwaway code M3-00 deletes
 
 ### M3-01B — Extend the corpus and enforce 95% on real renderers
-status: Ready · refs: HANDWRITING.md §7 · estimate: S
+status: In progress · claimed: Claude · 2026-08-11 · refs: HANDWRITING.md §7 · estimate: S
 Note: the corpus is 8 strings, enough to prove the harness works. §7's 95% bar needs a
 corpus worth asserting against, and it must stay prose-only until M5 — see M3-11.
 Acceptance:
