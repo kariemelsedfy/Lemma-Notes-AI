@@ -1677,7 +1677,7 @@ Acceptance:
 - [ ] Latency measured on device and recorded against §9's ≤2.5s p50 time-to-first-ink
 
 ### M4-03 — Routing policy
-status: Review · implemented: Claude · 2026-08-12 · depends: M4-04 (done) · refs: AI_PIPELINE.md §5, §5.2, DECISIONS.md ADR-017 · estimate: M
+status: Done · completed: Claude · merged: PR #103 · 2026-08-12 · depends: M4-04 (done) · refs: AI_PIPELINE.md §5, §5.2, DECISIONS.md ADR-017 · estimate: M
 Note: `(intent, contentComplexity, confidence, connectivity, entitlement, region,
 userPrivacyPreference) -> Tier`, pure and in one file, because §5 says so and because a routing
 decision scattered across call sites is untestable and unauditable. Pure logic with no provider
