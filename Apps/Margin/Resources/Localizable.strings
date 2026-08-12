@@ -2,6 +2,7 @@
 "tool.pen" = "Pen";
 "tool.eraser" = "Eraser";
 "tool.lasso" = "Selection lasso";
+"canvas.undo" = "Undo";
 
 "ask.action" = "Ask";
 "ask.hint.question" = "Step 1 of 2: Draw around the work you want help with.";

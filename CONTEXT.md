@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Codex · Milestone: **M3 handwriting sizing and repeated Ask device-confirmed**
+**Last updated:** 2026-08-11 (late) · by: Claude · Milestone: **undo works on device; M2-18's grouped erase still unverified**
 
 ## Handover, 2026-08-10
 
@@ -28,6 +28,7 @@ The latest device runs resolved two earlier follow-ups and exposed one deeper in
 | **M3-18** | Repair sets paginate at 26 and are practical on the physical iPad | done |
 | **M2-22** | Crop, neighborhood and local reading now reach the provider request | review |
 | **M3-20** | Repeated Ask no longer aliases every loaded page stroke to one identity; device-confirmed | done |
+| **M2-18** | Touching one generated stroke removes its provenance group; physical eraser/undo check remains | review |
 
 **M2-17 has three measured causes and three implemented fixes.** Captured handwriting used to cap
 the glyph at the unrelated calibration x-height; it now follows the selection. The next
@@ -55,9 +56,8 @@ accent and green overlays. Placement treats the green rectangle as a hard bounda
 the question-derived writing size, and asks for another area when the answer cannot fit.
 
 The PNG supplied as M2-17 evidence exposed a separate export defect: it contained the ruled
-paper but no ink while its current on-device notebook package contained 63 strokes. The
-toolbar exports the `StoredDocument` snapshot loaded before live edits; M1-07C owns flushing
-and reloading before PNG/PDF generation.
+paper but no ink while its current on-device notebook package contained 63 strokes. M1-07C
+now flushes pending autosave work, reloads the package, and only then renders PNG or PDF.
 
 **M2-22 closes the missing-input path.** Every shipping Ask snapshots the actual `PKDrawing`,
 renders the capped crop and neighborhood on white, reads the crop with on-device Vision, and
@@ -73,8 +73,9 @@ lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELIN
 `pageText`). Four defects so far come from generated ink being structurally unlike a person's
 — thinner than PencilKit draws (M2-13), then bolder (M2-13B), then perfectly flat and so
 measuring as a zero x-height (M2-15), and its hatch strokes making the eraser behave
-differently (M2-18). Ask what a new kind of generated stroke looks like *to the app* before
-shipping it.
+differently (M2-18). Generated answers now erase as provenance groups, and live page metadata
+travels through the same store/autosave path as its drawing. Ask what a new kind of generated
+stroke looks like *to the app* before shipping it.
 
 ## 1a. If you are picking this up cold
 
@@ -87,8 +88,16 @@ shipping it.
    `TypesetStyle.nibToHeightRatio`, `insetToNibRatio`. If you change one, re-measure it and
    update the table beside it.
 4. Anything touching a `PKCanvasView`, a `UIViewRepresentable`, or SwiftUI view identity is
-   **outside what XCTest can reach here**. Three bugs have lived there. The shell checks in
-   `scripts/` are the substitute, and a device is the test.
+   **outside what XCTest can reach here**. *Five* bugs have lived there now — the newest is
+   M2-18's reconcile loop, which 151 green tests could not see because it only closes once a
+   real `PKCanvasView` is in the circuit. The shell checks in `scripts/` are the substitute,
+   and a device is the test.
+5. **A green suite here means less than you think.** Every device session so far has found
+   something the tests could not. Build for the iPad and use it before believing a feature.
+6. **When a device bug survives two fixes, stop reasoning and instrument.** M2-26 took five
+   round-trips; four were guesses from symptoms and one of them shipped a regression that ate
+   handwriting. The fix came from twenty minutes of logging stroke counts to the app container.
+   The recipe is in that session entry — it is reusable and it is the most valuable thing in it.
 
 ---
 
@@ -101,8 +110,9 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: run M3-10's human panel.** M2-24's two-stage Pencil interaction is
-device-confirmed, and M1-07C now reloads the current notebook before either export format.
+**Next action: physically verify M2-18's grouped erase and one-step undo — now reachable via
+the M2-26 undo button — then run M3-10's human panel.** M2-24's two-stage Pencil interaction is device-confirmed, and M1-07C now
+reloads the current notebook before either export format.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
@@ -121,8 +131,8 @@ who has not read the code — because they have not.
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Edits autosave back to the `.margin` package after an 800ms quiet period, and flush immediately on notebook close or the app leaving the foreground |
-| Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-18) |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing. A persistent undo button in the chrome drives Margin's **own** undo stack — one entry per gesture, one per accepted answer — and an undo rebuilds the canvas because PencilKit will otherwise resurrect what it replaced (M2-26, invariant 14). `updateUIView` pulls by revision, never by comparing serialized ink (invariant 12) |
+| Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-25) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
 | Export | PDF/PNG rendering and accessible system sharing; export flushes autosave, reloads the package, and fails closed rather than sharing a stale snapshot |
@@ -134,7 +144,7 @@ who has not read the code — because they have not.
 | Provider boundary | `SpecProvider` receives ephemeral crop/neighborhood pixels plus the local selected-area reading and returns `ValidatedSpec`, so no provider can skip validation. Content may not be logged or retained. `MockProvider` supports latency, failure and corruption injection |
 | Placement | `PlacementEngine` clips every search to the user-marked allowed answer rectangle, respects occupied ink, preserves the question-derived writing size, and returns no-room rather than shrinking or escaping |
 | Request lifecycle | `AskStateMachine` — one enum, pure transition table, cancellable at every in-flight stage, transitions logged as names only |
-| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept is one undo group and returns provenance. `SuggestionProvenance` writes that into page metadata and survives save/edit/reload — the only thing missing is the call site, in M2-12B |
+| Suggestion ink | `SuggestionLayer` holds generated ink off-page; accept returns provenance which is stored with the committed drawing and survives save/edit/reload. Erasing any one unambiguous stroke removes that generated element as a group |
 | Ask bar | `AskBar` + `AskBarModel` with localized copy for every failure state. In the canvas chrome, driven by the loop-and-dwell selection |
 | Ask pipeline | `AskPipeline` drives selection → context → provider → placement → rendered suggestion, with cancellation and §8 failure mapping. Driven by the Ask bar's verbs against a canned provider until M4 |
 | Ink renderer | `HandwritingInkRenderer` draws from the glyph bank; `TypesetInkRenderer` is the §8 fallback and the Exam Mode default. Fallback is per block, never per character. Which one runs is `HandwritingStylePreference` |
@@ -172,9 +182,28 @@ who has not read the code — because they have not.
     (M2-13, M2-13B). The OCR harness uses Core Graphics and will not tell you: tune a width
     against it and you are tuning against a renderer the user never sees.
 
+12. **`PKDrawing.dataRepresentation()` is not an equality test.** It is stable only for the
+    same instance. Measured: two freshly constructed *empty* drawings encode to 42 **different**
+    bytes, and a drawing round-tripped through `PKDrawing(data:)` does not match its source.
+    Never use it to ask "did this change" — use `PageDrawingStore.revision(for:)`. Using it
+    that way in `updateUIView` reassigned the canvas forever: a full-page preview per pass,
+    717MB, jetsam kill (M2-18).
+13. **PencilKit's final drawing callback arrives *after* `canvasViewDidEndUsingTool`.** Any
+    bookkeeping done at tool-end runs before the ink has landed. This is why an undo entry
+    committed there was discarded as "nothing changed" and pen strokes were silently not
+    undoable (M2-26). Commit on the drawing callback, or hold the gesture open with a debounce.
+14. **A `PKCanvasView` keeps an internal drawing that survives assigning `drawing`.** The public
+    property takes your value — it reads back correctly, and `didBeginUsingTool` confirms it —
+    but the *next real Pencil input* rebuilds from PencilKit's own model and restores what you
+    replaced. Measured on device: canvas reported 0 strokes after an undo, then 20 on the next
+    stroke, resurrecting 19. **Programmatic input never triggers it, so no test can see this.**
+    To replace a canvas's drawing durably, rebuild the view — live pages key their canvas on
+    `PageDrawingStore.externalGeneration` (M2-26). Do not try to detect and correct it: at
+    gesture start the canvas and store agree, and the divergence appears mid-gesture.
+
 ## 4. Environment notes
 
-**Four traps in this working copy:**
+**Five traps in this working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
@@ -197,6 +226,30 @@ who has not read the code — because they have not.
    Installing over the app preserves notebooks and the glyph bank; uninstall only when clean
    app data is explicitly required, and warn that local data will be erased. This is also
    recorded in `AGENTS.md` §8 and `DEVICE_SESSION.md` §0.
+5. **Dataless OneDrive files can make this checkout untestable, and the fix is not to retry.**
+   Some tracked files sit as cloud placeholders that never hydrate — repeated `cat` does not
+   bring them down. `xcodebuild` then fails with `Error opening input file … (Operation timed
+   out)` and **nothing in the app target can be built or tested here at all**. Loose objects
+   under `.git/objects` go dataless too, so `git clone` fails the same way (`copy-fd: read
+   returned: Operation timed out`). Packfiles have stayed intact, so the escape is:
+
+   ```bash
+   git archive HEAD | tar -x -C <scratch-dir>   # fully hydrated tree
+   cp <your modified files> <scratch-dir>/…      # working-tree changes on top
+   cd <scratch-dir> && tuist generate --no-open && ./scripts/test.sh
+   ```
+
+   `tuist` is not on `PATH`; it is at
+   `~/.local/share/mise/installs/tuist/<version>/tuist` (version pinned in `.mise.toml`).
+   Two sessions have now lost time rediscovering this. Verify in the scratch tree, commit
+   from this one.
+
+   **It also hits git's own files.** `.git/info/exclude` went dataless mid-session, which makes
+   *every* git command fail with `cannot use .git/info/exclude as an exclude file`; it is
+   comment-only in every git template, so recreating it is safe. `.githooks/pre-commit` went
+   dataless too and could not be read, moved, or restored — commit with
+   `git -c core.hooksPath=<empty dir>` and run `scripts/lint.sh` by hand in the hydrated tree
+   instead. Assume any file can be next.
 
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.

@@ -524,7 +524,7 @@ Acceptance:
 - [ ] Skipping repair still leaves a usable bank, since the typeset fallback covers gaps
 
 ### M2-18 — Erasing generated ink behaves differently from erasing your own
-status: Ready · refs: PROGRESS.md M2-13B · estimate: S
+status: Review · implemented: Codex · 2026-08-11 · needs-device-verification · refs: PROGRESS.md M2-13B · estimate: S
 Note: flagged on device, explicitly as not urgent — "when I delete things I wrote it deletes
 by shape or stroke, but when I delete something the AI wrote it deletes like a rubber
 removing pixels in a radius."
@@ -536,10 +536,36 @@ Options, in rough order of cost: group a block's strokes so erasing any one eras
 (provenance already records which strokes came from one Ask, so the data exists); or treat
 generated ink as a single object until edited. Worth deciding alongside M3-08B, which has the
 same "edits to committed generated ink" question.
+Implemented the provenance-group option: losing any unambiguous stroke fingerprint from one
+generated element removes the element's other strokes, while ambiguous fingerprints fail
+closed to preserve ink. The live page store now owns current metadata so a later edit cannot
+overwrite accepted provenance with the notebook-opening snapshot. PencilKit undo registration
+is suppressed only for the eraser gesture and replaced by one snapshot restore after its final
+delayed drawing callback.
+Claude 2026-08-11: the eraser tests were merged into `SuggestionProvenanceTests` to share its
+fixtures, which dropped the two-answers-in-one-gesture case — the only cover for `resolve`
+handling more than one removed element. Restored and mutation-tested (`.prefix(1)` on the
+`referencesToRemove` chain fails that case alone, 12 of 13 still green). Fixtures moved to an
+extension to stay under `type_body_length`; the class is ~2 lines under the limit, so the next
+test added here should split the eraser cases back into their own file.
+**The undo box cannot be ticked without hardware:** it depends on the `UIUndoManager` a
+`PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4). It needs the same device
+run as the grouped-erase check.
+Claude 2026-08-11, from the device: **this branch shipped a jetsam kill.** Creating a notebook
+took the app to 717MB (`per-process-limit`, confirmed in the device JetsamEvent report) and the
+system killed it — reported as "everytime I try to add a new note it closes the app".
+`reconcile` stored a drawing rebuilt with `PKDrawing(strokes:)` on every callback, including the
+first on a freshly opened page. A rebuilt drawing is equal stroke-for-stroke but does **not**
+encode to the same bytes (measured: 42 different bytes when empty, 318 for one stroke), and
+`updateUIView` reassigns the canvas by comparing `dataRepresentation()` — so it reassigned, the
+delegate fired, and each pass rendered a full-page preview. Fixed by storing the canvas's own
+drawing whenever nothing is erased. Three regression tests fail against the previous coordinator.
+None of the 151 existing tests could see it: the eraser logic was correct in isolation and the
+loop only closes once a real `PKCanvasView` is in the circuit.
 Acceptance:
-- [ ] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
-- [ ] Erasing handwriting is unchanged
-- [ ] Undo restores the whole answer in one step
+- [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
+- [x] Erasing handwriting is unchanged
+- [ ] Undo restores the whole answer in one step — device-only, queued with the erase check
 
 ### M2-15 — Asking twice on one page draws a dot the second time
 status: Done · completed: Claude · 2026-08-10 · refs: AI_PIPELINE.md §4 · estimate: S
@@ -721,7 +747,7 @@ status: Dropped · note: superseded — device use answered Q8 without needing t
 status: Done · completed: Claude · 2026-08-02 · refs: PROJECT_PLAN.md §3.1 · estimate: M
 Note: built against the current API only — `pencilInteractionDidTap:` has been deprecated
 since iOS 17.5. The gestures themselves **cannot fire in a simulator**; confirming they do
-on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-18.
+on hardware is M2-04B. The onboarding toggle that sets `overridesDoubleTap` is M2-25.
 Acceptance:
 - [x] `UIPencilInteraction` squeeze arms the Ask lasso, honouring an explicit `.ignore`
 - [x] Double-tap defers to the system preference unless the user opted in
@@ -734,8 +760,53 @@ Acceptance:
 - [ ] Double-tap does what the system setting says, and nothing app-specific
 - [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
 
-### M2-18 — Onboarding toggle for the double-tap override
+### M2-27 — The canvas blinks when you undo
+status: Ready · found: human · 2026-08-11 · refs: PROGRESS.md M2-26 · estimate: S
+Note: reported on device — "when I click undo everything kinda blinks for a second", explicitly
+**not urgent**. It is the cost of M2-26's fix: an undo rebuilds the `PKCanvasView` (keyed on
+`PageDrawingStore.externalGeneration`) because PencilKit otherwise restores its own internal
+drawing on the next Pencil input. The diagnostics log also shows `applyExternally` running
+twice per undo — once from `makeUIView` on the fresh canvas, once from `updateUIView` — so
+there is a redundant assignment to remove before anything more elaborate.
+Do not "fix" this by going back to assigning `drawing` on the existing canvas; that is the
+resurrection bug, measured. Look instead at making the rebuild invisible: retaining the ink
+preview underneath during the swap, or finding a PencilKit call that genuinely resets its
+internal model.
+Acceptance:
+- [ ] Undo does not visibly flash the page
+- [ ] Undone strokes still do not return when writing afterwards — the M2-26 device evidence is the bar
+- [ ] The redundant second `applyExternally` per undo is gone
+
+### M2-26 — A persistent undo control in the canvas
+status: Review · implemented: Claude · device-confirmed: human · 2026-08-11 · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
+Note: found while writing M2-18's device instructions — the app had **no undo affordance at
+all.** PencilKit registered stroke undo and M2-18 registered a grouped-erase undo, but the only
+way to reach either was the iPadOS three-finger gesture: undiscoverable, and unusable for anyone
+with limited dexterity. M2-18's acceptance ("undo restores the whole answer in one step") had
+nothing a user could press. Same shape as M2-19 (Ask button that had never worked) and M2-16
+(suggestion layer written to but never displayed): one half of a feature built and verified while
+the other half was never wired up.
+`CanvasUndoController` adopts whichever canvas the user last touched, since the live window keeps
+a `PKCanvasView` for the visible page and both neighbours. Redo is deliberately not included —
+it was not requested, and it is a separate decision about whether the canvas wants a full
+undo/redo pair.
+Acceptance:
+- [x] An undo control is visible in the canvas chrome and takes Command–Z
+- [x] It disables when there is nothing to undo
+- [x] Undo targets the page being written on, not an off-screen neighbour
+- [x] Copy is localized (`canvas.undo`)
+- [x] **Confirmed on device 2026-08-11** — "it's working perfectly now", after five rounds. The
+      final defect was PencilKit restoring its own internal drawing on the next Pencil input;
+      the fix rebuilds the canvas. Post-fix instrumentation: 28 undos, 29 gestures, 0
+      resurrections, against 3 in half the time before it
+- [ ] Undo of a grouped generated-answer erase in one step — still untested (M2-18)
+
+### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
+Note: **renumbered from M2-18 by Claude 2026-08-11.** Two different tasks were both filed as
+M2-18 — this one and the generated-ink eraser — and `PROGRESS.md` claims are the only lock we
+have, so the ID had to be unambiguous. The eraser kept M2-18 because the claim commit and git
+history already reference it.
 Note: `PencilActionPolicy(overridesDoubleTap:)` exists and is tested but is always
 constructed with the default, so the override is currently unreachable. Onboarding does
 not exist yet (M7).

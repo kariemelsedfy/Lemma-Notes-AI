@@ -11,6 +11,185 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M2-26 — five rounds on one undo bug, and what finally found it
+
+**Read this one for the method, not the fix.** The fix is four lines; getting to it took five
+device round-trips, and four of them were wasted because I reasoned from symptoms instead of
+measuring. The one that worked took twenty minutes of instrumentation.
+
+The user asked for a persistent undo button. What followed, in order:
+
+1. The button disabled itself after every Ask. Cause: `PKCanvasView.undoManager` resolves
+   through the responder chain, so a canvas not yet in a window has none — and `makeUIView`
+   runs before attachment. Treating "no manager" as "nothing to undo" blanked it on every
+   page rebuild.
+2. Pressing it changed nothing visible. Cause: `acceptSuggestion` commits straight to
+   `PageDrawingStore`, so PencilKit's stack had never seen the answer; its one entry restored
+   a state identical to the visible one. Fixed by owning the stack — which also made undo
+   testable, since PencilKit's cannot be asserted outside a window.
+3. Pen strokes were not undoable while accepted answers were. Cause: **PencilKit's final
+   drawing callback arrives after `didEndUsingTool`**, so committing the entry at tool-end ran
+   before the ink landed and it was dropped as "nothing changed". The eraser survived only
+   because its debounce delayed the commit past that callback.
+4. Undone strokes came back on the next stroke. I guessed twice — a byte comparison, then a
+   gesture-window rewrite. **The second guess shipped a regression that ate handwriting**: it
+   re-synced the canvas against the store at gesture start, and writing two strokes quickly
+   means the store legitimately lags, so it wiped the stroke just written. Reverted within
+   minutes of the report.
+5. Then I instrumented instead of guessing, and the log answered it in one pass:
+
+       76.787  beginUsingTool     canvas=0  store=0
+       76.840  endUsingTool       canvas=0  store=0
+       76.857  drawingDidChange   canvas=20 store=0
+
+   One stroke drawn, nineteen resurrected. **`PKCanvasView`'s public `drawing` had taken our
+   value while its internal model had not**, and real Pencil input rebuilt from that internal
+   model. That single fact explains everything the earlier attempts could not: why it needed a
+   physical Pencil, why it was intermittent, why no test saw it, and why checking canvas
+   against store at gesture start neither caught it nor could — at that instant the two agree.
+
+The fix is to stop assigning into a canvas that will not let go: an undo bumps
+`PageDrawingStore.externalGeneration`, live pages key their `PKCanvasView` on it, and a fresh
+canvas has no internal history to restore. Deterministic, and it assumes nothing about
+PencilKit's internals — which is the standard I should have held from round two.
+
+**Verified rather than assumed:** the post-fix log records 28 undos and 29 gestures with zero
+resurrections; the pre-fix log had three in half the time. The user confirmed it.
+
+**Three PencilKit facts came out of this, all measured, all now in CONTEXT §3:**
+`dataRepresentation()` is only stable for the same instance (two fresh empty drawings encode
+to 42 *different* bytes); the final drawing callback lands after `didEndUsingTool`; and the
+canvas keeps an internal drawing that survives assigning `drawing`.
+
+**How to instrument this again** — the tooling is worth more than the fix. Write counts to
+`Documents/` in the app container (never ink — AGENTS §7), then
+`devicectl device copy from --domain-type appDataContainer --domain-identifier edu.bowdoin.margin
+--source Documents/<file> --destination <local file>`. The destination must be a *file path*,
+not a directory. `log stream` cannot target a connected device on this macOS, and
+`devicectl process launch --console` holds a usage assertion that kills the app when it
+detaches — it manufactures a second `signal 9` that looks exactly like the bug you are chasing.
+The container file needs no tether and survives the app being killed.
+
+Left behind: M2-27, the brief blink when the canvas rebuilds. The user saw it and explicitly
+deprioritised it. The log shows `applyExternally` running twice per undo — start there.
+
+## 2026-08-11 · Claude · M2-18 device run — a jetsam kill, and the missing undo button
+
+**The branch shipped a crash that 151 green tests could not see, and the user found it in
+about a minute.** That ratio again (CONTEXT handover, 2026-08-10).
+
+Report: "everytime I try to add a new note it closes the app." The console said `signal 9`,
+which is not a Swift crash — a `fatalError` prints to stderr and raises SIGTRAP. The user
+supplied the missing word: *"terminated by the operating system because it is using too much
+memory."* The device's JetsamEvent report confirmed it — **717MB, `per-process-limit`.**
+
+The mechanism is worth remembering because it is entirely non-obvious. `PKDrawing(strokes:)`
+returns a drawing that is equal stroke-for-stroke but **does not encode to the same bytes** —
+measured: an empty drawing re-encodes to 42 different bytes, a one-stroke drawing to 318.
+M2-18's `reconcile` stored such a reconstruction on *every* callback, including the first one
+on a freshly opened page with no erasing involved. `VirtualizedPageStack.updateUIView` decides
+whether to reassign the canvas by comparing `dataRepresentation()`, so the difference never
+resolved: reassign → delegate fires → store another reconstruction → reassign. Each pass
+rendered a full-page 3MB preview, and ~230 passes hit the limit. 717 ÷ 3.1 ≈ 230, which is how
+I knew the theory was right before fixing anything.
+
+**Two lessons.** First, `signal 9` means look for jetsam or watchdog, never for a Swift bug —
+I lost time reading error-handling paths that were all correct. Second, my `--console` launch
+holds a usage assertion and kills the app when it detaches, so it manufactures a *second*
+signal 9 that looks exactly like the one you are chasing. Launch without `--console` and pull
+`--domain-type systemCrashLogs` afterwards instead; that is what actually produced the answer.
+
+Then, writing the device instructions, I went looking for the undo control and there wasn't
+one. Grep every app source: PencilKit registers stroke undo, M2-18 registers a grouped-erase
+undo, and **nothing in the UI could reach either.** Only the iPadOS three-finger gestures,
+which are undiscoverable and unusable with limited dexterity. M2-18's acceptance box "undo
+restores the whole answer in one step" had nothing a user could press. The human asked for a
+persistent button, so M2-26 adds one. **This is the third instance of the same pattern** —
+M2-19's dead Ask button, M2-16's orphaned suggestion layer — and it is worth naming as a class:
+*this project keeps building and verifying one half of a feature.* When a task says "X works",
+check that a user can reach X.
+
+Redo is deliberately absent: not requested, and a separate decision.
+
+**Verification:** app tests 159/159 ✅ · `./scripts/lint.sh` 0 violations across 134 files ✅ ·
+the three loop regression tests confirmed failing against the previous coordinator ✅ · grouped
+erase and one-step undo on the physical iPad still pending
+
+**Two more OneDrive casualties**, beyond CONTEXT §4 trap 5: `.git/info/exclude` and
+`.githooks/pre-commit` both went dataless mid-session. The first makes *every* git command fail
+(`cannot use .git/info/exclude as an exclude file`) — it is comment-only in every git template,
+so recreating it is safe. The second cannot be read, moved, or restored, so the pre-commit hook
+had to be skipped via `git -c core.hooksPath=<empty dir>`; lint and tests were run by hand in
+the hydrated checkout instead. Expect this to keep happening to arbitrary files.
+
+## 2026-08-11 · Claude · M2-18 — restore the coverage a test merge dropped
+
+Picked this up with an uncommitted working tree: `GeneratedInkEraserTests.swift` (5 tests)
+deleted and 4 of its tests re-homed in `SuggestionProvenanceTests.swift`, where they can share
+the `page()` fixture. The merge is a reasonable idea, but it **silently lost one test** —
+`testOneGestureCanRemoveTwoGeneratedAnswersWithoutTouchingHandwriting`, the only cover for
+`GeneratedInkEraser.resolve` handling more than one removed element.
+
+I restored it rather than trusting the reading. Mutation-testing earns the claim: adding
+`.prefix(1)` to the `referencesToRemove` chain — a plausible regression that handles only the
+first erased answer — leaves 12 of the 13 tests green and fails exactly the restored one. The
+gap was real, and nothing else in the suite covered it.
+
+That addition then pushed the merged class to 252 lines, over SwiftLint's 250-line
+`type_body_length`. The fixtures moved into an `extension` in the same file, which keeps the
+merge and its shared fixtures while clearing the rule. Worth knowing the merge sits ~2 lines
+under a hard CI gate: **the next test added to this class will break lint again**, and the
+answer then is to split the eraser cases back into their own file, not to keep extending.
+
+**The OneDrive trap in CONTEXT.md §4 is worse than "the formatting script times out."**
+`SuggestionProvenance.swift` and `DocumentPackageStore.swift` are dataless and will not
+hydrate — repeated `cat` never brings them down — so `xcodebuild` fails with `Error opening
+input file (Operation timed out)` and **no test can run in this checkout at all.** 61 loose
+objects under `.git/objects` are dataless too, so `git clone` also fails (`copy-fd: read
+returned: Operation timed out`). What works: packfiles are intact, so `git archive HEAD | tar
+-x -C <dir>` produces a fully hydrated tree. Copy the modified files in, `tuist generate`, and
+run there. That is the whole recipe, and it cost an hour to find twice — once for Codex, once
+for me.
+
+Two things I did not do. I did not touch the `PageDrawingStore`/undo implementation: it is
+Codex's and it is sound. And I reverted the in-place edit of Codex's M2-18 session entry that
+came with the tree — this file says append-only at the top, and the edit was deleting the
+OneDrive note that turned out to be the most valuable thing in it.
+
+**Still open, unchanged by this session:** M2-18's third acceptance box, "Undo restores the
+whole answer in one step," is unticked and **cannot be ticked from here** — it depends on the
+real `UIUndoManager` a `PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4).
+It needs the physical iPad, together with the grouped-erase check already queued.
+
+**Verification:** app tests 151/151 ✅ · `./scripts/test.sh` ✅ · `./scripts/lint.sh` 0
+violations across 131 files ✅ · mutation test confirms the restored case fails a real
+regression ✅ · all of it run in a `git archive` checkout, not this one · physical iPad
+eraser/undo still pending
+
+## 2026-08-11 · Codex · M2-18 — generated answers erase as one group
+
+PencilKit was behaving consistently: its vector eraser removed one stroke, but the typeset
+answer's visible shapes are dozens of hatch strokes. The canvas now detects a missing stroke
+through the generated element's persisted fingerprints and removes the rest of that answer.
+Ordinary handwriting remains on PencilKit's vector path. Ambiguous fingerprints fail closed
+so an attribution collision can never delete user ink.
+
+The implementation also fixes a provenance lifecycle defect found while tracing the erase:
+the live drawing store retained only the notebook-opening metadata, so a later autosave could
+overwrite the generated element recorded at acceptance. Drawing and current metadata now move
+through the store and autosave atomically. An eraser gesture suppresses PencilKit's internal
+undo registrations until its delayed final drawing callback, then registers one snapshot
+restore for the entire gesture.
+
+Physical Pencil input and the real canvas undo manager are the remaining checks. OneDrive
+timed out on two unrelated dataless Swift files during the local formatting script, so the
+exact changed-file hashes were checked against the fully hydrated verification checkout;
+the complete lint script passed there.
+
+**Verification:** focused grouped-erase tests 5/5 ✅ · app tests 151/151 ✅ · full
+`./scripts/test.sh` ✅ · `./scripts/lint.sh` 0 violations across 132 files ✅ · physical
+iPad eraser/undo pending
+
 ## 2026-08-11 · Codex · M1-07C — export now uses the current notebook
 
 The export toolbar captured the `StoredDocument` that opened the canvas and kept using it

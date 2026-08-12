@@ -11,7 +11,6 @@ struct VirtualizedPageStack: View {
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
-    let pageMetadata: [UUID: PageMetadata]
     /// Recomputed by the parent whenever the style preference or the glyph bank changes,
     /// so a switch takes effect on the next Ask without rebuilding the pipeline.
     let inkRenderer: any SuggestionInkRendering
@@ -22,6 +21,7 @@ struct VirtualizedPageStack: View {
     @StateObject var selectionStore = PageSelectionStore()
     @StateObject var askSelection = AskSelectionCoordinator()
     @StateObject var askModel = AskBarModel()
+    @StateObject var undoController = CanvasUndoController()
     /// **`@State`, not a plain `let`.** A `View` is a value: the parent rebuilds this struct
     /// on every render, and a `let` initialised inline would hand back a *fresh, empty*
     /// `SuggestionLayer` each time. `askPipeline` is `@State` and survives that rebuild, so
@@ -55,8 +55,8 @@ struct VirtualizedPageStack: View {
                 ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
             })
         let inkData = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.inkData) })
-        pageMetadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
-        _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData))
+        let metadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
+        _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData, metadata: metadata))
     }
 
     private var livePageIndices: Set<Int> {
@@ -122,6 +122,16 @@ struct VirtualizedPageStack: View {
 
                 HStack(spacing: 12) {
                     ToolPalette(selectedTool: $selectedTool, selectedPen: $selectedPen)
+                    Button {
+                        undoController.undo()
+                    } label: {
+                        Label("canvas.undo", systemImage: "arrow.uturn.backward")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .disabled(!undoController.canUndo)
+                    .accessibilityLabel("canvas.undo")
                     Button(action: invokeAsk) {
                         Label("ask.action", systemImage: "sparkles")
                             .frame(minHeight: 44)
@@ -136,6 +146,7 @@ struct VirtualizedPageStack: View {
         .background(.background)
         .onAppear {
             visiblePageID = pageIDs.first
+            undoController.configure(store: drawingStore)
         }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
@@ -156,6 +167,7 @@ struct VirtualizedPageStack: View {
                 pageID: pageID,
                 pageSize: pageSizes[pageID] ?? pageSize,
                 drawingStore: drawingStore,
+                undoController: undoController,
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
@@ -189,9 +201,7 @@ struct VirtualizedPageStack: View {
         let dirty = drawingStore.takeDirtyPages()
         guard !dirty.isEmpty else { return }
 
-        for (pageID, drawing) in dirty {
-            guard let metadata = pageMetadata[pageID] else { continue }
-            let page = StoredPage(metadata: metadata, inkData: drawing.dataRepresentation())
+        for page in dirty {
             Task { await autosave.record(page, inNotebook: notebookID) }
         }
     }
@@ -202,6 +212,7 @@ private struct LivePageView: View {
     let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     let selection: PageSelection?
@@ -218,10 +229,17 @@ private struct LivePageView: View {
                 pageID: pageID,
                 pageSize: pageSize,
                 drawingStore: drawingStore,
+                undoController: undoController,
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 askSelection: askSelection
             )
+            // Rebuilt on an undo. A `PKCanvasView` restores its own internal drawing when real
+            // Pencil input arrives, which brought back everything that had just been undone —
+            // measured on device: canvas reported 0 strokes, then 20 on the next stroke. A
+            // fresh canvas has no internal history to restore, and this is the only mechanism
+            // that does not depend on guessing PencilKit's internals.
+            .id(drawingStore.externalGeneration)
             if let selection {
                 PageSelectionOverlay(selection: selection)
             }
@@ -264,16 +282,22 @@ private struct CachedPageView: View {
     }
 }
 
-private struct LiveInkCanvas: UIViewRepresentable {
+struct LiveInkCanvas: UIViewRepresentable {
     let pageID: UUID
     let pageSize: CGSize
     @ObservedObject var drawingStore: PageDrawingStore
+    @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     @ObservedObject var askSelection: AskSelectionCoordinator
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(pageID: pageID, pageSize: pageSize, drawingStore: drawingStore)
+    func makeCoordinator() -> LiveInkCanvasCoordinator {
+        LiveInkCanvasCoordinator(
+            pageID: pageID,
+            pageSize: pageSize,
+            drawingStore: drawingStore,
+            undoController: undoController
+        )
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -283,7 +307,7 @@ private struct LiveInkCanvas: UIViewRepresentable {
         // system. Without this PencilKit lightens dark ink for a dark background that is not
         // there, and the user writes in white on a white page (M1-12B).
         InkAppearance.applyPaperAppearance(to: canvasView)
-        canvasView.drawing = drawingStore.drawing(for: pageID)
+        context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
@@ -292,10 +316,16 @@ private struct LiveInkCanvas: UIViewRepresentable {
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
         apply(selectedTool, to: canvasView)
-        let savedDrawing = drawingStore.drawing(for: pageID)
-        if canvasView.drawing.dataRepresentation() != savedDrawing.dataRepresentation() {
-            canvasView.drawing = savedDrawing
+        // Pull only when the store moved on without this canvas — an undo, or an accepted
+        // answer. The previous test compared `dataRepresentation()`, which is only stable for
+        // the same instance, so it could report a difference that no amount of reassigning
+        // resolved: reassign, delegate fires, store, reassign… a full-page preview per pass and
+        // a jetsam kill at 717MB (M2-18). A revision counter answers the question exactly.
+        guard context.coordinator.appliedRevision != drawingStore.revision(for: pageID) else {
+            return
         }
+
+        context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
     }
 
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
@@ -309,22 +339,6 @@ private struct LiveInkCanvas: UIViewRepresentable {
         }
     }
 
-    @MainActor
-    final class Coordinator: NSObject, PKCanvasViewDelegate {
-        private let pageID: UUID
-        private let pageSize: CGSize
-        private let drawingStore: PageDrawingStore
-
-        init(pageID: UUID, pageSize: CGSize, drawingStore: PageDrawingStore) {
-            self.pageID = pageID
-            self.pageSize = pageSize
-            self.drawingStore = drawingStore
-        }
-
-        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
-        }
-    }
 }
 
 extension PageSelectionStore {
