@@ -25,7 +25,16 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-08D — Withdraw the "neater version of mine" style
+status: In progress · claimed: Claude · 2026-08-12 · refs: HANDWRITING.md §8, PROGRESS.md M3-08C · parallel-safe: false · estimate: S
+Note: product decision from the device session, not a defect. Two styles ship — **my
+handwriting** and **typeset**. Neat is deferred to a later version.
+Acceptance:
+- [ ] The style picker offers exactly two options
+- [ ] A stored `neat` preference migrates to the user's own hand, never silently to typeset
+- [ ] `Variation`'s reach into sample selection, spacing and slant survives — it is what
+      makes `.natural` use a multi-sample bank at all
+- [ ] `HANDWRITING.md` §8 and the M3-08 family say two styles, and why the third went
 
 ## Review
 
