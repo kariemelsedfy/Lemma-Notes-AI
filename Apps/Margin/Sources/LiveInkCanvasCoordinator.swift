@@ -17,12 +17,8 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     private let drawingStore: PageDrawingStore
     private let undoController: CanvasUndoController?
     private weak var canvasView: PKCanvasView?
-    /// Open between `didBeginUsingTool` and the debounce that follows `didEndUsingTool`.
-    /// **Only an open gesture may write the canvas back into the store.** Outside one, a
-    /// drawing callback is either our own push or PencilKit chatter, and treating a canvas we
-    /// have not just received input on as the truth is what resurrected undone strokes.
-    private var gestureIsOpen = false
-    private var gestureDidEnd = false
+    private var isErasing = false
+    private var eraserDidEnd = false
     private var finalizationTask: Task<Void, Never>?
     private var isApplyingDrawing = false
     /// The store revision this canvas last wrote or read. `updateUIView` pulls only when the
@@ -45,7 +41,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !isApplyingDrawing else { return }
         self.canvasView = canvasView
-        guard gestureIsOpen else { return }
         reconcile(canvasView)
         // Commit here, not at `didEndUsingTool`. PencilKit sends its final drawing callback
         // *after* the tool ends, so committing there ran before the ink had landed: the store's
@@ -54,31 +49,29 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         // to delay the commit past this callback. `commitChange` clears the pending snapshot,
         // so a gesture that reports many changes still yields exactly one entry.
         undoController?.commitChange()
-        if gestureDidEnd {
-            scheduleFinalization(on: canvasView)
+        if eraserDidEnd {
+            scheduleEraserFinalization(on: canvasView)
         }
     }
 
     func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
+        // Adopted for every tool, not just the eraser: undo must follow the page the user is
+        // touching, and this is the only callback that identifies it unambiguously.
         self.canvasView = canvasView
-        // Re-sync before accepting input. An undo writes the store and lets `updateUIView`
-        // push the result here, but if that push did not take — and the reported symptom says
-        // it sometimes does not — the canvas still holds the ink the user just undid. Writing
-        // on top of it would save that ink back and resurrect the whole undone state. Pushing
-        // the store first means the new stroke always lands on ours.
-        let stored = drawingStore.drawing(for: pageID)
-        if canvasView.drawing.strokes.count != stored.strokes.count {
-            applyExternally(stored, to: canvasView)
-        }
-        gestureIsOpen = true
-        gestureDidEnd = false
         undoController?.beginChange(pageID: pageID, pageSize: pageSize)
+        isErasing = canvasView.tool is PKEraserTool
+        eraserDidEnd = false
     }
 
     func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
-        guard gestureIsOpen else { return }
-        gestureDidEnd = true
-        scheduleFinalization(on: canvasView)
+        guard isErasing else {
+            // A fallback only: the commit normally happens on the drawing callback above. If
+            // that already ran this is a no-op, since the pending snapshot is cleared.
+            undoController?.commitChange()
+            return
+        }
+        eraserDidEnd = true
+        scheduleEraserFinalization(on: canvasView)
     }
 
     private func reconcile(_ canvasView: PKCanvasView) {
@@ -136,27 +129,26 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     /// PencilKit can send its final drawing callback after `didEndUsingTool`; the short
-    /// debounce holds the gesture open so that last callback is still accepted, and the undo
-    /// entry therefore covers the gesture in full.
-    private func scheduleFinalization(on canvasView: PKCanvasView) {
+    /// debounce holds the gesture open so that last callback is reconciled before the undo
+    /// entry is committed, and the entry therefore covers the erase in full.
+    private func scheduleEraserFinalization(on canvasView: PKCanvasView) {
         finalizationTask?.cancel()
         finalizationTask = Task { @MainActor [weak self, weak canvasView] in
             try? await Task.sleep(nanoseconds: 80_000_000)
             guard !Task.isCancelled, let self, let canvasView else { return }
-            finishGesture(on: canvasView)
+            finishEraserGesture(on: canvasView)
         }
     }
 
-    /// Closes the gesture once PencilKit has stopped reporting. The whole gesture is one undo
-    /// entry, which is what makes an erased answer return in a single press: a typeset answer
-    /// is dozens of hatch strokes and the eraser reports them separately.
-    private func finishGesture(on canvasView: PKCanvasView) {
-        guard gestureIsOpen else { return }
+    /// The whole eraser gesture is one undo entry, taken here rather than per callback: a
+    /// typeset answer is dozens of hatch strokes and PencilKit reports them separately.
+    private func finishEraserGesture(on canvasView: PKCanvasView) {
+        guard isErasing else { return }
         reconcile(canvasView)
-        undoController?.commitChange()
-        gestureIsOpen = false
-        gestureDidEnd = false
+        isErasing = false
+        eraserDidEnd = false
         finalizationTask = nil
+        undoController?.commitChange()
     }
 
     private func storedStrokes(in drawing: PKDrawing) -> [StoredStroke] {
