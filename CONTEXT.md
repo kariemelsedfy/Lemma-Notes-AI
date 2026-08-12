@@ -4,7 +4,7 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-11 · by: Claude · Milestone: **generated-answer erasing awaiting device confirmation**
+**Last updated:** 2026-08-11 (late) · by: Claude · Milestone: **undo works on device; M2-18's grouped erase still unverified**
 
 ## Handover, 2026-08-10
 
@@ -94,6 +94,10 @@ stroke looks like *to the app* before shipping it.
    and a device is the test.
 5. **A green suite here means less than you think.** Every device session so far has found
    something the tests could not. Build for the iPad and use it before believing a feature.
+6. **When a device bug survives two fixes, stop reasoning and instrument.** M2-26 took five
+   round-trips; four were guesses from symptoms and one of them shipped a regression that ate
+   handwriting. The fix came from twenty minutes of logging stroke counts to the app container.
+   The recipe is in that session entry — it is reusable and it is the most valuable thing in it.
 
 ---
 
@@ -127,7 +131,7 @@ who has not read the code — because they have not.
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing. A persistent undo button sits in the chrome (M2-26) — before it, nothing in the UI could reach the undo PencilKit and M2-18 were registering |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing. A persistent undo button in the chrome drives Margin's **own** undo stack — one entry per gesture, one per accepted answer — and an undo rebuilds the canvas because PencilKit will otherwise resurrect what it replaced (M2-26, invariant 14). `updateUIView` pulls by revision, never by comparing serialized ink (invariant 12) |
 | Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-25) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
@@ -178,13 +182,24 @@ who has not read the code — because they have not.
     (M2-13, M2-13B). The OCR harness uses Core Graphics and will not tell you: tune a width
     against it and you are tuning against a renderer the user never sees.
 
-12. **A rebuilt `PKDrawing` is not byte-identical to the original.** `PKDrawing(strokes:)`
-    round-trips the strokes but re-encodes differently — measured: 42 different bytes for an
-    empty drawing, 318 for a one-stroke drawing. `VirtualizedPageStack.updateUIView` decides
-    whether to reassign the canvas by comparing `dataRepresentation()`, so storing a
-    reconstruction when nothing changed reassigns the canvas, re-fires the delegate, and loops
-    forever — a full-page preview per pass, 717MB, jetsam kill (M2-18). Store the canvas's own
-    drawing unless you are actually changing the strokes.
+12. **`PKDrawing.dataRepresentation()` is not an equality test.** It is stable only for the
+    same instance. Measured: two freshly constructed *empty* drawings encode to 42 **different**
+    bytes, and a drawing round-tripped through `PKDrawing(data:)` does not match its source.
+    Never use it to ask "did this change" — use `PageDrawingStore.revision(for:)`. Using it
+    that way in `updateUIView` reassigned the canvas forever: a full-page preview per pass,
+    717MB, jetsam kill (M2-18).
+13. **PencilKit's final drawing callback arrives *after* `canvasViewDidEndUsingTool`.** Any
+    bookkeeping done at tool-end runs before the ink has landed. This is why an undo entry
+    committed there was discarded as "nothing changed" and pen strokes were silently not
+    undoable (M2-26). Commit on the drawing callback, or hold the gesture open with a debounce.
+14. **A `PKCanvasView` keeps an internal drawing that survives assigning `drawing`.** The public
+    property takes your value — it reads back correctly, and `didBeginUsingTool` confirms it —
+    but the *next real Pencil input* rebuilds from PencilKit's own model and restores what you
+    replaced. Measured on device: canvas reported 0 strokes after an undo, then 20 on the next
+    stroke, resurrecting 19. **Programmatic input never triggers it, so no test can see this.**
+    To replace a canvas's drawing durably, rebuild the view — live pages key their canvas on
+    `PageDrawingStore.externalGeneration` (M2-26). Do not try to detect and correct it: at
+    gesture start the canvas and store agree, and the divergence appears mid-gesture.
 
 ## 4. Environment notes
 

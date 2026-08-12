@@ -760,8 +760,25 @@ Acceptance:
 - [ ] Double-tap does what the system setting says, and nothing app-specific
 - [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
 
+### M2-27 — The canvas blinks when you undo
+status: Ready · found: human · 2026-08-11 · refs: PROGRESS.md M2-26 · estimate: S
+Note: reported on device — "when I click undo everything kinda blinks for a second", explicitly
+**not urgent**. It is the cost of M2-26's fix: an undo rebuilds the `PKCanvasView` (keyed on
+`PageDrawingStore.externalGeneration`) because PencilKit otherwise restores its own internal
+drawing on the next Pencil input. The diagnostics log also shows `applyExternally` running
+twice per undo — once from `makeUIView` on the fresh canvas, once from `updateUIView` — so
+there is a redundant assignment to remove before anything more elaborate.
+Do not "fix" this by going back to assigning `drawing` on the existing canvas; that is the
+resurrection bug, measured. Look instead at making the rebuild invisible: retaining the ink
+preview underneath during the swap, or finding a PencilKit call that genuinely resets its
+internal model.
+Acceptance:
+- [ ] Undo does not visibly flash the page
+- [ ] Undone strokes still do not return when writing afterwards — the M2-26 device evidence is the bar
+- [ ] The redundant second `applyExternally` per undo is gone
+
 ### M2-26 — A persistent undo control in the canvas
-status: Review · implemented: Claude · 2026-08-11 · needs-device-verification · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
+status: Review · implemented: Claude · device-confirmed: human · 2026-08-11 · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
 Note: found while writing M2-18's device instructions — the app had **no undo affordance at
 all.** PencilKit registered stroke undo and M2-18 registered a grouped-erase undo, but the only
 way to reach either was the iPadOS three-finger gesture: undiscoverable, and unusable for anyone
@@ -778,7 +795,11 @@ Acceptance:
 - [x] It disables when there is nothing to undo
 - [x] Undo targets the page being written on, not an off-screen neighbour
 - [x] Copy is localized (`canvas.undo`)
-- [ ] On device: the button undoes a stroke, and undoes a grouped generated-answer erase in one step
+- [x] **Confirmed on device 2026-08-11** — "it's working perfectly now", after five rounds. The
+      final defect was PencilKit restoring its own internal drawing on the next Pencil input;
+      the fix rebuilds the canvas. Post-fix instrumentation: 28 undos, 29 gestures, 0
+      resurrections, against 3 in half the time before it
+- [ ] Undo of a grouped generated-answer erase in one step — still untested (M2-18)
 
 ### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S

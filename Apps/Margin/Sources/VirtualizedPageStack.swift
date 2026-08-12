@@ -325,11 +325,6 @@ struct LiveInkCanvas: UIViewRepresentable {
             return
         }
 
-        CanvasDiagnostics.record(
-            "updateUIView-pull", canvasStrokes: canvasView.drawing.strokes.count,
-            storeStrokes: drawingStore.drawing(for: pageID).strokes.count,
-            pageRevision: drawingStore.revision(for: pageID),
-            appliedRevision: context.coordinator.appliedRevision)
         context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
     }
 

@@ -11,6 +11,68 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M2-26 — five rounds on one undo bug, and what finally found it
+
+**Read this one for the method, not the fix.** The fix is four lines; getting to it took five
+device round-trips, and four of them were wasted because I reasoned from symptoms instead of
+measuring. The one that worked took twenty minutes of instrumentation.
+
+The user asked for a persistent undo button. What followed, in order:
+
+1. The button disabled itself after every Ask. Cause: `PKCanvasView.undoManager` resolves
+   through the responder chain, so a canvas not yet in a window has none — and `makeUIView`
+   runs before attachment. Treating "no manager" as "nothing to undo" blanked it on every
+   page rebuild.
+2. Pressing it changed nothing visible. Cause: `acceptSuggestion` commits straight to
+   `PageDrawingStore`, so PencilKit's stack had never seen the answer; its one entry restored
+   a state identical to the visible one. Fixed by owning the stack — which also made undo
+   testable, since PencilKit's cannot be asserted outside a window.
+3. Pen strokes were not undoable while accepted answers were. Cause: **PencilKit's final
+   drawing callback arrives after `didEndUsingTool`**, so committing the entry at tool-end ran
+   before the ink landed and it was dropped as "nothing changed". The eraser survived only
+   because its debounce delayed the commit past that callback.
+4. Undone strokes came back on the next stroke. I guessed twice — a byte comparison, then a
+   gesture-window rewrite. **The second guess shipped a regression that ate handwriting**: it
+   re-synced the canvas against the store at gesture start, and writing two strokes quickly
+   means the store legitimately lags, so it wiped the stroke just written. Reverted within
+   minutes of the report.
+5. Then I instrumented instead of guessing, and the log answered it in one pass:
+
+       76.787  beginUsingTool     canvas=0  store=0
+       76.840  endUsingTool       canvas=0  store=0
+       76.857  drawingDidChange   canvas=20 store=0
+
+   One stroke drawn, nineteen resurrected. **`PKCanvasView`'s public `drawing` had taken our
+   value while its internal model had not**, and real Pencil input rebuilt from that internal
+   model. That single fact explains everything the earlier attempts could not: why it needed a
+   physical Pencil, why it was intermittent, why no test saw it, and why checking canvas
+   against store at gesture start neither caught it nor could — at that instant the two agree.
+
+The fix is to stop assigning into a canvas that will not let go: an undo bumps
+`PageDrawingStore.externalGeneration`, live pages key their `PKCanvasView` on it, and a fresh
+canvas has no internal history to restore. Deterministic, and it assumes nothing about
+PencilKit's internals — which is the standard I should have held from round two.
+
+**Verified rather than assumed:** the post-fix log records 28 undos and 29 gestures with zero
+resurrections; the pre-fix log had three in half the time. The user confirmed it.
+
+**Three PencilKit facts came out of this, all measured, all now in CONTEXT §3:**
+`dataRepresentation()` is only stable for the same instance (two fresh empty drawings encode
+to 42 *different* bytes); the final drawing callback lands after `didEndUsingTool`; and the
+canvas keeps an internal drawing that survives assigning `drawing`.
+
+**How to instrument this again** — the tooling is worth more than the fix. Write counts to
+`Documents/` in the app container (never ink — AGENTS §7), then
+`devicectl device copy from --domain-type appDataContainer --domain-identifier edu.bowdoin.margin
+--source Documents/<file> --destination <local file>`. The destination must be a *file path*,
+not a directory. `log stream` cannot target a connected device on this macOS, and
+`devicectl process launch --console` holds a usage assertion that kills the app when it
+detaches — it manufactures a second `signal 9` that looks exactly like the bug you are chasing.
+The container file needs no tether and survives the app being killed.
+
+Left behind: M2-27, the brief blink when the canvas rebuilds. The user saw it and explicitly
+deprioritised it. The log shows `applyExternally` running twice per undo — start there.
+
 ## 2026-08-11 · Claude · M2-18 device run — a jetsam kill, and the missing undo button
 
 **The branch shipped a crash that 151 green tests could not see, and the user found it in

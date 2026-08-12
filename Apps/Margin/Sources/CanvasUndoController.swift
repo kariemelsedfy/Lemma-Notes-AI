@@ -106,10 +106,6 @@ final class CanvasUndoController: ObservableObject {
         // Rebuild the canvas rather than assign into it: PencilKit restores its own internal
         // drawing on the next Pencil input, which resurrected everything just undone.
         drawingStore.markExternalChange()
-        CanvasDiagnostics.record(
-            "UNDO", storeStrokes: drawing.strokes.count,
-            pageRevision: drawingStore.revision(for: snapshot.pageID),
-            note: "remaining=\(stack.count)")
         canUndo = !stack.isEmpty
     }
 

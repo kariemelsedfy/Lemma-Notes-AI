@@ -39,11 +39,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-        CanvasDiagnostics.record(
-            "drawingDidChange", canvasStrokes: canvasView.drawing.strokes.count,
-            storeStrokes: drawingStore.drawing(for: pageID).strokes.count,
-            pageRevision: drawingStore.revision(for: pageID), appliedRevision: appliedRevision,
-            note: isApplyingDrawing ? "IGNORED(applying)" : "")
         guard !isApplyingDrawing else { return }
         self.canvasView = canvasView
         reconcile(canvasView)
@@ -60,10 +55,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
-        CanvasDiagnostics.record(
-            "beginUsingTool", canvasStrokes: canvasView.drawing.strokes.count,
-            storeStrokes: drawingStore.drawing(for: pageID).strokes.count,
-            pageRevision: drawingStore.revision(for: pageID), appliedRevision: appliedRevision)
         // Adopted for every tool, not just the eraser: undo must follow the page the user is
         // touching, and this is the only callback that identifies it unambiguously.
         self.canvasView = canvasView
@@ -73,10 +64,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     }
 
     func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
-        CanvasDiagnostics.record(
-            "endUsingTool", canvasStrokes: canvasView.drawing.strokes.count,
-            storeStrokes: drawingStore.drawing(for: pageID).strokes.count,
-            pageRevision: drawingStore.revision(for: pageID), appliedRevision: appliedRevision)
         guard isErasing else {
             // A fallback only: the commit normally happens on the drawing callback above. If
             // that already ran this is a no-op, since the pending snapshot is cleared.
@@ -144,11 +131,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         appliedRevision = drawingStore.revision(for: pageID)
         // Reads the canvas *back* deliberately: if PencilKit did not take the assignment, this
         // is where it shows, and that is the open question behind the undo defects.
-        CanvasDiagnostics.record(
-            "applyExternally", canvasStrokes: canvasView.drawing.strokes.count,
-            storeStrokes: drawing.strokes.count,
-            pageRevision: drawingStore.revision(for: pageID), appliedRevision: appliedRevision,
-            note: canvasView.drawing.strokes.count == drawing.strokes.count ? "" : "NOT-TAKEN")
     }
 
     /// PencilKit can send its final drawing callback after `didEndUsingTool`; the short
