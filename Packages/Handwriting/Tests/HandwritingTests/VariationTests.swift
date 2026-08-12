@@ -6,16 +6,25 @@ import XCTest
 
 /// `Variation` across everything it should reach (M3-08C).
 ///
-/// §8 asks the "neat" style to be the same hand with variance reduced by roughly 60%. It used
-/// to scale only per-glyph vertical jitter and baseline drift — under a point across a word —
-/// and never touched the largest source of natural variation at all: **which sample of a
-/// letter gets drawn**. A bank with four samples per letter therefore rendered exactly like a
-/// bank with one, which is also why `M3-19` (learning extra variants) had nothing to feed.
+/// `Variation` used to scale only per-glyph vertical jitter and baseline drift, and never
+/// touched the largest source of natural variation at all: **which sample of a letter gets
+/// drawn**. A bank with four samples per letter therefore rendered exactly like a bank with
+/// one, which is also why `M3-19` (learning extra variants) had nothing to feed.
+///
+/// **M3-08D withdrew the "neat" style these were written to justify, and none of them went
+/// with it.** The app now only ever asks for `.natural` — and at `.natural` a multi-sample
+/// bank must still render differently from a single-sample one, which is the whole point of
+/// calibration collecting more than one of each letter. The scale is exercised below with
+/// explicit values rather than a named style, because there is no longer a second style to
+/// name and the knob still has to mean what it says.
 ///
 /// These measure against a bank whose samples differ in *height*, so the rendered ink says
 /// which sample was chosen. `SynthesizerTests`' shared fixture varies only `advanceWidth`,
 /// which moves a glyph's neighbours rather than the glyph, and cannot show selection at all.
 final class VariationTests: XCTestCase {
+    /// The scale the withdrawn "neat" style used, kept as the reduced-variance probe.
+    private static let steadier = Synthesizer.Variation(scale: 0.4)
+
     // MARK: - Variation reaches sample selection (M3-08C)
 
     /// The writer's steadiest letter, every time. Before M3-08C `Variation` never reached
@@ -39,18 +48,18 @@ final class VariationTests: XCTestCase {
         XCTAssertLessThan(typical, try XCTUnwrap(extremes.max()))
     }
 
-    func testNeatDrawsFromFewerSamplesThanNatural() throws {
+    func testALowerVariationDrawsFromFewerSamplesThanNatural() throws {
         let bank = try Self.variedBank(samplesPerCharacter: 5)
 
         let natural = try Synthesizer.strokes(
             for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .natural, seed: 5)
-        let neat = try Synthesizer.strokes(
-            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .neat, seed: 5)
+        let steadier = try Synthesizer.strokes(
+            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: Self.steadier, seed: 5)
 
-        // "A neater version of mine" is the writer's steadiest letters, not merely less
-        // jitter applied to the same random choice of them.
+        // Reducing variance means the writer's steadiest letters, not merely less jitter
+        // applied to the same random choice of them.
         XCTAssertLessThan(
-            Set(Self.glyphHeights(of: neat)).count, Set(Self.glyphHeights(of: natural)).count)
+            Set(Self.glyphHeights(of: steadier)).count, Set(Self.glyphHeights(of: natural)).count)
     }
 
     /// The headline symptom: extra samples were dead weight.
@@ -67,19 +76,24 @@ final class VariationTests: XCTestCase {
         XCTAssertGreaterThan(Set(Self.glyphHeights(of: fromMany)).count, 1)
     }
 
-    /// The headline number, pinned. §8 asks for a *visible* difference between the two
-    /// styles; before M3-08C one word differed by under a point, which is invisible.
-    func testNeatIsVisiblyDifferentFromNaturalOnARealBank() throws {
+    /// The headline number, pinned: the scale has to move the ink by an amount you could
+    /// see. Before M3-08C a whole word differed by under a point, which is invisible.
+    ///
+    /// M3-08D means no user can select this scale today, so read the number as a floor on
+    /// *the mechanism*, not as a promise about a shipped style. A regression that quietly
+    /// takes `Variation` back to a no-op also takes multi-sample banks back to single-sample
+    /// rendering at `.natural`, and no other test here would fail.
+    func testAReducedVariationIsVisiblyDifferentFromNaturalOnARealBank() throws {
         let bank = try Self.variedBank(samplesPerCharacter: 5)
 
         var displacements: [CGFloat] = []
         for seed in UInt64(1)...20 {
             let natural = try Synthesizer.strokes(
                 for: "handwriting", in: Self.wideFrame, bank: bank, variation: .natural, seed: seed)
-            let neat = try Synthesizer.strokes(
-                for: "handwriting", in: Self.wideFrame, bank: bank, variation: .neat, seed: seed)
+            let steadier = try Synthesizer.strokes(
+                for: "handwriting", in: Self.wideFrame, bank: bank, variation: Self.steadier, seed: seed)
             let left = natural.flatMap { $0.points.map(\.location) }
-            let right = neat.flatMap { $0.points.map(\.location) }
+            let right = steadier.flatMap { $0.points.map(\.location) }
             guard left.count == right.count else { continue }
             displacements.append(zip(left, right).map { hypot($0.x - $1.x, $0.y - $1.y) }.max() ?? 0)
         }
@@ -88,33 +102,33 @@ final class VariationTests: XCTestCase {
         // Measured at 12pt across twenty seeds on this fixture; a real five-sample bank at a
         // 30pt x-height measured 15.4pt. The floor guards the regression to a no-op, not the
         // exact number.
-        XCTAssertGreaterThan(mean, 4, "neat and natural differ by \(mean)pt — too close to see")
+        XCTAssertGreaterThan(mean, 4, "the two scales differ by \(mean)pt — too close to see")
     }
 
     // MARK: - Variation reaches spacing and slant (M3-08C)
 
-    func testNeatSpacesGlyphsMoreEvenlyThanNatural() throws {
+    func testALowerVariationSpacesGlyphsMoreEvenlyThanNatural() throws {
         // One sample per character, so only the spacing jitter can move: otherwise this
         // would measure sample choice instead.
         let bank = try Self.variedBank(samplesPerCharacter: 1)
 
         let natural = try Synthesizer.strokes(
             for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .natural, seed: 11)
-        let neat = try Synthesizer.strokes(
-            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .neat, seed: 11)
+        let steadier = try Synthesizer.strokes(
+            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: Self.steadier, seed: 11)
 
-        XCTAssertLessThan(Self.gapSpread(of: neat), Self.gapSpread(of: natural))
+        XCTAssertLessThan(Self.gapSpread(of: steadier), Self.gapSpread(of: natural))
     }
 
-    func testNeatLeansGlyphsMoreConsistentlyThanNatural() throws {
+    func testALowerVariationLeansGlyphsMoreConsistentlyThanNatural() throws {
         let bank = try Self.variedBank(samplesPerCharacter: 1)
 
         let natural = try Synthesizer.strokes(
             for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .natural, seed: 13)
-        let neat = try Synthesizer.strokes(
-            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: .neat, seed: 13)
+        let steadier = try Synthesizer.strokes(
+            for: "aaaaaaaaaaaa", in: Self.wideFrame, bank: bank, variation: Self.steadier, seed: 13)
 
-        XCTAssertLessThan(Self.slantSpread(of: neat), Self.slantSpread(of: natural))
+        XCTAssertLessThan(Self.slantSpread(of: steadier), Self.slantSpread(of: natural))
     }
 
     /// Determinism is the contract the whole feature rests on (HANDWRITING §4): the new

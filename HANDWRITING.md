@@ -155,10 +155,19 @@ Snapshot tests in CI compare rendered PNGs against references with a small perce
 
 ## 8. Fallback styles
 
-Not everyone will do the calibration, and some handwriting won't reconstruct well. Ship three style options in Settings:
+Not everyone will do the calibration, and some handwriting won't reconstruct well. Ship two style options in Settings:
 
 1. **My handwriting** (glyph bank) — default once calibrated
-2. **Neat version of mine** — glyph bank with variance reduced ~60%; several early testers will prefer this for answers
-3. **Typeset** — clean vector text at matched size and color; the honest fallback, and also the right default in Exam Mode
+2. **Typeset** — clean vector text at matched size and color; the honest fallback, and also the right default in Exam Mode
 
 Users can switch at any time and re-render existing generated blocks, because we keep the spec that produced them.
+
+### The third style, and why it isn't here
+
+This section specified a **"neat version of mine"** — the glyph bank at ~60% variance — on the expectation that several early testers would prefer it over their real hand. **Withdrawn 2026-08-12 (M3-08D), deferred to a later version.**
+
+It was built (M3-08), found to be nearly a no-op (M3-08C), fixed so the two styles measured 15.4pt apart at a 30pt x-height, and then tried on device against a real one-pass bank. The verdict was *"doesn't look different at all"*.
+
+**The measurement and the verdict are both correct, and that is the point worth keeping.** The 15.4pt figure came from a five-sample bank; §3.1's calibration collects roughly one sample per character, and at one sample the same measurement gives **1.19pt**. The style's entire effect is choosing among samples the user does not yet have. So the honest reading is not "neat does nothing" but **"neat cannot do anything until banks are bigger"** — which is [M3-19](PROGRESS.md), learning extra variants from ordinary writing. Reconsider this style after M3-19 ships, not before.
+
+Nothing in the synthesizer was removed. `Synthesizer.Variation` still takes an arbitrary scale, and it still reaches sample selection, spacing and slant — that work is what makes a multi-sample bank render differently from a single-sample one **at `.natural`**, which is the only style the app now asks for. Restoring the third style is a case in `HandwritingStyleChoice` plus a constant.

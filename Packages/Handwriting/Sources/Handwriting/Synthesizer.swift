@@ -20,13 +20,16 @@ public enum Synthesizer {
         case degenerateFrame
     }
 
-    /// Knobs the styles in `HANDWRITING.md` §8 differ on.
+    /// How much of the writer's measured range is in play.
+    ///
+    /// §8 used this to separate three styles. M3-08D withdrew the middle one — "a neater
+    /// version of mine" — so the app now only ever asks for `.natural`. The knob stays
+    /// public and arbitrary rather than collapsing to a boolean: it is what M3-19 will turn
+    /// down as a bank grows, what the tests use to prove selection narrows toward the
+    /// steadiest glyph, and all a restored neat style would need.
     public struct Variation: Equatable, Sendable {
         /// "My handwriting": the writer's measured variance, unmodified.
         public static let natural = Variation(scale: 1)
-        /// "Neat version of mine": §8 puts this at roughly 60% less variance. Several
-        /// early testers are expected to prefer it *over* their real hand for answers.
-        public static let neat = Variation(scale: 0.4)
 
         /// Multiplier on every source of randomness. Zero is mechanical.
         public let scale: CGFloat
@@ -127,10 +130,15 @@ public enum Synthesizer {
     ///
     /// `variation` decides how much of the writer's range is in play. Samples are ranked most
     /// typical first, and the pool is narrowed towards that most typical glyph as the scale
-    /// falls — so "a neater version of mine" draws from the writer's steadiest letters rather
-    /// than merely jittering less. Before this, `Variation` reached only vertical jitter and
-    /// baseline drift: a bank with four samples per letter behaved exactly like one with a
-    /// single sample, and `.neat` differed from `.natural` by under a point across a word.
+    /// falls, so a lower scale draws the writer's steadiest letters rather than merely
+    /// jittering less.
+    ///
+    /// **This matters at `.natural` too, which is the only scale the app ships (M3-08D).**
+    /// Before M3-08C, `Variation` reached only vertical jitter and baseline drift — sample
+    /// selection was not wired to anything, so a bank with four samples per letter rendered
+    /// exactly like a bank with one, and every extra sample calibration collected was dead
+    /// weight. Removing this narrowing to "simplify" now that only one scale ships would put
+    /// that back.
     private static func select(
         _ text: String,
         from bank: GlyphBank,
