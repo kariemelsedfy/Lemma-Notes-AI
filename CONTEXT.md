@@ -311,6 +311,7 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q5 | Final product name + trademark clearance | human | M7 |
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
 | Q7 | Confirm current Apple Intelligence regional availability (EU / mainland China) — determines whether T2 must carry entire regions | agent research | M4 |
+| Q12 | **iPadOS 26 or 27 for 1.0?** M4-01 measured the cost of 26: no Apple PCC tier at all (`PrivateCloudComputeLanguageModel` does not exist), and an on-device tier that cannot see the crop, only the Vision transcript and stroke data. Raising to 27 buys both, and costs every user still on 26. This decides what the free tier can do | human | **M4-02 and everything downstream of it** |
 | Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
 
 **Q10 and Q11 are resolved (2026-08-02): print-only for 1.0, and calibration is optional

@@ -11,6 +11,44 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-01 — the pipeline doc described an SDK we do not have
+
+M4 is filed, and its first task was to check the Foundation Models API before anything is
+written against it. That was worth doing on the first try.
+
+**`AI_PIPELINE.md` §5 was wrong in the expensive direction.** It said the framework's
+`LanguageModel` protocol lets Apple's model, Claude and Gemini sit behind one Swift API so
+provider swaps are "close to a one-line change", and that `PrivateCloudComputeLanguageModel` is
+the T1 surface. Against the iOS 26.5 simulator SDK — our validated toolchain, deployment target
+iPadOS 26.0 — both are `cannot find in scope`, and there is no image-bearing type in the
+framework at all. They are the iOS 27 surface from WWDC26, where the Anthropic and Google
+packages are described as *forthcoming*.
+
+**Read the `.swiftinterface`, not the documentation.** The docs pages are JavaScript-rendered
+and fetch as a title and nothing else, which cost me two useless round trips. The SDK ships
+`FoundationModels.framework/Modules/FoundationModels.swiftmodule/*.swiftinterface` — 1,501
+lines of exact declarations with availability annotations, which is what the compiler reads and
+therefore what is true. Then confirm with `swiftc -typecheck` against the SDK. Fifteen minutes,
+total, and no guessing.
+
+**Write the negative probe too.** A file that *should not* compile, asserted to fail, is what
+turns "I could not find it" into "it is not there". `scripts/check-foundation-models-api.sh`
+keeps both halves honest and runs in `test.sh`. It deliberately does **not** fail the build when
+the iOS 27 symbols appear — that is good news, and breaking every unrelated PR is a poor way to
+deliver it. It prints instead.
+
+**What this costs the product, which is the part for a human.** On iPadOS 26 there is no PCC
+tier at all, and the on-device tier cannot see the crop — it works from the Vision transcript
+and the stroke trajectory. That is a quality ceiling on the free, offline, Private Mode tier,
+which is where every user without credits lives. Raising the deployment target to 27 buys both
+and costs the users still on 26. Filed as **Q12**; it is not an agent's call, and M4-02 should
+not start until it is answered, because the answer changes what T0's prompt can even reference.
+
+**The general lesson.** A planning doc written before an SDK shipped is a hypothesis about that
+SDK. Ours had been read and re-read for months by everyone, and the wrong sentence in it would
+have produced a T1 provider task that could never compile. Verify the API at the start of a
+milestone, not at the start of the task that needs it.
+
 ## 2026-08-12 · Claude · M3-12B — the renderer now says how wide it draws
 
 Fourth in today's chain. Placement reserved a frame from a flat 0.62 x-heights per character

@@ -122,11 +122,34 @@ Three tiers. Route down only when necessary; each step up costs money and latenc
 
 | Tier | What | When | Cost to us |
 |---|---|---|---|
-| **T0 — on-device** | Foundation Models framework, on-device model. iPadOS 27 adds image input, so the crop can go straight in; Vision OCR is available to the model as a tool | Intent classification always. Simple arithmetic, unit conversion, short reads, spell/grammar. Everything when offline or when the user picks Private Mode | $0 |
-| **T1 — Apple PCC** | Same Swift API against Apple's server model via `PrivateCloudComputeLanguageModel` | Medium difficulty: algebra, short derivations, prose continuation | **$0** while we're in the App Store Small Business Program and under 2M lifetime first-time downloads — Apple grants PCC access at no cloud API cost under those conditions. Verify eligibility annually |
+| **T0 — on-device** | Foundation Models framework, on-device model. **Text only on iPadOS 26** — image input is iPadOS 27, so the crop cannot go in and the tier works from the Vision transcript and stroke data (§5.1) | Intent classification always. Simple arithmetic, unit conversion, short reads, spell/grammar. Everything when offline or when the user picks Private Mode | $0 |
+| **T1 — Apple PCC** | Same Swift API against Apple's server model via `PrivateCloudComputeLanguageModel` — **iOS 27 only; the type does not exist on our SDK, see §5.1** | Medium difficulty: algebra, short derivations, prose continuation | **$0** while we're in the App Store Small Business Program and under 2M lifetime first-time downloads — Apple grants PCC access at no cloud API cost under those conditions. Verify eligibility annually |
 | **T2 — frontier cloud** | Our proxy → Claude or Gemini | Hard multi-step reasoning, unusual notation, plots with tricky domains, low-confidence T0/T1 reads | Per-token (see `BUSINESS.md`) |
 
-iPadOS 26 additionally makes this pleasant: the framework's `LanguageModel` protocol lets Apple's model, Claude, and Gemini sit behind one Swift API, so provider swaps are close to a one-line change. Implement `Intelligence/Providers/` against that protocol and add a `MockProvider` for CI.
+### 5.1 What the SDK we build against actually has (verified 2026-08-12, M4-01)
+
+**The paragraph that used to sit here was wrong for our SDK, and it was wrong in the expensive direction.** It said the framework's `LanguageModel` protocol lets Apple's model, Claude and Gemini sit behind one Swift API, so provider swaps are "close to a one-line change". Type-checked against the **iOS 26.5 simulator SDK** (Xcode 26.6, our validated toolchain, deployment target iPadOS 26.0):
+
+| Symbol | On iOS 26.5 |
+|---|---|
+| `SystemLanguageModel`, `.default`, `.availability` | **Present.** `@available(iOS 26.0, macOS 26.0, visionOS 26.0, *)`, `final class`, unavailable reasons are exactly `deviceNotEligible`, `appleIntelligenceNotEnabled`, `modelNotReady` |
+| `LanguageModelSession`, `respond(to:generating:options:)`, `streamResponse` | **Present**, including `@Generable` / `@Guide` structured output and `GenerationOptions(sampling:temperature:maximumResponseTokens:)` |
+| `LanguageModelSession.GenerationError` | **Present**: `guardrailViolation`, `exceededContextWindowSize`, `decodingFailure`, `rateLimited`, `concurrentRequests`, `assetsUnavailable`, `unsupportedGuide`, `unsupportedLanguageOrLocale`, `refusal` |
+| `LanguageModel` **protocol** | **Absent** — `cannot find type 'LanguageModel' in scope`. `LanguageModelSession.init` takes a concrete `SystemLanguageModel` |
+| `PrivateCloudComputeLanguageModel` | **Absent** — `cannot find in scope` |
+| Image / multimodal input | **Absent** — no image-bearing type in the interface at all |
+
+Those last three arrive with the iOS 27 surface shown at WWDC26, where `LanguageModel` and `LanguageModelExecutor` are the extension points and Anthropic and Google are described as shipping Swift packages *in future*. Promised, not shipped.
+
+**Three consequences, and none of them are small:**
+
+1. **T1 cannot be built at all on iPadOS 26.** PCC is not a matter of entitlement or enrolment here; the type does not exist. M4-07 is blocked on the OS, not only on M0-07.
+2. **T0 cannot see the crop.** With no image input, the on-device tier works from the Vision transcript and the stroke trajectory only — so §10's "IMAGE 1 is the selected region" prompt structure applies to T2, not to T0. That is a real quality ceiling on the free, offline, Private Mode tier, and it is the tier every user without credits lives in.
+3. **A provider swap is not one line.** `SpecProvider` stays the seam, and a frontier provider (M4-08) needs its own client, retry and error mapping rather than a different `LanguageModel` value.
+
+`scripts/check-foundation-models-api.sh` asserts both halves of this — that the T0 surface still type-checks, and that the iOS 27 surface is still absent. When the second assertion starts failing, this section is out of date in the good direction.
+
+Implement `Intelligence/Providers/` against our own `SpecProvider` protocol, and keep `MockProvider` for CI.
 
 **Routing policy** lives in one file, `Intelligence/Routing/RoutingPolicy.swift`, is pure and unit-tested, and takes `(intent, contentComplexity, confidence, connectivity, entitlement, region, userPrivacyPreference) -> Tier`. Do not scatter routing decisions.
 
