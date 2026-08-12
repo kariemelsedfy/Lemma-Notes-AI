@@ -11,6 +11,44 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-21 — the pen now scales with the writing, and the harness lied about it
+
+Small fix, one genuinely useful negative result.
+
+**The fix.** `Synthesizer` drew every point at the bank's captured pen width whatever size it
+was rendering at. The bank stores that width *and* the x-height the writer used, so the pair
+means "weight at capture size"; answers are sized to the ink beside them (M2-17), so a small
+answer came out proportionally bolder than the writer's hand and a large one spindlier. Now
+scaled by rendered ÷ captured x-height, in **drawn width** — `drawn = 2 × size − 4` is affine,
+so scaling the raw `size` is a different and wrong operation, and there is a mutation-verified
+test that fails if someone "simplifies" it back.
+
+**The negative result, which is the part worth reading.** I expected the OCR harness to confirm
+the fix. It says the opposite: at double the captured size, correct ink scores **87.5%** where
+the old flat width scores 100%. That is not a page regression. `InkRasterizer` draws
+`InkPoint.size` straight into `setLineWidth` while the page draws `2 × size − 4`, so a correct
+doubling of drawn width grows the *rasterized* line by only 1.36×, and the fixture bank's hatch
+scanlines — whose spacing does scale properly — pull apart into stripes. The letters that broke
+are the thin-crossbar ones: `the quick brown fox` → `tne quick brown tox`.
+
+CONTEXT invariant 11 already warned about this ("tune a width against it and you are tuning
+against a renderer the user never sees"), and I still spent twenty minutes assuming the harness
+was right and my change was wrong. **The instrument disagreeing with you is a hypothesis, not a
+verdict** — the tell was that the failures were thin-ink failures for a change that adds ink.
+Filed as M3-22: make the harness rasterize what the page draws. It is not a one-liner, because
+`nibToHeightRatio` and `insetToNibRatio` were both swept against the current convention.
+
+**What I did not do.** I did not tune anything to make the number go green, and I did not
+lower the bar. The legibility-at-other-sizes acceptance box is left unticked with the
+measurement written next to it, because a green box bought by picking a friendlier threshold is
+worth less than an honest empty one.
+
+**Fixture note.** My first fixture declared a 30pt capture x-height beside glyphs captured at
+60 — an inconsistency no real `StyleStats` can have, since both come from one pass over one
+sheet. It reported a weight problem that existed only in the fixture. Same shape as M3-08D's
+five-sample bank: when a measurement depends on how the writer's data was collected, make the
+fixture collect it the way calibration does.
+
 ## 2026-08-12 · Claude · M3-01C — the `g` was never the problem; the baseline was
 
 The filed task said to look at the typeset `g`'s descender loop. That was a guess, it was in

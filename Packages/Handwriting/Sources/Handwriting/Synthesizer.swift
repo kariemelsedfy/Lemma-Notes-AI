@@ -95,7 +95,7 @@ public enum Synthesizer {
                         force: point.force,
                         altitude: point.altitude,
                         azimuth: point.azimuth,
-                        size: nib(for: style)
+                        size: nib(for: style, renderedXHeight: metrics.xHeight)
                     )
                 }
                 strokes.append(InkStroke(points: points))
@@ -278,10 +278,32 @@ public enum Synthesizer {
         )
     }
 
-    /// The writer's measured line weight, or PencilKit's default pen when unmeasured.
-    private static func nib(for style: StyleStats) -> CGSize {
-        let width = style.strokeWidth > 0 ? style.strokeWidth : InkPoint.defaultSize.width
-        return CGSize(width: width, height: width)
+    /// The writer's measured line weight, scaled to the size this text is being drawn at.
+    ///
+    /// The bank records a pen width *and* the x-height the writer used on the calibration
+    /// sheet: together they describe weight at capture size. An answer is sized to the ink it
+    /// sits beside (M2-17), which is rarely that size — so drawing the captured width flat
+    /// makes a small answer proportionally bolder than the writer's own hand and a large one
+    /// spindlier. The glyph *shapes* are normalized to x-height 1; their weight was not, and
+    /// that was the inconsistency (M3-21).
+    ///
+    /// **The scaling happens in drawn width, not in `size`.** `drawn = 2 × size − 4` is
+    /// affine, so halving a `size` does not halve the ink — it removes rather more than half
+    /// (CONTEXT invariant 11). Everything here is the width PencilKit will lay down, and only
+    /// the last step converts back. That conversion also applies PencilKit's own floor: below
+    /// `minimumStrokeWidth` the pen fades rather than thins, so a very small answer stops
+    /// getting lighter rather than disappearing (M2-13).
+    ///
+    /// An unmeasured bank — no captured x-height, or no measured pen — has nothing to scale
+    /// against, so it keeps the width it was given.
+    private static func nib(for style: StyleStats, renderedXHeight: CGFloat) -> CGSize {
+        let captured = style.strokeWidth > 0 ? style.strokeWidth : InkPoint.defaultSize.width
+        guard style.xHeight > 0, renderedXHeight > 0 else {
+            return CGSize(width: captured, height: captured)
+        }
+        let drawn = InkRenderingLimits.drawnWidth(forSize: captured) * (renderedXHeight / style.xHeight)
+        let size = InkRenderingLimits.size(forDrawnWidth: drawn)
+        return CGSize(width: size, height: size)
     }
 }
 

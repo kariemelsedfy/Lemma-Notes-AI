@@ -116,7 +116,7 @@ Pipeline:
 3. **Advance & kerning.** Advance by the glyph's width plus the writer's measured inter-letter gap plus noise. Apply narrow kerning pairs learned from the pangram (`rn`, `ve`, `fi`, `To`).
 4. **Connection (cursive).** If the writer is cursive, join exit point of glyph *n* to entry point of glyph *n+1* with a Catmull-Rom segment whose curvature matches their measured connector shape. If the join looks wrong, the print fallback is acceptable — many people write semi-cursive anyway.
 5. **Global transform.** Apply the writer's slant and a slow sinusoidal baseline drift so lines aren't laser-straight.
-6. **Dynamics.** Assign per-point pressure and timestamps from the writer's velocity profile so the ink renders with correct width modulation. `PKStrokePoint` carries force, altitude, azimuth and timing — fill them all in; ink with flat pressure reads as fake instantly.
+6. **Dynamics.** Assign per-point pressure and timestamps from the writer's velocity profile so the ink renders with correct width modulation. The writer's *base* pen width scales with the size being rendered — the bank records a width and the x-height it was captured at, so the pair is a proportion, not an absolute (M3-21). Scale it in drawn width, never in `PKStrokePoint.size`. `PKStrokePoint` carries force, altitude, azimuth and timing — fill them all in; ink with flat pressure reads as fake instantly.
 7. **Line breaking.** Greedy wrap to the target rect, hyphenation off, with the writer's typical line spacing.
 
 ### 4.1 The realism checklist

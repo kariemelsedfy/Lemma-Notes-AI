@@ -1140,7 +1140,7 @@ Acceptance:
 - [x] M3-00 and M3-05 each assert ≥95% against it — the *same* it, which was the real gap
 
 ### M3-01C — The synthesized `g` reads as a `9`
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B, HANDWRITING.md §3.2 · estimate: S
+status: Done · completed: Claude · merged: PR #95 · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B, HANDWRITING.md §3.2 · estimate: S
 Note: **the filed diagnosis was wrong, and so was mine until I measured.** The task guessed at
 the typeset letterform — "the descender loop closes too far" — and every hypothesis in that
 family is refuted: typeset reads all six `g` words exactly at 100%, thinning the nib makes the
@@ -1175,8 +1175,30 @@ Acceptance:
 - [x] `p q y j` are fixed with `g`, and `j` takes its depth from the writer's own descenders
       rather than a constant, with a documented fallback for a repair sheet that has none
 
+### M3-22 — The OCR harness does not rasterize the width the page draws
+status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
+Note: `InkRasterizer` draws `InkPoint.size` straight into `CGContext.setLineWidth`, but the
+page draws `2 × size − 4` (`InkRenderingLimits`). So every legibility number in this repo is
+measured on ink roughly a size-to-drawn conversion heavier than what a user sees, and any
+*change* to a width shows up in the harness at the wrong magnitude. Invariant 11 currently
+states this as a warning — "tune a width against it and you are tuning against a renderer the
+user never sees" — but the harness could simply be right instead.
+Found by M3-21: scaling the pen correctly doubles the drawn width at double size, which the
+harness renders as only 1.36× more line, so the fixture bank's hatch scanlines stripe apart and
+the score drops 100% → 87.5% for ink that is *more* correct on the page. That number is the
+proof, and it is why M3-21's legibility-at-other-sizes box could not be ticked here.
+**This is not a one-line change.** `TypesetStyle.nibToHeightRatio` and `insetToNibRatio` were
+both swept against the current harness (M3-00B, M2-13B), so both need re-measuring after, and
+their doc-comment tables with them. Expect the corpus numbers to move; that is the point.
+Acceptance:
+- [ ] `InkRasterizer` strokes `InkRenderingLimits.drawnWidth(forSize:)`, with a test pinning it
+- [ ] Both renderers are re-measured against §7's bar and the constants re-swept if needed
+- [ ] The measured tables beside `nibToHeightRatio` and `insetToNibRatio` are updated
+- [ ] M3-21's "legible at half and double the captured size" is then verifiable, and verified
+- [ ] Invariant 11 is restated to say the harness agrees with the page
+
 ### M3-21 — The writer's pen weight does not scale with the size the answer renders at
-status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, CONTEXT.md invariant 11 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
 Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
 defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
 `Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
@@ -1190,12 +1212,25 @@ Two traps. Scaling must go through `InkRenderingLimits.drawnWidth(forSize:)` and
 `drawn = 2 × size − 4` is affine, so scaling a raw `size` by k does not scale the ink by k
 (invariant 11). And `LegibilityHarness` draws `size` directly as a Core Graphics line width, so
 it will *not* show you the page's behaviour — do not tune this against the OCR number (M2-13).
+Claude 2026-08-12: implemented. `nib(for:renderedXHeight:)` scales the captured pen by
+rendered ÷ captured x-height **in drawn width**, converting back through
+`InkRenderingLimits.size(forDrawnWidth:)`, which also applies PencilKit's floor — so a very
+small answer stops getting lighter rather than fading to nothing (M2-13). Identity at the
+captured size, so no existing output moves. An unmeasured bank keeps its width.
+**The fixture had to be fixed first, and that is worth knowing.** It declared a capture
+x-height of 30 beside glyphs captured at 60, which no real `StyleStats` can do — both come
+from one pass over one sheet. A fixture more generous than production reports problems that
+only exist in the fixture; the same lesson M3-08D wrote down from the other direction.
 Acceptance:
-- [ ] Rendered weight holds a constant ratio to rendered x-height across sizes, measured
-- [ ] The conversion goes through drawn width, not raw `size`, with a test that would fail if
-      someone scales the size directly
-- [ ] Legibility does not regress on the §7 corpus, and the descender fix (M3-01C) still holds
-- [ ] A bank captured at one size renders legibly at half and double it
+- [x] Rendered weight holds a constant ratio to rendered x-height across sizes, measured —
+      0.05 across an 8× range, floored below roughly a third of calibration size
+- [x] The conversion goes through drawn width, not raw `size`, with a test that would fail if
+      someone scales the size directly — mutation-verified, `captured * ratio` fails 4 tests
+- [x] Legibility does not regress on the §7 corpus, and the descender fix (M3-01C) still holds
+- [ ] A bank captured at one size renders legibly at half and double it — **not verifiable
+      here, and the reason is measured**: `LegibilityHarness` rasterizes `size` as a line
+      width, so correct ink reads as 87.5% at double size where the flat width reads 100%
+      (16 strings). Blocked on M3-22; until then this is a device question, not a test one
 
 ### M3-11 — Math legibility needs the M5 layout, not a better font
 status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S
