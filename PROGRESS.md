@@ -25,7 +25,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-08C — `Variation` barely varies anything
+claimed: Claude · 2026-08-11 · see the full entry under Ready — M3
 
 ## Review
 
@@ -1326,7 +1327,7 @@ Acceptance:
 - [ ] Both numbers printed, not just asserted, so a slow drift is visible before it fails
 
 ### M3-08C — `Variation` barely varies anything
-status: Ready · refs: HANDWRITING.md §8, §4.1 · estimate: M
+status: In progress · claimed: Claude · 2026-08-11 · refs: HANDWRITING.md §8, §4.1 · estimate: M
 Note: found while building M3-09. §8 specifies "variance reduced ~60%" for the neat style,
 but `Variation.scale` reaches only per-glyph vertical jitter (3.5% of x-height) and baseline
 drift (2%). Measured difference between `.natural` and `.neat` on one word: **under a point**.
