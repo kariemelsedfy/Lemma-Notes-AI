@@ -11,6 +11,34 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-09 — the consent gate, built before the tier that needs it
+
+Invariant 8 says the 5.1.2(i) assertion lives in the provider layer, not the UI, "so it can't be
+bypassed by a new call site". I built it now rather than alongside T2, and the reason is in the
+task note I wrote earlier today: it is a small piece of load-bearing structure, and building it
+under deadline beside a new network client is exactly how it ends up in a view instead.
+
+**The test that matters counts calls, not errors.** A gate that throws *after* sending would
+pass a test that only checked the thrown error, and it would be a policy breach with someone's
+homework in it. The spy provider is an actor with a call count, and the assertion is
+`callCount == 0`. If you write one gate test in this codebase, write that one.
+
+**Adding a tier is now a compile error until you decide what it does with content.**
+`ModelTier.transmitsContentToThirdParty` is an exhaustive switch rather than a default-false
+property, and `ModelTier.allCases.count` is pinned in a test. Defaults are where obligations go
+to die quietly.
+
+**One classification worth arguing with.** PCC is marked *not* third-party: it leaves the device
+but stays inside the user's existing relationship with Apple. I think that is right, and it is
+the kind of judgement a lawyer might revisit — so it is one line, with a comment saying every
+gate follows it.
+
+**And one thing I deliberately did not do.** `thirdPartyConsentRequired` maps to the existing
+`unreadable` failure state, which is not really what happened. The honest fix is consent copy of
+its own, which needs the M6 flow and localized strings; inventing a half-copy now would be worse
+than an accurate mapping to an existing designed state. Noted in the mapping itself so the next
+person sees the compromise rather than inheriting it silently.
+
 ## 2026-08-12 · Claude · M4-03 — the routing policy, written before anything it routes to
 
 Pure logic, no provider, no network, no device — so it could be written today even though two

@@ -69,6 +69,10 @@ public enum ProviderError: Error, Equatable, Sendable {
     case timeout
     /// The mock was asked for a fixture it does not have.
     case unknownFixture(String)
+    /// The request would have sent the user's work to a third party without their agreement
+    /// (App Store 5.1.2(i), invariant 8). Asserted in the provider layer so a new call site
+    /// cannot bypass it — see `ConsentGatedProvider`.
+    case thirdPartyConsentRequired
 }
 
 /// The app's boundary to any model.

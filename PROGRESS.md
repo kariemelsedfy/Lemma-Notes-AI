@@ -1791,15 +1791,29 @@ Acceptance:
 - [ ] Timeout, transport and offline map onto the §8 failure states already built
 
 ### M4-09 — Assert third-party AI consent in the provider layer
-status: Ready · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S
 Note: invariant 8 says the 5.1.2(i) consent check lives **in the provider layer, not the UI**,
 precisely so a new call site cannot bypass it. Worth building before T2 rather than with it: it
 is a small piece of load-bearing structure, and building it under deadline beside a new network
 client is how it ends up in the UI instead.
+Claude 2026-08-12: built before T2 rather than with it, as the note above argued for.
+`ConsentGatedProvider` wraps any provider and refuses when its tier transmits and consent is
+not granted; `ModelTier.transmitsContentToThirdParty` is an exhaustive switch, so **adding a
+tier without deciding what it does with content is a compile error**.
+The spy provider is an actor that counts calls, because a gate that threw *after* sending would
+pass a test that only checked the error. Consent is read per request rather than captured, so
+withdrawing it mid-session takes effect on the next Ask — tested.
+PCC is classified as **not** third-party: it leaves the device but not Apple's world, and that
+reading is on the one line that every gate follows if it ever changes.
+Mutation-verified: removing the guard fails three tests, including the one that asserts nothing
+was sent.
 Acceptance:
-- [ ] Any provider that transmits content asserts consent before the request is constructed
-- [ ] A provider added without the assertion fails a test, not a review
-- [ ] On-device providers are unaffected — no consent prompt for work that never leaves
+- [x] Any provider that transmits content asserts consent before the request is constructed —
+      and the test proves the provider was never *reached*, not merely that an error came back
+- [x] A provider added without the assertion fails a test, not a review: `ModelTier.allCases`
+      is pinned, so a new tier fails the classification test until someone decides
+- [x] On-device providers are unaffected — every non-transmitting tier runs with consent
+      explicitly denied, so no user is ever asked to agree to something that never leaves
 
 ### M4-10 — Speculative execution, streaming and the spec cache
 status: Ready · depends: M4-02 · refs: AI_PIPELINE.md §7 · estimate: M
