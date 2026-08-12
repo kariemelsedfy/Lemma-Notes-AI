@@ -11,6 +11,12 @@ final class PageDrawingStore: ObservableObject {
     @Published private var drawings: [UUID: PKDrawing] = [:]
     @Published private var previews: [UUID: UIImage] = [:]
     private var metadataByPageID: [UUID: PageMetadata]
+    /// Per page, so a live canvas can tell "the store moved on without me" from "the store
+    /// moved because of me". Comparing `PKDrawing.dataRepresentation()` cannot answer that:
+    /// it is only stable for the same instance (measured — two freshly constructed empty
+    /// drawings encode to 42 different bytes), which is what drove the canvas into an endless
+    /// reassignment loop and a jetsam kill (M2-18).
+    private var revisionsByPageID: [UUID: Int] = [:]
     /// Bumped on every edit so the view has something to observe without diffing ink.
     @Published private(set) var revision = 0
     private var dirtyPageIDs: Set<UUID> = []
@@ -36,6 +42,12 @@ final class PageDrawingStore: ObservableObject {
         metadataByPageID[pageID]
     }
 
+    /// Bumped on every save of this page. A canvas records the value it last applied and pulls
+    /// only when the store has since moved — an undo, or any other programmatic edit.
+    func revision(for pageID: UUID) -> Int {
+        revisionsByPageID[pageID] ?? 0
+    }
+
     func save(
         _ drawing: PKDrawing,
         metadata: PageMetadata? = nil,
@@ -48,6 +60,7 @@ final class PageDrawingStore: ObservableObject {
         }
         previews[pageID] = renderPreview(drawing, pageSize: pageSize)
         dirtyPageIDs.insert(pageID)
+        revisionsByPageID[pageID, default: 0] += 1
         revision += 1
     }
 

@@ -301,20 +301,25 @@ struct LiveInkCanvas: UIViewRepresentable {
         // system. Without this PencilKit lightens dark ink for a dark background that is not
         // there, and the user writes in white on a white page (M1-12B).
         InkAppearance.applyPaperAppearance(to: canvasView)
-        canvasView.drawing = drawingStore.drawing(for: pageID)
+        context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
         canvasView.drawingPolicy = .anyInput
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
-        undoController.adopt(canvasView)
         return canvasView
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
         apply(selectedTool, to: canvasView)
-        let savedDrawing = drawingStore.drawing(for: pageID)
-        if canvasView.drawing.dataRepresentation() != savedDrawing.dataRepresentation() {
-            canvasView.drawing = savedDrawing
+        // Pull only when the store moved on without this canvas — an undo, or an accepted
+        // answer. The previous test compared `dataRepresentation()`, which is only stable for
+        // the same instance, so it could report a difference that no amount of reassigning
+        // resolved: reassign, delegate fires, store, reassign… a full-page preview per pass and
+        // a jetsam kill at 717MB (M2-18). A revision counter answers the question exactly.
+        guard context.coordinator.appliedRevision != drawingStore.revision(for: pageID) else {
+            return
         }
+
+        context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
     }
 
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {

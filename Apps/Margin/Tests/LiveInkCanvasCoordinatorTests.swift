@@ -105,6 +105,52 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         XCTAssertFalse(undo.canUndo)
     }
 
+    // MARK: - Pulling external edits
+
+    /// `updateUIView` pulls only when the page's revision has moved past what this canvas
+    /// applied. Writing from the canvas must therefore leave the two in step, or every render
+    /// would reassign the canvas and re-enter this delegate — the 717MB loop.
+    func testWritingFromTheCanvasLeavesNothingToPull() {
+        let subject = Self.subject()
+        subject.canvas.drawing = Self.drawing()
+
+        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+
+        XCTAssertEqual(
+            subject.coordinator.appliedRevision, subject.store.revision(for: Self.pageID),
+            "the canvas would keep pulling its own write back")
+    }
+
+    /// An undo writes only to the store, so the canvas must see work to do.
+    func testAnEditFromElsewhereLeavesSomethingToPull() {
+        let subject = Self.subject()
+        subject.canvas.drawing = Self.drawing()
+        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+
+        subject.store.save(PKDrawing(), for: Self.pageID, pageSize: Self.pageSize)
+
+        XCTAssertNotEqual(
+            subject.coordinator.appliedRevision, subject.store.revision(for: Self.pageID),
+            "an undo written to the store would never reach the canvas")
+    }
+
+    /// Undo restores the store; the canvas picks it up the same way any other page would.
+    func testUndoLeavesTheCanvasWithTheRestoredInkToPull() {
+        let subject = Self.subject()
+        let undo = CanvasUndoController()
+        undo.configure(store: subject.store)
+        let coordinator = Self.coordinator(store: subject.store, undo: undo)
+
+        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
+        subject.canvas.drawing = Self.drawing(strokes: 3)
+        coordinator.canvasViewDrawingDidChange(subject.canvas)
+        coordinator.canvasViewDidEndUsingTool(subject.canvas)
+        undo.undo()
+
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
+        XCTAssertNotEqual(coordinator.appliedRevision, subject.store.revision(for: Self.pageID))
+    }
+
     // MARK: - Fixtures
 
     private static let pageID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!

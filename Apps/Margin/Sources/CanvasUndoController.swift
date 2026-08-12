@@ -38,16 +38,11 @@ final class CanvasUndoController: ObservableObject {
     @Published private(set) var canUndo = false
     private var stack: [Snapshot] = []
     private var pending: Snapshot?
-    private weak var canvasView: PKCanvasView?
     private weak var drawingStore: PageDrawingStore?
     private var isRestoring = false
 
     func configure(store: PageDrawingStore) {
         drawingStore = store
-    }
-
-    func adopt(_ canvasView: PKCanvasView) {
-        self.canvasView = canvasView
     }
 
     /// Captures the page as it stands before a gesture begins.
@@ -65,10 +60,11 @@ final class CanvasUndoController: ObservableObject {
     /// Keeps the pending snapshot only if the gesture actually altered the page, so resting the
     /// Pencil or a lasso that selects nothing does not leave a dead entry — one that arms the
     /// button and then appears to do nothing when pressed.
-    /// Safe to call more than once per gesture. The pending snapshot is consumed only when an
-    /// entry is actually pushed, because PencilKit reports the end of a gesture *before* the
-    /// ink lands: clearing it on the first call threw the snapshot away while the change was
-    /// still in flight, and the stroke silently became un-undoable.
+    ///
+    /// Safe to call more than once per gesture, and deliberately called from both the drawing
+    /// callback and tool-end. The snapshot is consumed only when an entry is actually pushed,
+    /// because PencilKit reports the end of a gesture *before* the ink lands: clearing it on
+    /// the first call threw the snapshot away mid-flight and the stroke became un-undoable.
     func commitChange() {
         guard !isRestoring, let snapshot = pending, let drawingStore else { return }
         guard drawingStore.revision != snapshot.revision else { return }
@@ -97,14 +93,16 @@ final class CanvasUndoController: ObservableObject {
         isRestoring = true
         defer { isRestoring = false }
 
+        // Any gesture captured but not yet committed is abandoned — otherwise this restore's
+        // own revision bump would later commit that stale snapshot, and pressing undo again
+        // would jump the page back to whenever it was taken rather than one step.
+        pending = nil
         let drawing = (try? PKDrawing(data: snapshot.inkData)) ?? PKDrawing()
-        // Store first, canvas second. `LiveInkCanvasCoordinator.reconcile` resolves the two
-        // against each other, and a canvas running ahead of the store looks exactly like
-        // strokes having been erased — which would delete the generated element we are
-        // restoring.
+        // Only the store is written. The live canvas pulls the change through `updateUIView`,
+        // which compares the page's revision — assigning the canvas here as well raced that
+        // path, and the two could disagree about which drawing was current.
         drawingStore.save(
             drawing, metadata: snapshot.metadata, for: snapshot.pageID, pageSize: snapshot.pageSize)
-        canvasView?.drawing = drawing
         canUndo = !stack.isEmpty
     }
 

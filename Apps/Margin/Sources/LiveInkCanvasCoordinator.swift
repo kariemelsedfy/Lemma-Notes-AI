@@ -21,6 +21,10 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     private var eraserDidEnd = false
     private var finalizationTask: Task<Void, Never>?
     private var isApplyingDrawing = false
+    /// The store revision this canvas last wrote or read. `updateUIView` pulls only when the
+    /// store has moved past it, which happens when something other than this canvas edits the
+    /// page — an undo, or an accepted answer.
+    private(set) var appliedRevision = 0
 
     init(
         pageID: UUID,
@@ -37,7 +41,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !isApplyingDrawing else { return }
         self.canvasView = canvasView
-        undoController?.adopt(canvasView)
         reconcile(canvasView)
         // Commit here, not at `didEndUsingTool`. PencilKit sends its final drawing callback
         // *after* the tool ends, so committing there ran before the ink had landed: the store's
@@ -55,7 +58,6 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
         // Adopted for every tool, not just the eraser: undo must follow the page the user is
         // touching, and this is the only callback that identifies it unambiguously.
         self.canvasView = canvasView
-        undoController?.adopt(canvasView)
         undoController?.beginChange(pageID: pageID, pageSize: pageSize)
         isErasing = canvasView.tool is PKEraserTool
         eraserDidEnd = false
@@ -75,6 +77,7 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
     private func reconcile(_ canvasView: PKCanvasView) {
         guard let metadata = drawingStore.metadata(for: pageID) else {
             drawingStore.save(canvasView.drawing, for: pageID, pageSize: pageSize)
+            appliedRevision = drawingStore.revision(for: pageID)
             return
         }
 
@@ -99,6 +102,7 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
                 for: pageID,
                 pageSize: pageSize
             )
+            appliedRevision = drawingStore.revision(for: pageID)
             return
         }
 
@@ -112,9 +116,16 @@ final class LiveInkCanvasCoordinator: NSObject, PKCanvasViewDelegate {
             for: pageID,
             pageSize: pageSize
         )
+        applyExternally(resolvedDrawing, to: canvasView)
+    }
+
+    /// Pushes a drawing the canvas did not produce, without letting the resulting delegate
+    /// callback loop back through `reconcile`.
+    func applyExternally(_ drawing: PKDrawing, to canvasView: PKCanvasView) {
         isApplyingDrawing = true
-        canvasView.drawing = resolvedDrawing
+        canvasView.drawing = drawing
         isApplyingDrawing = false
+        appliedRevision = drawingStore.revision(for: pageID)
     }
 
     /// PencilKit can send its final drawing callback after `didEndUsingTool`; the short
