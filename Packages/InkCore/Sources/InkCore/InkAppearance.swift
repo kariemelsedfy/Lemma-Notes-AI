@@ -7,10 +7,12 @@ import PencilKit
 
 /// What the on-page renderer can actually draw.
 ///
-/// Ink is rasterised by two different things in this project, and they do not agree.
-/// `InkRasterizer` (the OCR harness) uses `CGContext.setLineWidth` and draws any width you
-/// ask for. The page uses PencilKit, which will not draw a hairline: it fades a `.pen` out
-/// below roughly 3.4pt and renders *nothing at all* below 1.5.
+/// Ink is rasterised by two different things in this project. `InkRasterizer` (the OCR
+/// harness) uses `CGContext.setLineWidth`, which draws any width asked of it; the page uses
+/// PencilKit, which will not draw a hairline — it fades a `.pen` out below roughly 3.4pt and
+/// renders *nothing at all* below 1.5. **They agree since M3-22**: the harness converts
+/// through `drawnWidth(forSize:)` and skips ink the page would not draw. Every legibility
+/// number recorded before that describes ink about a third heavier than a user ever saw.
 ///
 /// Anything that picks a stroke width has to respect this, or it will look correct in every
 /// measurement and be invisible on the page — which is exactly what shipped in M3-00B and

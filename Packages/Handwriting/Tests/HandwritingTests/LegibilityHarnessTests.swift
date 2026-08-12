@@ -71,6 +71,55 @@ final class LegibilityHarnessTests: XCTestCase {
         }
     }
 
+    /// The harness has to draw what the page draws, or every number it produces is about ink
+    /// the user never sees (M3-22). `drawn = 2 × size − 4`: a size of 5 is 6pt of ink, and
+    /// measuring it as a 5pt line is a 17% error in the direction that flatters a renderer.
+    func testInkIsRasterizedAtTheWidthThePageWouldDraw() throws {
+        // One horizontal stroke, so the ink's vertical extent *is* its drawn width.
+        let size: CGFloat = 5
+        let stroke = InkStroke(
+            points: (0...20).map { step in
+                InkPoint(
+                    location: CGPoint(x: CGFloat(step) * 5, y: 40),
+                    timeOffset: TimeInterval(step) / 100,
+                    force: 0.5,
+                    altitude: 1,
+                    azimuth: 0,
+                    size: CGSize(width: size, height: size)
+                )
+            })
+
+        let scale: CGFloat = 8
+        let image = try InkRasterizer.image(of: [stroke], scale: scale, padding: 4)
+        let measured = try Self.inkHeight(of: image) / scale
+
+        XCTAssertEqual(
+            measured, InkRenderingLimits.drawnWidth(forSize: size), accuracy: 0.4,
+            "Rasterized \(measured)pt for a size of \(size), which the page draws at 6pt.")
+    }
+
+    /// The failure M2-13 shipped to a device: a nib PencilKit fades to nothing, which every
+    /// Core Graphics measurement happily drew anyway. The harness now scores it as what the
+    /// user would get, which is nothing.
+    func testInkThePageCannotDrawIsNotDrawnHereEither() throws {
+        let invisible = InkStroke(
+            points: (0...20).map { step in
+                InkPoint(
+                    location: CGPoint(x: CGFloat(step) * 5, y: 40),
+                    timeOffset: TimeInterval(step) / 100,
+                    force: 0.5,
+                    altitude: 1,
+                    azimuth: 0,
+                    // Below 2.0 the page renders nothing at all — measured, `InkRenderingLimits`.
+                    size: CGSize(width: 1.8, height: 1.8)
+                )
+            })
+
+        let image = try InkRasterizer.image(of: [invisible], scale: 4, padding: 4)
+
+        XCTAssertEqual(try Self.inkHeight(of: image), 0, "The page would show nothing here.")
+    }
+
     func testRasterizingIsDeterministic() throws {
         let strokes = try TypesetStyle.strokes(for: "2+2=4", in: frame)
 
@@ -175,6 +224,28 @@ final class LegibilityHarnessTests: XCTestCase {
     }
 
     // MARK: - Fixtures
+
+    /// The vertical extent of the dark pixels, in device pixels. For a horizontal stroke that
+    /// is the width the pen laid down, which is the number the page and this file must agree on.
+    private static func inkHeight(of image: CGImage) throws -> CGFloat {
+        let data = try XCTUnwrap(image.dataProvider?.data)
+        let bytes = try XCTUnwrap(CFDataGetBytePtr(data))
+        var top: Int?
+        var bottom: Int?
+        for row in 0..<image.height {
+            var hasInk = false
+            for column in 0..<image.width where bytes[row * image.bytesPerRow + column * 4] < 128 {
+                hasInk = true
+                break
+            }
+            if hasInk {
+                if top == nil { top = row }
+                bottom = row
+            }
+        }
+        guard let top, let bottom else { return 0 }
+        return CGFloat(bottom - top + 1)
+    }
 
     /// Shared with `SynthesizerTests`, so both renderers face the same bar (M3-01B).
     private static let proseCorpus = LegibilityCorpus.prose

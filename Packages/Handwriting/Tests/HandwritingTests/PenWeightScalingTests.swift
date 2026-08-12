@@ -97,31 +97,25 @@ final class PenWeightScalingTests: XCTestCase {
         XCTAssertGreaterThan(floored, reference)
     }
 
-    /// **`LegibilityHarness` cannot arbitrate this change, and the next person to try should
-    /// know that before reverting it.** Measured over 16 corpus strings through a
-    /// typeset-derived bank: flat 100% / scaled 100% at half size, 93.8% / 93.8% at capture
-    /// size, and 100% / **87.5%** at double.
+    /// Legibility away from the size the bank was captured at — M3-21's last acceptance box,
+    /// which could not be checked until `InkRasterizer` drew the width the page draws (M3-22).
     ///
-    /// That last cell is not a legibility regression on the page. `InkRasterizer` draws
-    /// `InkPoint.size` as a Core Graphics line width, while the page draws `2 × size − 4`
-    /// (CONTEXT invariant 11) — so doubling the ink correctly grows the *rasterized* line by
-    /// only 1.36×, and the fixture bank's hatch scanlines, whose spacing scales with the
-    /// glyph, pull apart into stripes. The letters that break are the ones with thin
-    /// crossbars: `the quick brown fox` came back `tne quick brown tox`.
-    ///
-    /// Filed as M3-22: the harness should rasterize the width the page draws. Until it does,
-    /// legibility at sizes away from capture is measured on a device, not here.
-    func testTheOCRHarnessIsNotTheInstrumentForThis() throws {
-        let atCapture = try LegibilityHarness.evaluate("the derivative is 2x") { text in
-            try Synthesizer.strokes(
-                for: text,
-                in: CGRect(x: 0, y: 0, width: CGFloat(text.count) * Self.capture.xHeight, height: 200),
-                bank: try Self.bank(),
-                targetXHeight: Self.capture.xHeight)
-        }
+    /// Asserted as "no worse than at the captured size" rather than against a fixed bar. The
+    /// fixture's own misses are `f`/`t` confusions present at every size, so a fixed threshold
+    /// would be measuring the typeset-derived bank rather than the scaling. What matters here
+    /// is that changing size does not cost legibility.
+    func testTextIsNoLessLegibleAwayFromTheCapturedSize() throws {
+        assertTheFixtureMeasured()
+        let corpus = Array(LegibilityCorpus.prose.prefix(16))
+        let atCapture = try Self.rate(of: corpus, atXHeight: Self.capture.xHeight)
 
-        // What it *can* still say: at the size the bank was captured at, nothing moved.
-        XCTAssertTrue(atCapture.isExact, "Read back '\(atCapture.recognized)'.")
+        for scale in [CGFloat(0.5), 2] {
+            let rate = try Self.rate(of: corpus, atXHeight: Self.capture.xHeight * scale)
+
+            XCTAssertGreaterThanOrEqual(
+                rate, atCapture,
+                "\(scale)× capture size reads worse than capture size (\(rate) vs \(atCapture)).")
+        }
     }
 
     // MARK: - Fixtures
@@ -150,6 +144,17 @@ final class PenWeightScalingTests: XCTestCase {
             bank: try bank(),
             targetXHeight: xHeight
         )
+    }
+
+    private static func rate(of corpus: [String], atXHeight xHeight: CGFloat) throws -> Double {
+        let bank = try bank()
+        return try LegibilityHarness.evaluate(corpus: corpus) { text in
+            try Synthesizer.strokes(
+                for: text,
+                in: CGRect(x: 0, y: 0, width: CGFloat(text.count) * xHeight * 1.2, height: xHeight * 3),
+                bank: bank,
+                targetXHeight: xHeight)
+        }.exactMatchRate
     }
 
     private static func nib(of strokes: [InkStroke]) throws -> CGFloat {

@@ -32,8 +32,17 @@ import Foundation
 /// wide rather than broken. If you are widening this corpus again, add words that fail
 /// **reliably**, not ones that fail sometimes.
 ///
-/// **Measured 2026-08-12 over these 48 strings:** `TypesetStyle` 100% exact (mean similarity
-/// 1.0); `Synthesizer` through a typeset-derived bank 100%, against a 95% bar.
+/// **Measured 2026-08-12 over these 48 strings, after M3-22 made the harness rasterize the
+/// width the page actually draws:** `TypesetStyle` **97.92%** exact (mean similarity 0.9855);
+/// `Synthesizer` through a typeset-derived bank **97.92%** (mean 0.9983), against a 95% bar.
+/// Both were 100% while the harness drew `size` as a line width, i.e. ink about a third
+/// heavier than any user has ever seen.
+///
+/// **Neither remaining miss is a letterform.** Both are Vision splitting one rendered line into
+/// two blocks: `the sequence is bounded` comes back as `bounded / the sequence is` — reading
+/// order, filed as M3-23 — and `convert to a percentage` gains a stray `i` at the split. Check
+/// `meanSimilarity` before chasing a drop here; a real legibility regression moves it, and
+/// these two barely do.
 enum LegibilityCorpus {
     static let prose: [String] = [
         "The derivative is 2x",
