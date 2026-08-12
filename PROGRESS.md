@@ -25,7 +25,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-01C — The synthesized `g` reads as a `9`
+status: In progress · claimed: Claude · 2026-08-12 · see the full entry under **Ready — M3**
 
 ## Review
 
@@ -1140,7 +1141,7 @@ Acceptance:
 - [x] M3-00 and M3-05 each assert ≥95% against it — the *same* it, which was the real gap
 
 ### M3-01C — The synthesized `g` reads as a `9`
-status: Ready · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B · estimate: S
+status: In progress · claimed: Claude · 2026-08-12 · found: Claude · 2026-08-11 · refs: PROGRESS.md M3-01B, M2-13B · estimate: S
 Note: measured while widening the corpus (M3-01B). The synthesizer scores 95.45% against §7's
 95% bar — 42 of 44 — and **both misses are the same confusion**: `integral` → `inte9ral`,
 `take logs of both sides` → `take lo9s of both sides`. M2-13B met this exact string when it
