@@ -151,9 +151,28 @@ Those last three arrive with the iOS 27 surface shown at WWDC26, where `Language
 
 Implement `Intelligence/Providers/` against our own `SpecProvider` protocol, and keep `MockProvider` for CI.
 
-**Routing policy** lives in one file, `Intelligence/Routing/RoutingPolicy.swift`, is pure and unit-tested, and takes `(intent, contentComplexity, confidence, connectivity, entitlement, region, userPrivacyPreference) -> Tier`. Do not scatter routing decisions.
+**Routing policy** lives in one file, `Intelligence/Routing/RoutingPolicy.swift`, is pure and unit-tested, and takes `(intent, contentComplexity, confidence, connectivity, entitlement, availability, userPrivacyPreference) -> Tier`. Do not scatter routing decisions.
 
-**Region caveat (verify before M4):** Apple Intelligence features have historically had regional gaps (EU and mainland China). If T0/T1 are unavailable in a region, T2 must carry the whole load there — which changes both economics and the consent flow. Confirm current availability against Apple's documentation before committing to the routing policy.
+**`availability`, not `region`** — ADR-017. The framework reports whether the on-device model can run on *this device*, which is the question that decides the route; a region table answers a different question and is wrong the day Apple changes something (§5.2).
+
+### 5.2 Regional availability, checked 2026-08-12 (M4-04, resolves Q7)
+
+The caveat this replaces said "EU and mainland China" and told M4 to check before committing to a routing policy. Checked against Apple's own feature-availability page plus reporting on the two regulatory situations:
+
+| Region | T0 (on-device) | T1 (PCC) | What this means for us |
+|---|---|---|---|
+| US, UK, Canada, Australia, Japan, Korea, and most of the EU — Apple lists France, Germany, Spain and Italy | Available | Available on iOS 27 | Normal routing |
+| **Mainland China** | **Not available.** Apple's page marks Apple Intelligence features "Chinese (Simplified) — not available in China mainland" | Not available. Reporting on the July 2026 regulatory approval says the eventual Qwen-backed launch **excludes Private Cloud Compute** | T2 or nothing. Every AI action costs us money there, and the consent flow is not optional but the only path |
+| **EU** | Available today | Available | **The EU gap is narrower than the old caveat implied.** What the EU lacks is the *new Siri AI features* in iOS/iPadOS 27, per Apple's June 2026 statement; the Foundation Models framework is not those features. That matters to §5.1's Q12, not to T0 |
+
+**The design conclusion is more useful than the table, and M4-03 should be built on it: do not carry a region table in the routing policy.** `SystemLanguageModel.default.availability` answers the question directly, per device, with `deviceNotEligible`, `appleIntelligenceNotEnabled` or `modelNotReady` — and it stays correct on the day Apple changes a region, which a table we maintain will not. Region belongs in the economics (`BUSINESS.md`) and in what we say to a user, not in a branch that picks a tier.
+
+Two consequences are ours to carry either way:
+
+- **`.unavailable` is a first-class route, not an error.** For a mainland-China user today it is the *normal* state, so "T0 unavailable" must degrade to T2-with-consent or to an honest "not here yet" — never to a crash, and never to a spinner that resolves into nothing.
+- **The economics invert where T0 cannot run.** `BUSINESS.md`'s blended cost per action assumes most work happens free on device. Where every action is T2, the free tier is a straight loss, and that is a pricing question rather than an engineering one.
+
+**Recheck before shipping.** Both situations are live: China's approval landed in July 2026 with a launch expected later in the year, and Apple has said it hopes to bring the 27-era Siri features to the EU. This section is a snapshot with a date on it, not a fact.
 
 ---
 
