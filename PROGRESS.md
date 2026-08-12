@@ -1618,7 +1618,7 @@ Developer Program, and the Small Business Program with it) gates M4-07, because 
 depends on that enrolment. T0 needs neither.
 
 ### M4-01 — Confirm the Foundation Models API before writing a line against it
-status: Ready · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
 Note: **do this first and separately.** `AGENTS.md` §2 names a fabricated Apple API as the most
 common failure mode in this codebase, and §5 of the pipeline doc makes two claims that are
 themselves unverified: that `PrivateCloudComputeLanguageModel` is the T1 surface, and that the
@@ -1627,17 +1627,41 @@ provider swap is "close to a one-line change". If that second claim is wrong, `S
 stays the seam and M4-08 is a larger task than it looks.
 Deliverable is a written note, not code: exact symbols, signatures, availability annotations,
 and what a refusal or a guardrail violation looks like as a Swift error.
+Claude 2026-08-12: **both §5 claims are false for the SDK this project builds against**, and
+the evidence is a compiler rather than a document. Verified against the framework's own
+`.swiftinterface` in the iOS 26.5 simulator SDK and confirmed by type-checking probes.
+`LanguageModel` (the protocol) and `PrivateCloudComputeLanguageModel` are both
+`cannot find in scope`; there is no image-bearing type in the interface at all. Those are the
+iOS 27 surface from WWDC26, where third-party packages from Anthropic and Google are described
+as *forthcoming*.
+Three consequences are written into `AI_PIPELINE.md` §5.1: **T1 cannot be built on iPadOS 26 at
+all**, **T0 cannot see the crop** and must work from the Vision transcript plus stroke
+trajectory, and **a provider swap is not one line** so `SpecProvider` stays the seam.
+The positive surface is confirmed present and generous: `@Generable`/`@Guide` structured output,
+streaming, `GenerationOptions(sampling:temperature:maximumResponseTokens:)`, and nine
+`GenerationError` cases including `guardrailViolation` and `refusal`.
+**This forces a product decision that is not mine — filed as Q12** (ship 1.0 on iPadOS 26 with
+T0 text-only and no PCC, or raise the deployment target to 27).
 Acceptance:
-- [ ] Every symbol M4-02 and M4-07 will use is quoted from Apple's current documentation, with
-      the iPadOS version that introduced it
-- [ ] The §5 claim about one protocol spanning three vendors is confirmed or corrected in
-      `AI_PIPELINE.md` itself
-- [ ] A throwaway target compiles against the real framework, proving availability on this
-      toolchain rather than in prose
-- [ ] Anything that cannot be verified is written down as unverified rather than assumed
+- [x] Every symbol M4-02 and M4-07 will use is quoted — from the SDK's `.swiftinterface`, which
+      beats the documentation because it is the thing the compiler reads
+- [x] The §5 claim about one protocol spanning three vendors is **corrected** in
+      `AI_PIPELINE.md`, in a new §5.1 with the evidence
+- [x] A throwaway target compiles against the real framework — kept as
+      `Tools/api-probes/` and `scripts/check-foundation-models-api.sh`, which asserts the T0
+      surface still type-checks **and that the iOS 27 surface is still absent**, so this
+      finding cannot silently go stale
+- [x] Anything unverified is written down as unverified: the WWDC26 session is the source for
+      what iOS 27 adds, and no iOS 27 SDK exists on this machine to check it against
 
 ### M4-02 — T0 provider: the on-device model
-status: Ready · depends: M4-01 · refs: AI_PIPELINE.md §5, §3 · estimate: L
+status: Ready · depends: M4-01 (done), Q12 · refs: AI_PIPELINE.md §5, §5.1, §3 · estimate: L
+Note from M4-01: **this tier is text-only on iPadOS 26.** There is no image input, so the
+provider gets the Vision transcript and the stroke trajectory, not the crop — §10's IMAGE 1 /
+IMAGE 2 prompt structure does not apply here. Use `@Generable` with `@Guide` for the spec
+rather than parsing free JSON out of prose; the framework will constrain generation to the
+schema, which removes a whole class of decode failure. Map `GenerationError.guardrailViolation`
+and `.refusal` onto `AskFailure.unreadable` rather than crashing.
 Note: the first real provider. It must satisfy the existing contract exactly — return a
 `ValidatedSpec` and nothing else, so `SpecValidator` cannot be bypassed (invariant 1) — and it
 is the tier that runs offline and in Private Mode, so it is also the floor the product degrades
@@ -1676,7 +1700,10 @@ Acceptance:
 - [ ] Q7 moves to `DECISIONS.md`
 
 ### M4-05 — Prompts v1, versioned and hashed
-status: Ready · depends: M4-01 · refs: AI_PIPELINE.md §10, §3 · estimate: M
+status: Ready · depends: M4-01 (done) · refs: AI_PIPELINE.md §10, §5.1, §3 · estimate: M
+Note from M4-01: T0 and T2 need **different** prompts, not one prompt with a swapped model. T0
+has no image input on iPadOS 26, so §10's image-role paragraph applies only to T2, and T0's
+prompt has to lean on the transcript and stroke data instead.
 Note: §10 has the structure that works — contract first, image roles, stroke data as
 disambiguation, transcribe-then-solve, explicit permission to decline, brevity. Prompts live in
 `Intelligence/Prompts/*.md` as resources and are referenced **by hash** in eval results, so a
@@ -1714,7 +1741,7 @@ Acceptance:
 - [ ] Stored so that no sample leaves the device without its writer's consent
 
 ### M4-07 — T1 provider: Apple PCC
-status: Blocked · blocker: M0-07 (Small Business Program enrolment is what makes PCC free) · depends: M4-01, M4-02 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
+status: Blocked · blocker: **the iOS 27 SDK — `PrivateCloudComputeLanguageModel` does not exist on iPadOS 26 (M4-01)** — and M0-07, since Small Business Program enrolment is what makes PCC free · depends: M4-01, M4-02, Q12 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
 Acceptance:
 - [ ] Implements `SpecProvider` against the PCC surface confirmed by M4-01
 - [ ] Falls back to T0 rather than failing when PCC is unavailable
@@ -1722,7 +1749,11 @@ Acceptance:
 - [ ] Same fail-closed decoding and no-content-logging guarantees as M4-02
 
 ### M4-08 — T2 provider and the proxy
-status: Blocked · blocker: Q6 (which frontier provider) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, BUSINESS.md, AGENTS.md §7 · estimate: L
+status: Blocked · blocker: Q6 (which frontier provider) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, §5.1, BUSINESS.md, AGENTS.md §7 · estimate: L
+Note from M4-01: **a provider swap is not one line.** The `LanguageModel` protocol that would
+have made it one does not exist on our SDK, and the Anthropic and Google packages that would
+conform to it are announced rather than shipped. This tier needs its own client, retry policy
+and error mapping, which is most of why it is an L.
 Note: the only tier that sends a user's work to a third party, so it carries the obligations the
 others do not: the 5.1.2(i) consent assertion in the provider layer (M4-09), server-side
 entitlement (M6), and a per-action cost that shows up in `BUSINESS.md`'s unit economics. Never
