@@ -4,52 +4,70 @@ import XCTest
 
 @testable import Margin
 
-/// Guards the feedback loop that `VirtualizedPageStack.updateUIView` can close.
+/// The canvas/store contract.
 ///
-/// That method reassigns `canvasView.drawing` whenever the stored drawing's bytes differ from
-/// the canvas's. So if this coordinator ever stores a drawing that is *equal* to the canvas's
-/// but encodes differently, the reassignment fires this delegate, which stores again, forever
-/// — rendering a full-page preview per pass. It reached 717MB and a jetsam kill on any new
-/// notebook before the fix, and no existing test could see it: the eraser logic was correct
-/// in isolation, and the loop only exists once a real `PKCanvasView` is in the circuit.
+/// Two rules hold this together, and every canvas bug so far came from breaking one:
+/// only an open user gesture may write the canvas into the store, and a canvas that has
+/// drifted from the store is re-synced before it is allowed to accept input.
 @MainActor
 final class LiveInkCanvasCoordinatorTests: XCTestCase {
-    /// The new-notebook case: one untouched page, nothing to erase.
-    func testAnUntouchedPageIsStoredWithTheCanvasOwnBytes() {
+    func testAGestureWritesTheCanvasIntoTheStore() {
         let subject = Self.subject()
 
-        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+        subject.gesture(strokes: 2)
 
-        XCTAssertEqual(
-            subject.store.drawing(for: Self.pageID).dataRepresentation(),
-            subject.canvas.drawing.dataRepresentation(),
-            "stored bytes differ from the canvas's, so updateUIView would reassign and loop")
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 2)
     }
 
-    /// The ordinary-writing case: strokes present, still nothing to erase.
-    func testOrdinaryInkIsStoredWithTheCanvasOwnBytes() {
+    /// **The rule that stops undone ink coming back.** A callback outside a gesture is either
+    /// our own push or PencilKit chatter; treating that canvas as the truth wrote stale ink
+    /// straight back into the store.
+    func testACallbackOutsideAGestureIsIgnored() async throws {
         let subject = Self.subject()
-        subject.canvas.drawing = Self.drawing()
+        subject.gesture(strokes: 1)
+        // The window deliberately outlives the Pencil lift, because PencilKit's last drawing
+        // callback arrives after it. Let the debounce close it.
+        try await Task.sleep(nanoseconds: 200_000_000)
+        let revision = subject.store.revision(for: Self.pageID)
 
+        subject.canvas.drawing = Self.drawing(strokes: 9)
         subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
 
-        XCTAssertEqual(
-            subject.store.drawing(for: Self.pageID).dataRepresentation(),
-            subject.canvas.drawing.dataRepresentation(),
-            "stored bytes differ from the canvas's, so updateUIView would reassign and loop")
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 1)
+        XCTAssertEqual(subject.store.revision(for: Self.pageID), revision)
     }
 
-    /// A second callback with the same ink must not keep rewriting the store — that is the
-    /// step which, repeated, is the loop.
-    func testRepeatedCallbacksForTheSameInkConverge() {
+    /// **The rule that stops a stale canvas being trusted.** If the canvas still holds ink the
+    /// store no longer has — an undo push PencilKit did not take — the next stroke must not
+    /// save it back.
+    func testAStaleCanvasIsResyncedBeforeAcceptingInput() {
         let subject = Self.subject()
-        subject.canvas.drawing = Self.drawing()
+        subject.gesture(strokes: 1)
+        subject.canvas.drawing = Self.drawing(strokes: 5)
 
-        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
-        let afterFirst = subject.store.drawing(for: Self.pageID).dataRepresentation()
-        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+        subject.coordinator.canvasViewDidBeginUsingTool(subject.canvas)
 
-        XCTAssertEqual(subject.store.drawing(for: Self.pageID).dataRepresentation(), afterFirst)
+        XCTAssertEqual(
+            subject.canvas.drawing.strokes.count, 1,
+            "the canvas must be reset to the store before it takes input")
+    }
+
+    func testUndoneInkIsNotResurrectedByTheNextStroke() {
+        let subject = Self.subject()
+        let undo = CanvasUndoController()
+        undo.configure(store: subject.store)
+        let coordinator = Self.coordinator(store: subject.store, undo: undo)
+
+        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
+        subject.canvas.drawing = Self.drawing(strokes: 4)
+        coordinator.canvasViewDrawingDidChange(subject.canvas)
+        coordinator.canvasViewDidEndUsingTool(subject.canvas)
+        undo.undo()
+        // PencilKit keeps showing the pre-undo ink; the next gesture must not save it back.
+        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
+
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
+        XCTAssertEqual(subject.canvas.drawing.strokes.count, 0)
     }
 
     // MARK: - Undo entries
@@ -57,7 +75,7 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
     /// **PencilKit sends its final drawing callback after `didEndUsingTool`.** Committing the
     /// undo entry on tool-end therefore ran before the ink had landed, the store's revision had
     /// not moved, and the entry was dropped as "nothing changed" — so pen strokes were not
-    /// undoable while accepted AI answers were. This asserts the real callback order.
+    /// undoable while accepted AI answers were.
     func testAPenStrokeIsUndoableEvenThoughTheInkLandsAfterTheToolEnds() {
         let subject = Self.subject()
         let undo = CanvasUndoController()
@@ -91,8 +109,6 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
     }
 
-    /// A programmatic change with no gesture around it must not become an undo entry — the
-    /// accepted-answer case records its own, and a duplicate would need two presses.
     func testAChangeOutsideAGestureIsNotRecorded() {
         let subject = Self.subject()
         let undo = CanvasUndoController()
@@ -108,13 +124,12 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
     // MARK: - Pulling external edits
 
     /// `updateUIView` pulls only when the page's revision has moved past what this canvas
-    /// applied. Writing from the canvas must therefore leave the two in step, or every render
-    /// would reassign the canvas and re-enter this delegate — the 717MB loop.
+    /// applied. Writing from the canvas must leave the two in step, or every render would
+    /// reassign the canvas and re-enter this delegate — the 717MB loop.
     func testWritingFromTheCanvasLeavesNothingToPull() {
         let subject = Self.subject()
-        subject.canvas.drawing = Self.drawing()
 
-        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+        subject.gesture(strokes: 1)
 
         XCTAssertEqual(
             subject.coordinator.appliedRevision, subject.store.revision(for: Self.pageID),
@@ -124,31 +139,13 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
     /// An undo writes only to the store, so the canvas must see work to do.
     func testAnEditFromElsewhereLeavesSomethingToPull() {
         let subject = Self.subject()
-        subject.canvas.drawing = Self.drawing()
-        subject.coordinator.canvasViewDrawingDidChange(subject.canvas)
+        subject.gesture(strokes: 1)
 
         subject.store.save(PKDrawing(), for: Self.pageID, pageSize: Self.pageSize)
 
         XCTAssertNotEqual(
             subject.coordinator.appliedRevision, subject.store.revision(for: Self.pageID),
             "an undo written to the store would never reach the canvas")
-    }
-
-    /// Undo restores the store; the canvas picks it up the same way any other page would.
-    func testUndoLeavesTheCanvasWithTheRestoredInkToPull() {
-        let subject = Self.subject()
-        let undo = CanvasUndoController()
-        undo.configure(store: subject.store)
-        let coordinator = Self.coordinator(store: subject.store, undo: undo)
-
-        coordinator.canvasViewDidBeginUsingTool(subject.canvas)
-        subject.canvas.drawing = Self.drawing(strokes: 3)
-        coordinator.canvasViewDrawingDidChange(subject.canvas)
-        coordinator.canvasViewDidEndUsingTool(subject.canvas)
-        undo.undo()
-
-        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
-        XCTAssertNotEqual(coordinator.appliedRevision, subject.store.revision(for: Self.pageID))
     }
 
     // MARK: - Fixtures
@@ -160,6 +157,15 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         let coordinator: LiveInkCanvasCoordinator
         let store: PageDrawingStore
         let canvas: PKCanvasView
+
+        /// One complete user gesture, in PencilKit's real callback order.
+        @MainActor
+        func gesture(strokes: Int) {
+            coordinator.canvasViewDidBeginUsingTool(canvas)
+            canvas.drawing = LiveInkCanvasCoordinatorTests.drawing(strokes: strokes)
+            coordinator.canvasViewDrawingDidChange(canvas)
+            coordinator.canvasViewDidEndUsingTool(canvas)
+        }
     }
 
     private static func coordinator(
@@ -185,7 +191,7 @@ final class LiveInkCanvasCoordinatorTests: XCTestCase {
         )
     }
 
-    private static func drawing(strokes count: Int = 1) -> PKDrawing {
+    fileprivate static func drawing(strokes count: Int = 1) -> PKDrawing {
         PKDrawing(
             strokes: (0..<count).map { index in
                 let path = PKStrokePath(
