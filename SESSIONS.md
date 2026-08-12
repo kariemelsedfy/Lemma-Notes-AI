@@ -11,6 +11,41 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-22 — the harness now draws what the page draws, and it can finally see invisible ink
+
+Direct follow-up to M3-21, and the cheapest high-value change I have made in this repo.
+
+**One line of behaviour.** `InkRasterizer` strokes `drawnWidth(forSize:)` instead of `size`.
+Every legibility number recorded before today was measured on ink about a third heavier than
+any user has seen, and — worse — a *change* to a width showed up at the wrong magnitude, which
+is how M3-21's correct fix looked like a 12-point regression.
+
+**I expected to spend the session re-sweeping constants and did not have to.** `nibToHeightRatio`
+and `insetToNibRatio` were both tuned against the old convention (M3-00B, M2-13B), so I assumed
+they were fitted to an artefact. They were not: both renderers clear §7's bar on honest ink,
+97.92% each. Worth knowing that those two numbers survived contact with a better instrument —
+it makes the weight work more trustworthy than it was yesterday, not less.
+
+**The part that matters more than the numbers.** The harness now *skips* ink below PencilKit's
+cutoff rather than drawing a helpful hairline. So the M2-13 defect — a nib the page fades to
+nothing, found by a user with "when i chose keep, it didn't stick" — would now score **zero**
+here instead of scoring well. That class of bug was structurally invisible to this suite, and
+it is the class this project keeps shipping to devices. If you add a renderer, this is the file
+that decides whether the tests can see what you did.
+
+**What the remeasurement exposed and I did not fix.** Both remaining corpus misses are Vision
+splitting one rendered line into two blocks, and one of them comes back in the wrong order
+(`the sequence is bounded` → `bounded / the sequence is`) because `HandwritingTranscript` sorts
+blocks by `midY` with a fixed epsilon — two fragments of one line whose boxes differ in height
+sort as two lines. **`SelectionReading` assembles the provider's crop transcript with the same
+function**, so this is a real path, not a test artefact; it is unexercised only because the
+shipping provider is canned. Filed as M3-23 rather than bundled.
+
+**Method note.** Before claiming M3-22 I prototyped it in the scratch tree during the eleven
+minutes CI took on M3-21 — patch the rasterizer, run the suite, print both corpora, revert. That
+turned an "M, expect the numbers to move" estimate into a measured "S, they move by two points
+and stay above the bar" before a single line was committed. Wait time is measuring time.
+
 ## 2026-08-12 · Claude · M3-21 — the pen now scales with the writing, and the harness lied about it
 
 Small fix, one genuinely useful negative result.

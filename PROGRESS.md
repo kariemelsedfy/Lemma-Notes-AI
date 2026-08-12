@@ -1175,8 +1175,28 @@ Acceptance:
 - [x] `p q y j` are fixed with `g`, and `j` takes its depth from the writer's own descenders
       rather than a constant, with a documented fallback for a repair sheet that has none
 
+### M3-23 — One line read back out of order
+status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-22, M2-22, AI_PIPELINE.md §1 · estimate: S
+Note: exposed by M3-22's remeasurement. Vision sometimes returns one rendered line as two text
+blocks, and `HandwritingTranscript.text(from:)` orders blocks by `midY` with a fixed 0.02 band —
+so two fragments of the *same* line whose boxes differ in height (one has ascenders, the other a
+descender) sort as if they were two lines. Measured: `the sequence is bounded` comes back as
+`bounded / the sequence is`, which is the only typeset miss in the 48-string corpus.
+**This is not only a test-fixture problem.** `SelectionReading` (M2-22) assembles the crop
+transcript the same way, so a one-line selection that Vision fragments can reach a provider
+scrambled — and a provider reasoning over `bounded the sequence is` will answer the wrong
+question. That path is unexercised today only because the shipping provider is canned.
+Likely fix: treat blocks as the same line when their boxes *overlap vertically* by most of
+their height, rather than when their midpoints are within a fixed epsilon. Order within a line
+by `minX` as now.
+Acceptance:
+- [ ] Two fragments of one line are ordered left to right regardless of their relative heights
+- [ ] Genuinely stacked lines still read top to bottom, including tight line spacing
+- [ ] A fixture reproduces the `the sequence is bounded` case before the fix
+- [ ] `SelectionReading`'s transcript is covered, not just the harness
+
 ### M3-22 — The OCR harness does not rasterize the width the page draws
-status: Ready · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-21, M2-13, CONTEXT.md invariant 11 · estimate: M
 Note: `InkRasterizer` draws `InkPoint.size` straight into `CGContext.setLineWidth`, but the
 page draws `2 × size − 4` (`InkRenderingLimits`). So every legibility number in this repo is
 measured on ink roughly a size-to-drawn conversion heavier than what a user sees, and any
@@ -1190,15 +1210,28 @@ proof, and it is why M3-21's legibility-at-other-sizes box could not be ticked h
 **This is not a one-line change.** `TypesetStyle.nibToHeightRatio` and `insetToNibRatio` were
 both swept against the current harness (M3-00B, M2-13B), so both need re-measuring after, and
 their doc-comment tables with them. Expect the corpus numbers to move; that is the point.
+Claude 2026-08-12: cheaper than the note above feared — **no constant needed re-sweeping.**
+Both renderers clear §7's bar on ink the page would actually draw, so M3-00B's and M2-13B's
+weight work was tuned to something defensible after all. The harness also now *skips* ink below
+PencilKit's cutoff instead of helpfully drawing a hairline, which means the M2-13 failure —
+a nib the page fades to nothing — would now score zero here rather than scoring well. That is
+the single most valuable thing this change buys: the harness can finally see invisible ink.
 Acceptance:
-- [ ] `InkRasterizer` strokes `InkRenderingLimits.drawnWidth(forSize:)`, with a test pinning it
-- [ ] Both renderers are re-measured against §7's bar and the constants re-swept if needed
-- [ ] The measured tables beside `nibToHeightRatio` and `insetToNibRatio` are updated
-- [ ] M3-21's "legible at half and double the captured size" is then verifiable, and verified
-- [ ] Invariant 11 is restated to say the harness agrees with the page
+- [x] `InkRasterizer` strokes `InkRenderingLimits.drawnWidth(forSize:)`, with a test pinning it
+      by measuring the rasterized extent of a horizontal stroke
+- [x] Both renderers re-measured: typeset **100% → 97.92%**, synthesizer **100% → 97.92%**
+      (mean similarity 0.9855 and 0.9983), both above the 95% bar. No constant re-swept
+- [x] The measured tables beside `nibToHeightRatio` and `insetToNibRatio` are unchanged **and
+      that is the finding** — both survive being measured honestly; the corpus doc and
+      `InkRenderingLimits` record the new numbers and why they moved
+- [x] M3-21's "legible at half and double the captured size" is verified — asserted as no
+      worse than at the captured size, since the fixture's own `f`/`t` misses are size-independent
+- [x] Invariant 11 restated (CONTEXT §3) to say the harness now agrees with the page
+- [x] Ink the page cannot draw is not drawn here either, with a test — **M3-23 filed** for the
+      one thing the remeasurement exposed and this task does not fix
 
 ### M3-21 — The writer's pen weight does not scale with the size the answer renders at
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
+status: Done · completed: Claude · merged: PR #96 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
 Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
 defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
 `Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
@@ -1227,10 +1260,10 @@ Acceptance:
 - [x] The conversion goes through drawn width, not raw `size`, with a test that would fail if
       someone scales the size directly — mutation-verified, `captured * ratio` fails 4 tests
 - [x] Legibility does not regress on the §7 corpus, and the descender fix (M3-01C) still holds
-- [ ] A bank captured at one size renders legibly at half and double it — **not verifiable
-      here, and the reason is measured**: `LegibilityHarness` rasterizes `size` as a line
-      width, so correct ink reads as 87.5% at double size where the flat width reads 100%
-      (16 strings). Blocked on M3-22; until then this is a device question, not a test one
+- [x] A bank captured at one size renders legibly at half and double it — **unblocked and
+      done by M3-22**, which fixed the instrument rather than the ink. Asserted as no worse
+      than at the captured size. The 87.5%-at-double figure recorded here was the harness
+      mismeasuring, exactly as suspected
 
 ### M3-11 — Math legibility needs the M5 layout, not a better font
 status: Blocked · blocker: M5 math layout · refs: HANDWRITING.md §5, §7 · estimate: S

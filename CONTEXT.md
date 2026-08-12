@@ -186,8 +186,12 @@ who has not read the code — because they have not.
     size 2.0 PencilKit draws nothing at all. Anything geometric — hatch spacing, insets, how
     wide a stem ends up — uses `InkRenderingLimits.drawnWidth(forSize:)`, never the raw size.
     Getting this backwards produced invisible ink, then a black dot, then a stack of bars
-    (M2-13, M2-13B). The OCR harness uses Core Graphics and will not tell you: tune a width
-    against it and you are tuning against a renderer the user never sees.
+    (M2-13, M2-13B). The OCR harness used to be no help — it drew `size` straight into
+    `CGContext.setLineWidth`, so it measured ink a third heavier than the page and reported a
+    *correct* weight change as a 12-point regression (M3-21). **Since M3-22 it converts, and
+    skips ink the page would not draw at all**, so invisible ink now scores zero there instead
+    of scoring well. Widths may be measured against it again; every number it produced before
+    2026-08-12 describes ink no user saw.
 
 12. **`PKDrawing.dataRepresentation()` is not an equality test.** It is stable only for the
     same instance. Measured: two freshly constructed *empty* drawings encode to 42 **different**
