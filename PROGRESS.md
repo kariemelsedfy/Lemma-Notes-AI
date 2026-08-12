@@ -1449,7 +1449,7 @@ Acceptance:
       it to the writer's pen is a different feature and belongs with M3-08C
 
 ### M3-12B — Measure through the glyph bank, and prove the no-room path
-status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §4, §8 · estimate: M
+status: Done · completed: Claude · merged: PR #99 · 2026-08-12 · refs: AI_PIPELINE.md §4, §8 · estimate: M
 Note: measuring uses a flat 0.62 x-heights per character while rendering uses each glyph's
 real advance, so the two disagree — harmlessly today because the renderers wrap to the frame
 they are handed, but it means reserved frames are systematically the wrong width for a
