@@ -88,8 +88,12 @@ stroke looks like *to the app* before shipping it.
    `TypesetStyle.nibToHeightRatio`, `insetToNibRatio`. If you change one, re-measure it and
    update the table beside it.
 4. Anything touching a `PKCanvasView`, a `UIViewRepresentable`, or SwiftUI view identity is
-   **outside what XCTest can reach here**. Three bugs have lived there. The shell checks in
-   `scripts/` are the substitute, and a device is the test.
+   **outside what XCTest can reach here**. *Five* bugs have lived there now — the newest is
+   M2-18's reconcile loop, which 151 green tests could not see because it only closes once a
+   real `PKCanvasView` is in the circuit. The shell checks in `scripts/` are the substitute,
+   and a device is the test.
+5. **A green suite here means less than you think.** Every device session so far has found
+   something the tests could not. Build for the iPad and use it before believing a feature.
 
 ---
 
@@ -102,8 +106,8 @@ M0, M1 and M2 are done except the tasks that need a physical iPad or an Apple De
 
 **The product can now write an answer in your own hand, end to end.** Calibrate from the library toolbar, ask a question on a page, and the answer is drawn from your glyph bank. Until 2026-08-08 it could not: `AskPipeline` only ever had `TypesetInkRenderer`, so every answer was typeset whether or not the user had calibrated. M3-05 built the synthesizer and M3-02 built the capture, and nothing connected them.
 
-**Next action: physically verify M2-18's grouped erase and one-step undo, then run M3-10's
-human panel.** M2-24's two-stage Pencil interaction is device-confirmed, and M1-07C now
+**Next action: physically verify M2-18's grouped erase and one-step undo — now reachable via
+the M2-26 undo button — then run M3-10's human panel.** M2-24's two-stage Pencil interaction is device-confirmed, and M1-07C now
 reloads the current notebook before either export format.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
@@ -123,7 +127,7 @@ who has not read the code — because they have not.
 |---|---|
 | Planning docs | Complete |
 | Xcode project | Generated locally from `Project.swift`; gitignored |
-| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing |
+| Canvas UI | Persisted page view-aligned scroll stack; only the visible page and immediate neighbors retain `PKCanvasView`; off-window ink previews are cached in memory. Drawings and current semantic metadata autosave together. Generated answers erase as one provenance group; handwritten ink keeps vector erasing. A persistent undo button sits in the chrome (M2-26) — before it, nothing in the UI could reach the undo PencilKit and M2-18 were registering |
 | Ask entry point | A floating Ask control, Command–Return, and Pencil squeeze all reach the same path. Double-tap defers to the system setting until onboarding exists (M2-25) |
 | Selection UI | Arming Ask captures the question lasso, then a distinct allowed answer area in app-owned page coordinates. The overlays and step prompts remain distinct; PencilKit's own lasso is unusable because it exposes no selected-strokes API |
 | Notebook library | App target depends on local `DocumentStore`; package-backed create, discover, rename, delete, and selected-document reads are available |
@@ -174,6 +178,14 @@ who has not read the code — because they have not.
     (M2-13, M2-13B). The OCR harness uses Core Graphics and will not tell you: tune a width
     against it and you are tuning against a renderer the user never sees.
 
+12. **A rebuilt `PKDrawing` is not byte-identical to the original.** `PKDrawing(strokes:)`
+    round-trips the strokes but re-encodes differently — measured: 42 different bytes for an
+    empty drawing, 318 for a one-stroke drawing. `VirtualizedPageStack.updateUIView` decides
+    whether to reassign the canvas by comparing `dataRepresentation()`, so storing a
+    reconstruction when nothing changed reassigns the canvas, re-fires the delegate, and loops
+    forever — a full-page preview per pass, 717MB, jetsam kill (M2-18). Store the canvas's own
+    drawing unless you are actually changing the strokes.
+
 ## 4. Environment notes
 
 **Five traps in this working copy:**
@@ -216,6 +228,13 @@ who has not read the code — because they have not.
    `~/.local/share/mise/installs/tuist/<version>/tuist` (version pinned in `.mise.toml`).
    Two sessions have now lost time rediscovering this. Verify in the scratch tree, commit
    from this one.
+
+   **It also hits git's own files.** `.git/info/exclude` went dataless mid-session, which makes
+   *every* git command fail with `cannot use .git/info/exclude as an exclude file`; it is
+   comment-only in every git template, so recreating it is safe. `.githooks/pre-commit` went
+   dataless too and could not be read, moved, or restored — commit with
+   `git -c core.hooksPath=<empty dir>` and run `scripts/lint.sh` by hand in the hydrated tree
+   instead. Assume any file can be next.
 
 
 Xcode 26.6 (build 17F113), Swift 6.3.3, and Tuist 4.197.3 (pinned in `.mise.toml`) are validated. `swift-format` comes from the Xcode toolchain; SwiftLint is installed by `scripts/bootstrap.sh`, which also activates the checked-in `.githooks` pre-commit hook. The first app smoke check used iPad Pro 13-inch (M5), iOS 26.5 simulator. The iOS platform component must be installed in Xcode before app builds can run. GitHub-hosted app tests resolve that device by name without `OS=latest`, use a 60-second destination timeout, and have a four-minute step timeout with simulator inventory logged. GitHub-hosted macOS 26 ran the initial full CI verification in 7m44s.

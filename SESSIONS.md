@@ -11,6 +11,55 @@ unless you check.
 
 ---
 
+## 2026-08-11 · Claude · M2-18 device run — a jetsam kill, and the missing undo button
+
+**The branch shipped a crash that 151 green tests could not see, and the user found it in
+about a minute.** That ratio again (CONTEXT handover, 2026-08-10).
+
+Report: "everytime I try to add a new note it closes the app." The console said `signal 9`,
+which is not a Swift crash — a `fatalError` prints to stderr and raises SIGTRAP. The user
+supplied the missing word: *"terminated by the operating system because it is using too much
+memory."* The device's JetsamEvent report confirmed it — **717MB, `per-process-limit`.**
+
+The mechanism is worth remembering because it is entirely non-obvious. `PKDrawing(strokes:)`
+returns a drawing that is equal stroke-for-stroke but **does not encode to the same bytes** —
+measured: an empty drawing re-encodes to 42 different bytes, a one-stroke drawing to 318.
+M2-18's `reconcile` stored such a reconstruction on *every* callback, including the first one
+on a freshly opened page with no erasing involved. `VirtualizedPageStack.updateUIView` decides
+whether to reassign the canvas by comparing `dataRepresentation()`, so the difference never
+resolved: reassign → delegate fires → store another reconstruction → reassign. Each pass
+rendered a full-page 3MB preview, and ~230 passes hit the limit. 717 ÷ 3.1 ≈ 230, which is how
+I knew the theory was right before fixing anything.
+
+**Two lessons.** First, `signal 9` means look for jetsam or watchdog, never for a Swift bug —
+I lost time reading error-handling paths that were all correct. Second, my `--console` launch
+holds a usage assertion and kills the app when it detaches, so it manufactures a *second*
+signal 9 that looks exactly like the one you are chasing. Launch without `--console` and pull
+`--domain-type systemCrashLogs` afterwards instead; that is what actually produced the answer.
+
+Then, writing the device instructions, I went looking for the undo control and there wasn't
+one. Grep every app source: PencilKit registers stroke undo, M2-18 registers a grouped-erase
+undo, and **nothing in the UI could reach either.** Only the iPadOS three-finger gestures,
+which are undiscoverable and unusable with limited dexterity. M2-18's acceptance box "undo
+restores the whole answer in one step" had nothing a user could press. The human asked for a
+persistent button, so M2-26 adds one. **This is the third instance of the same pattern** —
+M2-19's dead Ask button, M2-16's orphaned suggestion layer — and it is worth naming as a class:
+*this project keeps building and verifying one half of a feature.* When a task says "X works",
+check that a user can reach X.
+
+Redo is deliberately absent: not requested, and a separate decision.
+
+**Verification:** app tests 159/159 ✅ · `./scripts/lint.sh` 0 violations across 134 files ✅ ·
+the three loop regression tests confirmed failing against the previous coordinator ✅ · grouped
+erase and one-step undo on the physical iPad still pending
+
+**Two more OneDrive casualties**, beyond CONTEXT §4 trap 5: `.git/info/exclude` and
+`.githooks/pre-commit` both went dataless mid-session. The first makes *every* git command fail
+(`cannot use .git/info/exclude as an exclude file`) — it is comment-only in every git template,
+so recreating it is safe. The second cannot be read, moved, or restored, so the pre-commit hook
+had to be skipped via `git -c core.hooksPath=<empty dir>`; lint and tests were run by hand in
+the hydrated checkout instead. Expect this to keep happening to arbitrary files.
+
 ## 2026-08-11 · Claude · M2-18 — restore the coverage a test merge dropped
 
 Picked this up with an uncommitted working tree: `GeneratedInkEraserTests.swift` (5 tests)

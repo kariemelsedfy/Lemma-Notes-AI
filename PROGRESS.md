@@ -551,6 +551,17 @@ test added here should split the eraser cases back into their own file.
 **The undo box cannot be ticked without hardware:** it depends on the `UIUndoManager` a
 `PKCanvasView` owns, which XCTest cannot reach (CONTEXT §1a item 4). It needs the same device
 run as the grouped-erase check.
+Claude 2026-08-11, from the device: **this branch shipped a jetsam kill.** Creating a notebook
+took the app to 717MB (`per-process-limit`, confirmed in the device JetsamEvent report) and the
+system killed it — reported as "everytime I try to add a new note it closes the app".
+`reconcile` stored a drawing rebuilt with `PKDrawing(strokes:)` on every callback, including the
+first on a freshly opened page. A rebuilt drawing is equal stroke-for-stroke but does **not**
+encode to the same bytes (measured: 42 different bytes when empty, 318 for one stroke), and
+`updateUIView` reassigns the canvas by comparing `dataRepresentation()` — so it reassigned, the
+delegate fired, and each pass rendered a full-page preview. Fixed by storing the canvas's own
+drawing whenever nothing is erased. Three regression tests fail against the previous coordinator.
+None of the 151 existing tests could see it: the eraser logic was correct in isolation and the
+loop only closes once a real `PKCanvasView` is in the circuit.
 Acceptance:
 - [x] Erasing any part of a generated answer removes the whole answer, or a decided-and-documented alternative
 - [x] Erasing handwriting is unchanged
@@ -748,6 +759,26 @@ Acceptance:
 - [ ] Squeeze on a Pencil Pro arms the Ask lasso
 - [ ] Double-tap does what the system setting says, and nothing app-specific
 - [ ] Nothing happens and nothing crashes on a Pencil 1 or with no Pencil
+
+### M2-26 — A persistent undo control in the canvas
+status: Review · implemented: Claude · 2026-08-11 · needs-device-verification · requested: human · refs: PROGRESS.md M2-18, ARCHITECTURE.md §10 · estimate: S
+Note: found while writing M2-18's device instructions — the app had **no undo affordance at
+all.** PencilKit registered stroke undo and M2-18 registered a grouped-erase undo, but the only
+way to reach either was the iPadOS three-finger gesture: undiscoverable, and unusable for anyone
+with limited dexterity. M2-18's acceptance ("undo restores the whole answer in one step") had
+nothing a user could press. Same shape as M2-19 (Ask button that had never worked) and M2-16
+(suggestion layer written to but never displayed): one half of a feature built and verified while
+the other half was never wired up.
+`CanvasUndoController` adopts whichever canvas the user last touched, since the live window keeps
+a `PKCanvasView` for the visible page and both neighbours. Redo is deliberately not included —
+it was not requested, and it is a separate decision about whether the canvas wants a full
+undo/redo pair.
+Acceptance:
+- [x] An undo control is visible in the canvas chrome and takes Command–Z
+- [x] It disables when there is nothing to undo
+- [x] Undo targets the page being written on, not an off-screen neighbour
+- [x] Copy is localized (`canvas.undo`)
+- [ ] On device: the button undoes a stroke, and undoes a grouped generated-answer erase in one step
 
 ### M2-25 — Onboarding toggle for the double-tap override
 status: Ready · refs: PROJECT_PLAN.md §3.1 · estimate: S
