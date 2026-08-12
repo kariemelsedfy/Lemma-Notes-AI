@@ -116,10 +116,11 @@ reloads the current notebook before either export format.
 
 **M3-10, the blind similarity panel — the gate, once the two blockers are cleared.** It is the M3 kill-criterion (R-01): five real lines, five generated, "which are yours?" — ≥60% "plausibly mine" to pass, and below 40% after two iterations the plan says pivot to typeset output and drop handwriting matching from the pitch. It needs recruiting people who are not you. **Nothing else in M3 is worth polishing before that verdict.**
 
-The first device look found the output recognisably the user's, but too small. If the panel
-says it looks mechanical after sizing is fixed, **M3-08C is the first place to look**:
-`Variation` currently reaches only vertical jitter and drift, not glyph-sample selection,
-so a bank with four samples per letter behaves identically to one with a single sample.
+The first device look found the output recognisably the user's, but too small. **M3-08C is
+done** (2026-08-11): `Variation` now reaches glyph-sample selection, spacing and per-glyph
+slant, so a bank's extra samples finally do something — measured 15.4pt mean displacement
+between the two styles with five samples per character, against under a point before. Nobody
+has yet looked at the result side by side; that judgement belongs with the panel.
 
 Device work is collected in `DEVICE_SESSION.md`. **The user is the only route to a device**;
 every finding in the last week came from them, so write device instructions as if for someone
@@ -155,7 +156,7 @@ who has not read the code — because they have not.
 | Apple Developer account | ❓ unconfirmed — blocker for M0-07 |
 | Calibration | Seven guided sheets (§3.1) from the library toolbar. `CalibrationSession` builds a bank and reports what it could not capture; partial banks are kept, since ADR-014 makes leaving early legitimate |
 | Glyph bank | `GlyphBank` + `GlyphBankStore`, on device only, deletable in one tap. `GuideBoxSegmenter` assigns strokes to boxes and drops low-confidence captures rather than storing a bad glyph |
-| Synthesizer | Concatenative from the bank (ADR-004), with per-glyph jitter, baseline drift and preserved pen-lifts. `LineBreaker` wraps to the writer's own line spacing |
+| Synthesizer | Concatenative from the bank (ADR-004), with per-glyph jitter, baseline drift and preserved pen-lifts. `LineBreaker` wraps to the writer's own line spacing. `Variation` reaches sample selection, spacing and per-glyph slant (M3-08C) — it previously reached only vertical jitter, so extra samples in a bank were dead weight |
 | Evaluation | `StyleSimilarity` — a hand-built feature vector, **not** the writer-ID embedding §7 names. A regression detector, not a certificate of realism |
 | Golden eval set | Does not exist (M4) |
 | Server proxy | Does not exist (M4) |
