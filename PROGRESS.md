@@ -1791,7 +1791,7 @@ Acceptance:
 - [ ] Timeout, transport and offline map onto the §8 failure states already built
 
 ### M4-09 — Assert third-party AI consent in the provider layer
-status: Review · implemented: Claude · 2026-08-12 · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S
+status: Done · completed: Claude · merged: PR #104 · 2026-08-12 · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S
 Note: invariant 8 says the 5.1.2(i) consent check lives **in the provider layer, not the UI**,
 precisely so a new call site cannot bypass it. Worth building before T2 rather than with it: it
 is a small piece of load-bearing structure, and building it under deadline beside a new network
