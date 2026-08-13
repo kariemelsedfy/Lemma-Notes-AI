@@ -11,6 +11,44 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-06 — the ruler found two things before it measured anything
+
+`scripts/eval.sh` has been documented in `AGENTS.md` §8 and `ARCHITECTURE.md` §7.1 since the
+repo was scaffolded, and it did not exist. Neither did `Tools/evalrunner` or `Fixtures/golden`.
+Worth noticing how long a documented command can sit there unbuilt without anyone tripping over
+it — nothing fails when a script is missing until someone tries to run it, and no agent had.
+
+**It paid for itself on the first run, twice, before measuring any real model.**
+
+*One:* a metrics file is a CI artifact that gets attached to PRs, and my first version recorded
+failures with `String(describing: error)`. `SpecValidationError.unparseableLaTeX` carries the
+model's output verbatim, which is derived from someone's page — so a malformed answer would have
+written a user's homework into a build artifact. Errors now have a `name`, matching the
+`AskState.name` convention already in this codebase. **When you write an error into a file that
+outlives the process, it is a log, and §7 applies.**
+
+*Two:* the garbage case failed rather than declining, and the reason is a genuine contradiction
+between two parts of the spec. §10 tells the model to signal an unreadable selection by setting
+`readConfidence` low and returning no blocks. `SpecValidator` fails closed below 0.6, so that
+exact response throws, and `AskPipeline` maps it to `invalidSpec` — "Something went wrong". §8
+says the opposite should happen: show what it thinks it read and let the user correct it. The
+read is discarded by the rule meant to protect the page. Filed as M4-11.
+
+**What I did not do about it.** I did not fix M4-11 inside M4-06. It touches the validator, which
+is load-bearing for invariant "readConfidence < 0.6 renders nothing", and bundling a contract
+change into a tooling PR is how invariants get weakened by accident. The stub declines the only
+way the schema currently allows — high confidence, no blocks — with a comment saying why it
+reads oddly.
+
+**On the fixture set.** Six cases, one per §9 category, with a README that says in its first
+line that they are not the golden set. The real one is 200 selections from 15 writers (M4-06B)
+and only a human can collect it. A fixture that looks like data invites someone to quote a
+number from it; a fixture that says "this is a shape, not data" does not.
+
+**Deliberately missing metrics.** §9 lists answer correctness and placement error. Both are human
+or symbolic judgements, and a number I invented for them would become a target someone
+optimises against. They are absent, and the doc comment says why.
+
 ## 2026-08-12 · Claude · M4-09 — the consent gate, built before the tier that needs it
 
 Invariant 8 says the 5.1.2(i) assertion lives in the provider layer, not the UI, "so it can't be

@@ -1742,16 +1742,58 @@ Acceptance:
 - [ ] No user content in the prompt files themselves
 
 ### M4-06 — `evalrunner` and the metrics JSON
-status: Ready · refs: AI_PIPELINE.md §9, ARCHITECTURE.md §9 · estimate: M
+status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §9, ARCHITECTURE.md §9 · estimate: M
 Note: §9 wanted this at M2 "so quality is measurable from day one", and it does not exist. It
 can be built and proven against `MockProvider` before any real model, which is the point —
 build the ruler before the thing it measures, as M3-01 did for legibility.
+Claude 2026-08-12: **`scripts/eval.sh` was documented in `AGENTS.md` §8 and `ARCHITECTURE.md`
+§7.1 and did not exist.** It does now, at the path the docs already promised, running
+`Tools/evalrunner` against `Fixtures/golden`.
+The scoring lives in `Intelligence` where it is unit-testable; the tool is a thin CLI. Metrics:
+read accuracy (overall **and per category**, so a regression can be attributed), intent
+accuracy, decline rate on garbage, mean legibility via the OCR round-trip, nearest-rank p50/p95
+latency, and a failure count. Correctness and placement error are deliberately **absent** — §9
+defines them as human judgements, and a number invented for them would become a target.
+**The harness earned its keep on its first run, twice.** It surfaced that a metrics file would
+have carried `SpecValidationError.unparseableLaTeX`'s payload — the model's output, derived from
+someone's page — into a CI artifact; errors now report a `name` only, matching the `AskState.name`
+convention already in the codebase. And it surfaced the decline contradiction filed as M4-11.
 Acceptance:
-- [ ] `Tools/evalrunner` runs a set against any `SpecProvider`, including the mock
-- [ ] Emits the §9 metrics as JSON that CI can diff between runs
-- [ ] Read accuracy, intent accuracy, decline rate and legibility are computed by code, not by
-      eye; correctness and placement error are recorded as human-judged fields
-- [ ] Runs in CI against the mock, so the harness itself cannot rot
+- [x] `Tools/evalrunner` runs a set against any `SpecProvider`, including the mock
+- [x] Emits the §9 metrics as JSON that CI can diff — sorted keys and pretty-printed, because
+      the point of a file over a summary is that a human can read the diff
+- [x] Read accuracy, intent accuracy, decline rate and legibility are computed by code;
+      correctness and placement error are left to a human and are not faked
+- [x] Runs in CI against the mock — `test.sh` builds every tool and runs the eval end to end,
+      so the harness cannot rot silently
+- [x] 9 unit tests over the scoring itself, including one asserting no page content can reach
+      the metrics file
+
+### M4-11 — A low-confidence read reaches the user as "something went wrong"
+status: Ready · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, §10, PROGRESS.md M4-06 · estimate: S
+Note: found by the eval harness on its first run against a garbage case.
+**The prompt contract and the validator disagree.** §10 instructs the model, for an unreadable
+selection, to "set readConfidence low and return no blocks". `SpecValidator` fails closed below
+0.6 (`lowReadConfidence`), so that exact response **throws** instead of arriving as a decline —
+and `AskPipeline` maps any `SpecValidationError` to `.invalidSpec`, whose copy is "Something went
+wrong — try again".
+§8 says something quite different should happen: *"Can't read the handwriting (readConfidence
+low) → Show what it thinks it read, let the user correct it by typing, then proceed."* The read
+is thrown away by the very rule meant to protect the page, so the user is told the app broke
+rather than being shown a misreading they could fix in two seconds.
+A decline is currently only representable as `blocks.isEmpty` **with high confidence**, which is
+the opposite of what §10 asks the model to send. `CannedEvalProvider` carries a comment saying
+so, because it reads as a bug otherwise.
+Likely shape: validation keeps failing closed on rendering, but a low-confidence spec with no
+blocks becomes a `ValidatedSpec` that `isDecline` and carries its `read`, so §8's flow has
+something to show. Needs care — `readConfidence < 0.6 renders nothing` is an invariant, and this
+must not weaken it.
+Acceptance:
+- [ ] A model response with low confidence and no blocks reaches the user as its read, not as
+      `invalidSpec`
+- [ ] Nothing renders from it — the invariant holds, asserted
+- [ ] §10's instruction and the validator agree, and a test pins them together
+- [ ] The correction path §8 describes is reachable, or explicitly deferred with the reason
 
 ### M4-06B — Capture the golden set
 status: Ready · owner: human · needs-device-verification · depends: M4-06 · refs: AI_PIPELINE.md §9 · estimate: L

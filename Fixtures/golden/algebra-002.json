@@ -1,0 +1,7 @@
+{
+  "category": "algebra",
+  "expectsDecline": false,
+  "id": "algebra-002",
+  "intent": "answer",
+  "transcription": "solve for x when 3x plus 6 equals 18"
+}

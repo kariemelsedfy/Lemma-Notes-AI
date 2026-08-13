@@ -1,0 +1,7 @@
+{
+  "category": "calculus",
+  "expectsDecline": false,
+  "id": "calculus-003",
+  "intent": "continue",
+  "transcription": "differentiate both sides"
+}

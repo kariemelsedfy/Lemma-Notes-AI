@@ -71,6 +71,36 @@ public enum SpecValidationError: Error, Equatable, Sendable {
     case emptyMarks
     case invalidStrokeIndex(Int)
     case invalidBounds
+
+    /// A name safe to log or to write into a metrics file.
+    ///
+    /// **The associated values are not safe.** `unparseableLaTeX` carries the model's own
+    /// output, which is derived from the user's page, so `String(describing:)` on one of these
+    /// puts page content in a CI artifact (`AGENTS.md` §7). Same convention as `AskState.name`.
+    public var name: String {
+        switch self {
+        case .unsupportedVersion: "unsupportedVersion"
+        case .readConfidenceOutOfRange: "readConfidenceOutOfRange"
+        case .lowReadConfidence: "lowReadConfidence"
+        case .readTooLong: "readTooLong"
+        case .explanationTooLong: "explanationTooLong"
+        case .tooManyWarnings: "tooManyWarnings"
+        case .tooManyBlocks: "tooManyBlocks"
+        case .tooManyLines: "tooManyLines"
+        case .tooManyPlotFunctions: "tooManyPlotFunctions"
+        case .tooManyMarks: "tooManyMarks"
+        case .emptyContent: "emptyContent"
+        case .contentTooLong: "contentTooLong"
+        case .invalidText: "invalidText"
+        case .unparseableLaTeX: "unparseableLaTeX"
+        case .invalidIndent: "invalidIndent"
+        case .emptyPlot: "emptyPlot"
+        case .invalidRange: "invalidRange"
+        case .emptyMarks: "emptyMarks"
+        case .invalidStrokeIndex: "invalidStrokeIndex"
+        case .invalidBounds: "invalidBounds"
+        }
+    }
 }
 
 /// A syntactic gate on LaTeX, not a parser.
