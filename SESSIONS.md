@@ -11,6 +11,35 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-24 — the gate had no material, so nobody could have run it
+
+M3-10 has sat on the board as *ready* for weeks. It was not runnable at any point, and noticing
+why took writing device instructions rather than reading the task: the panel needs five generated
+lines in the writer's hand, and **the app's only generated ink is the character `4`**. One digit.
+No letters, no descenders, no spacing, nothing a person could judge handwriting by.
+
+**The general lesson is about "ready".** A task can be perfectly specified, unblocked, assigned
+to a human, and still be impossible, because the thing it depends on is not a task — it is a
+capability nobody wrote down as missing. The tell here was available all along: every device
+instruction I wrote said "the answer is always 4", and it took writing that sentence next to
+"show a panel five generated lines" for the contradiction to be visible.
+
+**What matters in the implementation is the matching, not the rendering.** Rendering a line from
+the bank is three existing calls. But a panel that can pick out the generated line because it is
+smaller, or drawn with a thinner pen, has measured nothing about the synthesis — it has measured
+ink. So the generated line takes its ink height *and* its pen width from the line the user just
+wrote, leaving letterforms, spacing and rhythm as the only differences. The pen is re-measured
+from that line rather than taken from the bank, because calibration may have been another session
+with another tool.
+
+**Failing honestly matters more here than usual.** A missing glyph names the characters instead
+of quietly rendering a shorter sentence, and no bank is an error rather than a fall back to
+typeset — falling back would show a panel a font and collect an opinion about Helvetica.
+
+Debug-only for now. A designed version of this is a good M3-13 moment ("here is what calibration
+bought you"), but that is a product decision and this is a diagnostic screen; inheriting one from
+the other is how apps end up with developer UI in them.
+
 ## 2026-08-12 · Claude · M3-25 — the device said bolder and bigger, and it was right twice
 
 First device look at the day's rendering work: *"text now looks much bolder and much bigger than

@@ -18,6 +18,9 @@ struct NotebookLibraryView: View {
     @State private var exportErrorPresented = false
     @State private var calibrationPresented = false
     @StateObject private var handwriting = HandwritingStyleStore()
+    #if DEBUG
+        @State private var samplePresented = false
+    #endif
     @StateObject private var stylePreference = HandwritingStylePreference()
 
     var body: some View {
@@ -65,6 +68,10 @@ struct NotebookLibraryView: View {
                         }
                         .pickerStyle(.inline)
                         .disabled(handwriting.bank == nil)
+                        #if DEBUG
+                            Button("sample.open") { samplePresented = true }
+                                .disabled(handwriting.bank == nil)
+                        #endif
                         Button("calibration.start") { calibrationPresented = true }
                         if handwriting.bank != nil {
                             Button("calibration.delete", role: .destructive) { handwriting.delete() }
@@ -126,6 +133,13 @@ struct NotebookLibraryView: View {
         .sheet(isPresented: $calibrationPresented) {
             CalibrationView(store: handwriting)
         }
+        #if DEBUG
+            // Debug-only (M3-24): produces the material the M3-10 panel needs, and is the only
+            // place anything renders a *sentence* in the user's synthesized hand.
+            .sheet(isPresented: $samplePresented) {
+                HandwritingSampleView(store: handwriting)
+            }
+        #endif
         .sheet(isPresented: sharePresented) {
             if let shareFileURL {
                 ShareSheet(fileURL: shareFileURL)

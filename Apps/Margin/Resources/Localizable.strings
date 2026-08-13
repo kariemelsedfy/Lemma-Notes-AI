@@ -77,3 +77,18 @@
 "style.title" = "Answers are written in";
 "style.mine" = "My handwriting";
 "style.typeset" = "Typeset";
+
+/* Handwriting sample — debug-only surface that produces material for the M3-10 panel (M3-24). */
+"sample.title" = "Handwriting sample";
+"sample.line" = "Line to write";
+"sample.suggestion" = "Suggestions";
+"sample.yours" = "Write it yourself";
+"sample.generated" = "The same line, in your hand";
+"sample.clear" = "Clear";
+"sample.write.first" = "Write the line above to see it synthesized at the same size.";
+"sample.share.generated" = "Share the generated line";
+"sample.share.mine" = "Share my line";
+"sample.panel.hint" = "Both images use the same size and pen, so a panel is comparing handwriting rather than ink.";
+"sample.missing" = "Your bank has no sample for: %@. Calibrate those characters, or try another line.";
+"sample.failed" = "That line could not be rendered.";
+"sample.open" = "Handwriting sample";
