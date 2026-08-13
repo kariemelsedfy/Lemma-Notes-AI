@@ -208,7 +208,12 @@ Acceptance:
 - [x] No team ID or personal bundle ID is committed
 
 ### M0-07 — Apple Developer setup and TestFlight proof
-status: Ready · owner: human · estimate: M
+status: Deferred · owner: human · decided: human · 2026-08-12 · estimate: M
+Note: **deliberately deferred, not forgotten** — asked on 2026-08-12, the answer was "enroll but
+not now, just wait". The consequence to plan around: device builds keep expiring after seven days
+of free provisioning, so a fresh install is needed roughly weekly for any device testing, and
+M1-06A (iCloud container), M3-04B (bank sync), M4-07 (PCC's free tier via the Small Business
+Program) and M8 stay blocked until it happens.
 Acceptance:
 - [ ] Developer Program enrolled; **Small Business Program enrolled** (BUSINESS.md §3.2)
 - [ ] Bundle ID, App Store Connect record, capabilities (iCloud, Push if needed)
@@ -1667,8 +1672,11 @@ Acceptance:
       the panel is comparing the wrong thing
 - [ ] It is not reachable in a shipping build, or it is deliberate and designed
 
-### M3-10 — Blind similarity panel *(the gate)*
-status: Blocked · blocker: M3-24 — nothing can render the five generated lines the panel needs · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
+### M3-10 — Blind similarity panel ~~*(the gate)*~~ — a measurement, not a verdict
+status: Blocked · blocker: M3-24 — nothing can render the five generated lines the panel needs · owner: human
+Note 2026-08-12: **ADR-018 withdrew the pivot clause**, so this no longer decides whether
+handwriting survives. It measures how far the output is from convincing, and a poor result points
+at M3-19 rather than at removing the feature. · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
 Note: **this is the M3 kill-criterion review and only a human can run it.** 5 real lines,
 5 generated, "which are yours?" Needs recruiting people who are not you.
 Acceptance:

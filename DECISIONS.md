@@ -282,3 +282,88 @@ question that actually determines what happens.
 liability that is wrong the day it is written. Shipping region-gated feature flags from a server
 — rejected as premature: it needs the M4-08 proxy to exist, and it solves a problem the
 framework already answers correctly.
+
+---
+
+## ADR-018 — Handwriting is not optional, and R-01's pivot clause is withdrawn
+
+**Status:** Accepted · 2026-08-12 · decided by: human
+
+**Context.** `PROJECT_PLAN.md` §7 carries R-01 with a kill criterion: if the blind panel scores
+"plausibly mine" below 40% after two iterations, **pivot to typeset-inline output and drop
+handwriting matching from the pitch**. That clause has shaped the whole milestone — M3 was
+sequenced to reach the verdict as early as possible, and several follow-ups were deliberately
+left unbuilt so that a failed gate would cost little.
+
+Asked directly whether the feature survives, the answer was: *"handwriting feature is crucial we
+have to keep it."*
+
+**Decision.** The pivot clause is withdrawn. Handwriting output is a requirement of the product,
+not a bet being tested. M3-10's panel still runs, but its result is a **quality measurement**
+rather than a go/no-go: it tells us how far from convincing we are, and the response to a poor
+score is to improve the synthesis, not to remove it.
+
+**Consequences.**
+
+- **The gate stops being a gate.** Work that was held back "until the verdict" no longer has a
+  reason to wait — M3-08B, M3-13 and M3-19 are now ordinary priorities.
+- **M3-19 becomes the main lever, and probably the most valuable task in M3.** M3-08D established
+  that a one-pass calibration bank holds roughly one sample per character, at which point every
+  variation mechanism is worth about a point of displacement. Growing the bank from ordinary
+  writing is the thing that would make output convincing.
+- **Typeset keeps its two other jobs** — the fallback when a glyph is missing, and the Exam Mode
+  default (`BUSINESS.md`) — but it is no longer a destination the product can retreat to.
+- **The risk does not disappear because the exit did.** If the panel comes back poor and the bank
+  work does not move it, this decision means shipping something a user may find uncanny. That is
+  now a known accepted risk rather than an open question, and it should be re-examined with real
+  panel numbers rather than re-litigated from taste.
+
+---
+
+## ADR-019 — Target iPadOS 27, adopt it when the toolchain exists
+
+**Status:** Accepted · 2026-08-12 · decided by: human · resolves Q12
+
+**Context.** M4-01 measured what iPadOS 26 costs: `PrivateCloudComputeLanguageModel` does not
+exist, so there is **no T1 tier at all**, and the Foundation Models framework has no image input,
+so the on-device tier cannot see the selection crop — it reasons from the Vision transcript and
+stroke trajectory only. Both arrive with the iOS 27 surface shown at WWDC26. Raising the
+deployment target buys the free tier its quality back and unlocks the tier that `BUSINESS.md`
+expects to serve **35% of all actions at zero marginal cost**.
+
+**Decision.** 1.0 targets iPadOS 27.
+
+**Consequences, and the sequencing that follows from them.**
+
+- **It cannot be acted on yet.** This machine has one Xcode and one SDK, `iPhoneOS26.5.sdk`; the
+  development iPad runs iPadOS 26.6. Raising the deployment target today would produce a project
+  that does not build and a build that does not install. The target moves when Xcode ships the
+  iOS 27 SDK and the test device is updated — not before.
+- **The interim plan is unchanged**, which is what makes this safe to decide early. M4-02's T0
+  provider is written against `SystemLanguageModel`, which exists on both, and works from the
+  transcript. Image input and PCC are **additive** when the SDK lands.
+- **The economics improve and the margin assumption survives.** §3.2 budgets 45% T0 + 35% T1 at
+  zero, blended ≈ $0.0012 per action. On 26 that 35% would have fallen to T2 at ~$0.006, roughly
+  tripling the blended cost.
+- **It costs the users still on 26**, which is a real cost being accepted rather than overlooked.
+
+---
+
+## ADR-020 — Ship where Apple Intelligence runs
+
+**Status:** Accepted · 2026-08-12 · decided by: human
+
+**Context.** ADR-017 established that routing asks the framework rather than a region table, and
+§5.2 recorded the one genuine exclusion: mainland China has no Apple Intelligence today. That
+left an open commercial question — in a region where T0 and T1 cannot run, every action is T2, so
+the free tier is a straight loss and `BUSINESS.md`'s blended cost inverts.
+
+**Decision.** The product is scoped to regions where Apple Intelligence runs. Asked, the answer
+was: *"only concerned with where apple intelligence runs."*
+
+**Consequences.** The margin model in `BUSINESS.md` §3.2 holds as written, because the tiers it
+depends on exist for every targeted user. Nothing in the code changes — ADR-017 already means an
+unavailable model degrades gracefully rather than crashing, which is still the right behaviour
+for a user who travels or turns Apple Intelligence off. What changes is that no work is owed to
+making a T2-only region economically viable, and mainland China is out of scope for 1.0 rather
+than pending.

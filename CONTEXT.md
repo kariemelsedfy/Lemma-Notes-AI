@@ -316,8 +316,20 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q4 | Exam Mode: per-document, per-notebook, or both? | human | M6 |
 | Q5 | Final product name + trademark clearance | human | M7 |
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
-| Q12 | **iPadOS 26 or 27 for 1.0?** M4-01 measured the cost of 26: no Apple PCC tier at all (`PrivateCloudComputeLanguageModel` does not exist), and an on-device tier that cannot see the crop, only the Vision transcript and stroke data. Raising to 27 buys both, and costs every user still on 26. This decides what the free tier can do | human | **M4-02 and everything downstream of it** |
 | Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
+
+**Q12 is resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. It cannot be acted on yet:
+this machine has only `iPhoneOS26.5.sdk` and the test iPad runs 26.6, so raising the target now
+would produce a project that does not build. **The interim work is identical either way** —
+M4-02's T0 provider uses `SystemLanguageModel`, which exists on both, and image input plus PCC
+are additive when the SDK arrives.
+
+**Handwriting is not optional (ADR-018)**, and R-01's pivot-to-typeset exit is withdrawn. M3-10's
+panel still runs, as a measurement rather than a verdict, and **M3-19 is now the main lever** on
+output quality. Everything that was held back "until the gate" is an ordinary priority again.
+
+**The product ships where Apple Intelligence runs (ADR-020)**, so `BUSINESS.md`'s tier-mix margin
+holds and mainland China is out of scope for 1.0.
 
 **Q7 is resolved (2026-08-12): routing asks the framework, not a region.** See ADR-017 and
 `AI_PIPELINE.md` §5.2. The EU has Apple Intelligence today and its gap is the 27-era Siri
