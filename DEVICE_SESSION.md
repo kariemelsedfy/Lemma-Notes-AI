@@ -235,6 +235,42 @@ re-measuring only after that ships.
 
 ---
 
+## 9. Answer weight and placement — the 2026-08-12 rendering changes
+
+**Build installed and launched 2026-08-12 by Claude**, from `main` at `1e96a76`, team
+`7SUY6YP3G6`, DerivedData `/private/tmp/margin-dd-B3ati0`. Installed *over* the existing app, so
+your notebooks and glyph bank are intact.
+
+Five fixes merged that day change how every generated answer is drawn. **Three of them cannot be
+seen on device**, and it is worth knowing why before you go looking: the app's only possible
+answer is the single character `4` (`CannedSpecProvider`), so the descender fix has no `g` to
+show you (M3-01C), the reading-order fix is invisible because the canned provider ignores the
+transcript (M3-23), and one glyph says little about reserved frames (M3-12B). That gap is filed
+as **M3-24**, and it is also why M3-10 has never been runnable.
+
+What *is* visible is weight and placement. Roughly ten minutes:
+
+1. **Normal size.** Write `2+2=` at your usual size, Ask, mark an answer area, keep it. Look at
+   the `4`'s stroke weight **against your own pen strokes beside it**. Before this change the
+   width was fixed regardless of size; now it scales with the writing. Wrong looks like: clearly
+   fatter or thinner than your own hand.
+2. **Very large and very small, same page.** ~3cm tall, then as small as you comfortably write.
+   Ask each. The `4` should look like *your pen* wrote it at both sizes. This is the property
+   that was broken — a small answer used to come out proportionally bolder.
+3. **Placement.** Does the `4` sit comfortably inside the green area, rather than crammed against
+   an edge or overflowing it? Reserved frames changed size in the same batch.
+4. **Regressions of what you already confirmed on 2026-08-12.** Erase a generated answer — it
+   should vanish as one object. Undo — it should come back whole, in one tap. Erase your own
+   handwriting — still stroke by stroke. Ask three or four times on one page — sizes stay
+   consistent.
+5. **Export** to PDF and open it. The ink should be there.
+
+**The provisioning profile expires 2026-08-16.** Free provisioning lasts seven days; after that
+the app stops launching and needs a fresh install, not a fix.
+
+**If something looks wrong, a photo or a screen recording is worth more than a description** —
+every fast diagnosis in this project started with one.
+
 ## What to do with a surprise
 
 If something behaves differently from the description above, that is worth more than the
