@@ -1603,7 +1603,7 @@ Acceptance:
       revisit after M3-19, which is the thing that would make it visible
 
 ### M3-25 — The answer is drawn taller than the writing it answers
-status: Review · implemented: Claude · found: human (device) · 2026-08-12 · refs: PROGRESS.md M2-17, M3-21 · estimate: S
+status: Done · completed: Claude · device-confirmed: human · merged: PR #107 · 2026-08-12 · refs: PROGRESS.md M2-17, M3-21 · estimate: S
 Note: from the 2026-08-12 recording — "text now looks much bolder and much bigger than
 question". Two causes, and only one of them was new.
 **Bigger is a units mismatch older than today.** `PlacementEngine.usableXHeight` floors the size
@@ -1625,7 +1625,23 @@ Acceptance:
 - [x] A tall glyph (`l`) is not drawn taller than requested — it was ~1.8× before
 - [x] x-height-only text is not *shrunk* by the conversion
 - [x] The answer uses the writer's own pen width, unscaled, at any size
-- [ ] **Confirm on device** — the fix is measured but has not been seen on an iPad
+- [x] **Confirmed on device 2026-08-12** — "it's looking good yes". Same session that reported
+      the defect, on a build from this branch
+
+### M3-26 — The answer sits in the bottom-left of the area you marked
+status: Ready · found: human (device) · 2026-08-12 · note: **the user said explicitly this is not a problem** · refs: AI_PIPELINE.md §4, ADR-016 · estimate: S
+Note: observed alongside M3-25's confirmation — the answer lands at the bottom-left corner of the
+green allowed area rather than anywhere more considered. Recorded rather than fixed, because the
+person who saw it said it does not bother them, and placement policy is a design question rather
+than a defect: `.atAnchor` currently resolves to the first free rectangle inside the area, and
+"first" happens to mean bottom-left.
+Worth deciding deliberately when someone touches placement next. Candidates: the top-left (where
+a person continues writing), vertically centred on the question's baseline, or nearest the
+question's end. None is obviously right, which is why this is not being guessed at now.
+Acceptance:
+- [ ] The resting position inside the allowed area is a decision with a reason, not an artefact
+      of search order
+- [ ] Whatever it becomes, it is stable across repeated Asks on one page
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
 status: Ready · found: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S

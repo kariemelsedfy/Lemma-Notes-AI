@@ -271,6 +271,21 @@ the app stops launching and needs a fresh install, not a fix.
 **If something looks wrong, a photo or a screen recording is worth more than a description** —
 every fast diagnosis in this project started with one.
 
+### 9.1 Result, 2026-08-12 — failed, fixed, re-tested, passed
+
+The first build failed the check: *"text now looks much bolder and much bigger than question"*.
+Two unrelated causes, both measured from the screen recording (`ffmpeg` turns it into frames —
+worth remembering, it took fifteen seconds and made the two causes separable):
+
+- **1.83× too bold** — M3-21, reverted. A nib belongs to the pen, not the letter.
+- **~1.6× too tall** — a units mismatch predating the day: the anchor's *visible line height* was
+  passed to the synthesizer as an *x-height*. Fixed as M3-25.
+
+Re-built, re-installed, re-tested in the same session: **"it's looking good yes"**. Also observed:
+the answer sits at the bottom-left of the green area. The user said explicitly that this is not a
+problem; recorded as M3-26 so that placement's resting position gets decided rather than
+inherited from search order.
+
 ## What to do with a surprise
 
 If something behaves differently from the description above, that is worth more than the
