@@ -11,6 +11,37 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M3-25 — the device said bolder and bigger, and it was right twice
+
+First device look at the day's rendering work: *"text now looks much bolder and much bigger than
+question"*. Both true, both measured from the recording within twenty minutes, and they were
+**two unrelated causes** — which is worth remembering, because the obvious move is to assume one
+change did both.
+
+**Bolder was mine, and M3-21's premise was simply wrong.** I reasoned that glyph shapes are
+normalized to x-height 1, so their weight should be normalized too — a bigger letter carrying
+proportionally more ink. A pen does not work like that. The nib is a property of the **pen**;
+writing larger with the same pen lays down the same width. Measured 1.83× the writer's own
+weight. Reverted, and the tests now assert the opposite of what they asserted this morning.
+The lesson I want to keep: *the reasoning was internally consistent and had a passing test suite
+built on it.* What it never had was a check against the physical thing it was modelling.
+
+**Bigger was older than today, and my other change unmasked it.**
+`PlacementEngine.usableXHeight` reports the anchor's **visible line height** — M2-17 made it so
+deliberately, to stop a wobbly `+` shrinking answers. The renderer then handed that to the
+synthesizer as a **`targetXHeight`**. Different quantities: a typeset digit is 1.36 x-heights
+tall, so every answer was 1.36× the ink beside it, and ~1.6× for this user's taller `4`.
+It had been partly hidden because the nominal measurer reserved frames too *narrow*, and
+`Synthesizer.layout` clamps to whichever axis binds — so answers were being quietly scaled back
+down. M3-12B made the reservation correct and removed the compensation. **Two errors that had
+been cancelling**, and fixing the honest one exposed the other. If a fix makes something visibly
+worse, check whether it removed a compensating bug before reverting it.
+
+**Method note that paid off.** `ffmpeg` is on this machine, so a screen recording became frames
+I could read directly. Fifteen seconds of shell, and it turned "looks bolder" into "1.6× taller,
+and the strokes are four times the width of the writer's own" — which is what made the two
+causes separable at all. Ask for a recording, then *look at it*.
+
 ## 2026-08-12 · Claude · M4-11 — "I could not read this" was being reported as a crash
 
 The defect the eval harness found an hour earlier, fixed. `AI_PIPELINE.md` §10 tells the model
