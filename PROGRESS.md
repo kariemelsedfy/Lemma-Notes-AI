@@ -1589,8 +1589,32 @@ Acceptance:
       2026-08-12: no, not on a one-pass bank.** Closed by withdrawing the style (M3-08D);
       revisit after M3-19, which is the thing that would make it visible
 
+### M3-24 — The panel cannot be run: the app can only draw `4`
+status: Ready · found: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
+Note: noticed while writing device-test instructions, and it is the reason M3-10 has not been
+runnable at any point it was "ready". The panel needs **five generated lines in the writer's own
+hand**. The only generated ink the app can produce is `CannedSpecProvider.arithmetic`, whose
+answer is the single character `4` — no letters, no descenders, no word spacing, nothing a
+person could judge as handwriting. Ask cannot produce a sample sentence, and there is no other
+surface that renders from the glyph bank.
+The same gap hides three of the five fixes merged on 2026-08-12 from any device check: a `4` has
+no `g`, so M3-01C is invisible; the canned provider ignores the transcript, so M3-23 is
+invisible; and one glyph says little about M3-12B's frames.
+**The bank never leaves the device (invariant 3), so this cannot be worked around off-device.**
+Whatever renders the panel's lines has to run on the user's iPad.
+Cheapest shape: a sample-text surface next to calibration — type or pick a line, render it from
+the bank, and export the image — which doubles as the "look at your own handwriting" affordance
+`DEVICE_SESSION.md` §6 calls the dress rehearsal. Changing the canned answer instead would
+disturb M2-12D's demo, which is a different job.
+Acceptance:
+- [ ] A line of arbitrary text renders from the user's own bank, on device
+- [ ] The result can be captured for the panel without the bank leaving the iPad
+- [ ] Real handwriting and generated handwriting can be produced at the same size and pen, or
+      the panel is comparing the wrong thing
+- [ ] It is not reachable in a shipping build, or it is deliberate and designed
+
 ### M3-10 — Blind similarity panel *(the gate)*
-status: Ready · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
+status: Blocked · blocker: M3-24 — nothing can render the five generated lines the panel needs · owner: human · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
 Note: **this is the M3 kill-criterion review and only a human can run it.** 5 real lines,
 5 generated, "which are yours?" Needs recruiting people who are not you.
 Acceptance:
