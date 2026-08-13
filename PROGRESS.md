@@ -1742,7 +1742,7 @@ Acceptance:
 - [ ] No user content in the prompt files themselves
 
 ### M4-06 — `evalrunner` and the metrics JSON
-status: Review · implemented: Claude · 2026-08-12 · refs: AI_PIPELINE.md §9, ARCHITECTURE.md §9 · estimate: M
+status: Done · completed: Claude · merged: PR #105 · 2026-08-12 · refs: AI_PIPELINE.md §9, ARCHITECTURE.md §9 · estimate: M
 Note: §9 wanted this at M2 "so quality is measurable from day one", and it does not exist. It
 can be built and proven against `MockProvider` before any real model, which is the point —
 build the ruler before the thing it measures, as M3-01 did for legibility.
