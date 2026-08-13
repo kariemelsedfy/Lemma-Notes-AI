@@ -73,6 +73,17 @@ public enum ProviderError: Error, Equatable, Sendable {
     /// (App Store 5.1.2(i), invariant 8). Asserted in the provider layer so a new call site
     /// cannot bypass it — see `ConsentGatedProvider`.
     case thirdPartyConsentRequired
+
+    /// A name safe to log. `unknownFixture` carries a cache key derived from page geometry,
+    /// so the associated value stays out of logs and metrics files (`AGENTS.md` §7).
+    public var name: String {
+        switch self {
+        case .transport: "transport"
+        case .timeout: "timeout"
+        case .unknownFixture: "unknownFixture"
+        case .thirdPartyConsentRequired: "thirdPartyConsentRequired"
+        }
+    }
 }
 
 /// The app's boundary to any model.

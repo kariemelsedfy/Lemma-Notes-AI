@@ -1,0 +1,7 @@
+{
+  "category": "prose",
+  "expectsDecline": false,
+  "id": "prose-004",
+  "intent": "continue",
+  "transcription": "the sequence is bounded"
+}

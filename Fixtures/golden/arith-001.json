@@ -1,0 +1,7 @@
+{
+  "category": "arithmetic",
+  "expectsDecline": false,
+  "id": "arith-001",
+  "intent": "answer",
+  "transcription": "2+2="
+}

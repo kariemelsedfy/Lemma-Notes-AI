@@ -1,0 +1,7 @@
+{
+  "category": "plot",
+  "expectsDecline": false,
+  "id": "plot-005",
+  "intent": "plot",
+  "transcription": "sketch y equals x squared"
+}
