@@ -286,6 +286,28 @@ the answer sits at the bottom-left of the green area. The user said explicitly t
 problem; recorded as M3-26 so that placement's resting position gets decided rather than
 inherited from search order.
 
+## 10. M3-24 — see a sentence in your own handwriting, and make the panel's material
+
+**Installed 2026-08-12.** Debug builds only. Library toolbar → the handwriting menu →
+**"Handwriting sample"** (it needs a calibrated bank, so it is disabled until you have one).
+
+Nobody has ever seen a *sentence* in their synthesized hand — the app could only ever draw `4`,
+which is also why M3-10 was never runnable. This is the dress rehearsal §6 asks for.
+
+1. Pick a suggested line, or type your own (lowercase prose is safest — a missing comma will
+   tell you it cannot render rather than guessing).
+2. **Write that same line yourself** in the canvas. This is what the generated line is matched
+   to: it copies your line's ink height and your pen width, so the only difference left between
+   the two is handwriting.
+3. Look at the two. **This is the judgement the whole milestone rests on** — does the lower line
+   look like you wrote it? Where does it give itself away: letterforms, spacing, the rhythm, the
+   way letters join or fail to?
+4. Share both PNGs. Five lines each, shuffled, is the M3-10 panel.
+
+Worth doing even before recruiting anyone: if it is obviously wrong to *you*, that is a faster
+signal than a panel, and it points at M3-19 (a one-pass bank holds about one sample per
+character, which starves every variation mechanism).
+
 ## What to do with a surprise
 
 If something behaves differently from the description above, that is worth more than the

@@ -1649,7 +1649,7 @@ Acceptance:
 - [ ] Whatever it becomes, it is stable across repeated Asks on one page
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
-status: Review · implemented: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
+status: Done · completed: Claude · merged: PR #108 · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
 Note: noticed while writing device-test instructions, and it is the reason M3-10 has not been
 runnable at any point it was "ready". The panel needs **five generated lines in the writer's own
 hand**. The only generated ink the app can produce is `CannedSpecProvider.arithmetic`, whose
