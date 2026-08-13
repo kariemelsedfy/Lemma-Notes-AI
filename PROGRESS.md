@@ -1785,7 +1785,7 @@ Acceptance:
 - [ ] Declining twice in a row does not trap the user in a loop
 
 ### M4-11 — A low-confidence read reaches the user as "something went wrong"
-status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, §10, PROGRESS.md M4-06 · estimate: S
+status: Done · completed: Claude · merged: PR #106 · 2026-08-12 · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, §10, PROGRESS.md M4-06 · estimate: S
 Note: found by the eval harness on its first run against a garbage case.
 **The prompt contract and the validator disagree.** §10 instructs the model, for an unreadable
 selection, to "set readConfidence low and return no blocks". `SpecValidator` fails closed below

@@ -66,10 +66,16 @@ only, and providers are contractually forbidden to log or retain the images/tran
 
 **What is still fake is the model.** `CannedSpecProvider` answers every request with the same
 hardcoded spec, so the app always writes "4". That is M2's stated exit condition, not a bug.
-Real providers are M4, which is **now filed as eleven tasks** (2026-08-12). Start with M4-01,
-which verifies the Foundation Models API before anything is written against it — two claims in
-`AI_PIPELINE.md` §5 are themselves unverified. T0 needs no account and no vendor decision; T1
-waits on M0-07, and T2 on Q6.
+
+**M4 is filed and five of its tasks are done** (2026-08-12): the Foundation Models API is
+verified against the real SDK (M4-01, and §5 was wrong — see §5.1), regional availability is
+resolved into ADR-017 (M4-04), the routing policy is written and mutation-tested (M4-03), the
+consent gate is in the provider layer (M4-09), and `evalrunner` exists at last with
+`scripts/eval.sh` (M4-06), which promptly found the decline contradiction fixed as M4-11.
+
+**What is left in M4 needs a person.** M4-02 (the T0 provider) waits on **Q12**, because whether
+T0 can see the crop changes its prompt. M4-07 needs the iOS 27 SDK, M4-08 needs **Q6**, and
+M4-06B — the golden set, 200 selections from 15 writers — can only be captured by a human.
 
 **Generated ink is an input to this app, not just an output.** It lands on the page, so the
 lasso can select it, the estimators measure it, and Vision reads it (`AI_PIPELINE.md` §1
