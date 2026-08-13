@@ -95,7 +95,7 @@ public enum Synthesizer {
                         force: point.force,
                         altitude: point.altitude,
                         azimuth: point.azimuth,
-                        size: nib(for: style, renderedXHeight: metrics.xHeight)
+                        size: nib(for: style)
                     )
                 }
                 strokes.append(InkStroke(points: points))
@@ -105,6 +105,28 @@ public enum Synthesizer {
             clock += 0.03
         }
         return strokes
+    }
+
+    /// How tall this text will be drawn, in x-heights, ascender to descender.
+    ///
+    /// **A caller almost always knows the height it wants in points, not the x-height.** The
+    /// question's ink is 110pt tall, so the answer's ink should be about 110pt tall — but
+    /// x-height is a different quantity, and a digit is 1.36 of them. Passing one for the other
+    /// makes every answer taller than the writing it answers by whatever the tallest glyph
+    /// happens to be, which is the second half of the 2026-08-12 device report.
+    ///
+    /// `nil` when the bank cannot draw the text, matching `advance(of:bank:)`.
+    public static func inkHeight(of text: String, bank: GlyphBank) -> CGFloat? {
+        guard bank.canRender(text) else { return nil }
+        let glyphs = text.compactMap { character -> Glyph? in
+            guard character != " " else { return nil }
+            return rankedByTypicality(bank.samples(for: character)).first
+        }
+        guard !glyphs.isEmpty else { return nil }
+        let rise = glyphs.map { -$0.bounds.minY }.max() ?? 1
+        let fall = glyphs.map(\.bounds.maxY).max() ?? 0
+        let height = rise + fall
+        return height > 0 ? height : nil
     }
 
     /// True when the bank can render the whole string, so a caller can choose the typeset
@@ -305,32 +327,22 @@ public enum Synthesizer {
         )
     }
 
-    /// The writer's measured line weight, scaled to the size this text is being drawn at.
+    /// The writer's measured line weight.
     ///
-    /// The bank records a pen width *and* the x-height the writer used on the calibration
-    /// sheet: together they describe weight at capture size. An answer is sized to the ink it
-    /// sits beside (M2-17), which is rarely that size — so drawing the captured width flat
-    /// makes a small answer proportionally bolder than the writer's own hand and a large one
-    /// spindlier. The glyph *shapes* are normalized to x-height 1; their weight was not, and
-    /// that was the inconsistency (M3-21).
+    /// **Flat, and M3-21 was wrong to scale it.** That task reasoned that because glyph shapes
+    /// are normalized to x-height 1, their weight should be normalized too — so a letter drawn
+    /// twice as large should carry twice the ink. A pen does not work that way. The nib is a
+    /// property of the *pen*, and someone writing larger with the same pen lays down the same
+    /// width; scaling it made a large answer look like it was drawn with a marker, which is
+    /// exactly what the 2026-08-12 device recording shows (1.83× measured).
     ///
-    /// **The scaling happens in drawn width, not in `size`.** `drawn = 2 × size − 4` is
-    /// affine, so halving a `size` does not halve the ink — it removes rather more than half
-    /// (CONTEXT invariant 11). Everything here is the width PencilKit will lay down, and only
-    /// the last step converts back. That conversion also applies PencilKit's own floor: below
-    /// `minimumStrokeWidth` the pen fades rather than thins, so a very small answer stops
-    /// getting lighter rather than disappearing (M2-13).
-    ///
-    /// An unmeasured bank — no captured x-height, or no measured pen — has nothing to scale
-    /// against, so it keeps the width it was given.
-    private static func nib(for style: StyleStats, renderedXHeight: CGFloat) -> CGSize {
-        let captured = style.strokeWidth > 0 ? style.strokeWidth : InkPoint.defaultSize.width
-        guard style.xHeight > 0, renderedXHeight > 0 else {
-            return CGSize(width: captured, height: captured)
-        }
-        let drawn = InkRenderingLimits.drawnWidth(forSize: captured) * (renderedXHeight / style.xHeight)
-        let size = InkRenderingLimits.size(forDrawnWidth: drawn)
-        return CGSize(width: size, height: size)
+    /// The case M3-21 was really reaching for is the small end, where a fixed width on a tiny
+    /// letter fills its counters. That wants a **floor relative to the letter**, not a
+    /// proportion — and `InkRenderingLimits` already floors what the page can draw at all. If a
+    /// small answer still reads as heavy, measure it before reaching for a ratio again.
+    private static func nib(for style: StyleStats) -> CGSize {
+        let width = style.strokeWidth > 0 ? style.strokeWidth : InkPoint.defaultSize.width
+        return CGSize(width: width, height: width)
     }
 }
 

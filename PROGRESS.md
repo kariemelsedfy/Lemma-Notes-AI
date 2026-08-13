@@ -1254,7 +1254,7 @@ Acceptance:
       one thing the remeasurement exposed and this task does not fix
 
 ### M3-21 — The writer's pen weight does not scale with the size the answer renders at
-status: Done · completed: Claude · merged: PR #96 · 2026-08-12 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
+status: **Reverted** · reverted-by: Claude · device-evidence: human · 2026-08-12 · merged then reverted: PR #96 · found: Claude · 2026-08-12 · refs: PROGRESS.md M3-01C, M2-13B, M3-22, CONTEXT.md invariant 11 · estimate: S
 Note: found while measuring M3-01C, and deliberately **not** fixed there — it is a different
 defect, and the sweep says fixing it alone makes the `g` confusion worse rather than better.
 `Synthesizer.nib(for:)` returns `style.strokeWidth` flat, whatever x-height it is rendering at.
@@ -1268,6 +1268,19 @@ Two traps. Scaling must go through `InkRenderingLimits.drawnWidth(forSize:)` and
 `drawn = 2 × size − 4` is affine, so scaling a raw `size` by k does not scale the ink by k
 (invariant 11). And `LegibilityHarness` draws `size` directly as a Core Graphics line width, so
 it will *not* show you the page's behaviour — do not tune this against the OCR number (M2-13).
+**Claude 2026-08-12, from the device: this task was wrong and has been reverted.** The
+screen recording shows the answer at **1.83× the writer's own pen weight**, measured. The premise
+— that because glyph *shapes* are normalized to x-height 1 their weight should be normalized too
+— does not hold: a nib is a property of the **pen**, not of the letter, and someone writing
+larger with the same pen lays down the same width. Scaling it made a large answer look drawn
+with a marker.
+The case it was reaching for is real but is at the *small* end, where a fixed width fills a tiny
+letter's counters. That wants a floor relative to the letter, not a proportion, and
+`InkRenderingLimits` already floors what the page can draw. Measure before reaching for a ratio
+again — the tests in `PenWeightScalingTests` now assert the opposite of what they used to.
+The amplification was worse than 1.83× in practice because the size it scaled by was itself
+wrong; see M3-25.
+Original note follows.
 Claude 2026-08-12: implemented. `nib(for:renderedXHeight:)` scales the captured pen by
 rendered ÷ captured x-height **in drawn width**, converting back through
 `InkRenderingLimits.size(forDrawnWidth:)`, which also applies PencilKit's floor — so a very
@@ -1588,6 +1601,31 @@ Acceptance:
 - [x] The difference is visible side by side, not just measurable — **answered on device
       2026-08-12: no, not on a one-pass bank.** Closed by withdrawing the style (M3-08D);
       revisit after M3-19, which is the thing that would make it visible
+
+### M3-25 — The answer is drawn taller than the writing it answers
+status: Review · implemented: Claude · found: human (device) · 2026-08-12 · refs: PROGRESS.md M2-17, M3-21 · estimate: S
+Note: from the 2026-08-12 recording — "text now looks much bolder and much bigger than
+question". Two causes, and only one of them was new.
+**Bigger is a units mismatch older than today.** `PlacementEngine.usableXHeight` floors the size
+at the anchor's *visible line height*, deliberately, so that a wobbly `+` cannot shrink an answer
+(M2-17). `HandwritingInkRenderer` then passed that straight to the synthesizer as a
+**`targetXHeight`**. They are different quantities: a typeset digit is 1.36 x-heights tall, so
+every answer came out 1.36× the ink it answered, and more for a hand with a tall `4` — the
+recording measures about 1.6×.
+It was partly masked until today. The nominal measurer reserved a frame ~0.98 x-heights wide per
+character, and `Synthesizer.layout` clamps to whichever axis binds, so a too-narrow frame quietly
+scaled answers back down. M3-12B made the reserved width correct, which removed the accidental
+compensation — **two errors that had been cancelling**.
+Fixed by converting at the call site: `Synthesizer.inkHeight(of:bank:)` reports the run's height
+in x-heights, and the renderer divides the requested ink height by it. Measured: requested 110pt
+→ drawn 149.6pt before, 110.0pt after.
+**Bolder was M3-21, which is reverted** — see that task.
+Acceptance:
+- [x] The ink drawn is the height that was asked for, at 40pt, 110pt and 200pt
+- [x] A tall glyph (`l`) is not drawn taller than requested — it was ~1.8× before
+- [x] x-height-only text is not *shrunk* by the conversion
+- [x] The answer uses the writer's own pen width, unscaled, at any size
+- [ ] **Confirm on device** — the fix is measured but has not been seen on an iPad
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
 status: Ready · found: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S

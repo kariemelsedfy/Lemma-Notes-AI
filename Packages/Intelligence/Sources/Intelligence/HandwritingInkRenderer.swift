@@ -28,6 +28,23 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
     /// the writer's own proportional letters rather than a flat per-character estimate.
     public var measurer: any ContentMeasuring { GlyphBankContentMeasurer(bank: bank) }
 
+    /// Turns the size the caller asked for into the x-height that produces it.
+    ///
+    /// **The caller's `style.xHeight` is the visible height of the ink being answered**, not an
+    /// x-height — `PlacementEngine.usableXHeight` floors it at the anchor's *visible line
+    /// height* precisely so small strokes cannot shrink an answer (M2-17). Handing that to the
+    /// synthesizer as an x-height renders every answer taller than the writing beside it by the
+    /// height of the tallest glyph: 1.36× for a typeset digit, and more for a hand with a tall
+    /// `4`. Measured at 1.6× on the 2026-08-12 device recording.
+    ///
+    /// Dividing by the run's own height converts one into the other, so the ink that lands is
+    /// the size that was asked for. Falls back to the requested value when the bank cannot
+    /// measure the text — that path renders typeset anyway.
+    private func targetXHeight(for text: String, matching inkHeight: CGFloat) -> CGFloat {
+        guard let height = Synthesizer.inkHeight(of: text, bank: bank), height > 0 else { return inkHeight }
+        return inkHeight / height
+    }
+
     public func canRender(_ text: String) -> Bool {
         bank.canRender(text)
     }
@@ -89,7 +106,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                     bank: bank,
                     variation: variation,
                     seed: seed,
-                    targetXHeight: style.xHeight
+                    targetXHeight: targetXHeight(for: candidate, matching: style.xHeight)
                 )).map { InkLineGrouping.bounds(of: $0).width } ?? 0
             }
             return try lines.enumerated().flatMap { index, line in
@@ -99,7 +116,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                     bank: bank,
                     variation: variation,
                     seed: seed &+ UInt64(index),
-                    targetXHeight: style.xHeight
+                    targetXHeight: targetXHeight(for: line.text, matching: style.xHeight)
                 )
             }
         } catch Synthesizer.Error.missingGlyphs {
@@ -146,7 +163,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                 bank: bank,
                 variation: variation,
                 seed: seed &+ UInt64(index),
-                targetXHeight: style.xHeight
+                targetXHeight: targetXHeight(for: line.run.value, matching: style.xHeight)
             )
         }
     }

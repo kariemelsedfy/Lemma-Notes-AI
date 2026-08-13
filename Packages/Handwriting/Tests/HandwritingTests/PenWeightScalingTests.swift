@@ -3,18 +3,14 @@ import XCTest
 
 @testable import Handwriting
 
-/// The writer's pen weight against the size an answer is drawn at (M3-21).
+/// The writer's pen weight against the size an answer is drawn at.
 ///
-/// A bank stores a pen width and the x-height the writer used when it was captured. An
-/// answer is sized to the ink it sits beside, which is rarely that size, so the width has
-/// to travel with the size or the hand comes out bolder or spindlier than the writer's own.
+/// **This file used to assert the opposite.** M3-21 scaled the nib with the rendered x-height,
+/// reasoning that since glyph *shapes* are normalized, their weight should be too. A device
+/// recording on 2026-08-12 measured the result at **1.83× the writer's own pen**, and the
+/// premise turned out to be wrong: a nib is a property of the pen, not of the letter. Someone
+/// writing larger with the same pen lays down the same width.
 final class PenWeightScalingTests: XCTestCase {
-    /// The fixture writer's calibration, **measured from the ink the fixture bank is built
-    /// from** rather than declared beside it. A real `StyleStats` comes from one pass over one
-    /// sheet, so its x-height and its pen width always describe the same ink; a fixture that
-    /// declares a size its own glyphs were not captured at reports weight problems that only
-    /// exist in the fixture.
-    /// Cached so a test that renders at five sizes measures the fixture once.
     private static let capture = (try? captureMetrics()) ?? Metrics(xHeight: 0, size: 0)
 
     private struct Metrics {
@@ -22,106 +18,32 @@ final class PenWeightScalingTests: XCTestCase {
         let size: CGFloat
     }
 
-    func testWeightIsUnchangedWhenRenderingAtTheSizeItWasCapturedAt() throws {
-        assertTheFixtureMeasured()
-        let strokes = try Self.render(atXHeight: Self.capture.xHeight)
+    /// The property M3-21 broke: one pen, one width, whatever size the answer is.
+    func testTheWritersPenWidthIsTheSameAtEverySize() throws {
+        XCTAssertGreaterThan(Self.capture.xHeight, 0, "The fixture's calibration ink did not render.")
 
-        XCTAssertEqual(try Self.nib(of: strokes), Self.capture.size, accuracy: 0.001)
+        let widths = try [0.25, 0.5, 1, 2, 4].map { scale in
+            try Self.nib(of: Self.render(atXHeight: Self.capture.xHeight * scale))
+        }
+
+        for width in widths {
+            XCTAssertEqual(
+                width, Self.capture.size, accuracy: 0.001,
+                "A pen does not get thicker because the letters do (\(widths)).")
+        }
     }
 
-    func testInkGetsThinnerWithTheWritingAndThickerWithIt() throws {
-        let same = try Self.drawnWidth(of: Self.render(atXHeight: Self.capture.xHeight))
-        let double = try Self.drawnWidth(of: Self.render(atXHeight: Self.capture.xHeight * 2))
-        let half = try Self.drawnWidth(of: Self.render(atXHeight: Self.capture.xHeight / 2))
+    func testAnUnmeasuredBankFallsBackToThePagesDefaultPen() throws {
+        let bank = try Self.bank(strokeWidth: 0)
 
-        XCTAssertEqual(double, same * 2, accuracy: 0.001, "Twice the writing, twice the ink.")
-        XCTAssertLessThan(half, same)
-        XCTAssertGreaterThanOrEqual(
-            half, InkRenderingLimits.drawnWidth(forSize: InkRenderingLimits.minimumStrokeWidth),
-            "Ink the page fades out instead of drawing is worse than ink slightly too heavy.")
-    }
-
-    /// The mutation guard. `drawn = 2 × size − 4` is affine, so scaling the raw `size` is a
-    /// different operation: at double it would lay down 8.5pt of ink where 4.5 is wanted.
-    /// Anyone who "simplifies" this to `strokeWidth * ratio` fails here (CONTEXT invariant 11).
-    func testScalingGoesThroughDrawnWidthRatherThanTheRawSize() throws {
-        let double = try Self.nib(of: Self.render(atXHeight: Self.capture.xHeight * 2))
-
-        XCTAssertEqual(
-            InkRenderingLimits.drawnWidth(forSize: double),
-            InkRenderingLimits.drawnWidth(forSize: Self.capture.size) * 2,
-            accuracy: 0.001)
-        XCTAssertNotEqual(double, Self.capture.size * 2, accuracy: 0.001)
-    }
-
-    /// PencilKit fades a `.pen` out rather than thinning it, so past a point a smaller
-    /// answer has to stop getting lighter. Invisible ink is the worse failure (M2-13).
-    func testThePenStopsAtWhatThePageCanDraw() throws {
-        let tiny = try Self.nib(of: Self.render(atXHeight: 2))
-
-        XCTAssertEqual(tiny, InkRenderingLimits.minimumStrokeWidth, accuracy: 0.001)
-    }
-
-    func testABankWithNoMeasuredCaptureSizeKeepsItsPenWidth() throws {
-        // Nothing to scale against: an unmeasured bank must not be silently reweighted.
-        let bank = try Self.bank(xHeight: 0)
         let strokes = try Synthesizer.strokes(
-            for: "size", in: CGRect(x: 0, y: 0, width: 400, height: 120), bank: bank, targetXHeight: 12)
+            for: "size", in: CGRect(x: 0, y: 0, width: 400, height: 120), bank: bank, targetXHeight: 30)
 
-        XCTAssertEqual(try Self.nib(of: strokes), Self.capture.size, accuracy: 0.001)
-    }
-
-    /// The property M3-21 is actually about: the same hand at any size.
-    ///
-    /// Across an 8× range the ink the page lays down stays the same fraction of the letter,
-    /// until PencilKit's floor takes over at the small end and holds it there.
-    func testInkHoldsItsProportionToTheWritingAcrossSizes() throws {
-        var ratios: [CGFloat] = []
-        for xHeight in [
-            Self.capture.xHeight / 2, Self.capture.xHeight, Self.capture.xHeight * 2, Self.capture.xHeight * 4,
-        ] {
-            let drawn = try Self.drawnWidth(of: Self.render(atXHeight: xHeight))
-            ratios.append(drawn / xHeight)
-        }
-
-        let reference = try XCTUnwrap(ratios.first)
-        for ratio in ratios {
-            XCTAssertEqual(ratio, reference, accuracy: 0.0005, "\(ratios)")
-        }
-
-        // Past the floor it stops thinning and the letter gets relatively heavier —
-        // deliberately, because on the page thinner than this is not thinner, it is absent.
-        // The fixture writer crosses it a little under a third of their calibration size.
-        let quarter = Self.capture.xHeight / 4
-        let floored = try Self.drawnWidth(of: Self.render(atXHeight: quarter)) / quarter
-        XCTAssertGreaterThan(floored, reference)
-    }
-
-    /// Legibility away from the size the bank was captured at — M3-21's last acceptance box,
-    /// which could not be checked until `InkRasterizer` drew the width the page draws (M3-22).
-    ///
-    /// Asserted as "no worse than at the captured size" rather than against a fixed bar. The
-    /// fixture's own misses are `f`/`t` confusions present at every size, so a fixed threshold
-    /// would be measuring the typeset-derived bank rather than the scaling. What matters here
-    /// is that changing size does not cost legibility.
-    func testTextIsNoLessLegibleAwayFromTheCapturedSize() throws {
-        assertTheFixtureMeasured()
-        let corpus = Array(LegibilityCorpus.prose.prefix(16))
-        let atCapture = try Self.rate(of: corpus, atXHeight: Self.capture.xHeight)
-
-        for scale in [CGFloat(0.5), 2] {
-            let rate = try Self.rate(of: corpus, atXHeight: Self.capture.xHeight * scale)
-
-            XCTAssertGreaterThanOrEqual(
-                rate, atCapture,
-                "\(scale)× capture size reads worse than capture size (\(rate) vs \(atCapture)).")
-        }
+        XCTAssertEqual(try Self.nib(of: strokes), InkPoint.defaultSize.width, accuracy: 0.001)
     }
 
     // MARK: - Fixtures
 
-    /// What the fixture's own calibration ink measures: the x-height it was written at and
-    /// the pen width `TypesetStyle` laid it down with.
     private static func captureMetrics() throws -> Metrics {
         let strokes = try TypesetStyle.strokes(for: "x", in: CGRect(x: 0, y: 0, width: 120, height: 120))
         return Metrics(
@@ -130,65 +52,39 @@ final class PenWeightScalingTests: XCTestCase {
         )
     }
 
-    /// A zero here means the fixture itself failed to measure, which would make every
-    /// assertion below vacuously true rather than wrong. Fail loudly instead.
-    private func assertTheFixtureMeasured() {
-        XCTAssertGreaterThan(Self.capture.xHeight, 0, "The fixture's calibration ink did not render.")
-        XCTAssertGreaterThan(Self.capture.size, 0)
-    }
-
     private static func render(atXHeight xHeight: CGFloat) throws -> [InkStroke] {
         try Synthesizer.strokes(
             for: "size",
-            in: CGRect(x: 0, y: 0, width: 4_000, height: 1_000),
+            in: CGRect(x: 0, y: 0, width: 8_000, height: 2_000),
             bank: try bank(),
             targetXHeight: xHeight
         )
-    }
-
-    private static func rate(of corpus: [String], atXHeight xHeight: CGFloat) throws -> Double {
-        let bank = try bank()
-        return try LegibilityHarness.evaluate(corpus: corpus) { text in
-            try Synthesizer.strokes(
-                for: text,
-                in: CGRect(x: 0, y: 0, width: CGFloat(text.count) * xHeight * 1.2, height: xHeight * 3),
-                bank: bank,
-                targetXHeight: xHeight)
-        }.exactMatchRate
     }
 
     private static func nib(of strokes: [InkStroke]) throws -> CGFloat {
         try XCTUnwrap(strokes.first?.points.first?.size.width)
     }
 
-    private static func drawnWidth(of strokes: [InkStroke]) throws -> CGFloat {
-        InkRenderingLimits.drawnWidth(forSize: try nib(of: strokes))
-    }
-
-    /// A bank whose declared capture size and pen width are consistent with each other,
-    /// which is what the scaling reads.
-    private static func bank(xHeight: CGFloat? = nil) throws -> GlyphBank {
+    private static func bank(strokeWidth: CGFloat? = nil) throws -> GlyphBank {
         let reference = CGRect(x: 0, y: 0, width: 120, height: 120)
-        let captureXHeight = capture.xHeight
-        let xHeight = xHeight ?? captureXHeight
         var bank = GlyphBank(
             samples: [:],
             style: StoredStyleStats(
                 StyleStats(
-                    xHeight: xHeight,
+                    xHeight: capture.xHeight,
                     slant: 0,
-                    lineSpacing: xHeight * 1.6,
+                    lineSpacing: capture.xHeight * 1.6,
                     baselineDrift: 0,
                     meanVelocity: 320,
                     meanForce: 0.55,
-                    strokeWidth: capture.size
+                    strokeWidth: strokeWidth ?? capture.size
                 )
             ),
             capturedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
         for character in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" {
             let rendered = try TypesetStyle.strokes(for: String(character), in: reference)
-            bank.add(try GlyphNormalizer.glyph(for: character, from: rendered, xHeight: captureXHeight))
+            bank.add(try GlyphNormalizer.glyph(for: character, from: rendered, xHeight: capture.xHeight))
         }
         return bank
     }
