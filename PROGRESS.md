@@ -1649,7 +1649,7 @@ Acceptance:
 - [ ] Whatever it becomes, it is stable across repeated Asks on one page
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
-status: Ready · found: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
 Note: noticed while writing device-test instructions, and it is the reason M3-10 has not been
 runnable at any point it was "ready". The panel needs **five generated lines in the writer's own
 hand**. The only generated ink the app can produce is `CannedSpecProvider.arithmetic`, whose
@@ -1665,15 +1665,29 @@ Cheapest shape: a sample-text surface next to calibration — type or pick a lin
 the bank, and export the image — which doubles as the "look at your own handwriting" affordance
 `DEVICE_SESSION.md` §6 calls the dress rehearsal. Changing the canned answer instead would
 disturb M2-12D's demo, which is a different job.
+Claude 2026-08-12: a debug-only sheet beside calibration. Type or pick a line, write it once
+yourself on a canvas, and the same line appears rendered from your bank — **matched to your
+line's ink height and to the pen in your hand**, so the only thing left to tell them apart is
+the handwriting. Either can be shared as a PNG.
+The matching is the part that decides whether the panel measures anything: a generated line that
+is visibly smaller or thinner gets identified on those grounds, and the result says nothing
+about synthesis quality. Size uses M3-25's ink-height conversion; the pen is re-measured from
+the line the user just wrote, because the bank's own width came from a different session.
+Failures name themselves — a missing glyph lists the characters rather than quietly rendering a
+shorter sentence, and no bank is an error rather than a silent fall back to typeset, which would
+show a panel a font.
 Acceptance:
-- [ ] A line of arbitrary text renders from the user's own bank, on device
-- [ ] The result can be captured for the panel without the bank leaving the iPad
-- [ ] Real handwriting and generated handwriting can be produced at the same size and pen, or
-      the panel is comparing the wrong thing
-- [ ] It is not reachable in a shipping build, or it is deliberate and designed
+- [x] A line of arbitrary text renders from the user's own bank, on device
+- [x] The result can be captured for the panel — a PNG per line through the existing share sheet,
+      and nothing leaves the device that the user does not send
+- [x] Real and generated handwriting are produced at the same size and pen, asserted at two
+      sizes and against a known pen width
+- [x] Not reachable in a shipping build — `#if DEBUG`, with a note that a designed version of
+      this would make a good M3-13 moment rather than being inherited from a diagnostic screen
+- [ ] **Confirm on device**: the first time anyone sees a sentence in their own synthesized hand
 
 ### M3-10 — Blind similarity panel ~~*(the gate)*~~ — a measurement, not a verdict
-status: Blocked · blocker: M3-24 — nothing can render the five generated lines the panel needs · owner: human
+status: Ready · owner: human · unblocked-by: M3-24 · 2026-08-12
 Note 2026-08-12: **ADR-018 withdrew the pivot clause**, so this no longer decides whether
 handwriting survives. It measures how far the output is from convincing, and a poor result points
 at M3-19 rather than at removing the feature. · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
