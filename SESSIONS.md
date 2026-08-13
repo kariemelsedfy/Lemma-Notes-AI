@@ -11,6 +11,30 @@ unless you check.
 
 ---
 
+## 2026-08-12 · Claude · M4-11 — "I could not read this" was being reported as a crash
+
+The defect the eval harness found an hour earlier, fixed. `AI_PIPELINE.md` §10 tells the model
+to signal an unreadable selection with low `readConfidence` and no blocks; `SpecValidator` threw
+on exactly that, and `AskPipeline` mapped it to `invalidSpec` — "Something went wrong, try
+again". §8 asks for the opposite: show what it thinks it read, let the user fix it.
+
+**The fix is one condition, and the reasoning is the valuable part.** The invariant says
+`readConfidence < 0.6` renders nothing. It is a rule about *rendering*, and a spec with no blocks
+renders nothing by construction — so accepting it does not weaken the invariant at all. Low
+confidence *with* blocks is still refused, which is the case the rule was written for. Stating
+what an invariant is actually about is usually enough to see whether a change touches it.
+
+**The trap I nearly shipped.** My first version returned early on the decline path, which would
+have skipped every remaining bound — including `readTooLong`. The `read` is the one thing shown
+to the user, so an unbounded string would have gone straight to the UI through the door the fix
+opened. There is now a test for a 10,000-character decline. **When you add an accepting branch to
+a validator, check what the branch skips, not just what it allows.**
+
+**Half the task is deferred and said so.** §8 also wants the user to type a correction and
+proceed. That needs a text field, copy, and a re-ask path — UI work that belongs with M7's error
+pass, and the copy question is a design one. Filed as M4-12 rather than half-built or silently
+dropped from the acceptance list.
+
 ## 2026-08-12 · Claude · M4-06 — the ruler found two things before it measured anything
 
 `scripts/eval.sh` has been documented in `AGENTS.md` §8 and `ARCHITECTURE.md` §7.1 since the

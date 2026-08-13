@@ -19,14 +19,11 @@ struct CannedEvalProvider: SpecProvider {
         // The 5% of the golden set that is deliberate scrawl: a model that answers it anyway is
         // the failure §9's decline rate exists to catch, so the stub must be able to decline.
         guard !Self.isGarbage(transcript) else {
-            // **A decline is "no blocks", not "low confidence".** `AI_PIPELINE.md` §10 tells the
-            // model to signal an unreadable selection by setting `readConfidence` low *and*
-            // returning no blocks — but `SpecValidator` fails closed below 0.6, so that exact
-            // combination throws instead of arriving as a decline the UI can show. Filed as
-            // M4-11; until it is resolved, the only representable decline is a confident one,
-            // which is why this reads oddly.
+            // Exactly what `AI_PIPELINE.md` §10 asks a model to send for an unreadable
+            // selection: low confidence, no blocks. Accepted since M4-11, which is the fix this
+            // very case surfaced — before it, this line threw and the run recorded a failure.
             return try SpecValidator.validate(
-                Spec(read: transcript, readConfidence: 0.95, intent: request.intent ?? .answer, blocks: [])
+                Spec(read: transcript, readConfidence: 0.2, intent: request.intent ?? .answer, blocks: [])
             )
         }
 
