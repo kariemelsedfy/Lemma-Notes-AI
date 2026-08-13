@@ -85,7 +85,9 @@ The model must respond with JSON matching this schema, and nothing else. Use str
 1. **The model never emits coordinates.** `placement` is a semantic slot; the app resolves it to a rect.
 2. **The model never emits stroke data.** Content is LaTeX or plain text; the renderer owns everything visual.
 3. **Math is always LaTeX.** One canonical intermediate representation; the math layout engine consumes only LaTeX. This keeps the renderer testable independent of any model.
-4. **Validation fails closed.** Unknown fields → ignore. Missing required fields, unparseable LaTeX, or `readConfidence < 0.6` → no ink, show a recoverable error. Never render a guess.
+4. **Validation fails closed.** Unknown fields → ignore. Missing required fields, unparseable LaTeX, or `readConfidence < 0.6` **with blocks** → no ink, show a recoverable error. Never render a guess.
+   - **A decline is `blocks: []`**, at any confidence. Low confidence with no blocks is the response §10 asks the model for, and it is *accepted*: nothing renders, and the `read` survives so §8 can show the user what we thought it said. Refusing it outright — which is what happened until M4-11 — turns "I could not read this" into "Something went wrong", and throws away the one piece of information the user could act on.
+   - The invariant is about rendering. Low confidence *with* blocks is still refused, which is the case the rule was written for.
 5. **Bound the output.** `blocks` ≤ 8, `lines` ≤ 24, LaTeX ≤ 512 chars per item. A model that wants to write an essay in your notebook is a model that has misread the request.
 
 ---

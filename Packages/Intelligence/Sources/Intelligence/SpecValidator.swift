@@ -34,7 +34,18 @@ public enum SpecValidator {
         guard spec.readConfidence.isFinite, (0...1).contains(spec.readConfidence) else {
             throw SpecValidationError.readConfidenceOutOfRange(spec.readConfidence)
         }
-        guard spec.readConfidence >= limits.minimumReadConfidence else {
+        // **A model that says "I could not read this" is answering, not malfunctioning.**
+        // `AI_PIPELINE.md` §10 instructs the model to signal an unreadable selection by setting
+        // `readConfidence` low *and* returning no blocks — and until M4-11 that exact response
+        // was refused here, surfaced as `invalidSpec`, and shown to the user as "Something went
+        // wrong". §8 asks for the opposite: show what it thinks it read and let them correct it.
+        //
+        // The invariant is about *rendering*, and it still holds exactly: a low-confidence spec
+        // is only accepted when it carries nothing to render. Low confidence with blocks is
+        // still refused, which is the case the rule was written for.
+        // No early return: an unreadable answer still has to be a *bounded* one. Its `read` is
+        // shown to the user, so it goes through the same length and warning limits as any other.
+        guard spec.readConfidence >= limits.minimumReadConfidence || spec.blocks.isEmpty else {
             throw SpecValidationError.lowReadConfidence(spec.readConfidence)
         }
         guard spec.read.count <= limits.maximumReadLength else {

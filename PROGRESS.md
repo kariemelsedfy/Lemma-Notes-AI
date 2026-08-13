@@ -1769,8 +1769,23 @@ Acceptance:
 - [x] 9 unit tests over the scoring itself, including one asserting no page content can reach
       the metrics file
 
+### M4-12 — Let the user correct a misread selection
+status: Ready · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, PROGRESS.md M4-11 · estimate: M
+Note: §8's designed behaviour for an unreadable selection is "show what it thinks it read, let
+the user correct it by typing, then proceed". M4-11 fixed the first half — the read now survives
+validation and reaches `.failed(.unreadable)` instead of being discarded as a malformed spec.
+The second half needs a text field in the Ask bar, localized copy, and a path that re-asks with
+the corrected text in place of the model's own reading.
+Worth doing near M7's onboarding and error-copy pass rather than alone: it is the same surface,
+and the copy question ("what do we say when we misread someone's handwriting?") is a design one.
+Acceptance:
+- [ ] The Ask bar shows the model's `read` when a request fails as unreadable
+- [ ] The user can correct it and re-ask without re-selecting
+- [ ] The corrected text reaches the provider as the reading, and the correction is not logged
+- [ ] Declining twice in a row does not trap the user in a loop
+
 ### M4-11 — A low-confidence read reaches the user as "something went wrong"
-status: Ready · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, §10, PROGRESS.md M4-06 · estimate: S
+status: Review · implemented: Claude · 2026-08-12 · found: Claude · 2026-08-12 · refs: AI_PIPELINE.md §8, §10, PROGRESS.md M4-06 · estimate: S
 Note: found by the eval harness on its first run against a garbage case.
 **The prompt contract and the validator disagree.** §10 instructs the model, for an unreadable
 selection, to "set readConfidence low and return no blocks". `SpecValidator` fails closed below
@@ -1788,12 +1803,24 @@ Likely shape: validation keeps failing closed on rendering, but a low-confidence
 blocks becomes a `ValidatedSpec` that `isDecline` and carries its `read`, so §8's flow has
 something to show. Needs care — `readConfidence < 0.6 renders nothing` is an invariant, and this
 must not weaken it.
+Claude 2026-08-12: one condition. `readConfidence < 0.6` is refused **when the spec carries
+blocks** — which is the case the rule was written for — and accepted when it carries nothing to
+render, which is a decline. The invariant is about rendering and holds exactly as before.
+Nothing is skipped for a decline: its `read` reaches the UI, so it goes through the same length
+and warning limits as any other spec. That was the trap in the first attempt at this — an early
+return would have let an unbounded `read` through the door the fix opened.
 Acceptance:
-- [ ] A model response with low confidence and no blocks reaches the user as its read, not as
-      `invalidSpec`
-- [ ] Nothing renders from it — the invariant holds, asserted
-- [ ] §10's instruction and the validator agree, and a test pins them together
-- [ ] The correction path §8 describes is reachable, or explicitly deferred with the reason
+- [x] A model response with low confidence and no blocks reaches the user as its read — it now
+      reaches `.failed(.unreadable)` through the state machine rather than `invalidSpec`
+- [x] Nothing renders from it — a low-confidence spec **with** blocks is still refused, asserted,
+      and mutation-verified: reverting the condition fails three tests
+- [x] §10's instruction and the validator agree, pinned by a test named after the instruction,
+      and `AI_PIPELINE.md` §3.2 rule 4 now states the decline contract instead of implying the
+      opposite
+- [ ] The correction path §8 describes — "let the user correct it by typing, then proceed" — is
+      **explicitly deferred**. It needs a text field in the Ask bar, localized copy, and a
+      re-ask path; that is UI work belonging with M7, and this task deliberately fixed only the
+      part that was throwing information away. Filed as M4-12
 
 ### M4-06B — Capture the golden set
 status: Ready · owner: human · needs-device-verification · depends: M4-06 · refs: AI_PIPELINE.md §9 · estimate: L
