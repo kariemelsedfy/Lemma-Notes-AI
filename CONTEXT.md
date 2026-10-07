@@ -4,9 +4,17 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-08-12 (late) · by: Claude · Milestone: **M3's code work is done and merged; the blind panel (M3-10) is the gate and needs a human. M4 is now filed.**
+**Last updated:** 2026-10-07 · by: Devin · Milestone: **M3 handwriting is implemented; M4 real answers are not wired into Ask. M3-10 measures quality and does not gate real-AI work (ADR-018).**
 
-## Handover, 2026-08-10
+## 0. Restart, 2026-10-07
+
+`main` remains at `6abf27a4554ca5e1e872efb7d0e145571a9fe1cb`. The OneDrive copy is incomplete (`CONTEXT.md` absent, Git cannot resolve HEAD); work from the clean clone at `/Users/kelsedfy/Lemma-Notes-AI-work`. At that SHA, `./scripts/test.sh` and `./scripts/lint.sh` pass on macOS 26.7.1 / Xcode 27.0 / Swift 6.4 / Tuist 4.197.3; the separate iOS 26.1 iPad Pro 13-inch (M5) simulator suite passes 180 app tests. The test script checks a mock eval and builds the app, not real-model accuracy. Its iOS 26-targeted Foundation Models probe type-checks with a deprecated initializer and reports iOS 27 symbols absent **at the iOS 26 target**, not on iOS 27.
+
+The wired iPad is an iPad mini (6th generation), iPadOS 26.6, paired with Developer Mode on. Xcode initially failed to mount its developer disk image but a later `devicectl` query succeeded; no fresh physical build has been installed or manually tested this session. The existing app bundle ID is `edu.bowdoin.margin`, and the matching signing Team ID is still needed. This mini is not Apple Intelligence-eligible ([Apple's device requirements](https://support.apple.com/en-us/121115) require iPad mini A17 Pro or M1+ iPad), so T0 cannot power a private beta on it. The Mac M3 reports `SystemLanguageModel.default.availability == available`; this does not imply iPad availability. The user expects other users to lack eligible devices too and asked to consider another AI provider. Q13/M4-13 tracks the required product, privacy and spending decision; ADR-019/020 still stand until explicitly superseded. Preserve the current app's bundle ID and data before the M0-11 device handoff.
+
+The shipping Ask still constructs `CannedSpecProvider()` and returns `4` for every question. Routing, consent gate, validation, placement and handwriting are implemented, but no real model is in shipping composition. README/PROGRESS current summaries have been corrected; the dated August material below is historical, not the next action.
+
+## Handover, 2026-08-10 (historical)
 
 **Read this section, then §1a. The work is now driven by device reports, not by the board.**
 
@@ -116,7 +124,7 @@ stroke looks like *to the app* before shipping it.
 
 ---
 
-## 1. Where we are
+## 1. August status (superseded by §0)
 
 **M3 is usable in the user's hand; its size and repeated-Ask blockers are device-confirmed.**
 The blind panel (M3-10) remains the milestone gate and still needs a human.
@@ -239,7 +247,9 @@ who has not read the code — because they have not.
 
 ## 4. Environment notes
 
-**Five traps in this working copy:**
+**Current, 2026-10-07:** Work in `/Users/kelsedfy/Lemma-Notes-AI-work`, not the OneDrive checkout. Xcode 27.0 and iOS 27 SDK are installed; iOS 26.1 and 26.5 simulator runtimes are available. The connected iPad mini 6 is on 26.6; its developer disk image now mounts. `edu.bowdoin.margin` is installed, but the Team ID has not been confirmed. Do not change minimum iPadOS or install a device build without verifying signing and preserving its existing app data. The notes below describe the August OneDrive copy and toolchain, not the current clone.
+
+**Five traps in the August working copy:**
 
 1. **This checkout is inside OneDrive.** OneDrive periodically rewrites the executable bit
    on tracked files, which makes `git status` show ~90 files modified with no content
@@ -316,20 +326,23 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q4 | Exam Mode: per-document, per-notebook, or both? | human | M6 |
 | Q5 | Final product name + trademark clearance | human | M7 |
 | Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
-| Q9 | **Who runs the R-01 blind similarity panel, and with whom?** The M3 gate is "plausibly mine ≥40% after two iterations", and below it the plan says pivot to typeset output and drop handwriting matching from the pitch. Nobody can recruit that panel or call that result but you | human | **M3 — this is the gate** |
+| Q9 | Who can run the blind similarity measurement, and with how many writers? ADR-018 withdrew the pivot, so poor scores guide handwriting improvements rather than remove the feature | human | M3-10 measurement, not M4 |
+| Q13 | Users, including the owner of the connected iPad mini 6, may not have Apple Intelligence-capable devices. Which consent-gated provider, hosting route and external spending cap should enable real answers, and does broader hardware support supersede ADR-019/020? Preserve notebooks, offer a local arithmetic subset, and make no paid calls or deployment-target change before approval | human with lead recommendation | M4-13 then M4-08/device real-AI test |
 
-**Q12 is resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. It cannot be acted on yet:
-this machine has only `iPhoneOS26.5.sdk` and the test iPad runs 26.6, so raising the target now
-would produce a project that does not build. **The interim work is identical either way** —
-M4-02's T0 provider uses `SystemLanguageModel`, which exists on both, and image input plus PCC
-are additive when the SDK arrives.
+**Q12 was resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. The Xcode 27 SDK
+blocker is now gone, but the connected iPad still runs 26.6 and the user has not approved an
+OS update. Its mini 6 hardware cannot run Apple Intelligence even after an OS update. Keep the
+current iPadOS 26 deployment target until Q13 and device compatibility are deliberately resolved;
+verify the iOS 27 SDK surface separately instead of interpreting an iOS 26-targeted probe.
 
 **Handwriting is not optional (ADR-018)**, and R-01's pivot-to-typeset exit is withdrawn. M3-10's
 panel still runs, as a measurement rather than a verdict, and **M3-19 is now the main lever** on
 output quality. Everything that was held back "until the gate" is an ordinary priority again.
 
-**The product ships where Apple Intelligence runs (ADR-020)**, so `BUSINESS.md`'s tier-mix margin
-holds and mainland China is out of scope for 1.0.
+**ADR-020 currently scopes shipping to Apple Intelligence availability**, but the only
+connected test iPad is ineligible and the user expects others to be ineligible too. Treat the
+old zero-cost tier mix as unverified for that audience. Q13 needs a superseding decision, not
+a silent routing workaround.
 
 **Q7 is resolved (2026-08-12): routing asks the framework, not a region.** See ADR-017 and
 `AI_PIPELINE.md` §5.2. The EU has Apple Intelligence today and its gap is the 27-era Siri
@@ -341,16 +354,15 @@ Qwen-backed launch approved in July 2026 and reportedly no PCC. Both situations 
 and deferrable.** See ADR-013 and ADR-014. Together they mean a new user writes with the
 typeset style until they choose to calibrate, and cursive joins are post-1.0.
 
-**Q8 is resolved (2026-08-02): loop-and-dwell is dropped.** On device it did not fire
-reliably, and with a working toolbar lasso it was a redundant second way to select — one
-that sometimes consumes ink. `PROJECT_PLAN.md` §3.1 still describes it as the signature
-interaction; that section is now wrong and cannot be corrected until M0-09.
+**Q8 is resolved (2026-08-02): loop-and-dwell is dropped.** Ask-then-lasso is the
+primary path (ADR-011), followed by the allowed-answer-area lasso (ADR-016).
 
 Q1 has been answered in practice — M1 shipped a paged canvas — but was never recorded as a decision. Q2 (PDF import) is still untouched and still in scope-limbo.
 
 ## 6. Known risks being actively watched
 
-- **R-01 handwriting quality** — the M3 gate. Nothing else matters if this fails. See `PROJECT_PLAN.md` §7.
+- **R-01 handwriting quality** — measure via M3-10 and improve via M3-19; not a gate or a reason to remove handwriting (ADR-018).
+- **Non-Apple-Intelligence iPads** — the current iPad mini 6 cannot run T0 and there is no shipping alternative provider. Q13/M4-13 must settle consent, cost, hosting and scope before real answers can reach it.
 - **R-04 substrate scope** — M1 is the most likely milestone to blow its estimate.
 - **R-02 Apple Notes Math Notes** — already ships the basic demo for free; keep the positioning on continuation and breadth.
 

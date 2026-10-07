@@ -21,24 +21,49 @@ Acceptance:
 
 Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sessions (split if you can).
 
+### Lead assignments — 2026-10-07
+
+| Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
+|---|---|---|---|
+| M0-10 Reconcile restart baseline | Devin / `6abf27a` | `chore/M0-10-restart-baseline` / root status docs only | Doc PR after green test, lint and separate app tests; no worker |
+| M0-11 Fresh baseline device build | Unclaimed / after M0-10 | Branch TBD / device build and handoff | Existing `edu.bowdoin.margin` confirmed; await matching signing Team ID; fresh install and human Checkpoint A |
+| M4-13 Broad-device AI route | Unclaimed / after baseline | Branch TBD / provider options and ADR proposal | Human approval for provider, hosting and spending; no paid calls or provider keys |
+
 ---
 
 ## In progress
 
-### M0-10 — Reconcile restart baseline and device capability
-status: In progress · claimed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M
-Note: lead owns this documentation/environment audit at 6abf27a; no worker or package assignment. Do not change the AI deployment target or sign/install a device build as part of a documentation fix.
-Acceptance:
-- [ ] Record the fresh checkout SHA, full build/lint and separate app-test results, SDK, simulator, and connected-device capability without claiming real-model/device coverage
-- [ ] Replace stale current-status and withdrawn-handwriting-gate summaries; retain historical logs and accepted ADR text
-- [ ] Classify open PRs #85–#94 against main before recommending any closures, without closing or merging them
-- [ ] Record the non-Apple-Intelligence-device AI gap as a decision to resolve before committing to an external provider or cost
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M0-10 — Reconcile restart baseline and device capability
+status: Done · claimed/completed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M
+Note: documentation/environment audit at `6abf27a`; no worker or package edits. On the clean local clone, `./scripts/test.sh` and `./scripts/lint.sh` passed, and a separate iOS 26.1 iPad Pro 13-inch (M5) simulator run passed 180 app tests. No new physical build or real-model inference was performed. Xcode 27 SDK is installed; the installed app on the connected iPad mini 6 is `edu.bowdoin.margin`, the developer disk image mounted on retry, and the signing Team ID is pending. Q13/M4-13 tracks its lack of Apple Intelligence without changing ADR-019/020 or spending money.
+Acceptance:
+- [x] Record the fresh checkout SHA, full build/lint and separate app-test results, SDK, simulator, and connected-device capability without claiming real-model/device coverage
+- [x] Replace stale current-status and withdrawn-handwriting-gate summaries; retain historical logs and accepted ADR text
+- [x] Classify open PRs #85–#94 against main before recommending any closures, without closing or merging them
+- [x] Record the non-Apple-Intelligence-device AI gap as a decision to resolve before committing to an external provider or cost
+
+Open PR audit at `6abf27a` (PR changed paths checked against matching current code/tests and task evidence; no PR closed or merged):
+| PR | Current-main classification | Evidence / caution |
+|---|---|---|
+| #85 M3-17 | Implemented | Per-answer bank fallback and its app tests are on main |
+| #86 M2-17 | Superseded | Answer-sizing path exists; later M2-17, M3-20 and M3-25 fixes replace the early scale behavior |
+| #87 M3-18 | Implemented | Paginated calibration repair and tests are on main |
+| #88 M2-22 | Implemented | Crop/neighborhood and `SelectionReading` reach the shipping Ask request |
+| #89 M2-17 | Implemented, refined later | Selected-writing size tests and later M3-25 adjustment are on main |
+| #90 M3-20 | Implemented | Loaded strokes get distinct UUIDs; iOS regression exists |
+| #91 M2-18 | Implemented, refined later | Grouped eraser/provenance and device-confirmed undo are on main |
+| #92 M3-08C | Implemented | Variation reaches sample selection, spacing and slant; tests on main |
+| #93 M3-01B | Implemented | Shared legibility corpus and tests on main |
+| #94 M3-08D | Implemented | Two style cases, persisted `neat` migration and tests on main |
+These stacked PR branches predate later fixes; ancestry/whole-tree diff is not a safe merge test. Do a patch-level review of any suspected unique hunk before requesting a closure batch from the human.
 
 ### M2-22 — The selected-area image never reaches anything that can read it
 status: Done · implemented: Codex · closed-by: Claude · 2026-08-12 · refs: AI_PIPELINE.md §1, M2-05C · estimate: M
@@ -183,6 +208,14 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
+
+### M0-11 — Install a fresh baseline on the existing iPad without removing its data
+status: Blocked · owner: Devin after human signing Team ID confirmation · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+Note: the connected iPad mini (6th generation), iPadOS 26.6, is paired, Developer Mode is on, and the developer disk image is now mounted. Margin is installed as `edu.bowdoin.margin`; `TUIST_DEVELOPMENT_TEAM` is unset in the new clone. Checkpoint A tests the existing canned `4`, not real AI. Reopen once the matching signing team is provided; do not uninstall or change the app's bundle ID.
+Acceptance:
+- [ ] Regenerate with the intended signing and make a new DerivedData directory for the exact revision
+- [ ] Build, install over the existing app, launch, and open the regenerated workspace on the connected iPad
+- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
 
 ### M0-04 — Module dependency rule enforcement
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S
@@ -1656,7 +1689,7 @@ Acceptance:
 - [ ] Whatever it becomes, it is stable across repeated Asks on one page
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
-status: Done · completed: Claude · merged: PR #108 · 2026-08-12 · blocks: M3-10 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
+status: Review · implemented: Claude · merged: PR #108 · needs-device-verification · 2026-08-12 · blocks: M3-10 physical sample capture · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
 Note: noticed while writing device-test instructions, and it is the reason M3-10 has not been
 runnable at any point it was "ready". The panel needs **five generated lines in the writer's own
 hand**. The only generated ink the app can produce is `CannedSpecProvider.arithmetic`, whose
@@ -1694,25 +1727,27 @@ Acceptance:
 - [ ] **Confirm on device**: the first time anyone sees a sentence in their own synthesized hand
 
 ### M3-10 — Blind similarity panel ~~*(the gate)*~~ — a measurement, not a verdict
-status: Ready · owner: human · unblocked-by: M3-24 · 2026-08-12
+status: Ready · owner: human · needs-device-verification: M3-24 debug sample flow · 2026-08-12
 Note 2026-08-12: **ADR-018 withdrew the pivot clause**, so this no longer decides whether
 handwriting survives. It measures how far the output is from convincing, and a poor result points
 at M3-19 rather than at removing the feature. · refs: PROJECT_PLAN.md §7, HANDWRITING.md §7 · estimate: M
-Note: **this is the M3 kill-criterion review and only a human can run it.** 5 real lines,
-5 generated, "which are yours?" Needs recruiting people who are not you.
+Note: a human-led quality measurement, not a kill-criterion review (ADR-018). Compare five
+written and five generated matched lines per writer with labels hidden; record the number of
+writers, sample count, and rubric. A low score prioritizes handwriting improvements, not a
+pivot to typeset. The debug sample screen exists but still needs physical-device confirmation.
 Acceptance:
-- [ ] ≥60% "plausibly mine" at M3 (≥75% at 1.0)
-- [ ] Below 40% after two iterations → pivot to typeset per R-01, and say so out loud
+- [ ] Record the blind "plausibly mine" score, sample count, writer count, and scoring method (quality targets: ≥60% at M3, ≥75% at 1.0; not gates)
+- [ ] Note size/pen matching and observed defects; use results to prioritize M3-19
 - [ ] Result recorded in SESSIONS.md whichever way it goes
 
 ---
 
 ## Ready — M4: Real intelligence
 
-**Filed 2026-08-12 by Claude**, per this file's own rule that a milestone is expanded at its
-start. Nothing here is claimed, and **M3-10's verdict should land first** — if the blind panel
-fails R-01 the product pivots to typeset output, which changes what the prompts ask for and
-removes handwriting from the pitch, but does not change the tier structure below.
+**Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
+(ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
+iPad mini (6th generation) is not Apple Intelligence-capable; Q13 and M4-13 track the route
+to real answers on that hardware without silently changing ADR-019/020.
 
 **What M4 replaces.** `CannedSpecProvider` answers every request with the same hardcoded spec,
 so the app always writes `4`. That is M2's stated exit condition, not a bug. Everything below
@@ -1762,13 +1797,16 @@ Acceptance:
       what iOS 27 adds, and no iOS 27 SDK exists on this machine to check it against
 
 ### M4-02 — T0 provider: the on-device model
-status: Ready · depends: M4-01 (done), Q12 · refs: AI_PIPELINE.md §5, §5.1, §3 · estimate: L
+status: Ready · depends: M4-01 (done); Q12 resolved by ADR-019 · refs: AI_PIPELINE.md §5, §5.1, §3 · estimate: L
 Note from M4-01: **this tier is text-only on iPadOS 26.** There is no image input, so the
 provider gets the Vision transcript and the stroke trajectory, not the crop — §10's IMAGE 1 /
 IMAGE 2 prompt structure does not apply here. Use `@Generable` with `@Guide` for the spec
 rather than parsing free JSON out of prose; the framework will constrain generation to the
 schema, which removes a whole class of decode failure. Map `GenerationError.guardrailViolation`
 and `.refusal` onto `AskFailure.unreadable` rather than crashing.
+October 2026: the SDK is now iOS 27, but the existing probe targets iOS 26 and the connected
+iPad mini (6th generation) cannot run T0. Verify current symbols at the intended deployment
+target before implementation; Mac model availability does not prove iPad model availability.
 Note: the first real provider. It must satisfy the existing contract exactly — return a
 `ValidatedSpec` and nothing else, so `SpecValidator` cannot be bypassed (invariant 1) — and it
 is the tier that runs offline and in Private Mode, so it is also the floor the product degrades
@@ -1942,16 +1980,27 @@ Acceptance:
 - [ ] Human transcription and intent labels accompany each sample
 - [ ] Stored so that no sample leaves the device without its writer's consent
 
-### M4-07 — T1 provider: Apple PCC
-status: Blocked · blocker: **the iOS 27 SDK — `PrivateCloudComputeLanguageModel` does not exist on iPadOS 26 (M4-01)** — and M0-07, since Small Business Program enrolment is what makes PCC free · depends: M4-01, M4-02, Q12 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
+### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
+status: Ready · owner: lead for options; human for provider, external spending and ADR approval · refs: DECISIONS.md ADR-017, ADR-019, ADR-020, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
+Note: the only connected test device is an iPad mini (6th generation), and the user expects other users to have similarly ineligible hardware. On 2026-10-07 the user asked to consider another provider; this does not yet approve a paid service, changing the 1.0 OS target, or broadening the accepted ADR-020 market scope. Prefer a small deterministic arithmetic subset on-device and a consent-gated first-party proxy for broader answers, subject to a provider, hosting and per-period spend cap. Do not send content or embed an API key before approval.
 Acceptance:
-- [ ] Implements `SpecProvider` against the PCC surface confirmed by M4-01
+- [ ] Compare an external provider/proxy route against a strictly local supported subset, with privacy, offline, latency, budget, availability, and notebook-data implications
+- [ ] Propose superseding ADRs where ADR-019/020 or the routing policy change; get explicit approval for provider/dependency/hosting/spending decisions
+- [ ] Split implementation into small testable provider, app-integration and device-verification tasks without assuming the mini runs T0
+
+### M4-07 — T1 provider: Apple PCC
+status: Blocked · blocker: PCC API, terms, entitlement and cost are not verified against the now-installed iOS 27 SDK; M0-07 Developer/Small Business Program enrollment is deferred · depends: M4-01, M4-02 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
+Note 2026-10-07: the old iOS 26 SDK blocker is historical. The probe still targets iOS 26,
+so its "surface absent" result says nothing about iOS 27 availability. No PCC promise or
+zero-cost assumption is verified on this toolchain.
+Acceptance:
+- [ ] Compile a new iOS 27-targeted probe and implement `SpecProvider` against the PCC surface it actually confirms
 - [ ] Falls back to T0 rather than failing when PCC is unavailable
 - [ ] Eligibility for the free tier is verified and the date recorded — §5 says to re-verify annually
 - [ ] Same fail-closed decoding and no-content-logging guarantees as M4-02
 
 ### M4-08 — T2 provider and the proxy
-status: Blocked · blocker: Q6 (which frontier provider) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, §5.1, BUSINESS.md, AGENTS.md §7 · estimate: L
+status: Blocked · blocker: Q6 (provider), Q13 (non-Apple-Intelligence-device scope, consent/hosting/cost cap) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, §5.1, BUSINESS.md, AGENTS.md §7 · estimate: L
 Note from M4-01: **a provider swap is not one line.** The `LanguageModel` protocol that would
 have made it one does not exist on our SDK, and the Anthropic and Google packages that would
 conform to it are announced rather than shipped. This tier needs its own client, retry policy

@@ -11,6 +11,16 @@ unless you check.
 
 ---
 
+## 2026-10-07 · Devin · M0-10 — restart audit exposed a hardware-level AI gap
+
+The OneDrive checkout was not merely stale: `CONTEXT.md` and other tracked documents were missing and Git could not resolve HEAD. A fresh clone outside OneDrive restored a clean `6abf27a` tree; GitHub `main` has not advanced since the August handoff. Do not repair or build from the broken copy.
+
+`./scripts/test.sh`, `./scripts/lint.sh`, and a separate iOS 26.1 iPad Pro 13-inch (M5) simulator app run all passed (180 app tests). This is a mock/canned baseline, not an inference evaluation or new physical-iPad test. The iOS 27 SDK probe still targets iOS 26 and emits a deprecation warning; do not use its "iOS 27 symbols absent" line as a claim about the iOS 27 SDK.
+
+The wired iPad is a paired iPad mini (6th generation), on 26.6, with Developer Mode enabled. A first device-info attempt failed to mount the developer disk image; a later attempt succeeded without changing the device, so check current preparedness before declaring a blocker. `edu.bowdoin.margin` is installed; do not change its bundle ID or uninstall it. A matching signing Team ID is still needed before the fresh build. More importantly, this model cannot run Apple Intelligence at any OS level. The Mac M3 can run Foundation Models, but that is not evidence of end-to-end model inference on the mini.
+
+The user expects other users to have similarly ineligible iPads and suggested another provider. That conflicts with ADR-020's Apple-Intelligence-only audience and affects ADR-019's target rationale, costs, privacy and consent. Do not quietly build a paid fallback: Q13/M4-13 requests a provider, hosting and spending decision, while independent tests and a narrow local arithmetic path can proceed. The ten old PRs remain open; their named behaviors are present or superseded on main, but stacked branches should not be merged or closed from titles alone.
+
 ## 2026-08-12 · Claude · M3-24 — the gate had no material, so nobody could have run it
 
 M3-10 has sat on the board as *ready* for weeks. It was not runnable at any point, and noticing
