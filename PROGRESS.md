@@ -26,7 +26,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
 | M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
-| M0-11 Fresh baseline device build | Devin / `21404ae` | `chore/M0-11-device-baseline` / build and handoff only | User supplied alternate Personal Team ID for one retry; do not reuse previous DerivedData or uninstall existing app |
+| M0-11 Fresh baseline device build | Unclaimed until device trust / `f07ad29` | `chore/M0-11-device-baseline` / build and handoff only | Fresh signed build installed over existing app; launch denied by iPad security; human checks Developer App trust before new fresh build |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
@@ -35,13 +35,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-11 — Install a fresh baseline on the existing iPad without removing its data
-status: In progress · claimed: Devin · 2026-10-07 · base: 21404ae · branch: chore/M0-11-device-baseline · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
-Note: the earlier Team ID was not recognized by Xcode and the first physical build stopped before install. The user supplied an alternate Personal Team ID for one retry; keep it in the process environment only, never tracked files. The iPad mini 6 on iPadOS 26.6 is paired and has the existing `edu.bowdoin.margin` app. If the second build still reports no account/profile, stop and ask the user to confirm Xcode Accounts rather than guessing signing settings or changing the bundle ID. Checkpoint A expects the canned `4`, not real AI.
-Acceptance:
-- [ ] Regenerate with the alternate Personal Team ID and create another new DerivedData directory for this exact revision
-- [ ] Build, install over the existing app, launch, and open the regenerated workspace in Xcode
-- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
+_(empty)_
 
 ## Review
 
@@ -236,6 +230,15 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
+
+### M0-11 — Install a fresh baseline on the existing iPad without removing its data
+status: Ready · blocked-on: human device trust for the new Personal Team signing profile · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+Note 2026-10-07, Devin: claimed at `21404ae` and retried once with the alternate human-supplied Personal Team ID (kept out of tracked files). Tuist regenerated; a brand-new DerivedData build of `f07ad29` for the paired iPad mini 6 on iPadOS 26.6 **succeeded**, with two Xcode 27 warnings in existing `DocumentStore` and `InkCore` code. The arm64 `.app` verifies locally, matches the existing `edu.bowdoin.margin` bundle ID and expected Team ID, and `devicectl` installed it over the existing app without uninstalling. The following foreground launch was denied with iPadOS Security: invalid signature, inadequate entitlements **or** developer profile not explicitly trusted. Local `codesign --verify --deep --strict` succeeds; this points to, but does not prove, missing device-side trust. The regenerated workspace was opened in Xcode. **No human test is ready and notebook contents were not inspected.** The human was asked to check iPad Settings → General → VPN & Device Management and trust the new Developer App profile if shown. Once resolved, re-claim, regenerate and build from another brand-new DerivedData for the current revision, install over the app, launch, and open the workspace before Checkpoint A. Never uninstall or alter the bundle ID to work around trust.
+Acceptance:
+- [x] Regenerate with the alternate Personal Team ID and create a fresh DerivedData build for the attempted revision
+- [x] Verify matching signed bundle ID and install that built `.app` over the existing app, then open regenerated workspace in Xcode
+- [ ] Launch the newly built app on the physical iPad after device-side trust is resolved
+- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
 
 ### M0-04 — Module dependency rule enforcement
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S

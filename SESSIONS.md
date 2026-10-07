@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-07 · Devin · M0-11 — signed and installed, but iPadOS refused launch
+
+The human supplied a second Personal Team ID. Unlike the first, Xcode recognized it: Tuist regenerated with that ID from the process environment, and a **new** DerivedData physical-device build of `f07ad29` succeeded. The built arm64 `.app` identifies as `edu.bowdoin.margin`, reports the expected team, and passes `codesign --verify --deep --strict`; Xcode 27 emitted two warnings from existing `MarginDocument` and `InkAppearance` code, to address in scoped follow-ups rather than this handoff. `devicectl` installed that exact artifact over the existing app without uninstalling, and the regenerated workspace is open in Xcode.
+
+**Do not confuse installed with working.** The first foreground launch was denied by iPadOS Security, whose message lists invalid signature, inadequate entitlements *or* a developer profile not explicitly trusted. Local signature verification narrows but does not prove the cause. The human was asked to check Settings → General → VPN & Device Management on the iPad and trust the Developer App profile if present. No Notebook or Pencil test took place, and I cannot claim that the installed app launches or that its data was inspected. After the trust action, make another fresh build for the then-current revision before asking the human to test; do not reuse this attempt's DerivedData or uninstall the app. The earlier failed Team ID attempt is logged below and remains historical.
+
 ## 2026-10-07 · Devin · M0-11 — signing failed before a device build could exist
 
 The connected iPad mini 6 is paired, on iPadOS 26.6, with Developer Mode and developer disk image ready; `edu.bowdoin.margin` is installed. The user provided a Team ID out-of-band. I ran the repo's full test and lint gates, then regenerated the Tuist workspace with that ID from the process environment and made a brand-new DerivedData directory. `xcodebuild build` for the physical device failed: **No Account for Team** and no development profile for the existing bundle ID. No `.app` was produced for handoff, no install or uninstall was attempted, and the notebooks were left alone. This is Xcode account authentication, not an SDK compatibility or device-pairing failure; do not guess a different Team ID or bundle ID.
