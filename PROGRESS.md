@@ -25,7 +25,14 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-10 — Reconcile restart baseline and device capability
+status: In progress · claimed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M
+Note: lead owns this documentation/environment audit at 6abf27a; no worker or package assignment. Do not change the AI deployment target or sign/install a device build as part of a documentation fix.
+Acceptance:
+- [ ] Record the fresh checkout SHA, full build/lint and separate app-test results, SDK, simulator, and connected-device capability without claiming real-model/device coverage
+- [ ] Replace stale current-status and withdrawn-handwriting-gate summaries; retain historical logs and accepted ADR text
+- [ ] Classify open PRs #85–#94 against main before recommending any closures, without closing or merging them
+- [ ] Record the non-Apple-Intelligence-device AI gap as a decision to resolve before committing to an external provider or cost
 
 ## Review
 
