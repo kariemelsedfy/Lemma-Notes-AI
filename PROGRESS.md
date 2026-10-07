@@ -34,7 +34,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-14 — Evaluate a safe local arithmetic subset
+status: In progress · claimed: Devin · 2026-10-07 · base: e6ca178 · branch: feat/M4-14-local-arithmetic · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
+Exclusive scope: pure `Packages/Intelligence` parsing/evaluation and tests, not app wiring; no simultaneous M4-08B owner. A bounded grammar fails closed on uncertain OCR or unsupported notation; do not execute arbitrary input or use a network/model.
+Acceptance:
+- [ ] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink
+- [ ] Supported confident arithmetic returns a validator-approved LaTeX answer deterministically with no network or paid model
+- [ ] The local provider exposes an explicit unsupported decline; M4-08C owns wiring it into offline and Private Mode rather than claiming general offline AI
 
 ## Review
 
@@ -2035,14 +2041,6 @@ Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
 - [ ] A fresh build installs over `edu.bowdoin.margin` and the physical iPad result is recorded with SHA, OS and consent/offline failure behavior
-
-### M4-14 — Evaluate a safe local arithmetic subset
-status: Ready · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
-Exclusive scope: pure `Intelligence` parsing/evaluation and tests, not app wiring; do not run concurrently with M4-08B in the same package. Define a small grammar before testing, never evaluate executable input, and decline any unsupported notation or low-confidence read.
-Acceptance:
-- [ ] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink
-- [ ] Supported confident arithmetic returns a validator-approved LaTeX answer deterministically with no network or paid model
-- [ ] The local provider exposes an explicit unsupported decline; M4-08C owns wiring it into offline and Private Mode rather than claiming general offline AI
 
 ### M4-15 — Measure the real mini-6 answer path before expanding
 status: Blocked · depends: M4-08C, M0-11, explicit consent and verified remaining spend under ADR-021 · refs: AI_PIPELINE.md §9, AGENTS.md §8 · estimate: M
