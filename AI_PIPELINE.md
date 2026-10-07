@@ -120,7 +120,7 @@ If nothing fits, ask for another area rather than cramming.
 
 ## 5. Model routing
 
-Three tiers. Route down only when necessary; each step up costs money and latency.
+Three tiers. Route down only when necessary; each step up costs money and latency. **ADR-021 adds support for an iPad mini 6 with no Apple Intelligence:** on that device T0 is permanently unavailable, and T1 must never be assumed available merely because Xcode has an iOS 27 SDK. Route only to implemented, currently eligible providers. Offline/Private Mode can answer a narrowly supported deterministic arithmetic subset locally; otherwise fail honestly instead of returning the canned `4`. Online requests can reach a consent-gated, server-authorized provider after model eligibility, retention and a combined $10 pilot ceiling are enforced. No project API key belongs in the app. This is the target contract, not an assertion that the shipping Ask has been rewired; it still uses `CannedSpecProvider`.
 
 | Tier | What | When | Cost to us |
 |---|---|---|---|

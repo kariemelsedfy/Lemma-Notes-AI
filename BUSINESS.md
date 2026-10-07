@@ -4,14 +4,9 @@
 
 ## 1. Answering the "connect your ChatGPT/Claude account" question directly
 
-**You can't, and you shouldn't design around it.**
+**The July 2026 blanket "you can't" answer is out of date, but it is not a beta integration.** [Sign in with ChatGPT](https://developers.openai.com/siwc/quickstart.md) can let eligible subscribers separately authorize participating apps to use their plan allowance for eligible API requests. Its open-source/local flow does not authorize this private commercial iPad app: selected private/commercial clients require OpenAI approval. No such approval exists for Margin, so plan sharing is not a dependable launch route. [Claude's product guidance](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account) instead directs third-party app developers to separately billed API access or a cloud provider; a Claude Pro subscription is not a general API entitlement.
 
-A consumer ChatGPT Plus or Claude Pro subscription does not grant API access. There is no consumer OAuth flow that lets a third-party iPad app spend a user's chatbot subscription. The only ways a user's own credentials could pay for inference are:
-
-- **BYOK** — the user pastes a developer API key from the provider's console. This works technically and is allowed, but the addressable market is developers. A chemistry sophomore does not have an Anthropic API key and will not create one.
-- **A provider's own consumer platform** (apps/plugins inside ChatGPT etc.) — a different product with different economics, and it wouldn't be an iPad ink app.
-
-So: **we pay for inference and charge a subscription.** BYOK ships as a power-user setting because it costs one screen and buys goodwill from exactly the vocal technical users who write reviews.
+For this beta, **the project pays for inference via a server-side provider credential**, subject to ADR-021's $10 total pilot ceiling. Never embed that credential in the iPad app. BYOK remains the separate power-user option accepted in ADR-006, not the default billing route or a workaround for the private beta's consent and authorization requirements. Paid Margin plans still need server-verified StoreKit entitlements; a client-side credit balance cannot authorize model spend.
 
 ---
 
@@ -52,9 +47,11 @@ Anthropic list prices as of July 2026 — **re-verify at implementation time, th
 | Sonnet 5 | $3 / $15 (intro $2/$10 through 2026-08-31) | ~$0.0059 | ~$2.95 |
 | Opus 5 | $5 / $25 | ~$0.0098 | ~$4.90 |
 
+**October 2026 pilot candidate (ADR-021):** [AWS lists Nova Lite](https://aws.amazon.com/blogs/machine-learning/customizing-text-content-moderation-with-amazon-nova/) at $0.06/M input and $0.24/M output tokens. At the illustrative 1,200-input/150-output-token request above, inference is ~$0.000108/action (~$0.11/1,000), **not** a measured bill. Real crop/neighborhood image tokenization, retries, longer answers, AWS regional rates, server hosting and controls may dominate this estimate. Model access with [Bedrock retention mode `none`](https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html) and handwritten-math quality must be verified before a paid call. The $10 ceiling covers provider **and** hosting for the entire initial pilot, not per month; alerts alone are not enforcement.
+
 ### 3.2 Why the blended number is much lower
 
-Routing (see `AI_PIPELINE.md` §5) is the whole game:
+Routing (see `AI_PIPELINE.md` §5) is the whole game. **The table below is the original Apple-Intelligence-eligible-device assumption, not a forecast for iPad mini 6 or the ADR-021 broader-hardware beta.** Recompute tier mix, hosting, refusal and retry costs from actual pilot data before setting a paid plan's action allowance.
 
 | Tier | Expected share of actions | Cost |
 |---|---|---|
@@ -62,9 +59,7 @@ Routing (see `AI_PIPELINE.md` §5) is the whole game:
 | T1 Apple PCC | 35% | **$0** while in the Small Business Program and under 2M lifetime first-time downloads |
 | T2 frontier cloud | 20% | ~$0.006 avg |
 
-**Blended ≈ $0.0012 per action.** A Plus user consuming their full 500 actions costs ~$0.60/month against $4.16/month net revenue (after 15% Small Business Program commission on $49.99/yr). Typical users will use a fraction of their allowance.
-
-That gives a gross margin around 85% even in the worst case, which is the number that makes this viable as a solo product. Two things protect it and must be treated as load-bearing:
+**Under the original tier mix only**, blended cost was estimated at ~$0.0012 per action, or ~$0.60 for 500 actions against $4.16/month net revenue after the assumed commission. The derived ~85% gross margin does **not** apply to a mini-6 user who cannot reach T0/T1; it also excludes proxy hosting and payment infrastructure. Treat plan allowances and pricing as provisional until the pilot measures costs and actual use. Two things protect it and must be treated as load-bearing:
 
 1. **Stay in the App Store Small Business Program** (under $1M/yr proceeds → 15% commission).
 2. **Keep the on-device and PCC tiers doing real work.** If they degrade to "always call the frontier model," margin collapses by ~5×. Track tier mix as a first-class dashboard metric with an alert.

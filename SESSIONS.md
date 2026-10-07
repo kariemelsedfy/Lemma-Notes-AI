@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-07 · Devin · M4-13 — the zero-cost tier mix excluded the beta iPad
+
+The user explicitly wants real answers for the connected iPad mini 6 and expects other users to lack Apple Intelligence hardware. They approved AWS Bedrock Nova Lite as the first paid *candidate*, with a **$10 total** provider-plus-hosting ceiling. The currently installed `edu.bowdoin.margin` and its notebooks remain untouched. ADR-021 reverses ADR-020's hardware assumption, not its regional availability rule; ADR-019's eventual iPadOS 27 target still needs a separate device-impact decision. No AWS service was configured, no model call was made, and no bill was incurred. The user has an AWS account, but this clone has no `aws` CLI or verified scoped access yet; a model allowing retention mode `none` has not been confirmed for their account/region.
+
+Surprise: `BUSINESS.md`'s absolute claim that ChatGPT subscription sharing is impossible is obsolete. OpenAI now supports it for participating apps, but this private product is not approved; Claude Pro is still not a general commercial API entitlement. Do not build a subscription-OAuth detour, copy an API key into the iPad app, or take the old 85% margin estimate as a mini-6 forecast. Bedrock's cheap token estimate is conditional on real image token use, no retries and zero hosting costs; handwriting/math correctness is wholly unmeasured. The safer implementation order is a pure local arithmetic subset, mock-only proxy and client tests, server-side authorization/spend controls and `none` eligibility verification, then a narrowly consented paid pilot with actual cost accounting. If $10 cannot be enforced across all new charges, stop rather than trusting an AWS budget alert.
+
 ## 2026-10-07 · Devin · M0-10 — restart audit exposed a hardware-level AI gap
 
 The OneDrive checkout was not merely stale: `CONTEXT.md` and other tracked documents were missing and Git could not resolve HEAD. A fresh clone outside OneDrive restored a clean `6abf27a` tree; GitHub `main` has not advanced since the August handoff. Do not repair or build from the broken copy.

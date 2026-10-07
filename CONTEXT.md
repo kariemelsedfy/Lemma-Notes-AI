@@ -10,9 +10,9 @@ This is the single place that answers "where are we right now?" Keep it short an
 
 `main` remains at `6abf27a4554ca5e1e872efb7d0e145571a9fe1cb`. The OneDrive copy is incomplete (`CONTEXT.md` absent, Git cannot resolve HEAD); work from the clean clone at `/Users/kelsedfy/Lemma-Notes-AI-work`. At that SHA, `./scripts/test.sh` and `./scripts/lint.sh` pass on macOS 26.7.1 / Xcode 27.0 / Swift 6.4 / Tuist 4.197.3; the separate iOS 26.1 iPad Pro 13-inch (M5) simulator suite passes 180 app tests. The test script checks a mock eval and builds the app, not real-model accuracy. Its iOS 26-targeted Foundation Models probe type-checks with a deprecated initializer and reports iOS 27 symbols absent **at the iOS 26 target**, not on iOS 27.
 
-The wired iPad is an iPad mini (6th generation), iPadOS 26.6, paired with Developer Mode on. Xcode initially failed to mount its developer disk image but a later `devicectl` query succeeded; no fresh physical build has been installed or manually tested this session. The existing app bundle ID is `edu.bowdoin.margin`, and the matching signing Team ID is still needed. This mini is not Apple Intelligence-eligible ([Apple's device requirements](https://support.apple.com/en-us/121115) require iPad mini A17 Pro or M1+ iPad), so T0 cannot power a private beta on it. The Mac M3 reports `SystemLanguageModel.default.availability == available`; this does not imply iPad availability. The user expects other users to lack eligible devices too and asked to consider another AI provider. Q13/M4-13 tracks the required product, privacy and spending decision; ADR-019/020 still stand until explicitly superseded. Preserve the current app's bundle ID and data before the M0-11 device handoff.
+The wired iPad is an iPad mini (6th generation), iPadOS 26.6, paired with Developer Mode on. Xcode initially failed to mount its developer disk image but a later `devicectl` query succeeded; no fresh physical build has been installed or manually tested this session. The existing app bundle ID is `edu.bowdoin.margin`, and the matching signing Team ID is still needed. This mini is not Apple Intelligence-eligible ([Apple's device requirements](https://support.apple.com/en-us/121115) require iPad mini A17 Pro or M1+ iPad), so T0 cannot power a private beta on it. The Mac M3 reports `SystemLanguageModel.default.availability == available`; this does not imply iPad availability. The user expects other users to lack eligible devices too. ADR-021 now approves mini-6 beta support, AWS Bedrock Nova Lite as a *candidate*, and a $10 **total** ceiling across new provider and hosting charges. It supersedes ADR-020 for device eligibility, not regional policy; ADR-019's 1.0 target remains 27 until separately revisited. AWS account access exists but local CLI/scoped access and exact model eligibility under retention `none` are unverified. No AWS service has been provisioned, no paid call made, and no proxy/client is wired. Preserve the current app's bundle ID and data before the M0-11 device handoff.
 
-The shipping Ask still constructs `CannedSpecProvider()` and returns `4` for every question. Routing, consent gate, validation, placement and handwriting are implemented, but no real model is in shipping composition. README/PROGRESS current summaries have been corrected; the dated August material below is historical, not the next action.
+The shipping Ask still constructs `CannedSpecProvider()` and returns `4` for every question. Routing, consent gate, validation, placement and handwriting are implemented, but no real model is in shipping composition. README/PROGRESS current summaries have been corrected; the dated August material below is historical, not the next action. Next: M0-11 awaits the matching signing Team ID for a fresh, data-preserving device build; M4-14 is independent offline test-first work. M4-08A can design a mock-only proxy, but live model access needs scoped AWS access, exact-region `none` retention eligibility and verified spend bounds. No provider/hosting charges have been incurred; $10 remains available only once those checks pass.
 
 ## Handover, 2026-08-10 (historical)
 
@@ -325,9 +325,10 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q3 | Free-tier AI action allowance — 30/month? | human | M6 |
 | Q4 | Exam Mode: per-document, per-notebook, or both? | human | M6 |
 | Q5 | Final product name + trademark clearance | human | M7 |
-| Q6 | Which frontier provider for T2 — and is a second one worth the abstraction cost at 1.0? | human | M4 |
+| Q6 | Nova Lite is the first beta candidate (ADR-021); does a second provider make sense after quality/cost evidence for 1.0? | human | M4 after pilot |
 | Q9 | Who can run the blind similarity measurement, and with how many writers? ADR-018 withdrew the pivot, so poor scores guide handwriting improvements rather than remove the feature | human | M3-10 measurement, not M4 |
-| Q13 | Users, including the owner of the connected iPad mini 6, may not have Apple Intelligence-capable devices. Which consent-gated provider, hosting route and external spending cap should enable real answers, and does broader hardware support supersede ADR-019/020? Preserve notebooks, offer a local arithmetic subset, and make no paid calls or deployment-target change before approval | human with lead recommendation | M4-13 then M4-08/device real-AI test |
+
+**Q13 is resolved for beta by ADR-021 (2026-10-07):** support iPads without Apple Intelligence using a bounded, consent-gated proxy; evaluate Nova Lite first under a $10 **total** external-services ceiling. M4-08A/B/C split security and wiring, M4-14 covers local arithmetic, M4-15 records measured quality. These are plans, not shipped paths. No provider is permitted to transmit until server-side authorization, consent, cost and retention checks are in place.
 
 **Q12 was resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. The Xcode 27 SDK
 blocker is now gone, but the connected iPad still runs 26.6 and the user has not approved an
@@ -339,10 +340,10 @@ verify the iOS 27 SDK surface separately instead of interpreting an iOS 26-targe
 panel still runs, as a measurement rather than a verdict, and **M3-19 is now the main lever** on
 output quality. Everything that was held back "until the gate" is an ordinary priority again.
 
-**ADR-020 currently scopes shipping to Apple Intelligence availability**, but the only
-connected test iPad is ineligible and the user expects others to be ineligible too. Treat the
-old zero-cost tier mix as unverified for that audience. Q13 needs a superseding decision, not
-a silent routing workaround.
+**ADR-021 supersedes ADR-020 for device eligibility.** The beta includes the mini 6 but
+retains availability-based routing and the previous regional exclusion. The old zero-cost
+tier mix and gross-margin estimate are not valid forecasts for ineligible hardware; reassess
+after the consented provider pilot, not from list prices alone.
 
 **Q7 is resolved (2026-08-12): routing asks the framework, not a region.** See ADR-017 and
 `AI_PIPELINE.md` §5.2. The EU has Apple Intelligence today and its gap is the 27-era Siri
@@ -362,7 +363,7 @@ Q1 has been answered in practice — M1 shipped a paged canvas — but was never
 ## 6. Known risks being actively watched
 
 - **R-01 handwriting quality** — measure via M3-10 and improve via M3-19; not a gate or a reason to remove handwriting (ADR-018).
-- **Non-Apple-Intelligence iPads** — the current iPad mini 6 cannot run T0 and there is no shipping alternative provider. Q13/M4-13 must settle consent, cost, hosting and scope before real answers can reach it.
+- **Non-Apple-Intelligence iPads** — ADR-021 approves support for the current mini 6, but there is still no shipping alternative provider. M4-08A/B/C need verified `none` retention, consent, signed authorization, a provable $10 combined spend bound and device evidence before real answers reach it.
 - **R-04 substrate scope** — M1 is the most likely milestone to blow its estimate.
 - **R-02 Apple Notes Math Notes** — already ships the basic demo for free; keep the positioning on continuation and breadth.
 

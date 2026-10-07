@@ -192,7 +192,7 @@ This is not just ethics theater — it is the answer when a university procureme
 
 ### 6.4 iPad only, iPadOS 26 minimum
 
-`Project.swift` currently deploys to iPadOS 26.0; ADR-019 targets 27 for 1.0 but does not authorize updating an existing test device. On-device Foundation Models require Apple Intelligence-capable hardware, which the connected iPad mini (6th generation) lacks. As of 2026-10-07, broader-device AI access, PCC availability/terms, and the eventual deployment target need reassessment (CONTEXT.md Q13); no model or cloud fallback is wired into the shipping app.
+`Project.swift` currently deploys to iPadOS 26.0; ADR-019 targets 27 for 1.0 but does not authorize updating an existing test device. On-device Foundation Models require Apple Intelligence-capable hardware, which the connected iPad mini (6th generation) lacks. ADR-021 now approves broader-device beta support with AWS Bedrock Nova Lite as a candidate behind a consent-gated proxy and a $10 total external pilot ceiling. PCC availability/terms and the eventual 1.0 deployment target still need reassessment; no real provider is wired into the shipping app.
 
 ---
 
@@ -204,9 +204,9 @@ This is not just ethics theater — it is the answer when a university procureme
 | R-02 | Apple ships this in Notes | Medium | Severe | Compete on breadth (any subject), continuation, and being a real notebook app | Not a kill — a repositioning trigger |
 | R-03 | Recognition accuracy on messy handwriting is too low | Medium | Severe | Send both raster and stroke-order data; use the neighborhood context; make failure graceful ("I couldn't read this — retry?") | If golden-set intent+read accuracy <85% at M4 with frontier models, the product is not ready |
 | R-04 | Notebook substrate takes far longer than planned | High | Severe | PencilKit instead of a custom engine; cut PDF annotation to post-1.0 if M1 slips >2 weeks | — |
-| R-05 | Unit economics don't work at consumer price points | Low | Severe | On-device/PCC routing for the majority of calls; hard credit caps; see `BUSINESS.md` | If blended cost/action >$0.03 at M4, restrict frontier routing |
+| R-05 | Unit economics don't work at consumer price points | High for hardware without Apple Intelligence | Severe | Recalculate from the ADR-021 pilot including provider, hosting, retries and declines; enforce server-side rate/spend caps; see `BUSINESS.md` | If blended cost/action >$0.03 at M4, restrict frontier routing |
 | R-06 | App Review rejection (4.1 copycat, 4.3, 5.1.2(i) AI consent) | Medium | Moderate | Visual distinctiveness, explicit consent flow naming providers, thorough review notes | — |
-| R-07 | Apple Intelligence unavailable on otherwise supported iPads, including the connected iPad mini (6th generation) | High | Severe | Route on actual framework availability (ADR-017), not a region table; decide a consent-gated non-Apple-Intelligence provider and spending limit before implementation (CONTEXT.md Q13) | — |
+| R-07 | Apple Intelligence unavailable on otherwise supported iPads, including the connected iPad mini (6th generation) | High | Severe | Route on actual framework availability (ADR-017), not a region table; evaluate ADR-021's consent-gated Nova Lite candidate under its $10 total pilot ceiling before shipping (CONTEXT.md §0) | — |
 | R-08 | Solo-dev burnout / scope creep | High | Fatal | The non-goals list in §1.4 is a contract. Quality reviews. Ship M2 as an internal demo to keep morale | — |
 
 ---
