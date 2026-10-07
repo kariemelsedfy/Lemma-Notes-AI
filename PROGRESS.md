@@ -26,7 +26,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
 | M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
-| M0-11 Fresh baseline device build | Devin / `5fad067` | `chore/M0-11-device-baseline` / build and handoff only | Signing Team ID supplied via environment; fresh install/launch and human Checkpoint A pending |
+| M0-11 Fresh baseline device build | Unclaimed until Xcode account is refreshed / `5fad067` | `chore/M0-11-device-baseline` / build and handoff only | No Xcode account for supplied Team ID; failed before install, existing data preserved; retry with a new DerivedData after human sign-in |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
@@ -35,13 +35,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-11 — Install a fresh baseline on the existing iPad without removing its data
-status: In progress · claimed: Devin · 2026-10-07 · base: 5fad067 · branch: chore/M0-11-device-baseline · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
-Note: the human supplied the matching signing Team ID; supply it to Tuist through the environment only, not tracked files. The connected iPad mini (6th generation), iPadOS 26.6, is paired, Developer Mode is on, and the developer disk image is mounted. Margin is installed as `edu.bowdoin.margin`. Checkpoint A tests the existing canned `4`, not real AI. Preserve the installed app and data; do not change its bundle ID or uninstall.
-Acceptance:
-- [ ] Regenerate with intended signing and make a new DerivedData directory for the exact revision
-- [ ] Build, install over the existing app, launch, and open the regenerated workspace on the connected iPad
-- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
+_(empty)_
 
 ## Review
 
@@ -236,6 +230,14 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
+
+### M0-11 — Install a fresh baseline on the existing iPad without removing its data
+status: Ready · blocked-on: human Xcode account sign-in for the provided Team ID · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+Note 2026-10-07, Devin: claimed on `chore/M0-11-device-baseline` at `5fad067`; full tests/lint passed. Regenerated with the Team ID supplied out-of-band and created a new DerivedData directory, but the physical-device build at the claim commit failed **before installation**: Xcode reports `No Account for Team` and no development provisioning profile for `edu.bowdoin.margin`. The device is paired, on iPadOS 26.6, Developer Mode on and disk image mounted; the existing app and data remain installed. The user must sign in/refresh the correct Apple ID in Xcode → Settings → Accounts and confirm the Team ID; do not ask for credentials or change the bundle ID. When ready, claim again and use another brand-new DerivedData directory. Checkpoint A still expects the canned `4`, not real AI.
+Acceptance:
+- [x] Regenerate with intended signing and create a fresh DerivedData directory for the attempted exact revision (build did not succeed)
+- [ ] Build successfully for the connected iPad, install over the existing app, launch, and open the regenerated workspace
+- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
 
 ### M0-04 — Module dependency rule enforcement
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S

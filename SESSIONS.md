@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-07 · Devin · M0-11 — signing failed before a device build could exist
+
+The connected iPad mini 6 is paired, on iPadOS 26.6, with Developer Mode and developer disk image ready; `edu.bowdoin.margin` is installed. The user provided a Team ID out-of-band. I ran the repo's full test and lint gates, then regenerated the Tuist workspace with that ID from the process environment and made a brand-new DerivedData directory. `xcodebuild build` for the physical device failed: **No Account for Team** and no development profile for the existing bundle ID. No `.app` was produced for handoff, no install or uninstall was attempted, and the notebooks were left alone. This is Xcode account authentication, not an SDK compatibility or device-pairing failure; do not guess a different Team ID or bundle ID.
+
+The human was asked to sign in/refresh the Apple ID in Xcode → Settings → Accounts and confirm the Team ID. When they report that Xcode recognizes the team, re-claim M0-11, regenerate with signing and make **another** new DerivedData directory; never use the failed attempt's DerivedData. Do not call Checkpoint A ready until the newly built app is installed, launched and the regenerated workspace is open in Xcode. While waiting, M4-14B's app-only local-answer work and mock-only Bedrock work remain independent, but neither substitutes for a physical Pencil test.
+
 ## 2026-10-07 · Devin · M4-14 — arithmetic is not a license to guess
 
 The mini 6 cannot run Apple Intelligence, but a strictly supported local arithmetic read is a useful independent path. Tests were written first and failed because the evaluator did not exist. The new pure package API returns either a validator-approved LaTeX spec or an explicit unsupported result; **nothing here changes the shipping Ask**, which still returns the demo `4`. M4-14B must connect this to offline/Private Mode with localized decline copy, not treat it as a general math solver. No notebook ink, network traffic, model call or charge was involved.
