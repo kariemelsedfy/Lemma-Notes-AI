@@ -33,7 +33,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
+status: In progress · claimed: Devin · 2026-10-07 · base: f8dd4b9 · branch: docs/M4-13-broad-device-ai · refs: DECISIONS.md ADR-017, ADR-019, ADR-020, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
+Note: the user approved mini 6 support, AWS Bedrock/Nova Lite as the first paid candidate, and a hard $10 total external-services ceiling on 2026-10-07. The current iPadOS 26 deployment target remains unchanged for beta; changing ADR-019's 1.0 target needs a later decision. This claim owns root planning/ADR docs only; no server, client or package edits.
+Acceptance:
+- [ ] Compare the provider/proxy route with a strictly local supported arithmetic subset and record privacy, offline, quality and budget limits
+- [ ] Record the approved hardware-scope reversal in a superseding ADR, and split provider, integration, local arithmetic and pilot work into bounded tasks
+- [ ] No paid calls, provider keys in the app, new dependencies, or silently broadened provider consent
 
 ## Review
 
@@ -1979,14 +1985,6 @@ Acceptance:
 - [ ] The §9 distribution is met, and recorded
 - [ ] Human transcription and intent labels accompany each sample
 - [ ] Stored so that no sample leaves the device without its writer's consent
-
-### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
-status: Ready · owner: lead for options; human for provider, external spending and ADR approval · refs: DECISIONS.md ADR-017, ADR-019, ADR-020, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
-Note: the only connected test device is an iPad mini (6th generation), and the user expects other users to have similarly ineligible hardware. On 2026-10-07 the user asked to consider another provider; this does not yet approve a paid service, changing the 1.0 OS target, or broadening the accepted ADR-020 market scope. Prefer a small deterministic arithmetic subset on-device and a consent-gated first-party proxy for broader answers, subject to a provider, hosting and per-period spend cap. Do not send content or embed an API key before approval.
-Acceptance:
-- [ ] Compare an external provider/proxy route against a strictly local supported subset, with privacy, offline, latency, budget, availability, and notebook-data implications
-- [ ] Propose superseding ADRs where ADR-019/020 or the routing policy change; get explicit approval for provider/dependency/hosting/spending decisions
-- [ ] Split implementation into small testable provider, app-integration and device-verification tasks without assuming the mini runs T0
 
 ### M4-07 — T1 provider: Apple PCC
 status: Blocked · blocker: PCC API, terms, entitlement and cost are not verified against the now-installed iOS 27 SDK; M0-07 Developer/Small Business Program enrollment is deferred · depends: M4-01, M4-02 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
