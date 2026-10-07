@@ -28,14 +28,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
-| M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
+| M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | Test first, then fresh mini 6 build; no cloud, no bank edits |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: In progress · claimed: Devin · 2026-10-07 · base: 9bc2719 · branch: feat/M4-14B-local-ask · needs-device-verification · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Exclusive scope: named `Apps/Margin` Ask composition, localized decline copy and app-target tests; no edits to pure evaluator, generated Xcode project, glyph bank or AWS proxy. This is an interim supported-subset flow, not a claim that a real AI model has reached the mini.
+Acceptance:
+- [ ] A selection read confidently as `2+3=` and `7-2=` produces their respective validator-approved suggestions, never a canned `4` for unrelated/unsupported input
+- [ ] Low-confidence, unrecognized and out-of-grammar reads explain the limited local path with localized recoverable copy, with no generated ink; cancellation/page changes still suppress late suggestions
+- [ ] Automated Ask-path tests plus a fresh iPad mini build/check verify Keep, erase, undo and save/reopen without uninstalling notebooks
 
 ## Review
 
@@ -2057,14 +2063,6 @@ Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
 - [ ] A fresh build installs over `edu.bowdoin.margin` and the physical iPad result is recorded with SHA, OS and consent/offline failure behavior
-
-### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: Ready · needs-device-verification · depends: M4-14, M0-11 for hardware check · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: app Ask composition, localized decline copy and app-target tests; no changes to the pure evaluator or AWS proxy. This is an interim supported-subset flow, not a claim that a real AI model has reached the mini.
-Acceptance:
-- [ ] A selection read confidently as `2+3=` and `7-2=` produces their respective validator-approved suggestions, never a canned `4` for unrelated/unsupported input
-- [ ] Low-confidence, unrecognized and out-of-grammar reads explain the limited offline path with localized recoverable copy, with no generated ink; cancellation/page changes still suppress late suggestions
-- [ ] Automated Ask-path tests plus a fresh iPad mini build/check verify Keep, erase, undo and save/reopen without uninstalling notebooks
 
 ### M4-15 — Measure the real mini-6 answer path before expanding
 status: Blocked · depends: M4-08C, M0-11, explicit consent and verified remaining spend under ADR-021 · refs: AI_PIPELINE.md §9, AGENTS.md §8 · estimate: M
