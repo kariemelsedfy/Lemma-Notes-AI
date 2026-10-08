@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2 Durable pilot spend gate | Unclaimed / after mock A1 | Branch TBD / server/tool ledger and tests only | A1 fake-only tests pass; actual AWS, hosting and $10 total cap remain blocked on Q15/Q16 |
+| M4-08B Mock-only client provider | Devin / `6326e6c` | `feat/M4-08B-client-provider` / Intelligence provider and tests only | A1 fake-only core passes; A2/A3 live costs/retention remain blocked; no app wiring |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08B — Build the client provider with consent and validated specs
+status: In progress · claimed: Devin · 2026-10-08 · base: 6326e6c · branch: feat/M4-08B-client-provider · depends: M4-09, ADR-021; live endpoint depends: M4-08A · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
+Exclusive scope: `Packages/Intelligence` provider and tests only; no app Ask composition, live server code, URL, credentials or new third-party dependency. The fake transport must see only permitted selection data and only after provider-layer consent; no shipping app wiring until M4-08C.
+Acceptance:
+- [ ] Provider-layer consent denies before the fake transport; request includes only crop, bounded neighborhood and permitted ephemeral hints
+- [ ] Decode then validate every answer; refusal, malformed output, timeout, offline and cancellation fail closed without content in logs/errors
+- [ ] Fake-transport tests cover two distinct questions, declines and late cancellation; no real network or charge
 
 ## Review
 
@@ -2088,14 +2094,6 @@ Acceptance:
 - [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
 - [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
 - [ ] Fake-transport tests cover refusal, malformed responses, timeout, cancellation and cost reconciliation before a separately authorized capped pilot
-
-### M4-08B — Build the client provider with consent and validated specs
-status: Ready (mock transport only) · depends: M4-09, ADR-021; live endpoint depends: M4-08A · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
-Exclusive scope: `Packages/Intelligence` provider and tests; no app Ask composition or server code. No new third-party dependency without a separate approved dependency ADR.
-Acceptance:
-- [ ] The existing provider-layer consent gate rejects before any request is sent; only selection crop, bounded neighborhood and permitted hints are transiently transferred
-- [ ] Decode then validate every answer, decline on unsupported blocks/read confidence, and map refusal, malformed output, cancellation, timeout and offline without leaking content into errors or logs
-- [ ] Fake-transport tests cover two distinct questions and cancellation; no real network or charge in the test suite
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
