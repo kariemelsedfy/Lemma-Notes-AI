@@ -76,6 +76,15 @@ actor AdmissionGate {
     }
 
     func invoke(_ body: Data, proof: String?, transport: any ProxyTransport) async throws {
+        let validated = try await validate(body, proof: proof)
+        guard inFlight < maxInFlight else { throw AdmissionError.busy }
+        try Task.checkCancellation()
+        inFlight += 1
+        defer { inFlight -= 1 }
+        try await transport.send(validated.request)
+    }
+
+    func validate(_ body: Data, proof: String?) async throws -> (request: AdmittedRequest, identity: PilotIdentity) {
         guard body.count <= 3_000_000 else { throw AdmissionError.oversized }
         try Task.checkCancellation()
         let identity = await authorize(proof)
@@ -99,11 +108,7 @@ actor AdmissionGate {
         }
         try PNG.check(request.cropPNG, maxBytes: 1_000_000, maxPixels: 1_500_000)
         try PNG.check(request.neighborhoodPNG, maxBytes: 500_000, maxPixels: 500_000)
-        guard inFlight < maxInFlight else { throw AdmissionError.busy }
-        try Task.checkCancellation()
-        inFlight += 1
-        defer { inFlight -= 1 }
-        try await transport.send(request)
+        return (request, identity)
     }
 }
 
