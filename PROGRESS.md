@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2 Durable pilot spend gate | Unclaimed / after mock A1 | Branch TBD / local-Mac ledger and tests only | Client fake transport done; Region/retention unknown and $10 provider bound unverified; no live calls |
+| M4-08A2a Local-Mac reservation ledger | Unclaimed / `6aeee05` | `feat/M4-08A2a-local-ledger` / isolated tool ledger and tests | Human reports us-east-1 retention none; model eligibility/price and hard cost cap still unverified; no live calls |
 
 ---
 
@@ -2082,16 +2082,31 @@ Acceptance:
 - [ ] Actual provider and hosting cost/remaining cap can be bounded before any paid pilot request, not merely alerted after it
 
 ### M4-08A2 — Atomic pilot spend, idempotency and rate gates
-status: Ready after M4-08A1; no live use until a persistent cross-instance store and complete provider-plus-hosting hard bound are verified · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
-Exclusive scope: server admission ledger and tests, not app code or AWS account provisioning. The owner chose a **Local Mac for a one-device pilot only**, avoiding new cloud-hosting charges; this is not a beta backend. Reserve worst-case inference charges before transport, limit per-user actions/concurrency, deduplicate request IDs, reconcile actual cost and stop on storage/error/unknown price. macOS system SQLite3 is present but no backing store has been selected or deployed; any choice must be durable and atomic across local proxy processes, not an in-memory-only counter. Unknown AWS Region, account retention mode and exact pricing still prevent a paid call.
+status: Ready (decomposed into M4-08A2a/A2b); no live use until both pass and provider price/model eligibility are verified · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+Note: the owner chose a **Local Mac for a one-device pilot only**, so new cloud-hosting charges for this pilot are $0; a later distributed beta still needs a separate hosting cap. The owner reports a new account with no other Bedrock workloads and CloudShell `put` plus `get` read-back of account-wide `none` in **us-east-1** on 2026-10-08. This is human-reported configuration evidence, not an authenticated check from this checkout. Nova Lite is publicly listed as In-Region there, but exact account access/eligibility under `none` and worst-case price remain unverified. An in-memory counter or an AWS budget alert is not a hard stop. Split the durable reservation core from price reconciliation/authorization/rate integration to keep each PR under 400 lines; neither child alone authorizes a paid call.
 Acceptance:
-- [ ] Concurrent and duplicate requests cannot exceed a durable $10 **total** cap including remaining reserved hosting headroom
-- [ ] Unauthorized, over-budget and rate-limited attempts make zero provider calls; unknown actual costs or ledger failures stop new admission
-- [ ] Verified entitlement or explicit pilot authorization is checked on the server, never a client credit count
+- [ ] Cross-instance reservations/duplicate request IDs cannot exceed a durable $10 **total** ceiling (minus any future verified hosting headroom)
+- [ ] Unknown actual charge, storage failure, unauthorized, over-budget and rate-limited work never trigger an unreserved provider call
+- [ ] Verify a worst-case price for the exact model/Region before reserving a live request; server pilot authorization or StoreKit entitlement cannot be a client credit count
+
+### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
+status: Ready · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
+Exclusive scope: isolated `Tools/bedrock-proxy` ledger source/tests and package system-library link only; no app, AWS endpoint, real price, account config or paid call. System SQLite3 is installed on the Mac; propose its use only for the provisional one-device pilot, with no external package. The ledger must not persist a crop, transcript, answer or glyph bank, and must fail closed if unavailable.
+Acceptance:
+- [ ] Atomic cross-connection reservation/replay tests cannot exceed a configurable cap no greater than $10; duplicate IDs, overflow and invalid costs decline
+- [ ] Reopening the database preserves reserved charges; unknown results retain the worst-case reservation rather than refunding on timeout
+- [ ] No network path exists in the tool; code builds/tests with the existing repo gates and tracks the SQLite decision for review
+
+### M4-08A2b — Verify pricing and reconcile durable spend with authorization/rate limits
+status: Ready after M4-08A2a; live use blocked on exact model price, server verifier, and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
+Acceptance:
+- [ ] Worst-case per-call cost, actual usage, retries and remaining headroom reconcile atomically across proxy processes; over-reservation or unknown results stop new dispatch
+- [ ] Server-verified pilot identity/entitlement, per-user rate and duplicate checks happen before a transport call; cross-instance tests demonstrate zero calls on denial
+- [ ] Local Mac pilot keeps new hosting charges at zero; a cloud-hosted beta requires its own durable shared ledger and hosting cap
 
 ### M4-08A3 — Verify Nova Lite eligibility and connect a bounded live transport
-status: Blocked on human AWS account/Region access and explicit approval before account-wide retention or billable hosting changes; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
-Note: Q15/Q16 in `CONTEXT.md` remain open. Runtime account retention must be `none` in the exact Region. Verify that Nova Lite is eligible there via supported metadata or a synthetic, non-user-content invocation under the already bounded spend path; `GetFoundationModel` alone is not proof. Nova Lite lacks structured-output support, so any tool-use/JSON response needs strict schema validation and a fail-closed decline. A1 checks PNG structure/CRC, **not** decompression; fully decode/normalize image data and verify actual app-generated PNG compatibility before a paid call. Never send personal handwriting or enable paid calls until all gates pass.
+status: Blocked on scoped authenticated Mac access, exact Nova Lite eligibility under `none`, verified pricing and the hard $10 gate; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
+Note: the owner chose **us-east-1**, reported no other Bedrock workloads, explicitly approved account-wide `none` there and reported CloudShell read-back `none` on 2026-10-08. No authenticated Mac role/CLI is configured in this checkout and no model call has been made. Check effective Runtime retention again at request time; verify Nova Lite is eligible under it via supported metadata or a synthetic, non-user-content invocation only after the durable spend path is bounded. `GetFoundationModel` alone is not proof. Nova Lite lacks structured-output support, so any tool-use/JSON response needs strict schema validation and a fail-closed decline. A1 checks PNG structure/CRC, **not** decompression; fully decode/normalize image data and verify actual app-generated PNG compatibility before a paid call. Never send personal handwriting or enable paid calls until all gates pass.
 Acceptance:
 - [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
 - [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
