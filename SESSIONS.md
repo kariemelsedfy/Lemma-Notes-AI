@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-14B — the mini answered two different questions
+
+After the mock OCR tests passed, I regenerated with the Personal Team from the process environment, created another new DerivedData directory, built `687d26e` for the physical iPad mini 6 on iPadOS 26.6, verified the signed `edu.bowdoin.margin` bundle, installed it **over** the existing app without uninstalling, launched it, confirmed the process was running and opened the regenerated workspace in Xcode. The owner reported **pass on all four focused steps**: two distinct short arithmetic questions yielded their respective non-canned answers (`5` and `6`), unsupported symbolic work declined without ink, and Keep/erase/Undo/navigation/reopen/export behaved as expected. Do not extrapolate this four-case check to messy OCR, algebra, prose, math correctness beyond the grammar, or general AI. The only suggested ink came from the deterministic local evaluator; no third-party payload left the device and $0 of the $10 combined pilot ceiling was spent.
+
+The human also reiterated the earlier debug handwriting-sample mismatch with the same old screenshot. M4-14B does not touch that synthesis or preview: M3-27 has the concrete cropping/localization defect, while M3-19/M3-10 own measured resemblance. Avoid claiming the successful arithmetic check improved handwriting realism or that a real Bedrock model reached the page.
+
 ## 2026-10-08 · Devin · M4-14B — local answers replace the demo, but not the missing model
 
 The baseline iPad build always drew `4`. M4-14's checked arithmetic evaluator existed in `Intelligence` but nothing in the shipping Ask called it. Wrote an app-target test first, which failed to compile without the app adapter and shipping provider factory. Now `VirtualizedPageStack` constructs a local adapter rather than the canned provider; the latter is debug-only. The adapter consumes only the local Vision reading and never touches a network, returns validated short math specs, and refuses other verbs/ambiguous or unsupported notation rather than fabricating an answer. App copy distinguishes *unreadable* from *only simple arithmetic is available*. New page navigation cancels the old selection so a late response cannot show on another page. A cancelled in-flight OCR task is also asserted to leave no suggestion.

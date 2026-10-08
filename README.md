@@ -4,7 +4,7 @@
 
 Working codename: **Margin**. (Placeholder — trademark search required before any public use. Alternates: Inkwell, Quill, Marginalia, Scribe, Loop.)
 
-Margin is an iPad notebook aiming to put answers directly on the page in your handwriting. Tap Ask, lasso the question, then mark the allowed answer area. On the M4-14B branch, Ask supports only short, confidently read arithmetic and declines unsupported work; a real AI model is not yet wired in. The last human-tested iPad build still uses the canned `4` until a fresh M4-14B build is installed.
+Margin is an iPad notebook aiming to put answers directly on the page in your handwriting. Tap Ask, lasso the question, then mark the allowed answer area. On the M4-14B branch, Ask supports only short, confidently read arithmetic and declines unsupported work; a real AI model is not yet wired in. The limited arithmetic path has been tested on the iPad mini 6.
 
 ---
 
@@ -15,7 +15,7 @@ Margin is an iPad notebook aiming to put answers directly on the page in your ha
 | Phase | M3 handwriting implemented; M4 real AI and private beta integration pending |
 | Current deployment target | iPadOS 26.0; ADR-019 targets iPadOS 27 for 1.0 but needs review against ADR-021 support for the mini 6 |
 | Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting synthesis, two-region Ask, undo and export; the current branch answers a bounded local arithmetic subset, not arbitrary questions |
-| Verification | Checkpoint A passed on a fresh mini 6 build at `43cc3e7` (iPadOS 26.6); the M4-14B local Ask branch passes app tests in the simulator but has not reached the device |
+| Verification | Checkpoint A passed at `43cc3e7`; the limited local Ask path passed four focused iPad mini 6 checks at `687d26e` (iPadOS 26.6), plus 186 simulator app tests; real-model inference remains untested |
 
 ---
 

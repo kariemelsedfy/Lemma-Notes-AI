@@ -28,7 +28,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
-| M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | Code/test review: 186 simulator app tests pass; fresh mini 6 build and human verdict pending |
+| M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
@@ -39,15 +39,17 @@ _(empty)_
 
 ## Review
 
-### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: Review · implemented: Devin · 2026-10-08 · base: 9bc2719 · branch: feat/M4-14B-local-ask · needs-device-verification · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
-Note: the current branch replaces the shipping Ask's `CannedSpecProvider` with an app adapter for the pure local evaluator; the canned provider is `#if DEBUG` for tests only. No Apple Intelligence or network call is made. Unsupported/unclear OCR and unimplemented verbs produce no suggestion, with distinct localized recovery copy. The app cancels a selection when the visible page changes, while an in-flight cancel prevents late ink; tests exercise the app pipeline and navigation decision. `./scripts/test.sh` and `./scripts/lint.sh` pass, and 186 app-target tests passed on the iOS 26.1 simulator. The last human-tested mini-6 build is still `43cc3e7` with canned `4`; **this branch has not been installed or verified with Pencil input**. Keep/glyph fallback, undo, save/reopen and export need another fresh device build and focused human check. Cloud-provider routing still belongs to M4-08C; `.onDevice` here means no network, not Apple Foundation Models availability.
-Acceptance:
-- [x] Synthetic selections read confidently as `2+3=`, `7-2=` and `3*3=` produce their respective validator-approved suggestions rather than a canned `4`
-- [x] Simulator tests cover low-confidence/unsupported/unrecognized declines, localized copy, cancellation, and the page-navigation cancellation decision with no generated ink
-- [ ] Fresh iPad mini build/check verifies distinct answers, limited-path copy, Keep/erase/undo, navigation and save/reopen without uninstalling notebooks
+_(empty)_
 
 ## Done
+
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: Done · implemented: Devin · device-confirmed: human · 2026-10-08 · tested: `687d26e` on iPad mini (6th generation), iPadOS 26.6 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Note: shipping Ask now uses the pure bounded local arithmetic adapter, not `CannedSpecProvider` (`#if DEBUG` for tests only). No Apple model, network transport or paid call is involved. Unsupported/unclear OCR and other verbs produce distinct localized recovery copy without ink; navigation and cancellation suppress late suggestions. `./scripts/test.sh` and `./scripts/lint.sh` passed, with 186 simulator app-target tests passing. For the physical handoff, regenerated Tuist with the intended Personal Team, built `687d26e` in a new DerivedData directory, verified signing/bundle ID, installed it over `edu.bowdoin.margin` without uninstalling, launched it, confirmed the process and opened Xcode. The owner reported **pass for all four focused steps**: `2+3=` suggested `5`, `3+3=` suggested `6`, `x+2=` declined without ink, and Keep/erase/undo/navigation/reopen/export preserved expected behavior. This is a limited supported-subset check, **not** evidence of general reasoning, provider integration, or improved handwriting similarity. Cloud routing still belongs to M4-08C, which must distinguish deterministic `.onDevice` telemetry from unavailable Apple Foundation Models. $0 of the $10 external pilot ceiling was used.
+Acceptance:
+- [x] Different confident arithmetic selections produce their respective validated suggestions; unsupported work never silently returns canned `4`
+- [x] Localized low-confidence/unsupported failure and cancellation/navigation behavior covered by app tests and focused device report
+- [x] Fresh mini-6 build confirmed by the human for distinct answers, decline, Keep/erase/undo, navigation, reopen and export without uninstalling notebooks
 
 ### M0-11 — Install a fresh baseline on the existing iPad without removing its data
 status: Done · claimed/completed: Devin · device-confirmed: human · 2026-10-07 · tested: `43cc3e7` on iPad mini (6th generation), iPadOS 26.6 · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
