@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3 Synthetic eligibility/transport | Unclaimed / blocked on hard gates | Branch TBD / scoped, synthetic-only AWS verification | Fake composition passes; model `none` eligibility, trusted callbacks, bounded image/price and reviewed invocation permission still missing |
+| M4-08A3a Mac SDK no-call seam | Unclaimed / `0c20512` | `feat/M4-08A3a-mac-sdk-seam` / proxy-tool SDK manifest and offline tests | Human approved Mac-tool-only AWS SDK; real eligibility under `none` and paid invocation remain blocked |
 
 ---
 
@@ -2160,6 +2160,21 @@ Acceptance:
 - [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
 - [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
 - [ ] Fake-transport tests cover refusal, malformed responses, timeout, cancellation and cost reconciliation before a separately authorized capped pilot
+
+### M4-08A3a — Pin a Mac-only Bedrock SDK with a disabled-by-default transport seam
+status: Ready after M4-08A2b2b2 · depends: ADR-021, ADR-024 (human-approved SDK decision), A2b2b2 · refs: ARCHITECTURE.md §2, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
+Exclusive scope: `Tools/bedrock-proxy` manifest, Mac-only source/tests and docs/ADR. The owner explicitly approved the official AWS SDK for Swift in the Mac proxy tool, **not the iPad app**, on 2026-10-08. Pin SDK version **1.8.2** (published 2026-09-30), check transitive resolutions and keep a fail-closed default that cannot invoke the model. Do not add an endpoint, image transport, `InvokeModel` permission, user content or an AWS paid call in this slice. CLI remains the user-controlled temporary-credential browser login; the SDK can use that profile later.
+Acceptance:
+- [ ] Mac proxy alone imports the SDK and type-checks a disabled-by-default transport boundary; no app package imports AWS or gains a key
+- [ ] An absent authorized runtime implementation makes zero model calls; no SDK request is emitted in tests; existing fake-admission tests stay green
+- [ ] ADR-024 records the explicit human approval, pinned dependency, alternatives and live blockers; full tool/repo test/lint gates pass, review diff stays small
+
+### M4-08A3b — Bind trusted Mac-side evidence and decode selected PNGs before any live request
+status: Ready after M4-08A3a; actual model invocation stays blocked on A3's hard gates · refs: BUSINESS.md §3.3, AI_PIPELINE.md §5, ADR-021/024 · estimate: M
+Acceptance:
+- [ ] The Mac-side adapter can obtain fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fail closed on unknown image/other charges, and avoid content logging
+- [ ] Fully decode/normalize synthetic and actual app-selected crop/neighborhood PNGs under strict pixel/byte limits; no whole page or glyph bank crosses the boundary
+- [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed model invocation access and a separately approved capped synthetic call remain A3 gates
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M

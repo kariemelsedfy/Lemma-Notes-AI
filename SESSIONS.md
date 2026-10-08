@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A3a — approved Mac-only SDK, not an AWS invocation
+
+PRs #122 and #123 passed their final CI after replacing an older runner Swift isolation-checker-incompatible `Self.pilotID` capture in concurrency tests with a local UUID; tests were not weakened. The owner explicitly approved the **official AWS SDK for Swift only in the Mac proxy tool**, with CLI browser login retained for short-lived credentials. I selected exact SDK version **1.8.2**, released 2026-09-30; newer 1.8.4–1.8.6 versions are too recent for the project supply-chain age preference. ADR-024 records why native SDK request signing/binary-in-memory handling beats a CLI subprocess carrying private image data or handwritten SigV4. Split M4-08A3 into a no-call dependency/seam review (A3a) and later authenticated evidence/image validation (A3b), with scoped `InvokeModel` permission and a separately approved capped synthetic paid call still blocked under A3. No AWS service, account permission, model invocation, endpoint, handwriting upload or provider charge changed while making this decision.
+
 ## 2026-10-08 · Devin · M4-08A2b2b1 CI follow-up — XCTest isolation capture on the runner
 
 PR #122's runner failed compiling two concurrency tests with the Swift diagnostic “pattern that the region-based isolation checker does not understand how to check.” Local tests passed on this Mac's newer compiler. Both `Task` closures reached through the `XCTestCase` type's `Self.pilotID`; the fix copies the same stable UUID to an immutable local before creating the two tasks. No test assertion, concurrent race or money/rate behavior was weakened. The fix was committed to #122 and merged forward into the stacked fake-composition branch without rebasing or rewriting history. CI reruns were still pending when this note was added; confirm their result rather than assuming green. No AWS inference or paid call occurred.
