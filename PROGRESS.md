@@ -29,35 +29,39 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A1b Adversarial proxy tests | Devin / `4ba88c7` | `test/M4-08A1b-adversarial` / server/tool tests only | A1a core in PR #116; finish bounded cancellation/concurrency/PNG checks; no paid calls |
+| M4-08A2 Durable pilot spend gate | Unclaimed / after mock A1 | Branch TBD / server/tool ledger and tests only | A1 fake-only tests pass; actual AWS, hosting and $10 total cap remain blocked on Q15/Q16 |
 
 ---
 
 ## In progress
 
-### M4-08A1b — Prove cancellation, concurrency and PNG metadata fail closed
-status: In progress · claimed: Devin · 2026-10-08 · base: 4ba88c7 · branch: test/M4-08A1b-adversarial · depends: M4-08A1a, ADR-021 · refs: PROGRESS.md M4-08A1, AGENTS.md §7 · estimate: S
-Exclusive scope: `Tools/bedrock-proxy` adversarial tests and scoped admission fixes only; no app/server deployment, AWS account configuration, SDK or paid traffic. The first in-development concurrency test hung when its synthetic PNG fixture had a bad CRC; use bounded test waiting rather than a CI hang if admission regresses.
-Acceptance:
-- [ ] A cancelled asynchronous authorization cannot later invoke the fake transport
-- [ ] Simultaneous requests respect the in-flight cap; tests have bounded waits and cannot deadlock when the first request is rejected
-- [ ] Validly checksummed PNG ancillary metadata and tampered checksums are refused before the fake transport; full tool/repo gates pass
+_(empty)_
 
 ## Review
 
-### M4-08A1 — Mock-only proxy request admission and privacy bounds
-status: Review (A1a Done, A1b claimed); implemented in stacked PRs #116 and successor · owner: Devin · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
-Note: provisional `Tools/bedrock-proxy` core is fake-only, default-denying and not deployable. A1a handles input/auth/retention basics; A1b completes adversarial and concurrent validation. No app module/dependency, AWS SDK, deployment or paid calls. The parent returns Done only after A1b passes; A2/A3 still own durable money, exact eligibility and live transport.
-Acceptance:
-- [ ] No fake transport call before injected server authorization, unknown fields and unsupported intent decline
-- [ ] Actual PNG dimensions, bytes/pixels, transcript, tokens and in-flight requests are bounded; no admitted page/bank field
-- [ ] Missing or wrong model/region retention evidence or no `none` mode fails closed; adversarial tests cover malformed/unauthorized/oversize and cancellation without logs/persistent content
+_(empty)_
 
 ## Done
 
+### M4-08A1 — Mock-only proxy request admission and privacy bounds
+status: Done (mock-only A1a/A1b); implemented: Devin · 2026-10-08 · branches: feat/M4-08A1-proxy-admission, test/M4-08A1b-adversarial · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
+Note: the isolated `Tools/bedrock-proxy` SwiftPM library has **no endpoint, AWS SDK, app dependency, credential or live provider transport**. With no trusted server-injected pilot identity and fresh exact-model/Region `none` retention evidence it denies. Its exact JSON shape excludes page/bank fields; actual PNG headers/chunk CRC, bytes/pixels, short transcript and tokens are bounded. Fake transport in-flight concurrency is capped, and cancellation after asynchronous authorization now stops dispatch. Eight synthetic tests prove these behaviors; full test/lint gates pass. One synthetic PNG fixture had an invalid IDAT CRC and the first unbounded concurrency test hung; the fixture was corrected and the wait now has a finite bound. This is **not** a production authorization verifier, complete PNG decompressor, confirmed Nova Lite retention eligibility, StoreKit proof, persistent request ledger, or hard $10 provider-plus-hosting cap. A2/A3 remain explicit blockers; no billable calls, user notes or glyph bank data crossed a service boundary.
+Acceptance:
+- [x] Fake transport is never called for missing injected authorization, unknown JSON fields or unsupported intent
+- [x] PNG actual dimensions/bytes/pixels, transcript, output tokens and concurrent fake requests are bounded; no page/bank input field is admitted
+- [x] Missing/mismatched model/Region retention evidence or absent `none` fails closed; malformed and cancelled synthetic requests neither log/persist content nor reach the fake transport
+
+### M4-08A1b — Prove cancellation, concurrency and PNG metadata fail closed
+status: Done · implemented: Devin · 2026-10-08 · base: 4ba88c7 · branch: test/M4-08A1b-adversarial · depends: M4-08A1a, ADR-021 · refs: PROGRESS.md M4-08A1, AGENTS.md §7 · estimate: S
+Note: three adversarial tests extend the five A1a tests: cancellation during a slow server verifier, atomic actor in-flight admission with a fake transport, and validly checksummed PNG metadata plus corrupted chunk CRC. The concurrency test has a bounded wait so an early rejection fails instead of deadlocking CI. No live provider or budget ledger was introduced.
+Acceptance:
+- [x] Cancelled async authorization makes zero fake-provider calls
+- [x] Simultaneous requests respect the in-flight cap and the regression test does not hang on rejection
+- [x] Metadata/checksum failures make zero fake-provider calls; tool and repo test/lint gates pass
+
 ### M4-08A1a — Establish a deny-by-default proxy admission core
 status: Done · implemented: Devin · 2026-10-08 · base: bdc79c4 · branch: feat/M4-08A1-proxy-admission · PR #116 · depends: ADR-021 · refs: PROGRESS.md M4-08A1, BUSINESS.md §6 · estimate: S
-Note: a provisional server-only Swift package under `Tools/bedrock-proxy` has no AWS transport or executable. Without injected server authorization and fresh exact-model/Region retention evidence it denies. It parses an exact JSON request shape with no page/bank fields; PNG signature, IHDR dimensions, byte/pixel caps, allowed chunks and CRC are checked before a fake transport can receive anything. Five focused tests cover authorized synthetic dispatch, unverified users, unknown fields, unsupported verbs, malformed/oversized images, transcript/token limits and retention mismatch. The tool builds/tests from `scripts/test.sh` and is included in SwiftLint/swift-format. **A1b still owns cancellation, concurrency and metadata/checksum regression tests; A1 parent and A2/A3 remain open.** This code is not deployable, not a hard budget cap, and has never sent a model request.
+Note: a provisional server-only Swift package under `Tools/bedrock-proxy` has no AWS transport or executable. Without injected server authorization and fresh exact-model/Region retention evidence it denies. It parses an exact JSON request shape with no page/bank fields; PNG signature, IHDR dimensions, byte/pixel caps, allowed chunks and CRC are checked before a fake transport can receive anything. Five focused tests cover authorized synthetic dispatch, unverified users, unknown fields, unsupported verbs, malformed/oversized images, transcript/token limits and retention mismatch. The tool builds/tests from `scripts/test.sh` and is included in SwiftLint/swift-format. **At PR #116, A1b still owned cancellation, concurrency and metadata/checksum tests; A1b later completed the mock-only A1 parent. A2/A3 remain open.** This code is not deployable, not a hard budget cap, and has never sent a model request.
 Acceptance:
 - [x] Five fake-transport tests and full repo test/lint gates pass without secrets, AWS calls or persistent user content
 - [x] The source has no live endpoint or provider credential path; default authentication/retention callbacks deny
@@ -2079,7 +2083,7 @@ Acceptance:
 
 ### M4-08A3 — Verify Nova Lite eligibility and connect a bounded live transport
 status: Blocked on human AWS account/Region access and explicit approval before account-wide retention or billable hosting changes; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
-Note: Q15/Q16 in `CONTEXT.md` remain open. Runtime account retention must be `none` in the exact Region. Verify that Nova Lite is eligible there via supported metadata or a synthetic, non-user-content invocation under the already bounded spend path; `GetFoundationModel` alone is not proof. Nova Lite lacks structured-output support, so any tool-use/JSON response needs strict schema validation and a fail-closed decline. Never send personal handwriting or enable paid calls until all gates pass.
+Note: Q15/Q16 in `CONTEXT.md` remain open. Runtime account retention must be `none` in the exact Region. Verify that Nova Lite is eligible there via supported metadata or a synthetic, non-user-content invocation under the already bounded spend path; `GetFoundationModel` alone is not proof. Nova Lite lacks structured-output support, so any tool-use/JSON response needs strict schema validation and a fail-closed decline. A1 checks PNG structure/CRC, **not** decompression; fully decode/normalize image data and verify actual app-generated PNG compatibility before a paid call. Never send personal handwriting or enable paid calls until all gates pass.
 Acceptance:
 - [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
 - [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
