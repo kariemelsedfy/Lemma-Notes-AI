@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A2b2 — a cheap illustrative rate is not a verified quote
+
+PR #120 adds a durable *observation*, not permission to make a call. The owner signs in to this recent AWS account as **root**; do not reuse root for the Local Mac proxy and never request or paste a key in chat. AWS CLI v2 documents browser-issued temporary credentials via `aws login` for a console IAM user, requiring `SignInLocalDevelopmentAccess`; a narrow IAM principal and permissions still require human account configuration and review (Q17). No AWS CLI is installed or signed in on the Mac today.
+
+AWS's Nova Lite card confirms `amazon.nova-lite-v1:0` in-region us-east-1, a 300K context window and 5K model maximum output; our client/server caps output at 512. Bedrock docs say `CountTokens` is free and matches billable input-token counting, but it still accepts request content, so consent/retention gates apply. AWS's pricing page is dynamically rendered here; the prior $0.06/$0.24 per-million figures are illustrative, **not an authoritative current price quote** for this account/tier/Region. Split A2b2 into a pure default-deny price envelope (b2a) and later identity/rate/call integration (b2b). Proposed 5¢ worst-case per-call limit stays inside the unchanged $10 **total** ceiling; if a trusted quote including any non-model cost cannot prove that bound, decline. No AWS account change, paid request or ink upload occurred during this research.
+
 ## 2026-10-08 · Devin · M4-08A2b1 — a lower reported cost is not a budget refund
 
 I added three test-first synthetic cases to the Mac-only SQLite ledger: an observed cost below the reservation persists without freeing headroom; missing/duplicate/conflicting observations decline; and an observation larger than its maximum persists a halt across independent ledger instances and reopen. The new tests initially did not compile because the observation API was absent. A later regression was genuinely red: a halted ledger still reported spendable headroom. The `remainingMicros` query now refuses while halted. **Ten ledger tests plus eight admission tests pass**, as do full repo gates; no AWS account API, paid model invocation, endpoint or user handwriting was involved. The $10 total ceiling remains entirely unused.
