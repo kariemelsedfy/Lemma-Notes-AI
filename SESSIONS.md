@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A2b2a — prove a price ceiling without claiming an AWS price
+
+I wrote six tests first; they failed to compile until the pure `PilotPriceEnvelope` existed. It checks exact Nova Lite model ID, us-east-1, standard tier, a fresh bounded input/output/other price quote, output tokens 1–512 and checked integer micro-USD ceiling arithmetic. An absent quote, stale/future/wrong tier/Region/model, negative/unknown overhead, expensive call or overflow fails closed. Test-only historical rates of $0.06/M input and $0.24/M output with 1,000 micro-USD synthetic other cost produce a **19,123 micro-USD** worst-case bound for 300K input plus 512 output, but the held pilot reservation is a fixed **50,000 micro-USD (5¢)**. Neither figure establishes current account pricing. No AWS call, user ink, credential, endpoint or paid charge occurred; the $10 total ceiling remains untouched.
+
+The owner uses AWS Console root sign-in. Official AWS CLI documentation supports browser-issued temporary credentials via `aws login` for a console IAM user with `SignInLocalDevelopmentAccess`, but no narrow IAM principal or local AWS CLI is configured and we must not use root to run the Mac proxy. A2b2b/A3 must verify real rates and other fees, enforce token counting/consent and durable per-user gates, and prove exact model eligibility under account retention `none`. The upcoming after-call report must label usage-based estimates distinctly from delayed AWS billing. The pricing page is dynamically rendered here, so do not silently promote the old example rate into a trusted quote.
+
 ## 2026-10-08 · Devin · M4-08A2b2 — a cheap illustrative rate is not a verified quote
 
 PR #120 adds a durable *observation*, not permission to make a call. The owner signs in to this recent AWS account as **root**; do not reuse root for the Local Mac proxy and never request or paste a key in chat. AWS CLI v2 documents browser-issued temporary credentials via `aws login` for a console IAM user, requiring `SignInLocalDevelopmentAccess`; a narrow IAM principal and permissions still require human account configuration and review (Q17). No AWS CLI is installed or signed in on the Mac today.
