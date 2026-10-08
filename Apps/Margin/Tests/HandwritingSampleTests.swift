@@ -1,4 +1,5 @@
 import Handwriting
+import ImageIO
 import InkCore
 import XCTest
 
@@ -84,6 +85,52 @@ final class HandwritingSampleTests: XCTestCase {
         }
     }
 
+    func testWidePreviewKeepsBothNibEdgesInsideTheMiniWidth() throws {
+        let stroke = Self.previewStroke(from: 20, to: 1_020, penWidth: 6)
+        let width: CGFloat = 452
+        let layout = try XCTUnwrap(HandwritingSample.previewLayout(of: [stroke], width: width))
+        let nibRadius = InkRenderingLimits.drawnWidth(forSize: 6) * layout.scale / 2
+        let first = try XCTUnwrap(stroke.points.first)
+        let last = try XCTUnwrap(stroke.points.last)
+
+        XCTAssertLessThan(layout.scale, 1)
+        XCTAssertGreaterThanOrEqual(layout.position(first.location).x - nibRadius, 0)
+        XCTAssertLessThanOrEqual(layout.position(last.location).x + nibRadius, width)
+        XCTAssertEqual(first.size.width, 6)
+        XCTAssertEqual(last.size.width, 6)
+    }
+
+    func testShortPreviewPreservesFullSizeAndRejectsZeroWidth() throws {
+        let stroke = Self.previewStroke(from: 20, to: 120, penWidth: 8)
+        let layout = try XCTUnwrap(HandwritingSample.previewLayout(of: [stroke], width: 452))
+        let nibRadius = InkRenderingLimits.drawnWidth(forSize: 8) / 2
+
+        XCTAssertEqual(layout.scale, 1)
+        XCTAssertGreaterThanOrEqual(layout.position(try XCTUnwrap(stroke.points.first).location).x - nibRadius, 0)
+        XCTAssertLessThanOrEqual(layout.position(try XCTUnwrap(stroke.points.last).location).x + nibRadius, 452)
+        XCTAssertNil(HandwritingSample.previewLayout(of: [stroke], width: 0))
+    }
+
+    func testSampleDoneAndSharedPNGHaveAVisibleMargin() throws {
+        XCTAssertEqual(NSLocalizedString("sample.done", comment: ""), "Done")
+        let stroke = Self.previewStroke(from: 20, to: 1_020, penWidth: 6)
+        let image = try HandwritingSample.image(of: [stroke])
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(image as CFData, nil))
+        let raster = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        let rawBounds = InkLineGrouping.bounds(of: stroke)
+
+        XCTAssertGreaterThan(raster.width, Int((rawBounds.width + 8) * 3))
+    }
+
+    func testPreviewLayoutCostOnDenseSyntheticLine() {
+        let strokes = (0..<200).map { index in
+            Self.previewStroke(from: CGFloat(index) * 4, to: CGFloat(index) * 4 + 2, penWidth: 6)
+        }
+        measure {
+            for _ in 0..<100 { _ = HandwritingSample.previewLayout(of: strokes, width: 452) }
+        }
+    }
+
     /// Suggestions are what a panel is shown, so they have to be renderable from an ordinary
     /// bank and long enough to read as handwriting rather than as a word.
     func testEverySuggestionIsProseTheFixtureBankCanDraw() throws {
@@ -110,6 +157,17 @@ final class HandwritingSampleTests: XCTestCase {
                     altitude: 1, azimuth: 0, size: CGSize(width: penWidth, height: penWidth)),
             ])
         }
+    }
+
+    private static func previewStroke(from start: CGFloat, to end: CGFloat, penWidth: CGFloat) -> InkStroke {
+        InkStroke(points: [
+            InkPoint(
+                location: CGPoint(x: start, y: 20), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0,
+                size: CGSize(width: penWidth, height: penWidth)),
+            InkPoint(
+                location: CGPoint(x: end, y: 45), timeOffset: 1, force: 0.5, altitude: 1, azimuth: 0,
+                size: CGSize(width: penWidth, height: penWidth)),
+        ])
     }
 
     private static func bank(

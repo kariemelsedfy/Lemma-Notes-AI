@@ -94,6 +94,36 @@ enum HandwritingSample {
         }
     }
 
+    struct PreviewLayout {
+        let bounds: CGRect
+        let scale: CGFloat
+        let inset: CGFloat
+
+        func position(_ point: CGPoint) -> CGPoint {
+            CGPoint(
+                x: (point.x - bounds.minX) * scale + inset,
+                y: (point.y - bounds.minY) * scale
+            )
+        }
+    }
+
+    static func previewLayout(of strokes: [InkStroke], width: CGFloat) -> PreviewLayout? {
+        let bounds = InkLineGrouping.bounds(of: strokes)
+        guard !bounds.isNull, width.isFinite else { return nil }
+        let maxNib =
+            strokes.compactMap(\.points.first).map {
+                InkRenderingLimits.drawnWidth(forSize: $0.size.width)
+            }.max() ?? 0
+        let inset = max(4, maxNib / 2 + 4)
+        let available = width - 2 * inset
+        guard available > 0 else { return nil }
+        return PreviewLayout(
+            bounds: bounds,
+            scale: bounds.width > 0 ? min(available / bounds.width, 1) : 1,
+            inset: inset
+        )
+    }
+
     /// A PNG of one line, on white, for the panel.
     ///
     /// Both lines are rendered by the same rasterizer at the same scale, for the same reason
