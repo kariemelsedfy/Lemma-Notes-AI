@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2a Local-Mac reservation ledger | Unclaimed / `6aeee05` | `feat/M4-08A2a-local-ledger` / isolated tool ledger and tests | Human reports us-east-1 retention none; model eligibility/price and hard cost cap still unverified; no live calls |
+| M4-08A2a Local-Mac reservation ledger | Devin / `0468371` | `feat/M4-08A2a-local-ledger` / isolated tool ledger and tests | Human reports us-east-1 retention none; model eligibility/price and hard cost cap still unverified; no live calls |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
+status: In progress · claimed: Devin · 2026-10-08 · base: 0468371 · branch: feat/M4-08A2a-local-ledger · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
+Exclusive scope: isolated `Tools/bedrock-proxy` ledger source/tests and package system-library link only; no app, AWS endpoint, verified real price, account change or paid call. macOS system SQLite3 is present, but its pilot-only use is proposed for review rather than silently made a deployed dependency. Store only request IDs and money amounts, not notes, crops, answers or a glyph bank. Fail closed if storage is unavailable.
+Acceptance:
+- [ ] Atomic cross-connection reservation/replay tests cannot exceed a configurable cap no greater than $10; duplicate IDs, overflow and invalid costs decline
+- [ ] Reopening the database preserves reserved charges; unknown results keep the worst-case reservation rather than refunding on timeout
+- [ ] No network path exists in the tool; code builds/tests with repo gates and records the pilot-only system SQLite decision for review
 
 ## Review
 
@@ -2088,14 +2094,6 @@ Acceptance:
 - [ ] Cross-instance reservations/duplicate request IDs cannot exceed a durable $10 **total** ceiling (minus any future verified hosting headroom)
 - [ ] Unknown actual charge, storage failure, unauthorized, over-budget and rate-limited work never trigger an unreserved provider call
 - [ ] Verify a worst-case price for the exact model/Region before reserving a live request; server pilot authorization or StoreKit entitlement cannot be a client credit count
-
-### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
-status: Ready · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
-Exclusive scope: isolated `Tools/bedrock-proxy` ledger source/tests and package system-library link only; no app, AWS endpoint, real price, account config or paid call. System SQLite3 is installed on the Mac; propose its use only for the provisional one-device pilot, with no external package. The ledger must not persist a crop, transcript, answer or glyph bank, and must fail closed if unavailable.
-Acceptance:
-- [ ] Atomic cross-connection reservation/replay tests cannot exceed a configurable cap no greater than $10; duplicate IDs, overflow and invalid costs decline
-- [ ] Reopening the database preserves reserved charges; unknown results retain the worst-case reservation rather than refunding on timeout
-- [ ] No network path exists in the tool; code builds/tests with the existing repo gates and tracks the SQLite decision for review
 
 ### M4-08A2b — Verify pricing and reconcile durable spend with authorization/rate limits
 status: Ready after M4-08A2a; live use blocked on exact model price, server verifier, and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
