@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A2b1 — a lower reported cost is not a budget refund
+
+I added three test-first synthetic cases to the Mac-only SQLite ledger: an observed cost below the reservation persists without freeing headroom; missing/duplicate/conflicting observations decline; and an observation larger than its maximum persists a halt across independent ledger instances and reopen. The new tests initially did not compile because the observation API was absent. A later regression was genuinely red: a halted ledger still reported spendable headroom. The `remainingMicros` query now refuses while halted. **Ten ledger tests plus eight admission tests pass**, as do full repo gates; no AWS account API, paid model invocation, endpoint or user handwriting was involved. The $10 total ceiling remains entirely unused.
+
+The observed number will be a usage-based **estimate** until AWS billing catches up, not a trustworthy invoice or a reason to refund a reservation. A2b2 must compute both the maximum and observation from verified server-side prices and usage, enforce authorization and per-user rates before a fake transport, and stop on unknown charges. The b1 schema adds an observations table and halt flag; an A2a-only test DB intentionally fails closed rather than being silently migrated or reset. No production pilot database exists. ADR-023 remains proposed for human review, and M4-08A3 still needs exact Nova Lite eligibility under `none` and scoped Mac AWS access before any personal content can travel.
+
 ## 2026-10-08 · Devin · M4-08A2b — immediate usage cost is not the final AWS bill
 
 The owner offered cloud hosting if easier, then accepted the recommendation to keep a **Local Mac** for the one-device, strictly $10-total pilot. AWS Lambda/API Gateway/DynamoDB can be cheap at low usage but incur charges outside a provider-only reservation; AWS Budgets update with a delay and are not a hard total cap. No cloud resource or endpoint was created. The owner asked for the total price **after each call**, without revising the $10 ceiling. Explain and report immediate usage-based charges as **estimates**, show cumulative estimates and held worst-case budget before another call, and reconcile with delayed AWS billing when available. Do not promise an exact billed total immediately after an invocation.
