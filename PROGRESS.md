@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | SDK no-call seam passes; exact Nova Lite `none` eligibility, real evidence sources and paid call still blocked |
+| M4-08A3b1 PNG decode/normalization | Unclaimed / `722bd8b` | `feat/M4-08A3b1-png-normalization` / proxy PNG validator and tests | SDK no-call seam passes locally; exact Nova Lite `none` eligibility and paid transport remain blocked |
 
 ---
 
@@ -2170,11 +2170,31 @@ Acceptance:
 - [ ] Fake-transport tests cover refusal, malformed responses, timeout, cancellation and cost reconciliation before a separately authorized capped pilot
 
 ### M4-08A3b — Bind trusted Mac-side evidence and decode selected PNGs before any live request
-status: Ready after M4-08A3a; actual model invocation stays blocked on A3's hard gates · refs: BUSINESS.md §3.3, AI_PIPELINE.md §5, ADR-021/024 · estimate: M
+status: Ready (decomposed into b1/b2/b3 after A3a); actual model invocation still blocked on A3's hard gates · refs: BUSINESS.md §3.3, AI_PIPELINE.md §5, ADR-021/024 · estimate: L
 Acceptance:
-- [ ] The Mac-side adapter can obtain fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fail closed on unknown image/other charges, and avoid content logging
-- [ ] Fully decode/normalize synthetic and actual app-selected crop/neighborhood PNGs under strict pixel/byte limits; no whole page or glyph bank crosses the boundary
-- [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed model invocation access and a separately approved capped synthetic call remain A3 gates
+- [ ] The Mac adapter obtains fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fails closed on unknown image/other charges and avoids content logging
+- [ ] Fully decode/normalize selected crop/neighborhood PNGs under byte/pixel bounds; verify actual app PNG compatibility separately before any handwriting transfer
+- [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
+
+### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
+status: Ready after M4-08A3a · depends: ADR-021/024, M4-08A1 · refs: AI_PIPELINE.md §1/§5, ARCHITECTURE.md §2 · estimate: S
+Exclusive scope: `Tools/bedrock-proxy` Mac-side PNG validation/normalization and synthetic tests. Start from the existing signature/IHDR/chunk/CRC limits; verify actual IDAT decompression and dimensions with ImageIO under the current maximum byte/pixel count. Strip unsafe metadata by re-encoding accepted pixels and keep the accepted output bounded. Mirror `SelectionRasterizer`'s ImageIO encoding pattern with synthetic black-on-white and transparent fixtures; actual physical-iPad captures remain for A3b3/M4-08C. No account call, SDK send, user ink or app source change.
+Acceptance:
+- [ ] PNGs made using the app's macOS-testable ImageIO pattern pass, preserve pixels/dimensions and become bounded canonical output with no metadata
+- [ ] Invalid compressed data despite valid structure/CRC, oversize dimensions/bytes, metadata-bearing content and truncated frames decline before fake transport
+- [ ] Full tool/repo tests and lint pass, no new SDK/IAM permission or model call; limitations on real iPad PNG compatibility remain explicit
+
+### M4-08A3b2 — Source exact scoped price and retention evidence read-only
+status: Ready after M4-08A3b1; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
+Acceptance:
+- [ ] From the limited Mac login, SDK read-only checks return current Runtime retention and exact Nova Lite on-demand price SKUs for us-east-1 with a bounded age; missing/ambiguous rate or unknown other charges stops admission
+- [ ] Test offline with injected SDK clients; keep all content-free errors, no app credential and no model invocation
+
+### M4-08A3b3 — Verify fake SDK response path and actual selected-image compatibility
+status: Ready after M4-08A3b1/b2; paid traffic remains blocked under A3 · refs: AI_PIPELINE.md §3/§5, ADR-021/024 · estimate: M
+Acceptance:
+- [ ] SDK-injected fake transport rejects invalid response, timeout, cancellation, retry/replay or content outside a strictly validated spec, and does not send when any hard gate fails
+- [ ] Check actual app-produced selected PNGs against Mac normalization; do not send personal handwriting until retention eligibility, cost and consent gates pass
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
