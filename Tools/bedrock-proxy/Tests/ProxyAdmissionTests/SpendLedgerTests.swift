@@ -4,10 +4,12 @@ import XCTest
 @testable import ProxyAdmission
 
 final class SpendLedgerTests: XCTestCase {
+    private static let pilotID = UUID()
+
     func testReservationPersistsAfterReopeningWithoutAResult() async throws {
         let database = try temporaryDatabase()
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
-        let remaining = try await first.reserve(requestID: UUID(), maximumMicros: 30)
+        let remaining = try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 30)
         XCTAssertEqual(remaining, 70)
 
         let reopened = try SpendLedger(databaseURL: database, limitMicros: 100)
@@ -19,7 +21,7 @@ final class SpendLedgerTests: XCTestCase {
         let database = try temporaryDatabase()
         let ledger = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
         let requestID = UUID()
-        _ = try await ledger.reserve(requestID: requestID, maximumMicros: 70)
+        _ = try await ledger.reserve(requestID: requestID, pilotID: Self.pilotID, maximumMicros: 70)
         try await ledger.recordObservedCost(requestID: requestID, observedMicros: 20)
         let observed = try await ledger.observedTotalMicros()
         let remaining = try await ledger.remainingMicros()
@@ -36,7 +38,7 @@ final class SpendLedgerTests: XCTestCase {
     func testUnknownDuplicateAndInvalidObservationsDoNotReleaseBudget() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100)
         let requestID = UUID()
-        _ = try await ledger.reserve(requestID: requestID, maximumMicros: 60)
+        _ = try await ledger.reserve(requestID: requestID, pilotID: Self.pilotID, maximumMicros: 60)
         await expectObservation(.unknownRequest, ledger, requestID: UUID(), cost: 10)
         await expectObservation(.invalidCost, ledger, requestID: requestID, cost: -1)
         try await ledger.recordObservedCost(requestID: requestID, observedMicros: 20)
@@ -53,7 +55,7 @@ final class SpendLedgerTests: XCTestCase {
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
         let second = try SpendLedger(databaseURL: database, limitMicros: 100)
         let requestID = UUID()
-        _ = try await first.reserve(requestID: requestID, maximumMicros: 30)
+        _ = try await first.reserve(requestID: requestID, pilotID: Self.pilotID, maximumMicros: 30)
         await expectObservation(.costExceeded, first, requestID: requestID, cost: 31)
         let observed = try await second.observedTotalMicros()
         XCTAssertEqual(observed, 31)
@@ -71,9 +73,9 @@ final class SpendLedgerTests: XCTestCase {
     func testDuplicateIDsAndRequestsOverTheCeilingAreDenied() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100)
         let first = UUID()
-        _ = try await ledger.reserve(requestID: first, maximumMicros: 70)
+        _ = try await ledger.reserve(requestID: first, pilotID: Self.pilotID, maximumMicros: 70)
         await expect(.duplicate, ledger, requestID: first, maximumMicros: 1)
-        let lastAllowed = try await ledger.reserve(requestID: UUID(), maximumMicros: 30)
+        let lastAllowed = try await ledger.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 30)
         XCTAssertEqual(lastAllowed, 0)
         await expect(.overBudget, ledger, requestID: UUID(), maximumMicros: 1)
     }
@@ -82,9 +84,10 @@ final class SpendLedgerTests: XCTestCase {
         let database = try temporaryDatabase()
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
         let second = try SpendLedger(databaseURL: database, limitMicros: 100)
+        let pilotID = Self.pilotID
         let operations = [
-            Task { try await first.reserve(requestID: UUID(), maximumMicros: 60) },
-            Task { try await second.reserve(requestID: UUID(), maximumMicros: 60) },
+            Task { try await first.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 60) },
+            Task { try await second.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 60) },
         ]
         var accepted = 0
         var denied = 0
@@ -121,7 +124,7 @@ final class SpendLedgerTests: XCTestCase {
     func testReopeningWithAChangedCeilingFailsClosed() async throws {
         let database = try temporaryDatabase()
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
-        _ = try await first.reserve(requestID: UUID(), maximumMicros: 80)
+        _ = try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 80)
 
         XCTAssertThrowsError(try SpendLedger(databaseURL: database, limitMicros: 10_000_000)) {
             XCTAssertEqual($0 as? LedgerError, .configurationMismatch)
@@ -134,7 +137,7 @@ final class SpendLedgerTests: XCTestCase {
     func testMissingLedgerCannotBeSilentlyRecreated() async throws {
         let database = try temporaryDatabase()
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
-        _ = try await first.reserve(requestID: UUID(), maximumMicros: 80)
+        _ = try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 80)
         let saved = database.deletingLastPathComponent().appendingPathComponent("saved.sqlite")
         try FileManager.default.moveItem(at: database, to: saved)
 
@@ -171,7 +174,7 @@ final class SpendLedgerTests: XCTestCase {
 
     private func expect(_ failure: LedgerError, _ ledger: SpendLedger, requestID: UUID, maximumMicros: Int64) async {
         do {
-            _ = try await ledger.reserve(requestID: requestID, maximumMicros: maximumMicros)
+            _ = try await ledger.reserve(requestID: requestID, pilotID: Self.pilotID, maximumMicros: maximumMicros)
             XCTFail("Invalid reservation was accepted")
         } catch let error as LedgerError {
             XCTAssertEqual(error, failure)
