@@ -25,7 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
-| M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
+| M3-27 Sample preview clip/key | Devin / `df10fb8` | `fix/M3-27-sample-preview` / sample view, layout, strings and tests | Pure preview test first, then fresh mini-6 check; glyph quality remains M3-19 |
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
@@ -35,7 +35,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-27 — Handwriting sample clips its line and exposes a raw Done key
+status: In progress · claimed: Devin · 2026-10-08 · base: df10fb8 · branch: fix/M3-27-sample-preview · needs-device-verification · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
+Exclusive scope: `Apps/Margin/Sources/HandwritingSampleView.swift`, pure preview geometry in `HandwritingSample.swift`, localized `sample.done`, and existing app sample tests. Do not change the glyph bank, Synthesizer, or other modules. The user's private screenshot is not a repository fixture.
+Acceptance:
+- [ ] A regression test exercises long strokes and nonzero nib width at both preview edges; the entire line is visible on an iPad mini without mutating generated stroke height/pen width
+- [ ] Done uses localized copy, and PNG sharing remains uncropped when tested
+- [ ] Fresh physical-device look confirms the preview no longer clips; the user's subjective similarity judgement is recorded separately
 
 ## Review
 
@@ -1188,14 +1194,6 @@ The screen working is not a blind-panel result (M3-10) or evidence of convincing
 M3-08C's variation already reaches sample selection, spacing and slant, but the current
 one-pass bank has few alternatives to sample; M3-19 is the larger quality lever.
 Neither this finding nor the panel delays the real-AI path (ADR-018).
-
-### M3-27 — Handwriting sample clips its line and exposes a raw Done key
-status: Ready · needs-device-verification · found: human Checkpoint A, `43cc3e7`, iPad mini 6 / iPadOS 26.6 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
-Note: the user's screenshot shows the generated sentence cut off at both horizontal edges and a `sample.done` button label. `SampleInkView` maps point-only `InkLineGrouping.bounds` directly to x=0 and the full view width, leaving no margin for the drawn nib; `Localizable.strings` lacks `sample.done`. This is a preview/UI defect, **not** an explanation for why the generated glyph shapes look unlike the author's line. Do not alter the bank or synthesis jitter to hide it; M3-19 and a later blind measurement own style quality. Keep the bank on-device and do not commit the screenshot or glyph samples.
-Acceptance:
-- [ ] A regression test exercises long strokes and nonzero nib width at both preview edges; the entire line is visible on an iPad mini without changing intended ink height/pen width
-- [ ] Done uses localized copy, and PNG sharing remains uncropped when tested
-- [ ] Fresh physical-device look confirms the preview no longer clips; the user's subjective similarity judgement is recorded separately
 
 ### M3-00 — Typeset fallback style
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
