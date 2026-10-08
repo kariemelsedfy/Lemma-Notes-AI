@@ -84,9 +84,10 @@ final class SpendLedgerTests: XCTestCase {
         let database = try temporaryDatabase()
         let first = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 100)
         let second = try SpendLedger(databaseURL: database, limitMicros: 100)
+        let pilotID = Self.pilotID
         let operations = [
-            Task { try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 60) },
-            Task { try await second.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 60) },
+            Task { try await first.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 60) },
+            Task { try await second.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 60) },
         ]
         var accepted = 0
         var denied = 0

@@ -52,9 +52,10 @@ final class RateLedgerTests: XCTestCase {
         for _ in 0..<39 {
             _ = try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 1)
         }
+        let pilotID = Self.pilotID
         let actions = [
-            Task { try await first.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 1) },
-            Task { try await second.reserve(requestID: UUID(), pilotID: Self.pilotID, maximumMicros: 1) },
+            Task { try await first.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 1) },
+            Task { try await second.reserve(requestID: UUID(), pilotID: pilotID, maximumMicros: 1) },
         ]
         var accepted = 0
         var refused = 0
