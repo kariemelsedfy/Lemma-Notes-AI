@@ -29,25 +29,27 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08B Mock-only client provider | Devin / `6326e6c` | `feat/M4-08B-client-provider` / Intelligence provider and tests only | A1 fake-only core passes; A2/A3 live costs/retention remain blocked; no app wiring |
+| M4-08A2 Durable pilot spend gate | Unclaimed / after mock A1 | Branch TBD / local-Mac ledger and tests only | Client fake transport done; Region/retention unknown and $10 provider bound unverified; no live calls |
 
 ---
 
 ## In progress
 
-### M4-08B — Build the client provider with consent and validated specs
-status: In progress · claimed: Devin · 2026-10-08 · base: 6326e6c · branch: feat/M4-08B-client-provider · depends: M4-09, ADR-021; live endpoint depends: M4-08A · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
-Exclusive scope: `Packages/Intelligence` provider and tests only; no app Ask composition, live server code, URL, credentials or new third-party dependency. The fake transport must see only permitted selection data and only after provider-layer consent; no shipping app wiring until M4-08C.
-Acceptance:
-- [ ] Provider-layer consent denies before the fake transport; request includes only crop, bounded neighborhood and permitted ephemeral hints
-- [ ] Decode then validate every answer; refusal, malformed output, timeout, offline and cancellation fail closed without content in logs/errors
-- [ ] Fake-transport tests cover two distinct questions, declines and late cancellation; no real network or charge
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08B — Build the client provider with consent and validated specs
+status: Done (fake transport only) · implemented: Devin · 2026-10-08 · base: 6326e6c · branch: feat/M4-08B-client-provider · depends: M4-09, ADR-021; live endpoint still depends: M4-08A2/A3 · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
+Note: added a frontier-tier `SpecProvider` with **no URL or live transport**. Its only public construction factory returns the existing `ConsentGatedProvider`; the raw initializer is private, so callers cannot create a transmitting provider without the provider-layer consent callback. A typed `ProxyClientRequest` encodes only bounded crop/neighborhood bytes, local selected-area transcript, predicted intent, request ID and fixed output-token cap; no page, notebook or glyph bank can be serialized. Fake responses are size-limited, decoded and passed through `SpecValidator`; malformed, low-confidence-with-blocks and mismatched intent fail closed. Refusal, timeout, offline, unauthorized and budget errors are content-free types, and late cancellation suppresses a response even if the fake transport ignores it. Seven new fake-transport tests pass; full repo gates pass. ADR-022 is proposed for this public factory/transport seam. **Nothing is wired into the iPad Ask**, and the installed mini still uses deterministic local arithmetic only. M4-08C must map these typed errors to localized Ask failures, verify actual app PNG bytes against A1, and wire only after A2/A3 money/retention/auth gates. The Local Mac choice avoids new hosting charges for a one-device pilot; the AWS Region/account mode remains unknown. No paid or user-content network request was made.
+Acceptance:
+- [x] Provider-layer consent refuses before the fake transport, and the encoded request carries only bounded selection images and permitted ephemeral hints
+- [x] Responses are decoded then validated; refusal, malformed output, timeout, offline and cancellation fail closed without content in errors or logs
+- [x] Fake-transport tests cover distinct answers, decline, invalid responses and cancellation; no real AWS/network call or charge
 
 ### M4-08A1 — Mock-only proxy request admission and privacy bounds
 status: Done (mock-only A1a/A1b); implemented: Devin · 2026-10-08 · branches: feat/M4-08A1-proxy-admission, test/M4-08A1b-adversarial · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
@@ -2081,7 +2083,7 @@ Acceptance:
 
 ### M4-08A2 — Atomic pilot spend, idempotency and rate gates
 status: Ready after M4-08A1; no live use until a persistent cross-instance store and complete provider-plus-hosting hard bound are verified · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
-Exclusive scope: server admission ledger and tests, not app code or AWS account provisioning. Reserve worst-case inference charges before transport, limit per-user actions/concurrency, deduplicate request IDs, reconcile actual cost and stop on storage/error/unknown price; avoid in-memory-only accounting in any production path.
+Exclusive scope: server admission ledger and tests, not app code or AWS account provisioning. The owner chose a **Local Mac for a one-device pilot only**, avoiding new cloud-hosting charges; this is not a beta backend. Reserve worst-case inference charges before transport, limit per-user actions/concurrency, deduplicate request IDs, reconcile actual cost and stop on storage/error/unknown price. macOS system SQLite3 is present but no backing store has been selected or deployed; any choice must be durable and atomic across local proxy processes, not an in-memory-only counter. Unknown AWS Region, account retention mode and exact pricing still prevent a paid call.
 Acceptance:
 - [ ] Concurrent and duplicate requests cannot exceed a durable $10 **total** cap including remaining reserved hosting headroom
 - [ ] Unauthorized, over-budget and rate-limited attempts make zero provider calls; unknown actual costs or ledger failures stop new admission
@@ -2097,7 +2099,7 @@ Acceptance:
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance. M4-14B labels its deterministic local adapter `.onDevice` for no-network telemetry even though Apple T0 is unavailable on the mini; future routing must not confuse that local subset with Foundation Models availability.
+Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance. M4-14B labels its deterministic local adapter `.onDevice` for no-network telemetry even though Apple T0 is unavailable on the mini; future routing must not confuse that local subset with Foundation Models availability. M4-08B adds content-free `ProxyProviderFailure` cases, but shipping `AskPipeline` still maps unknown provider errors to transport; map offline/refusal/unauthorized/pilot-budget-exceeded/invalid response to honest localized states (not a misleading user-credit count) before enabling this client, and verify real app-generated PNGs against A1.
 Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
