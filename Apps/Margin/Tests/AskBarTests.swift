@@ -110,6 +110,22 @@ final class AskBarTests: XCTestCase {
         XCTAssertEqual(model.phase, .failed(.offline))
     }
 
+    func testLocalFailureCopyDoesNotLeakIntoTheNextAsk() {
+        let model = Self.selectedModel()
+        model.begin(.answer)
+        model.failedLocally(.unsupported)
+        model.apply(.fail(.unreadable))
+        XCTAssertEqual(model.localFailure, .unsupported)
+
+        model.dismissFailure()
+        XCTAssertNil(model.localFailure)
+        model.begin(.answer)
+        model.failedLocally(.unclear)
+        model.apply(.fail(.unreadable))
+        model.selectionChanged(hasSelection: false)
+        XCTAssertNil(model.localFailure)
+    }
+
     func testRetryReissuesTheSameVerb() {
         let model = Self.selectedModel()
         model.begin(.plot)

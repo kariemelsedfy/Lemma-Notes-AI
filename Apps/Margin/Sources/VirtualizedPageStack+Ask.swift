@@ -69,7 +69,14 @@ extension VirtualizedPageStack {
         return suggestions.strokes
     }
 
-    /// Runs one Ask against the canned provider.
+    static func makeAskProvider() -> any SpecProvider { LocalArithmeticSpecProvider() }
+
+    static func shouldCancelAsk(selectedPage: UUID?, visiblePage: UUID) -> Bool {
+        guard let selectedPage else { return false }
+        return selectedPage != visiblePage
+    }
+
+    /// Runs one Ask against the supported local arithmetic subset.
     func ask(_ verb: AskVerb) {
         guard let selection = askSelection.questionSelection, let answerArea = askSelection.answerArea else { return }
         // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
@@ -89,7 +96,7 @@ extension VirtualizedPageStack {
         let pipeline =
             askPipeline.flatMap { $0.suggestions === suggestions ? $0 : nil }
             ?? AskPipeline(
-                provider: CannedSpecProvider(),
+                provider: Self.makeAskProvider(),
                 model: askModel,
                 suggestions: suggestions
             )

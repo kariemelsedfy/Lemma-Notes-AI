@@ -28,24 +28,24 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
-| M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | Test first, then fresh mini 6 build; no cloud, no bank edits |
+| M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | Code/test review: 186 simulator app tests pass; fresh mini 6 build and human verdict pending |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: In progress · claimed: Devin · 2026-10-07 · base: 9bc2719 · branch: feat/M4-14B-local-ask · needs-device-verification · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: named `Apps/Margin` Ask composition, localized decline copy and app-target tests; no edits to pure evaluator, generated Xcode project, glyph bank or AWS proxy. This is an interim supported-subset flow, not a claim that a real AI model has reached the mini.
-Acceptance:
-- [ ] A selection read confidently as `2+3=` and `7-2=` produces their respective validator-approved suggestions, never a canned `4` for unrelated/unsupported input
-- [ ] Low-confidence, unrecognized and out-of-grammar reads explain the limited local path with localized recoverable copy, with no generated ink; cancellation/page changes still suppress late suggestions
-- [ ] Automated Ask-path tests plus a fresh iPad mini build/check verify Keep, erase, undo and save/reopen without uninstalling notebooks
+_(empty)_
 
 ## Review
 
-_(empty)_
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: Review · implemented: Devin · 2026-10-08 · base: 9bc2719 · branch: feat/M4-14B-local-ask · needs-device-verification · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Note: the current branch replaces the shipping Ask's `CannedSpecProvider` with an app adapter for the pure local evaluator; the canned provider is `#if DEBUG` for tests only. No Apple Intelligence or network call is made. Unsupported/unclear OCR and unimplemented verbs produce no suggestion, with distinct localized recovery copy. The app cancels a selection when the visible page changes, while an in-flight cancel prevents late ink; tests exercise the app pipeline and navigation decision. `./scripts/test.sh` and `./scripts/lint.sh` pass, and 186 app-target tests passed on the iOS 26.1 simulator. The last human-tested mini-6 build is still `43cc3e7` with canned `4`; **this branch has not been installed or verified with Pencil input**. Keep/glyph fallback, undo, save/reopen and export need another fresh device build and focused human check. Cloud-provider routing still belongs to M4-08C; `.onDevice` here means no network, not Apple Foundation Models availability.
+Acceptance:
+- [x] Synthetic selections read confidently as `2+3=`, `7-2=` and `3*3=` produce their respective validator-approved suggestions rather than a canned `4`
+- [x] Simulator tests cover low-confidence/unsupported/unrecognized declines, localized copy, cancellation, and the page-navigation cancellation decision with no generated ink
+- [ ] Fresh iPad mini build/check verifies distinct answers, limited-path copy, Keep/erase/undo, navigation and save/reopen without uninstalling notebooks
 
 ## Done
 
@@ -1790,10 +1790,10 @@ Acceptance:
 iPad mini (6th generation) is not Apple Intelligence-capable; Q13 and M4-13 track the route
 to real answers on that hardware without silently changing ADR-019/020.
 
-**What M4 replaces.** `CannedSpecProvider` answers every request with the same hardcoded spec,
-so the app always writes `4`. That is M2's stated exit condition, not a bug. Everything below
-the provider boundary — validation, placement, rendering, failure states — is built and tested
-against it, so M4 is genuinely about the model and not about the pipeline.
+**What M4 replaces.** At the original M2 baseline, `CannedSpecProvider` answered every request
+with `4`. The M4-14B branch replaces that in the shipping Ask with an honest, narrow offline
+arithmetic path; this is not a general AI model or a claim that Bedrock is integrated.
+Validation, placement, rendering and cancellation must still be verified through the actual app.
 
 **Two human decisions block the paid tier, and neither blocks starting.** Q6 (which frontier
 provider, and whether a second is worth the abstraction cost at 1.0) gates M4-08. M0-07 (the
@@ -2058,7 +2058,7 @@ Acceptance:
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance.
+Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance. M4-14B labels its deterministic local adapter `.onDevice` for no-network telemetry even though Apple T0 is unavailable on the mini; future routing must not confuse that local subset with Foundation Models availability.
 Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance

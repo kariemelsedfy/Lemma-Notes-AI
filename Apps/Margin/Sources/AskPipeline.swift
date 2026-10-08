@@ -112,6 +112,11 @@ final class AskPipeline {
             // Already handled by whoever cancelled; saying so again would overwrite the
             // reason they recorded.
             return
+        } catch let error as LocalArithmeticFailure {
+            guard !Task.isCancelled else { return }
+            model.failedLocally(error)
+            model.apply(.fail(.unreadable))
+            return
         } catch {
             model.apply(.fail(Self.failure(for: error)))
             return
