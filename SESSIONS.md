@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A2b2b1 CI follow-up — XCTest isolation capture on the runner
+
+PR #122's runner failed compiling two concurrency tests with the Swift diagnostic “pattern that the region-based isolation checker does not understand how to check.” Local tests passed on this Mac's newer compiler. Both `Task` closures reached through the `XCTestCase` type's `Self.pilotID`; the fix copies the same stable UUID to an immutable local before creating the two tasks. No test assertion, concurrent race or money/rate behavior was weakened. The fix was committed to #122 and merged forward into the stacked fake-composition branch without rebasing or rewriting history. CI reruns were still pending when this note was added; confirm their result rather than assuming green. No AWS inference or paid call occurred.
+
 ## 2026-10-08 · Devin · M4-08A2b2b2 — a fake send proves gate order, not a real proxy
 
 Eight fake-transport tests were written first; they failed to compile before `PilotAdmission` existed. To avoid duplicating validation, `AdmissionGate.validate` now returns only a bounded, authenticated, retention-checked synthetic request and its injected identity, while the original fake-only `invoke` behavior and its tests remain intact. `PilotAdmission` requires that identity to parse as an opaque UUID, awaits a bounded synthetic standard-tier price quote, holds a single in-flight slot, atomically reserves 5¢ under the SQLite $10/40-per-hour policy, checks cancellation and only then sends to an injected **fake**. Tests verify zero sends and no reservations for missing pilot proof, wrong retention, forbidden page/bank key, malformed PNG, missing/expensive price, invalid identity, duplicates, budget or rate denial and cancellation. Two independent SQLite actors competing for a one-call budget permit one send. A fake send failure keeps the reservation and forbids replay; a synthetic 19,123-micro-USD observation remains separate from the held 50,000-micro-USD maximum. **38 proxy-tool tests** and full repo gates pass.
