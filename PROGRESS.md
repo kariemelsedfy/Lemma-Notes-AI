@@ -29,25 +29,27 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b2a Offline price envelope | Devin / `345daee` | `feat/M4-08A2b2a-price-envelope` / pure tool price tests | Exact current price/overhead and model `none` eligibility unverified; no live calls |
+| M4-08A2b2b Price/auth fake-transport gate | Unclaimed / after b2a | Branch TBD / tool admission and rate tests | Pure 5¢ envelope defaults to deny; authoritative account price, scoped Mac role and model `none` proof missing |
 
 ---
 
 ## In progress
 
-### M4-08A2b2a — Refuse unverified or expensive Nova Lite price envelopes
-status: In progress · claimed: Devin · 2026-10-08 · base: 345daee · branch: feat/M4-08A2b2a-price-envelope · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AI_PIPELINE.md §5 · estimate: S
-Exclusive scope: a pure, tool-side price-envelope calculator and synthetic tests. No SDK, AWS account access, model call, user content or shipping app change. Default-deny absent/stale/wrong-model/Region rate evidence; checked integer micro-USD arithmetic must bound the model context and the request's 512-token output limit. Actual authoritative price collection and call admission belong to A2b2b/A3.
-Acceptance:
-- [ ] Synthetic quote for exact model/Region and bounded tokens produces a conservative micro-USD reservation ≤5¢; oversized, overflow, stale or unknown costs refuse
-- [ ] No default hardcoded historical AWS rate can make a request live; no provider/network call in tests
-- [ ] Full tool/repo tests and lint pass; docs distinguish illustrative price from verified account pricing
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2b2a — Refuse unverified or expensive Nova Lite price envelopes
+status: Done (offline calculator only) · implemented: Devin · 2026-10-08 · base: 345daee · branch: feat/M4-08A2b2a-price-envelope · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AI_PIPELINE.md §5 · estimate: S
+Note: added a pure internal calculator under the mock-only proxy tool. Without supplied evidence it **always refuses**. Evidence must match `amazon.nova-lite-v1:0`, us-east-1 and standard tier, have positive input/output micro-USD-per-million rates, an explicitly bounded non-model amount, and be no more than 300 seconds old or in the future. The calculator reserves the published 300K-context worst case plus up to 512 output tokens using overflow-checked integer ceil arithmetic; if the resulting bound exceeds **5¢**, it refuses. For synthetic $0.06/$0.24-per-million and a synthetic 1,000-micro-USD overhead, the calculated bound is **19,123 micro-USD**, but the hold remains **50,000 micro-USD**. These numbers are **test fixtures, not verified current AWS prices or a paid quote**. Six focused fake-price tests pass. There is no AWS SDK, network access, user content or call path from this calculator; A2b2b/A3 must provide a trusted quote, enforce token caps, identity/rate/ledger admission and prove model eligibility under `none` before a call. User signs in as root, so a scoped non-root browser login is still needed; no account auth/config changed or charges incurred.
+Acceptance:
+- [x] Exact synthetic quote and bounded tokens produce a fixed ≤5¢ reservation; expensive, stale, future, wrong-model/tier/Region, missing and overflowing rates refuse
+- [x] No historical AWS rate is a production default and no provider call or network exists in this slice
+- [x] Full tool/repo tests and lint pass; docs distinguish illustrative fixture prices from a verified account quote
 
 ### M4-08A2b1 — Record observed cost without releasing worst-case reservation
 status: Done (offline ledger only) · implemented: Devin · 2026-10-08 · base: 652d19b · branch: feat/M4-08A2b1-cost-observations · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
@@ -2120,7 +2122,7 @@ Acceptance:
 - [ ] Reports after every pilot call label reported-cost **estimates** distinctly from delayed AWS billed totals; Local Mac adds no new cloud-hosting charge
 
 ### M4-08A2b2 — Apply verified price, server authorization and per-user rate before transport
-status: Ready (decomposed into M4-08A2b2a/b2); live use blocked on trusted exact price, model eligibility and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+status: Ready (M4-08A2b2a Done, b2b next); live use blocked on trusted exact price, model eligibility and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
 Note: public Nova Lite documentation lists 300K context tokens, 5K model maximum output and in-Region availability in us-east-1. The client/server request cap remains 512 output tokens. The published pricing table is dynamic and the exact current standard-tier us-east-1 rate, image token billing and non-model fees have not been independently verified in this account. AWS `CountTokens` is described as free but would still receive input; never call it with personal handwriting before consent/retention gates. The owner asked to avoid costly individual calls and receive an estimate/cumulative report after each one; choose a reversible **5¢ maximum reservation per pilot call**, fail closed if an authoritative quote plus verified overhead exceeds it, and keep the $10 total cap. The owner signs into the account as root; do **not** use root as the Mac proxy identity. A separately approved scoped IAM browser login must be set up before any AWS call from the Mac.
 Acceptance:
 - [ ] A trusted, fresh exact-model/Region quote bounds all input/image and output charges and known overhead at ≤$0.05 per call; unknown or stale quote declines
