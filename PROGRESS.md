@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b1 PNG decode/normalization | Unclaimed / `722bd8b` | `feat/M4-08A3b1-png-normalization` / proxy PNG validator and tests | SDK no-call seam passes locally; exact Nova Lite `none` eligibility and paid transport remain blocked |
+| M4-08A3b1 PNG decode/normalization | Devin / `760d5bd` | `feat/M4-08A3b1-png-normalization` / proxy PNG validator and tests | SDK no-call seam passes locally; exact Nova Lite `none` eligibility and paid transport remain blocked |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
+status: In progress · claimed: Devin · 2026-10-09 · base: 760d5bd · branch: feat/M4-08A3b1-png-normalization · depends: ADR-021/024, M4-08A1 · refs: AI_PIPELINE.md §1/§5, ARCHITECTURE.md §2 · estimate: S
+Exclusive scope: `Tools/bedrock-proxy` Mac-side PNG validation/normalization and synthetic tests. Start from the existing signature/IHDR/chunk/CRC limits; verify actual IDAT decompression and dimensions with ImageIO under the current maximum byte/pixel count. Strip unsafe metadata by re-encoding accepted pixels and keep the accepted output bounded. Mirror `SelectionRasterizer`'s ImageIO encoding pattern with synthetic black-on-white and transparent fixtures; actual physical-iPad captures remain for A3b3/M4-08C. No account call, SDK send, user ink or app source change.
+Acceptance:
+- [ ] PNGs made using the app's macOS-testable ImageIO pattern pass, preserve pixels/dimensions and become bounded canonical output with no metadata
+- [ ] Invalid compressed data despite valid structure/CRC, oversize dimensions/bytes, metadata-bearing content and truncated frames decline before fake transport
+- [ ] Full tool/repo tests and lint pass, no new SDK/IAM permission or model call; limitations on real iPad PNG compatibility remain explicit
 
 ## Review
 
@@ -2175,14 +2181,6 @@ Acceptance:
 - [ ] The Mac adapter obtains fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fails closed on unknown image/other charges and avoids content logging
 - [ ] Fully decode/normalize selected crop/neighborhood PNGs under byte/pixel bounds; verify actual app PNG compatibility separately before any handwriting transfer
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
-
-### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
-status: Ready after M4-08A3a · depends: ADR-021/024, M4-08A1 · refs: AI_PIPELINE.md §1/§5, ARCHITECTURE.md §2 · estimate: S
-Exclusive scope: `Tools/bedrock-proxy` Mac-side PNG validation/normalization and synthetic tests. Start from the existing signature/IHDR/chunk/CRC limits; verify actual IDAT decompression and dimensions with ImageIO under the current maximum byte/pixel count. Strip unsafe metadata by re-encoding accepted pixels and keep the accepted output bounded. Mirror `SelectionRasterizer`'s ImageIO encoding pattern with synthetic black-on-white and transparent fixtures; actual physical-iPad captures remain for A3b3/M4-08C. No account call, SDK send, user ink or app source change.
-Acceptance:
-- [ ] PNGs made using the app's macOS-testable ImageIO pattern pass, preserve pixels/dimensions and become bounded canonical output with no metadata
-- [ ] Invalid compressed data despite valid structure/CRC, oversize dimensions/bytes, metadata-bearing content and truncated frames decline before fake transport
-- [ ] Full tool/repo tests and lint pass, no new SDK/IAM permission or model call; limitations on real iPad PNG compatibility remain explicit
 
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
 status: Ready after M4-08A3b1; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
