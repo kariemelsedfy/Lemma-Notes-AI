@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b2b2 Fake-transport composition | Unclaimed / after b1 | Branch TBD / tool admission, price and fake transport tests | SQLite money+rate core tested; server-verified pilot identity, model `none` eligibility and live transport still blocked |
+| M4-08A2b2b2 Fake-transport composition | Devin / `f1fe069` | `feat/M4-08A2b2b2-fake-admission` / tool admission/price/ledger tests | Synthetic identity/quote only; model `none` eligibility, authenticated verifier and live transport blocked |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
+status: In progress · claimed: Devin · 2026-10-08 · base: f1fe069 · branch: feat/M4-08A2b2b2-fake-admission · depends: M4-08A1/A2b2a/b2b1, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: M
+Exclusive scope: the provisional `Tools/bedrock-proxy` admission/ledger/price seams and synthetic tests only. Use server-injected fake pilot identity, retention and price evidence, but **do not claim those callbacks are connected to authenticated AWS sources**. No AWS SDK, endpoint, model invocation, app route or user ink. A3 must bind real read-only evidence and a scoped transport only after every gate is proven.
+Acceptance:
+- [ ] Fake server-injected pilot UUID, fresh standard-tier quote, exact model/Region `none`, bounded PNGs and atomic rate/cost reservation all pass before the fake transport
+- [ ] Duplicate/unauthorized/over-budget/rate-limited/retention-ineligible or cancelled work causes zero fake sends, including concurrent ledger instances
+- [ ] Synthetic per-call/cumulative observed estimates remain distinct from maximum holds and delayed AWS billing; no endpoint or paid call is added here
 
 ## Review
 
@@ -2144,13 +2150,6 @@ Acceptance:
 - [ ] Server-injected identity, verified fresh price evidence and effective retention precede an atomic ledger reservation and any fake transport; per-user rate/concurrency are durable or fail closed
 - [ ] Duplicate/over-budget/rate-limited/unauthorized/retention-ineligible work makes zero fake calls, including simultaneous processes
 - [ ] No paid transport until exact model eligibility, scoped invocation permission, content validation and after-call cost reporting are proven
-
-### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
-status: Ready after M4-08A2b2b1; live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
-Acceptance:
-- [ ] Trusted server-side pilot identity, source-verified standard-tier price, exact model/Region `none`, bounded PNGs and rate/cost reservation all pass before fake transport
-- [ ] Duplicate/unauthorized/over-budget/rate-limited/retention-ineligible or cancelled work causes zero fake sends, including concurrent processes
-- [ ] Report synthetic per-call and cumulative observed estimates separately from maximum held and delayed AWS billing; no endpoint or paid call is added here
 
 ### M4-08A3 — Verify Nova Lite eligibility and connect a bounded live transport
 status: Blocked on scoped invocation permission, exact Nova Lite eligibility under `none`, verified non-model costs and the integrated hard $10 gate; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
