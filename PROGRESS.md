@@ -25,7 +25,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
-| M3-27 Sample preview clip/key | Devin / `df10fb8` | `fix/M3-27-sample-preview` / sample view, layout, strings and tests | 190 simulator tests pass; fresh mini-6 preview check pending, glyph quality remains M3-19 |
+| M3-27 Sample preview clip/key | Devin / `df10fb8` | `fix/M3-27-sample-preview` / sample view, layout, strings and tests | `e106f7e` mini-6 check: full preview visible, Done localized; glyph likeness still M3-19 |
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
@@ -39,15 +39,17 @@ _(empty)_
 
 ## Review
 
-### M3-27 — Handwriting sample clips its line and exposes a raw Done key
-status: Review · implemented: Devin · 2026-10-08 · base: df10fb8 · branch: fix/M3-27-sample-preview · needs-device-verification · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
-Note: the owner's private Checkpoint A screenshot showed clipped generated preview ink and the raw `sample.done` key. `InkLineGrouping.bounds` reports sampled point positions only; the old preview put the first center at x=0 and filled the entire view width, so its pen cap was necessarily cut off. A pure preview layout now reserves the maximum visible nib radius plus a small inset before uniformly fitting a long line; it does not mutate synthesized strokes, capture pressure or bank samples. Added `sample.done` to localized copy. The export still uses `InkRasterizer`'s separate 12pt padding. Test-first app regression initially failed to compile without the layout; 11 sample tests and 190 iOS 26.1 simulator app tests now pass. A synthetic 200-stroke preview-layout benchmark measured 13.69–20.59ms per 100 layouts (about 0.14–0.21ms each) on that simulator; this is not a physical Pencil frame-rate trace. **The newly built preview has not been installed on the physical mini yet.** Its on-screen fit may reduce the displayed size of long text; exported raw strokes keep the original matched height/pen. Letterform resemblance remains a separate M3-19/M3-10 question, not something this UI fix resolves. No screenshot or glyph-bank data is committed.
-Acceptance:
-- [x] Synthetic long/short strokes and nonzero nib widths are fully within mini-sized preview bounds without mutating generated stroke height/pen width
-- [x] Done resolves from `Localizable.strings`; PNG raster test confirms it retains a margin around the visible nib
-- [ ] Fresh physical-device look confirms the preview no longer clips; subjective similarity is recorded separately
+_(empty)_
 
 ## Done
+
+### M3-27 — Handwriting sample clips its line and exposes a raw Done key
+status: Done · implemented: Devin · device-confirmed: human · 2026-10-08 · tested: `e106f7e` on iPad mini (6th generation), iPadOS 26.6 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
+Note: `InkLineGrouping.bounds` reports point positions without pen width. The debug preview used to place the first and last point centers on the canvas edges, cutting off their drawn nib. A pure layout now reserves the largest drawn nib radius plus a small inset before uniformly fitting long lines; no glyph bank, generated ink, pressure or document data was changed. Added localized `sample.done`. The test-first regression originally failed to compile without the layout; 11 focused tests and 190 iOS 26.1 simulator app tests passed, as did repo tests/lint. Synthetic 200-stroke preview layout measured 13.69–20.59ms per 100 calls (0.14–0.21ms each) on the simulator, not physical canvas FPS. A fresh signed build of `e106f7e` was installed **over** `edu.bowdoin.margin` without uninstalling; the initial launch was blocked only because the device was locked, then succeeded after the owner unlocked it. The app remained running and the regenerated workspace was opened in Xcode before the human check. The owner reported **pass** for full generated-line visibility and a Done button; their new screenshot shows the uncropped in-app preview. The shared PNG is **not visible** in that screenshot, so device-side PNG inspection is unverified; synthetic PNG raster tests confirm its separate padding. The generated glyphs still look unlike the author's writing, a distinct M3-19/M3-10 quality issue, and Q14 retains the long-preview scale-vs-scroll question. No private screenshot or bank data was committed.
+Acceptance:
+- [x] Tests exercise long/short strokes and nib width at both mini preview edges; stored generated strokes remain unchanged
+- [x] Done resolves to localized copy, and synthetic PNG export retains a visible margin; physical PNG preview not claimed
+- [x] Fresh mini-6 screenshot and human report confirm on-screen preview no longer clips; subjective likeness remains unpassed and separately tracked
 
 ### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
 status: Done · implemented: Devin · device-confirmed: human · 2026-10-08 · tested: `687d26e` on iPad mini (6th generation), iPadOS 26.6 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
