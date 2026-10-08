@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [.library(name: "ProxyAdmission", targets: ["ProxyAdmission"])],
     targets: [
-        .target(name: "ProxyAdmission"),
+        .target(name: "ProxyAdmission", linkerSettings: [.linkedLibrary("sqlite3")]),
         .testTarget(name: "ProxyAdmissionTests", dependencies: ["ProxyAdmission"]),
     ]
 )

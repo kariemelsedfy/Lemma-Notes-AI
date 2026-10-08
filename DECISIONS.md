@@ -401,3 +401,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected.** A raw public initializer with only a view-level consent check is bypassable. Putting AWS keys or credit counts in the app violates ADR-021 and AGENTS.md §7. Assuming Nova Lite structured output or treating a mock reply as a real answer is unsupported.
 
 **Revisit when.** A real transport, verified consent wording, authenticated local proxy or hosted backend, model eligibility and a durable total spend bound are ready for M4-08C review.
+
+---
+
+## ADR-023 — Use system SQLite3 for a one-device Mac pilot reservation ledger
+
+**Status:** Proposed · 2026-10-08 · by: Devin · pending human review before any paid pilot
+
+**Context.** ADR-021 caps new provider plus hosting charges at $10 **total**. The owner chose a Local Mac for the first one-device pilot, avoiding new cloud-hosting charges, not for the distributed beta. An in-memory counter or AWS Budget alert cannot enforce a durable cap or survive two local proxy processes. macOS already supplies SQLite3; no third-party package was added.
+
+**Proposal.** Use the macOS system SQLite3 library only in the isolated `Tools/bedrock-proxy` pilot package. Store an opaque request UUID and an integer *worst-case reserved* cost in micro-USD—no crop, reading, answer or glyph bank. Cap reservations at 10,000,000 micro-USD ($10) at most. Persist that ceiling during an **explicit one-time bootstrap**; ordinary opens never create a missing DB and refuse a different cap, so a restart cannot silently reset or raise the budget. `BEGIN IMMEDIATE`, a unique request ID, WAL and synchronous FULL make concurrent reservation and replay refusal durable across independent local connections; an unknown charge keeps its reservation. Limit the DB file to the local user. A2b must derive the per-call maximum from verified Nova Lite pricing, handle actual charges/rate/authorization and leave room for all other new costs before any transport is allowed.
+
+**Consequences.** This is **not** a production hard cap or server endpoint by itself: A2a does not verify provider prices, reconcile actual bills, authenticate callers, or prevent another AWS workload from spending money. A later cloud-hosted beta needs a shared durable ledger and explicit hosting headroom, not this Mac file. The owner reported Bedrock account retention `none` in us-east-1, but Nova Lite eligibility under it remains unverified. No paid request is enabled by this proposal.
+
+**Alternatives rejected for the Mac pilot.** An in-memory actor alone loses reservations on restart. A hosted database or new third-party SQLite wrapper adds cost/dependency before the single-device pilot has evidence. No decision is made here about the beta backend.
+
+**Revisit when.** A2b cannot prove the maximum cost per request, the Local Mac is no longer the pilot host, or a shared hosted beta ledger is chosen.
