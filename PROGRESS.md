@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b Pricing and authorization gates | Unclaimed / after A2a | Branch TBD / isolated tool money/auth tests | Durable SQLite reservations tested; real worst-case price, reconciliation and model `none` eligibility still unverified |
+| M4-08A2b2 Pilot price/auth gate | Unclaimed / after b1 | Branch TBD / tool price/auth/rate tests | Observed costs remain estimates; exact Nova Lite price and model `none` eligibility unverified, no live calls |
 
 ---
 
@@ -42,6 +42,14 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-08A2b1 — Record observed cost without releasing worst-case reservation
+status: Done (offline ledger only) · implemented: Devin · 2026-10-08 · base: 652d19b · branch: feat/M4-08A2b1-cost-observations · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
+Note: extended the provisional Local Mac SQLite ledger with a single observed micro-USD estimate per request and a persisted halt flag. Observing a lower charge **does not refund** the maximum held against the $10 ceiling; an unknown result remains fully reserved. Missing IDs, negative amounts and repeated/conflicting observations decline. If an observed estimate exceeds the reserved maximum, the ledger commits that observation and a durable halt before reporting `costExceeded`; every connection and restart then refuses new reservations, and `remainingMicros` refuses to advertise spendable headroom. Ten synthetic ledger tests (three new) plus eight existing admission tests pass. This schema is still provisional: an A2a-only DB lacks the new observations table and will fail closed rather than migrate silently; no pilot DB has been deployed outside test fixtures. A2b2 still must derive the maximum and observation from server-verified Nova Lite prices/usage, enforce identity/rates and show honest estimated costs after each future call. No AWS API, endpoint, user ink or bill is involved; $0 of the $10 ceiling is used.
+Acceptance:
+- [x] Lower observed costs persist across reopen without refunding the maximum; unknown, duplicate and invalid observations do not release funds
+- [x] Above-reservation observations commit a persistent halt, so independent instances, restarts and available-budget queries fail closed
+- [x] Full tool/repo test/lint gates pass without any network or paid model call
 
 ### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
 status: Done (offline ledger only) · implemented: Devin · 2026-10-08 · base: 0468371 · branch: feat/M4-08A2a-local-ledger · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
@@ -2098,11 +2106,19 @@ Acceptance:
 - [ ] Verify a worst-case price for the exact model/Region before reserving a live request; server pilot authorization or StoreKit entitlement cannot be a client credit count
 
 ### M4-08A2b — Verify pricing and reconcile durable spend with authorization/rate limits
-status: Ready after M4-08A2a; live use blocked on exact model price, server verifier, and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
+status: Ready (M4-08A2b1 Done, b2 next); live use blocked on exact model price, server verifier and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+Note: the owner reaffirmed a **Local Mac for the pilot** and asked for cost notification after each call. ADR-021's $10 **total** ceiling is unchanged. An immediate figure can only be an estimate from reported usage/pricing; AWS billing can lag. Before another pilot call, show that estimate, cumulative observed estimate, the held worst-case reservations and later actual billed total when available. Keep the full reservation even if reported cost is lower until billing is verified, and stop if reported cost exceeds the maximum. A2b1 records observations; A2b2 verifies worst-case price and applies server identity/rate/admission before fake transport. Neither child authorizes live traffic alone.
 Acceptance:
-- [ ] Worst-case per-call cost, actual usage, retries and remaining headroom reconcile atomically across proxy processes; over-reservation or unknown results stop new dispatch
-- [ ] Server-verified pilot identity/entitlement, per-user rate and duplicate checks happen before a transport call; cross-instance tests demonstrate zero calls on denial
-- [ ] Local Mac pilot keeps new hosting charges at zero; a cloud-hosted beta requires its own durable shared ledger and hosting cap
+- [ ] Worst-case per-call cost, actual usage, retries and remaining headroom reconcile atomically across proxy processes; unknown results keep the full reservation
+- [ ] Server-verified pilot identity/entitlement, per-user rate and duplicate checks happen before a transport call; cross-instance tests show zero calls on denial
+- [ ] Reports after every pilot call label reported-cost **estimates** distinctly from delayed AWS billed totals; Local Mac adds no new cloud-hosting charge
+
+### M4-08A2b2 — Apply verified price, server authorization and per-user rate before transport
+status: Ready after M4-08A2b1; live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
+Acceptance:
+- [ ] Verify the exact us-east-1 Nova Lite worst-case token/image/output and any new costs, set a conservative per-call maximum and disable unreserved retries
+- [ ] Server-side pilot identity and durable per-user rate/idempotency checks precede every fake transport call; unknown quote/ledger/retention stops dispatch
+- [ ] Prepare an honest cost estimate/cumulative report after each future call; do not call it the AWS invoice before bill data is available
 
 ### M4-08A3 — Verify Nova Lite eligibility and connect a bounded live transport
 status: Blocked on scoped authenticated Mac access, exact Nova Lite eligibility under `none`, verified pricing and the hard $10 gate; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
