@@ -29,19 +29,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2a Local-Mac reservation ledger | Devin / `0468371` | `feat/M4-08A2a-local-ledger` / isolated tool ledger and tests | Human reports us-east-1 retention none; model eligibility/price and hard cost cap still unverified; no live calls |
+| M4-08A2b Pricing and authorization gates | Unclaimed / after A2a | Branch TBD / isolated tool money/auth tests | Durable SQLite reservations tested; real worst-case price, reconciliation and model `none` eligibility still unverified |
 
 ---
 
 ## In progress
 
-### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
-status: In progress · claimed: Devin · 2026-10-08 · base: 0468371 · branch: feat/M4-08A2a-local-ledger · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
-Exclusive scope: isolated `Tools/bedrock-proxy` ledger source/tests and package system-library link only; no app, AWS endpoint, verified real price, account change or paid call. macOS system SQLite3 is present, but its pilot-only use is proposed for review rather than silently made a deployed dependency. Store only request IDs and money amounts, not notes, crops, answers or a glyph bank. Fail closed if storage is unavailable.
-Acceptance:
-- [ ] Atomic cross-connection reservation/replay tests cannot exceed a configurable cap no greater than $10; duplicate IDs, overflow and invalid costs decline
-- [ ] Reopening the database preserves reserved charges; unknown results keep the worst-case reservation rather than refunding on timeout
-- [ ] No network path exists in the tool; code builds/tests with repo gates and records the pilot-only system SQLite decision for review
+_(empty)_
 
 ## Review
 
@@ -49,9 +43,17 @@ _(empty)_
 
 ## Done
 
+### M4-08A2a — Durable local-Mac worst-case reservation and replay denial
+status: Done (offline ledger only) · implemented: Devin · 2026-10-08 · base: 0468371 · branch: feat/M4-08A2a-local-ledger · depends: M4-08A1, ADR-021 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
+Note: the provisional `Tools/bedrock-proxy` SwiftPM library now links the **macOS system SQLite3** library; ADR-023 proposes this choice for the one-device Local Mac pilot, not a hosted beta. A ledger stores only opaque request UUIDs and worst-case cost in integer micro-USD, capped at or below 10,000,000 micro-USD ($10). SQLite WAL with synchronous FULL and `BEGIN IMMEDIATE` serializes reservations across independent connections; a unique request ID rejects replay. Two concurrent connections cannot both reserve the last budget. The DB file is chmod 0600; an explicit, one-time bootstrap persists the ceiling, while ordinary opens fail closed if the DB disappeared or a process supplies a different ceiling. Reopening preserves reservations—including unknown provider results, which are **not automatically refunded**. Seven synthetic ledger tests pass alongside eight existing admission tests; no document, transcript, crop, answer, bank, URL, AWS SDK or credential is stored or used. **This is not yet a safe paid-call path:** a caller can supply an unverified maximum cost; the ledger is not connected to the admission gate, no actual usage/rate reconciliation or server-side identity exists, and Nova Lite eligibility under `none` is unproven. A2b/A3 must close those gaps before invoking anything; no bill or app build is changed by this task.
+Acceptance:
+- [x] Two independent SQLite connections, duplicate request IDs, invalid costs and reservations above a configurable ≤$10 cap fail closed under tests
+- [x] Reopening preserves worst-case charges; a missing database or a changed persisted ceiling cannot silently reset or raise the pilot cap
+- [x] Isolated tool remains network-free; full tool/repo test and lint gates pass, and ADR-023 proposes the pilot-only system library choice
+
 ### M4-08B — Build the client provider with consent and validated specs
 status: Done (fake transport only) · implemented: Devin · 2026-10-08 · base: 6326e6c · branch: feat/M4-08B-client-provider · depends: M4-09, ADR-021; live endpoint still depends: M4-08A2/A3 · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
-Note: added a frontier-tier `SpecProvider` with **no URL or live transport**. Its only public construction factory returns the existing `ConsentGatedProvider`; the raw initializer is private, so callers cannot create a transmitting provider without the provider-layer consent callback. A typed `ProxyClientRequest` encodes only bounded crop/neighborhood bytes, local selected-area transcript, predicted intent, request ID and fixed output-token cap; no page, notebook or glyph bank can be serialized. Fake responses are size-limited, decoded and passed through `SpecValidator`; malformed, low-confidence-with-blocks and mismatched intent fail closed. Refusal, timeout, offline, unauthorized and budget errors are content-free types, and late cancellation suppresses a response even if the fake transport ignores it. Seven new fake-transport tests pass; full repo gates pass. ADR-022 is proposed for this public factory/transport seam. **Nothing is wired into the iPad Ask**, and the installed mini still uses deterministic local arithmetic only. M4-08C must map these typed errors to localized Ask failures, verify actual app PNG bytes against A1, and wire only after A2/A3 money/retention/auth gates. The Local Mac choice avoids new hosting charges for a one-device pilot; the AWS Region/account mode remains unknown. No paid or user-content network request was made.
+Note: added a frontier-tier `SpecProvider` with **no URL or live transport**. Its only public construction factory returns the existing `ConsentGatedProvider`; the raw initializer is private, so callers cannot create a transmitting provider without the provider-layer consent callback. A typed `ProxyClientRequest` encodes only bounded crop/neighborhood bytes, local selected-area transcript, predicted intent, request ID and fixed output-token cap; no page, notebook or glyph bank can be serialized. Fake responses are size-limited, decoded and passed through `SpecValidator`; malformed, low-confidence-with-blocks and mismatched intent fail closed. Refusal, timeout, offline, unauthorized and budget errors are content-free types, and late cancellation suppresses a response even if the fake transport ignores it. Seven new fake-transport tests pass; full repo gates pass. ADR-022 is proposed for this public factory/transport seam. **Nothing is wired into the iPad Ask**, and the installed mini still uses deterministic local arithmetic only. M4-08C must map these typed errors to localized Ask failures, verify actual app PNG bytes against A1, and wire only after A2/A3 money/retention/auth gates. The Local Mac choice avoids new hosting charges for a one-device pilot; at the time of M4-08B, Region/account mode was unknown, but the owner later reported `none` in us-east-1. No paid or user-content network request was made.
 Acceptance:
 - [x] Provider-layer consent refuses before the fake transport, and the encoded request carries only bounded selection images and permitted ephemeral hints
 - [x] Responses are decoded then validated; refusal, malformed output, timeout, offline and cancellation fail closed without content in errors or logs
