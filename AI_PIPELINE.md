@@ -50,7 +50,7 @@ Only fall through to the model when the heuristics disagree or return low confid
 
 ## 3. The spec contract
 
-The model must respond with JSON matching this schema, and nothing else. Use structured/guided generation (Foundation Models' guided generation, or tool-use / JSON schema on the cloud provider) so the shape is guaranteed rather than hoped for.
+The model must respond with JSON matching this schema, and nothing else. Use structured/guided generation when the selected provider actually supports it. The first beta candidate, Nova Lite, supports client-side tool calling but **not Bedrock structured outputs** according to its [model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-lite.html); a tool call or prompted JSON must still be decoded, strictly validated and declined on malformed/unsupported content. Do not assume the provider guarantees the shape.
 
 ```jsonc
 {

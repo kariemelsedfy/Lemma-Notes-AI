@@ -21,7 +21,7 @@ Acceptance:
 
 Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sessions (split if you can).
 
-### Lead assignments — 2026-10-07
+### Lead assignments — 2026-10-08
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
+| M4-08A1 Mock-only proxy admission | Unclaimed / `b52f88f` | `feat/M4-08A1-proxy-admission` / isolated server/tool core and tests | No AWS access or paid calls; A2/A3 own durable money and real transport |
 
 ---
 
@@ -2043,12 +2043,36 @@ Acceptance:
 - [ ] Physical-device end-to-end result is recorded separately from mock/simulator tests
 
 ### M4-08A — Bound and authorize the Bedrock proxy before live traffic
-status: Ready (offline design/tests); blocked for live traffic on account/region, model `none` eligibility, hosting and hard combined-spend control · depends: ADR-021 · refs: BUSINESS.md §3, §5–6, AGENTS.md §7 · estimate: M
-Exclusive scope: server-side adapter, transport tests and cost authorization; no app or shared task docs except through the integration queue. Start with a fake Bedrock transport, not a paid call. AWS account exists, but CLI/role access and region are not set up in this checkout. Do not deploy or provision a billable resource before a specific authorization and a verified bound below $10 total, including hosting.
+status: Ready (decomposed into M4-08A1/A2/A3); blocked for live traffic on account/region, model `none` eligibility, hosting and hard combined-spend control · depends: ADR-021 · refs: BUSINESS.md §3, §5–6, AGENTS.md §7 · estimate: L
+Note: there is no server or AWS SDK in this checkout and no local `aws` CLI. The 2026-10-08 official Nova Lite model card confirms image input and Converse/Invoke support **but not structured outputs**. `bedrock-runtime` requires account-level data-retention `none` in the selected Region; project-level Bedrock Mantle settings do not apply to Runtime. The model card does not prove Nova Lite supports `none`, and the Runtime `GetFoundationModel` response does not expose `allowed_modes`. Do not configure an AWS account, deploy, invoke, or change regional retention merely because the user approved up to $10 in charges. No live traffic until auth, verified retention, model eligibility, output validation, and a combined provider/hosting hard bound are satisfied. Children split the otherwise >400-line security task.
 Acceptance:
-- [ ] Credential stays on server (prefer scoped role); every request has server-side pilot authorization or verified StoreKit entitlement, per-user rate limits, atomic bounded-spend admission, and bounded images/tokens/concurrency
-- [ ] `none` retention and `allowed_modes` are checked for the exact model/region; refused/unsupported requests fail closed; no page content in logs or persisted proxy state
-- [ ] Tests prove unauthorized, oversized, duplicate and over-budget requests make zero provider calls, including simultaneous requests; actual cost/remaining headroom is recorded before any approved pilot call
+- [ ] M4-08A1/A2/A3 each pass their gates and document an actual production transport/authorization path; no client-side project key
+- [ ] Invalid/unauthorized/duplicate/over-budget work and retention/model mismatches make zero billable calls, including concurrent admission
+- [ ] Actual provider and hosting cost/remaining cap can be bounded before any paid pilot request, not merely alerted after it
+
+### M4-08A1 — Mock-only proxy request admission and privacy bounds
+status: Ready · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
+Exclusive scope: isolated server/tool admission core and tests, integrated into repo test gates; no app/module changes, new external dependency, AWS account configuration, deployment, or live calls. A fake transport and trusted server-side authorization/retention inputs may exercise accepted requests; production defaults must remain unable to send traffic until M4-08A2/A3 are complete. A separate package under `Tools/` is provisional, not an app module or a shipping client API.
+Acceptance:
+- [ ] No fake transport call before a server-verified pilot identity or entitlement; requests with unrecognized or unsupported fields decline
+- [ ] PNG crop and neighborhood actual dimensions/pixel counts and bytes, transcript/hints, output tokens, and request concurrency are bounded without trusting client-supplied sizes; whole-page or bank fields have no admitted shape
+- [ ] Unverified region/model retention evidence or missing `none` in allowed modes fails closed; tests cover malformed, unauthorized, oversize and retention mismatches without storing/logging user content
+
+### M4-08A2 — Atomic pilot spend, idempotency and rate gates
+status: Ready after M4-08A1; no live use until a persistent cross-instance store and complete provider-plus-hosting hard bound are verified · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
+Exclusive scope: server admission ledger and tests, not app code or AWS account provisioning. Reserve worst-case inference charges before transport, limit per-user actions/concurrency, deduplicate request IDs, reconcile actual cost and stop on storage/error/unknown price; avoid in-memory-only accounting in any production path.
+Acceptance:
+- [ ] Concurrent and duplicate requests cannot exceed a durable $10 **total** cap including remaining reserved hosting headroom
+- [ ] Unauthorized, over-budget and rate-limited attempts make zero provider calls; unknown actual costs or ledger failures stop new admission
+- [ ] Verified entitlement or explicit pilot authorization is checked on the server, never a client credit count
+
+### M4-08A3 — Verify Nova Lite eligibility and connect a bounded live transport
+status: Blocked on human AWS account/Region access and explicit approval before account-wide retention or billable hosting changes; depends: M4-08A1/A2, ADR-021 · refs: BUSINESS.md §3, §6, AI_PIPELINE.md §5, AGENTS.md §7 · estimate: M
+Note: Q15/Q16 in `CONTEXT.md` remain open. Runtime account retention must be `none` in the exact Region. Verify that Nova Lite is eligible there via supported metadata or a synthetic, non-user-content invocation under the already bounded spend path; `GetFoundationModel` alone is not proof. Nova Lite lacks structured-output support, so any tool-use/JSON response needs strict schema validation and a fail-closed decline. Never send personal handwriting or enable paid calls until all gates pass.
+Acceptance:
+- [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
+- [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
+- [ ] Fake-transport tests cover refusal, malformed responses, timeout, cancellation and cost reconciliation before a separately authorized capped pilot
 
 ### M4-08B — Build the client provider with consent and validated specs
 status: Ready (mock transport only) · depends: M4-09, ADR-021; live endpoint depends: M4-08A · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
