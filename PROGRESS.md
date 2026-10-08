@@ -29,25 +29,27 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b2b2 Fake-transport composition | Devin / `f1fe069` | `feat/M4-08A2b2b2-fake-admission` / tool admission/price/ledger tests | Synthetic identity/quote only; model `none` eligibility, authenticated verifier and live transport blocked |
+| M4-08A3 Synthetic eligibility/transport | Unclaimed / blocked on hard gates | Branch TBD / scoped, synthetic-only AWS verification | Fake composition passes; model `none` eligibility, trusted callbacks, bounded image/price and reviewed invocation permission still missing |
 
 ---
 
 ## In progress
 
-### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
-status: In progress · claimed: Devin · 2026-10-08 · base: f1fe069 · branch: feat/M4-08A2b2b2-fake-admission · depends: M4-08A1/A2b2a/b2b1, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: M
-Exclusive scope: the provisional `Tools/bedrock-proxy` admission/ledger/price seams and synthetic tests only. Use server-injected fake pilot identity, retention and price evidence, but **do not claim those callbacks are connected to authenticated AWS sources**. No AWS SDK, endpoint, model invocation, app route or user ink. A3 must bind real read-only evidence and a scoped transport only after every gate is proven.
-Acceptance:
-- [ ] Fake server-injected pilot UUID, fresh standard-tier quote, exact model/Region `none`, bounded PNGs and atomic rate/cost reservation all pass before the fake transport
-- [ ] Duplicate/unauthorized/over-budget/rate-limited/retention-ineligible or cancelled work causes zero fake sends, including concurrent ledger instances
-- [ ] Synthetic per-call/cumulative observed estimates remain distinct from maximum holds and delayed AWS billing; no endpoint or paid call is added here
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
+status: Done (mock-only) · implemented: Devin · 2026-10-08 · base: f1fe069 · branch: feat/M4-08A2b2b2-fake-admission · depends: M4-08A1/A2b2a/b2b1, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: M
+Note: `AdmissionGate.validate` now exposes the existing strict synthetic body/authorization/retention/PNG validation without sending, while preserving the previous fake-only `invoke` behavior and its tests. An isolated `PilotAdmission` actor then parses a server-injected **UUID** identity, checks injected fresh standard-tier Nova Lite/us-east-1 price evidence, holds a local single-flight slot, atomically reserves 5¢ and the 40/hour pilot allowance in the persistent SQLite ledger, checks cancellation and only then invokes a **fake** transport. A returned receipt separates the request ID, worst-case hold and remaining reserved budget; a synthetic observed 19,123-micro-USD estimate leaves the 50,000-micro-USD hold unchanged. Eight new fake-transport tests show zero sends for missing/wrong identity, retention, PNG, quote, duplicate, over-budget, rate-limited and cancelled work; two independent ledger instances admit only one send under a one-call budget. A fake transport failure keeps the hold and denies a replay. **This is not an AWS source verifier or deployable gateway:** callbacks remain injected mocks, the original A1 fake-only invoke seam still exists, no network endpoint or real transport exists, no user content or bank was sent/stored, no IAM invocation permission exists and exact Nova Lite eligibility under account `none` remains unproven. Full tool/repo tests and lint pass; $0 of the $10 ceiling was used.
+Acceptance:
+- [x] Synthetic pilot UUID, bounded request/PNG, model/Region `none` and price quote pass before atomic rate/cost hold and fake send
+- [x] Duplicate, unauthorized, malformed, over-budget, rate-limited, retention-invalid and cancelled requests make zero fake sends; cross-instance cap is tested
+- [x] Synthetic observed cost, remaining held balance and retry behavior are distinct from delayed AWS billing; no endpoint or paid call was added
 
 ### M4-08A2b2b1 — Persist per-pilot hourly limits with reservations
 status: Done (offline tool only) · implemented: Devin · 2026-10-08 · base: 702c08d · branch: feat/M4-08A2b2b1-durable-rate · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
@@ -2136,7 +2138,7 @@ Acceptance:
 - [ ] Reports after every pilot call label reported-cost **estimates** distinctly from delayed AWS billed totals; Local Mac adds no new cloud-hosting charge
 
 ### M4-08A2b2 — Apply verified price, server authorization and per-user rate before transport
-status: Ready (M4-08A2b2a Done, b2b next); live use blocked on trusted exact price, model eligibility and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+status: Ready (price, rate and fake-composition slices Done); live use blocked on authenticated price/identity sources, model eligibility and M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
 Note: public Nova Lite documentation lists 300K context tokens, 5K model maximum output and in-Region availability in us-east-1. The client/server request cap remains 512 output tokens. The public pricing table is dynamic, but the read-only AWS Price List query under the limited IAM session directly confirmed current us-east-1 Nova Lite **on-demand** token rates of $0.00006/1K input and $0.00024/1K output; the catalog rows omit `service_tier`, while the model card marks Standard as the supported tier. Image input counting and bounded non-model charges are still unverified. AWS `CountTokens` is described as free but would still receive input; never call it with personal handwriting before consent/retention gates. The owner asked to avoid costly individual calls and receive an estimate/cumulative report after each one; choose a reversible **5¢ maximum reservation per pilot call**, fail closed if an authoritative quote plus verified overhead exceeds it, and keep the $10 total cap. The owner signs into the account as root; do **not** use root as the Mac proxy identity. A separately approved scoped IAM browser login must be set up before any AWS call from the Mac.
 Acceptance:
 - [ ] A trusted, fresh exact-model/Region quote bounds all input/image and output charges and known overhead at ≤$0.05 per call; unknown or stale quote declines
@@ -2144,7 +2146,7 @@ Acceptance:
 - [ ] Report usage-based estimated cost, cumulative observed and worst-case held budget after each future call, distinctly from delayed AWS billed charges
 
 ### M4-08A2b2b — Gate fake transport with trusted price, pilot identity and durable rates
-status: Ready (M4-08A2b2b1 Done, b2 next); live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+status: Ready (b1 and b2 mock slices Done; authenticated price/identity sources still blocked on M4-08A3) · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
 Note: the owner created an MFA-enabled, read-only IAM pilot user; this Mac now runs an AWS-signed CLI v2.36.32 with browser-issued temporary credentials. Read-only us-east-1 calls on 2026-10-08 directly confirmed Runtime retention `none`, Nova Lite ACTIVE/AUTHORIZED/AVAILABLE for on-demand and the price-catalog on-demand rates of **$0.00006/1K input tokens and $0.00024/1K output tokens**. The Pricing API row has `feature=On-demand Inference`, not a `service_tier` attribute. This is **not** proof Nova Lite is eligible under `none` when actually invoked, nor is image tokenization/non-model overhead verified. The IAM user has no model invocation permission. No paid call or user ink was sent. Split the durable per-pilot rate core from full fake-transport composition to keep each review below 400 lines.
 Acceptance:
 - [ ] Server-injected identity, verified fresh price evidence and effective retention precede an atomic ledger reservation and any fake transport; per-user rate/concurrency are durable or fail closed
