@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b1 Offline cost observations | Unclaimed / `dee50ea` | `feat/M4-08A2b1-cost-observations` / tool ledger/tests only | SQLite reservation core in PR #119 passed CI; no live price/model proof or calls |
+| M4-08A2b1 Offline cost observations | Devin / `652d19b` | `feat/M4-08A2b1-cost-observations` / tool ledger/tests only | SQLite reservation core in PR #119 passed CI; no live price/model proof or calls |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2b1 — Record observed cost without releasing worst-case reservation
+status: In progress · claimed: Devin · 2026-10-08 · base: 652d19b · branch: feat/M4-08A2b1-cost-observations · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
+Exclusive scope: isolated `Tools/bedrock-proxy` SQLite ledger/tests only. No provider call, endpoint, credential, user image or real price. Extend the pilot schema to hold an observed cost per request without increasing available budget; a larger-than-reserved observation locks new reservations persistently. A2b2 owns integration with model usage, pricing, identity and transport.
+Acceptance:
+- [ ] Lower observed cost persists across reopen for reporting but never refunds a worst-case hold; missing/duplicate/conflicting observations fail closed
+- [ ] Observed cost above its reservation persists a lock, so independent ledger instances cannot admit more requests
+- [ ] Unknown result keeps the full reservation; full tool/repo gates pass with no network or paid calls
 
 ## Review
 
@@ -2104,14 +2110,6 @@ Acceptance:
 - [ ] Worst-case per-call cost, actual usage, retries and remaining headroom reconcile atomically across proxy processes; unknown results keep the full reservation
 - [ ] Server-verified pilot identity/entitlement, per-user rate and duplicate checks happen before a transport call; cross-instance tests show zero calls on denial
 - [ ] Reports after every pilot call label reported-cost **estimates** distinctly from delayed AWS billed totals; Local Mac adds no new cloud-hosting charge
-
-### M4-08A2b1 — Record observed cost without releasing worst-case reservation
-status: Ready after M4-08A2a · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
-Exclusive scope: isolated `Tools/bedrock-proxy` SQLite ledger/tests only. No provider call, endpoint, credential, user image or real price. Extend the pilot schema to hold an observed cost per request without increasing available budget; a larger-than-reserved observation locks new reservations persistently. A2b2 owns integration with model usage, pricing, identity and transport.
-Acceptance:
-- [ ] Lower observed cost persists across reopen for reporting but never refunds a worst-case hold; missing/duplicate/conflicting observations fail closed
-- [ ] Observed cost above its reservation persists a lock, so independent ledger instances cannot admit more requests
-- [ ] Unknown result keeps the full reservation; full tool/repo gates pass with no network or paid calls
 
 ### M4-08A2b2 — Apply verified price, server authorization and per-user rate before transport
 status: Ready after M4-08A2b1; live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
