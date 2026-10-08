@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-08 · Devin · M4-08A1b — a cancelled verifier used to reach the fake transport
+
+The first cancellation regression was genuinely red: the server-side authorizer could return an identity after its caller cancelled, and the gate still invoked the fake transport. A1a now checks task cancellation at entry, after both asynchronous trust lookups and immediately before dispatch. A PNG fixture downloaded as a common 1×1 example had a wrong IDAT CRC; the first concurrency test waited forever for a dispatch that correctly never began. I corrected the synthetic CRC, replaced the open-ended wait with a finite bound, and kept the metadata/checksum case so future regressions make zero fake calls. The three additional cases join five A1a tests: **eight pass** with full repo test/lint gates green. This is fake transport only; no AWS credential, account setting, paid request, network payload, glyph bank or persistent user content was involved.
+
+Do not deploy the admission library as though it implements the $10 ceiling. A2 still needs a durable, cross-instance atomic spend/rate/idempotency gate plus verified server entitlement or pilot authorization and bound hosting overhead. A3 still needs a chosen AWS account/Region, account-level Runtime retention `none`, evidence that exact Nova Lite is allowed there, full image decode/normalization and validated model responses. The screenshot and handwriting quality issue remain separate from proxy work.
+
 ## 2026-10-08 · Devin · M4-08A1a — a fake-only gate cannot be mistaken for a cloud service
 
 There was no server in the repo. I added an isolated SwiftPM library under `Tools/bedrock-proxy`, not an iPad dependency or deployed endpoint. It takes an exact JSON shape with crop and neighborhood PNG bytes, a bounded transcript and output-token count; extra page/glyph-bank keys are rejected. It checks the actual PNG header dimensions, per-image bytes and pixels, chunk kinds/checksums, a server-injected pilot identity and fresh exact-model/Region `none` retention evidence *before* a fake transport call. Authorization and retention default to denial. There is no AWS SDK or live URL, no credential, no ledger and no billing guard; even an accepted synthetic test cannot make a paid call. Five core tests pass, and the tool is wired into the repo test/lint gates.
