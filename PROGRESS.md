@@ -29,25 +29,27 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b2b1 Durable per-pilot rate | Devin / `702c08d` | `feat/M4-08A2b2b1-durable-rate` / SQLite tool/tests only | Read-only IAM and published on-demand token rates verified; model eligibility under `none` and invocation still blocked |
+| M4-08A2b2b2 Fake-transport composition | Unclaimed / after b1 | Branch TBD / tool admission, price and fake transport tests | SQLite money+rate core tested; server-verified pilot identity, model `none` eligibility and live transport still blocked |
 
 ---
 
 ## In progress
 
-### M4-08A2b2b1 — Persist per-pilot hourly limits with reservations
-status: In progress · claimed: Devin · 2026-10-08 · base: 702c08d · branch: feat/M4-08A2b2b1-durable-rate · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
-Exclusive scope: `Tools/bedrock-proxy` SQLite schema, actor and synthetic tests only. Require a stable **server-issued opaque pilot identifier**; never persist page text, crop, glyph bank or raw account ID. Count and reserve atomically in one transaction so concurrent local proxy processes cannot exceed the bounded per-pilot allowance. No endpoint, billable transport, root credentials or IAM change.
-Acceptance:
-- [ ] One pilot cannot reserve more than 40 actions per rolling hour, even across independent ledger instances or restart; other pilots retain their own allowance
-- [ ] Duplicate/over-budget/rate-limited/invalid identity requests never consume a new reservation; unknown cost keeps its prior hold
-- [ ] Schema changes fail closed on an A2a/b1 prototype DB rather than wiping existing reservations; tool/repo gates pass
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2b2b1 — Persist per-pilot hourly limits with reservations
+status: Done (offline tool only) · implemented: Devin · 2026-10-08 · base: 702c08d · branch: feat/M4-08A2b2b1-durable-rate · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
+Note: the Local Mac SQLite reservation path now requires an opaque `UUID` for a **server-issued** pilot ID; the all-zero UUID refuses. The file stores only that pseudonymous ID, request UUID, Unix timestamp and money amounts—no account ID, page, crop, answer or glyph bank. Each `BEGIN IMMEDIATE` transaction inserts the unique request ID, counts the pilot's rolling hour, enforces at most **40 accepted requests**, checks the unchanged ≤$10 monetary ceiling, then commits; any duplicate/over-budget/rate-limited failure rolls back all effects. Two independent ledger handles racing for the fortieth slot admit only one, and a second pilot's allowance is independent. An A2a/b1 prototype database lacks the new columns and fails closed on reopen rather than resetting reservations; no production DB exists. Six rate-focused tests plus ten ledger, eight admission and six price tests pass (30 tool tests), as do full repo gates. **Not a provider-ready gate**: no endpoint or verified server identity is connected, image and model eligibility under `none` are not proven and the pilot IAM user remains read-only with no `InvokeModel` permission. A2b2b2 owns the fake-transport composition; A3 owns separate approval and bounded synthetic live verification. $0 of the $10 ceiling is used.
+Acceptance:
+- [x] One opaque pilot ID cannot reserve over 40 actions per rolling hour across independent instances or reopen; another pilot remains independent
+- [x] Duplicate, over-budget, rate-limited and zero-ID work makes no new reservation, while unknown cost stays held
+- [x] Older prototype schema fails closed without resetting budget; tool and repository test/lint gates pass, with no paid traffic
 
 ### M4-08A2b2a — Refuse unverified or expensive Nova Lite price envelopes
 status: Done (offline calculator only) · implemented: Devin · 2026-10-08 · base: 345daee · branch: feat/M4-08A2b2a-price-envelope · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AI_PIPELINE.md §5 · estimate: S
@@ -2136,7 +2138,7 @@ Acceptance:
 - [ ] Report usage-based estimated cost, cumulative observed and worst-case held budget after each future call, distinctly from delayed AWS billed charges
 
 ### M4-08A2b2b — Gate fake transport with trusted price, pilot identity and durable rates
-status: Ready (decomposed into M4-08A2b2b1/b2); live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
+status: Ready (M4-08A2b2b1 Done, b2 next); live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: L
 Note: the owner created an MFA-enabled, read-only IAM pilot user; this Mac now runs an AWS-signed CLI v2.36.32 with browser-issued temporary credentials. Read-only us-east-1 calls on 2026-10-08 directly confirmed Runtime retention `none`, Nova Lite ACTIVE/AUTHORIZED/AVAILABLE for on-demand and the price-catalog on-demand rates of **$0.00006/1K input tokens and $0.00024/1K output tokens**. The Pricing API row has `feature=On-demand Inference`, not a `service_tier` attribute. This is **not** proof Nova Lite is eligible under `none` when actually invoked, nor is image tokenization/non-model overhead verified. The IAM user has no model invocation permission. No paid call or user ink was sent. Split the durable per-pilot rate core from full fake-transport composition to keep each review below 400 lines.
 Acceptance:
 - [ ] Server-injected identity, verified fresh price evidence and effective retention precede an atomic ledger reservation and any fake transport; per-user rate/concurrency are durable or fail closed
