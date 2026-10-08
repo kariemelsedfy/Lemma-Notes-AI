@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A2b2b1 Durable per-pilot rate | Unclaimed / `fc5e260` | `feat/M4-08A2b2b1-durable-rate` / SQLite tool/tests only | Read-only IAM and exact on-demand token rates verified; model eligibility under `none` and invocation still blocked |
+| M4-08A2b2b1 Durable per-pilot rate | Devin / `702c08d` | `feat/M4-08A2b2b1-durable-rate` / SQLite tool/tests only | Read-only IAM and published on-demand token rates verified; model eligibility under `none` and invocation still blocked |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2b2b1 — Persist per-pilot hourly limits with reservations
+status: In progress · claimed: Devin · 2026-10-08 · base: 702c08d · branch: feat/M4-08A2b2b1-durable-rate · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
+Exclusive scope: `Tools/bedrock-proxy` SQLite schema, actor and synthetic tests only. Require a stable **server-issued opaque pilot identifier**; never persist page text, crop, glyph bank or raw account ID. Count and reserve atomically in one transaction so concurrent local proxy processes cannot exceed the bounded per-pilot allowance. No endpoint, billable transport, root credentials or IAM change.
+Acceptance:
+- [ ] One pilot cannot reserve more than 40 actions per rolling hour, even across independent ledger instances or restart; other pilots retain their own allowance
+- [ ] Duplicate/over-budget/rate-limited/invalid identity requests never consume a new reservation; unknown cost keeps its prior hold
+- [ ] Schema changes fail closed on an A2a/b1 prototype DB rather than wiping existing reservations; tool/repo gates pass
 
 ## Review
 
@@ -2136,14 +2142,6 @@ Acceptance:
 - [ ] Server-injected identity, verified fresh price evidence and effective retention precede an atomic ledger reservation and any fake transport; per-user rate/concurrency are durable or fail closed
 - [ ] Duplicate/over-budget/rate-limited/unauthorized/retention-ineligible work makes zero fake calls, including simultaneous processes
 - [ ] No paid transport until exact model eligibility, scoped invocation permission, content validation and after-call cost reporting are proven
-
-### M4-08A2b2b1 — Persist per-pilot hourly limits with reservations
-status: Ready after M4-08A2b2a · depends: ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: M
-Exclusive scope: `Tools/bedrock-proxy` SQLite schema, actor and synthetic tests only. Require a stable **server-issued opaque pilot identifier**; never persist page text, crop, glyph bank or raw account ID. Count and reserve atomically in one transaction so concurrent local proxy processes cannot exceed the bounded per-pilot allowance. No endpoint, billable transport, root credentials or IAM change.
-Acceptance:
-- [ ] One pilot cannot reserve more than 40 actions per rolling hour, even across independent ledger instances or restart; other pilots retain their own allowance
-- [ ] Duplicate/over-budget/rate-limited/invalid identity requests never consume a new reservation; unknown cost keeps its prior hold
-- [ ] Schema changes fail closed on an A2a/b1 prototype DB rather than wiping existing reservations; tool/repo gates pass
 
 ### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
 status: Ready after M4-08A2b2b1; live use still blocked on M4-08A3 · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
