@@ -29,24 +29,24 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b1b PNG adversarial tests | Devin / `ff57f73` | `feat/M4-08A3b1b-png-adversarial` / normalized-path tests only | b1 decoder and #124/#125 CI pass; exact Nova Lite `none` eligibility and paid transport remain blocked |
+| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | b1b has 45 local proxy tests and full gates pass with process-local TMPDIR; #124/#125 CI passed; no paid traffic |
 
 ---
 
 ## In progress
 
-### M4-08A3b1b — Extend normalized PNG adversarial coverage
-status: In progress · claimed: Devin · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021 · estimate: S
-Exclusive scope: `Tools/bedrock-proxy` normalization tests only; keep the core image-code PR below the review-size target. Test metadata-bearing app-pattern PNGs, truncated frames and over-limit bytes/pixels against the new normalized dispatch path, not just the older A1 signature checker. Make no provider/account call. Do not delete or weaken existing A1 denial tests.
-Acceptance:
-- [ ] Correctly checksummed metadata, truncated input, oversized bytes/pixels and dimension-only EXIF tampering make zero fake sends
-- [ ] Existing A1 and b1 decoder suites stay green; repo gates and lint pass
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A3b1b — Extend normalized PNG adversarial coverage
+status: Done (test-only Mac tool) · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021
+Note: Three new synthetic tests on the normalized fake-dispatch path deny CRC-correct `tEXt` metadata, truncated frames, over-limit crop bytes/pixels, and `eXIf` tampering after an intact dimension-only EXIF is accepted. All failures make zero fake sends. Existing A1/b1 tests and shipping code were not changed; **45 proxy tests**, full repo test/build and lint pass. The first full run hit macOS `EPERM` at `GlyphBankStore.swift:30` when creating protected atomic test files in the system temporary directory; a temp-directory write-scope grant did not help. Setting `TMPDIR` **only for the test process** to the checkout's existing `Packages/Handwriting/.build` made the isolated and unchanged full `./scripts/test.sh` run pass. No file-protection setting or test was weakened. Physical iPad PNG compatibility and Nova Lite eligibility under `none` remain unverified; no paid call or ink transfer occurred.
+Acceptance: [x] All targeted denials make zero fake sends; [x] prior suites and full repo gates pass with the documented test environment; [x] lint clean.
 
 ### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
 status: Done (Mac tool only) · 2026-10-09 · base: 760d5bd · branch: feat/M4-08A3b1-png-normalization · refs: ADR-021/024, AI_PIPELINE.md §1/§5
@@ -2187,7 +2187,7 @@ Acceptance:
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
 
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
-status: Ready after M4-08A3b1; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
+status: Ready after M4-08A3b1b; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
 Acceptance:
 - [ ] From the limited Mac login, SDK read-only checks return current Runtime retention and exact Nova Lite on-demand price SKUs for us-east-1 with a bounded age; missing/ambiguous rate or unknown other charges stops admission
 - [ ] Test offline with injected SDK clients; keep all content-free errors, no app credential and no model invocation
