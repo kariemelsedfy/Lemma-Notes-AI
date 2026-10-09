@@ -50,8 +50,8 @@ Apps/
                    library, settings, paywall
 Tools/
   bedrock-proxy/   Provisional SwiftPM request/retention, price and SQLite budget/rate
-                   gates composed before a fake transport; no deployed or live server
-                   or provider SDK (M4-08A1/A2a)
+                   gates composed before fake transport; Mac-only AWS SDK v1.8.2
+                   has a synthetic no-call seam, no deployed or live server (M4-08A3a)
   evalrunner/      CLI: runs the golden set against a provider, emits metrics JSON
   glyphlab/        macOS dev tool: inspect a glyph bank, render sample text, tune layout
 ```
