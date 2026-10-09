@@ -29,13 +29,18 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b1b PNG adversarial tests | Unclaimed / after b1 | Branch TBD / normalized-path metadata, truncation and size tests | b1 core decoder passes locally; exact Nova Lite `none` eligibility and paid transport remain blocked |
+| M4-08A3b1b PNG adversarial tests | Devin / `ff57f73` | `feat/M4-08A3b1b-png-adversarial` / normalized-path tests only | b1 decoder and #124/#125 CI pass; exact Nova Lite `none` eligibility and paid transport remain blocked |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A3b1b — Extend normalized PNG adversarial coverage
+status: In progress · claimed: Devin · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021 · estimate: S
+Exclusive scope: `Tools/bedrock-proxy` normalization tests only; keep the core image-code PR below the review-size target. Test metadata-bearing app-pattern PNGs, truncated frames and over-limit bytes/pixels against the new normalized dispatch path, not just the older A1 signature checker. Make no provider/account call. Do not delete or weaken existing A1 denial tests.
+Acceptance:
+- [ ] Correctly checksummed metadata, truncated input, oversized bytes/pixels and dimension-only EXIF tampering make zero fake sends
+- [ ] Existing A1 and b1 decoder suites stay green; repo gates and lint pass
 
 ## Review
 
@@ -2180,13 +2185,6 @@ Acceptance:
 - [ ] The Mac adapter obtains fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fails closed on unknown image/other charges and avoids content logging
 - [ ] Fully decode/normalize selected crop/neighborhood PNGs under byte/pixel bounds; verify actual app PNG compatibility separately before any handwriting transfer
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
-
-### M4-08A3b1b — Extend normalized PNG adversarial coverage
-status: Ready after M4-08A3b1 · refs: AI_PIPELINE.md §1/§5, ADR-021 · estimate: S
-Exclusive scope: `Tools/bedrock-proxy` normalization tests only; keep the core image-code PR below the review-size target. Test metadata-bearing app-pattern PNGs, truncated frames and over-limit bytes/pixels against the new normalized dispatch path, not just the older A1 signature checker. Make no provider/account call. Do not delete or weaken existing A1 denial tests.
-Acceptance:
-- [ ] Correctly checksummed metadata, truncated input, oversized bytes/pixels and dimension-only EXIF tampering make zero fake sends
-- [ ] Existing A1 and b1 decoder suites stay green; repo gates and lint pass
 
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
 status: Ready after M4-08A3b1; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
