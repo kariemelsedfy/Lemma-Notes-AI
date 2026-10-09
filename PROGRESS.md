@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | b1b has 45 local proxy tests and full gates pass with process-local TMPDIR; #124/#125 CI passed; no paid traffic |
+| M4-08A3b2a SDK Bedrock observation | Unclaimed / `f3bdbef` | `feat/M4-08A3b2a-readonly-bedrock-evidence` / Mac control-plane types and fake tests | #124–#126 CI passed; availability does not prove retention eligibility; no paid traffic |
 
 ---
 
@@ -2187,10 +2187,31 @@ Acceptance:
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
 
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
-status: Ready after M4-08A3b1b; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
+status: Ready (split b2a/b2b/b2c after b1b); live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: L
 Acceptance:
-- [ ] From the limited Mac login, SDK read-only checks return current Runtime retention and exact Nova Lite on-demand price SKUs for us-east-1 with a bounded age; missing/ambiguous rate or unknown other charges stops admission
-- [ ] Test offline with injected SDK clients; keep all content-free errors, no app credential and no model invocation
+- [ ] Limited Mac identity sources fresh us-east-1 Runtime retention and exact Nova Lite status and on-demand pricing; ambiguous/missing charge evidence keeps admission closed
+- [ ] Only independently verified model eligibility under effective `none` may populate `RetentionEvidence.allowedModes`; model authorization/availability metadata alone is insufficient
+- [ ] Offline-injected tests cover failure/cancellation/unknown states without content or an SDK invoke; no paid call from this task
+
+### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
+status: Ready after M4-08A3b1b · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
+Exclusive scope: Mac proxy manifest, a type-checked read-only `AWSBedrock` control-plane observer and injected fake-client tests. Request only exact us-east-1 account retention and `amazon.nova-lite-v1:0` availability. Return a typed *observation*, not `RetentionEvidence.allowedModes`; unknown/missing/wrong model/Region/expired facts fail closed. No SDK client is constructed in tests, no credentials/content are logged and no model API, HTTP endpoint, paid call or app change is added.
+Acceptance:
+- [ ] Mac-only SDK request/output types compile; synthetic successes/denials and cancellation are tested with zero AWS requests
+- [ ] A mode of `none` plus AUTHORIZED/AVAILABLE is never presented as proof the model supports `none`, so admission still defaults to no sends
+- [ ] Full tool/repo tests and lint pass, source diff is reviewable and price evidence remains blocked for b2b
+
+### M4-08A3b2b — Bind exact Nova Lite on-demand catalog prices with unknown-charge denial
+status: Ready after b2a; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; any unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
+- [ ] Injected fake SDK clients cover malformed/duplicate/stale SKU, zero-price guesses and cancellation with zero model sends
+
+### M4-08A3b2c — Verify credential provenance and effective model retention before admission
+status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
+Acceptance:
+- [ ] Limit authenticated reads to the scoped pilot identity; never use an ambient root session or an app credential
+- [ ] Fail closed unless trusted price and actual model-specific `allowedModes` evidence are both available; paid synthetic evaluation still needs separate authorization
 
 ### M4-08A3b3 — Verify fake SDK response path and actual selected-image compatibility
 status: Ready after M4-08A3b1/b2; paid traffic remains blocked under A3 · refs: AI_PIPELINE.md §3/§5, ADR-021/024 · estimate: M
