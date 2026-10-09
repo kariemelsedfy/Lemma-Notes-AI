@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2a SDK Bedrock observation | Unclaimed / `f3bdbef` | `feat/M4-08A3b2a-readonly-bedrock-evidence` / Mac control-plane types and fake tests | #124–#126 CI passed; availability does not prove retention eligibility; no paid traffic |
+| M4-08A3b2a SDK Bedrock observation | Devin / `73a040b` | `feat/M4-08A3b2a-readonly-bedrock-evidence` / Mac control-plane types and fake tests | #124–#126 CI passed; availability does not prove retention eligibility; no paid traffic |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
+status: In progress · claimed: Devin · 2026-10-09 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
+Exclusive scope: Mac proxy manifest, a type-checked read-only `AWSBedrock` control-plane observer and injected fake-client tests. Request only exact us-east-1 account retention and `amazon.nova-lite-v1:0` availability. Return a typed *observation*, not `RetentionEvidence.allowedModes`; unknown/missing/wrong model/Region/expired facts fail closed. No SDK client is constructed in tests, no credentials/content are logged and no model API, HTTP endpoint, paid call or app change is added.
+Acceptance:
+- [ ] Mac-only SDK request/output types compile; synthetic successes/denials and cancellation are tested with zero AWS requests
+- [ ] A mode of `none` plus AUTHORIZED/AVAILABLE is never presented as proof the model supports `none`, so admission still defaults to no sends
+- [ ] Full tool/repo tests and lint pass, source diff is reviewable and price evidence remains blocked for b2b
 
 ## Review
 
@@ -2192,14 +2198,6 @@ Acceptance:
 - [ ] Limited Mac identity sources fresh us-east-1 Runtime retention and exact Nova Lite status and on-demand pricing; ambiguous/missing charge evidence keeps admission closed
 - [ ] Only independently verified model eligibility under effective `none` may populate `RetentionEvidence.allowedModes`; model authorization/availability metadata alone is insufficient
 - [ ] Offline-injected tests cover failure/cancellation/unknown states without content or an SDK invoke; no paid call from this task
-
-### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
-status: Ready after M4-08A3b1b · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
-Exclusive scope: Mac proxy manifest, a type-checked read-only `AWSBedrock` control-plane observer and injected fake-client tests. Request only exact us-east-1 account retention and `amazon.nova-lite-v1:0` availability. Return a typed *observation*, not `RetentionEvidence.allowedModes`; unknown/missing/wrong model/Region/expired facts fail closed. No SDK client is constructed in tests, no credentials/content are logged and no model API, HTTP endpoint, paid call or app change is added.
-Acceptance:
-- [ ] Mac-only SDK request/output types compile; synthetic successes/denials and cancellation are tested with zero AWS requests
-- [ ] A mode of `none` plus AUTHORIZED/AVAILABLE is never presented as proof the model supports `none`, so admission still defaults to no sends
-- [ ] Full tool/repo tests and lint pass, source diff is reviewable and price evidence remains blocked for b2b
 
 ### M4-08A3b2b — Bind exact Nova Lite on-demand catalog prices with unknown-charge denial
 status: Ready after b2a; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
