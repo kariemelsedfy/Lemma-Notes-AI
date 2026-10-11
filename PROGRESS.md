@@ -29,25 +29,24 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2a SDK Bedrock observation | Devin / `73a040b` | `feat/M4-08A3b2a-readonly-bedrock-evidence` / Mac control-plane types and fake tests | #124–#126 CI passed; availability does not prove retention eligibility; no paid traffic |
+| M4-08A3b2b Price evidence | Unclaimed / after b2a | Branch TBD / exact on-demand SKU parsing and fake tests | b2a has 51 local proxy tests; model availability still does not prove `none` eligibility; no paid traffic |
 
 ---
 
 ## In progress
 
-### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
-status: In progress · claimed: Devin · 2026-10-09 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
-Exclusive scope: Mac proxy manifest, a type-checked read-only `AWSBedrock` control-plane observer and injected fake-client tests. Request only exact us-east-1 account retention and `amazon.nova-lite-v1:0` availability. Return a typed *observation*, not `RetentionEvidence.allowedModes`; unknown/missing/wrong model/Region/expired facts fail closed. No SDK client is constructed in tests, no credentials/content are logged and no model API, HTTP endpoint, paid call or app change is added.
-Acceptance:
-- [ ] Mac-only SDK request/output types compile; synthetic successes/denials and cancellation are tested with zero AWS requests
-- [ ] A mode of `none` plus AUTHORIZED/AVAILABLE is never presented as proof the model supports `none`, so admission still defaults to no sends
-- [ ] Full tool/repo tests and lint pass, source diff is reviewable and price evidence remains blocked for b2b
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
+status: Done (typed observation only) · 2026-10-11 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3
+Note: The Mac tool alone now imports the already approved SDK `AWSBedrock` product and type-checks a read-only retention/availability client protocol; all tests inject actors and construct **no SDK client or AWS request**. The observer first checks its configured `us-east-1` Region, then requires exact Nova Lite ID, account mode `none` and available authorization/entitlement/agreement/Region status; unknown, missing, wrong, cancelled and expired observations decline. A failing test caught Swift interpreting `retention.mode == .none` as **Optional.none (nil)** rather than `DataRetentionMode.none`; the explicit enum case fixes it. The result is only `ReadOnlyBedrockObservation`, **not** model-specific `RetentionEvidence.allowedModes`; default admission still makes zero sends. **51 proxy tests**, full repo test/build/lint and Mac release build pass locally. Authenticated identity/endpoint binding and authoritative pricing remain b2c/b2b, actual eligibility under `none` remains A3; no model call, user content, IAM change or charge occurred ($0 of $10).
+Acceptance: [x] Mac-only typed SDK metadata and injected fake tests, no AWS calls; [x] none-mode availability never grants model-specific retention permission or a send; [x] all local gates pass, price/live binding remain blocked.
 
 ### M4-08A3b1b — Extend normalized PNG adversarial coverage
 status: Done (test-only Mac tool) · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021
