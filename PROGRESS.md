@@ -29,13 +29,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2b2a Pricing SDK pagination | Unclaimed / `f8b6634` | `feat/M4-08A3b2b2a-pricing-sdk-pagination` / Mac fake SDK pages | #128 CI pending; credential provenance and unknown image/other charges block paid admission |
+| M4-08A3b2b2a Pricing SDK pagination | Devin / `d152a73` | `feat/M4-08A3b2b2a-pricing-sdk-pagination` / Mac fake SDK pages | #128 CI pending; credential provenance and unknown image/other charges block paid admission |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
+status: In progress · claimed: Devin · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: S
+Exclusive scope: Mac proxy manifest, type-checked `AWSPricing` GetProducts reader and synthetic fake-SDK tests. Use separate exact input/output token requests with AWS service, Nova Lite model *label*, us-east-1 product Region and On-demand Inference feature filters; default-standard rows omit `service_tier`. Require configured pricing API Region and complete bounded pagination with no duplicate/empty/replayed token. Pass only two complete public rows to `CatalogTokenRates`; never construct `PilotPriceEvidence`, an SDK client, a model request or an app route in tests. Do not use ambient credentials or put user content in the request/logs.
+Acceptance:
+- [ ] Exact public filters and SDK types compile only in the Mac tool, with fake-client success/failure, pagination, cancellation and extra-row refusal tests
+- [ ] Missing/incomplete/ambiguous rows yield no token observation and no paid send; real profile/identity remains b2b2b
+- [ ] Full tool/repo tests and lint pass with a small diff, no account or model call
 
 ## Review
 
@@ -2214,14 +2220,6 @@ status: Ready (split b2b2a/b after b2b1); paid invocation still blocked under A3
 Acceptance:
 - [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content enters requests or logs
 - [ ] Unverified image/non-model overhead leaves `otherMaximumMicros` absent; fake SDK errors/cancellation/ambiguous pages emit zero sends
-
-### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
-status: Ready after b2b1 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: S
-Exclusive scope: Mac proxy manifest, type-checked `AWSPricing` GetProducts reader and synthetic fake-SDK tests. Use separate exact input/output token requests with AWS service, Nova Lite model *label*, us-east-1 product Region and On-demand Inference feature filters; default-standard rows omit `service_tier`. Require configured pricing API Region and complete bounded pagination with no duplicate/empty/replayed token. Pass only two complete public rows to `CatalogTokenRates`; never construct `PilotPriceEvidence`, an SDK client, a model request or an app route in tests. Do not use ambient credentials or put user content in the request/logs.
-Acceptance:
-- [ ] Exact public filters and SDK types compile only in the Mac tool, with fake-client success/failure, pagination, cancellation and extra-row refusal tests
-- [ ] Missing/incomplete/ambiguous rows yield no token observation and no paid send; real profile/identity remains b2b2b
-- [ ] Full tool/repo tests and lint pass with a small diff, no account or model call
 
 ### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
 status: Ready after b2b2a; paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
