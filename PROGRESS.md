@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2b Price evidence | Unclaimed / after b2a | Branch TBD / exact on-demand SKU parsing and fake tests | b2a has 51 local proxy tests; model availability still does not prove `none` eligibility; no paid traffic |
+| M4-08A3b2b1 Catalog parser | Unclaimed / `dfcb35a` | `feat/M4-08A3b2b1-price-catalog-validation` / Mac-only token SKU parser/tests | #127 CI pending; unknown image/other charges and retention eligibility block paid admission |
 
 ---
 
@@ -2199,10 +2199,24 @@ Acceptance:
 - [ ] Offline-injected tests cover failure/cancellation/unknown states without content or an SDK invoke; no paid call from this task
 
 ### M4-08A3b2b — Bind exact Nova Lite on-demand catalog prices with unknown-charge denial
-status: Ready after b2a; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+status: Ready (split b2b1/b2b2 after b2a); live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
 Acceptance:
-- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; any unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
+- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
 - [ ] Injected fake SDK clients cover malformed/duplicate/stale SKU, zero-price guesses and cancellation with zero model sends
+
+### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
+status: Ready after b2a · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: S
+Exclusive scope: Mac-only proxy price parser and synthetic catalog fixtures/tests. First ground expected `GetProducts` PriceList structure and Nova Lite attributes in an authentic read-only source; do not guess SKU fields or add an SDK product in this slice. Verify exact model/us-east-1/standard/on-demand/USD/1K token units, unique input/output dimensions and decimal-to-integer rounding. Refuse malformed, duplicate, missing, stale, wrong-tier/Region/currency/unit and extra-charge ambiguities. Any resulting token-rate evidence must keep `otherMaximumMicros == nil`, so `PilotPriceEnvelope.quote` continues to deny; no model/content call, endpoint or app change.
+Acceptance:
+- [ ] Catalog parser tests distinguish exact positive rates from zero/malformed/duplicate or mis-scoped rows, without relying on a price hardcoded into shipping code
+- [ ] Token-only evidence cannot release a budget hold or cause a fake transport send because other/image cost bounds remain unknown
+- [ ] Tool and repo test/lint gates pass; source diff stays small and b2b2 remains a separate authenticated read-only SDK source
+
+### M4-08A3b2b2 — Obtain paginated authoritative price evidence with a scoped SDK client
+status: Ready after b2b1; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content goes into pricing requests or logs
+- [ ] Any unverified image/non-model overhead keeps `otherMaximumMicros` absent and paid admission closed; fake SDK error/cancellation/ambiguity tests emit zero sends
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
