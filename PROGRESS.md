@@ -29,25 +29,24 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2b1 Catalog parser | Devin / `ed65385` | `feat/M4-08A3b2b1-price-catalog-validation` / Mac-only token SKU parser/tests | #127 CI pending; unknown image/other charges and retention eligibility block paid admission |
+| M4-08A3b2b2 Pricing SDK source | Unclaimed / after b2b1 | Branch TBD / paginated scoped price lookup and fake SDK tests | b2b1 has 55 local proxy tests; #127 CI passed; SKU/model mapping and image/other charges block paid admission |
 
 ---
 
 ## In progress
 
-### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
-status: In progress · claimed: Devin · 2026-10-11 · base: ed65385 · branch: feat/M4-08A3b2b1-price-catalog-validation · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: S
-Exclusive scope: Mac-only proxy price parser and synthetic catalog fixtures/tests. First ground expected `GetProducts` PriceList structure and Nova Lite attributes in an authentic read-only source; do not guess SKU fields or add an SDK product in this slice. Verify exact model/us-east-1/standard/on-demand/USD/1K token units, unique input/output dimensions and decimal-to-integer rounding. Refuse malformed, duplicate, missing, stale, wrong-tier/Region/currency/unit and extra-charge ambiguities. Any resulting token-rate evidence must keep `otherMaximumMicros == nil`, so `PilotPriceEnvelope.quote` continues to deny; no model/content call, endpoint or app change.
-Acceptance:
-- [ ] Catalog parser tests distinguish exact positive rates from zero/malformed/duplicate or mis-scoped rows, without relying on a price hardcoded into shipping code
-- [ ] Token-only evidence cannot release a budget hold or cause a fake transport send because other/image cost bounds remain unknown
-- [ ] Tool and repo test/lint gates pass; source diff stays small and b2b2 remains a separate authenticated read-only SDK source
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
+status: Done (catalog observation only) · 2026-10-11 · base: ed65385 · branch: feat/M4-08A3b2b1-price-catalog-validation · refs: ADR-021/024, BUSINESS.md §3.3
+Note: A renewed **limited** pilot CLI identity read only the current 2026-10-10 AWS Price List rows: model label `Nova Lite`, us-east-1, classic on-demand input/output units and USD rates, **no exact Runtime model ID and no `service_tier` on default-standard rows**. A pure Mac parser now requires two uniquely bound SKUs with exact label/Region/feature/usage type, USD/1K-token dimensions, one matching OnDemand term each, publication/effective date and a ≤300-second observed fetch age. Decimal conversion rounds positive USD-per-1K values **up** to integer micro-USD per million tokens; malformed, zero/overflowing, stale, duplicate, extra-charge, wrong-scope or wrong-currency rows decline. It returns `CatalogTokenRates` with **no model ID, no other-cost maximum and no conversion to `PilotPriceEvidence`**, so the existing price gate still refuses any real call or refund. Four new synthetic tests and **55 proxy tests** pass; full repo test/build/lint and Mac release build pass locally. B2b2 must supply the authenticated paginated SDK source and Q18's SKU-to-model binding plus image/other-charge bound remain open. No model request, handwriting transfer or provider/hosting charge occurred; $0 of $10 used.
+Acceptance: [x] grounded exact positive/invalid catalog rows tested without a shipping price default; [x] token-only observation cannot authorize a hold/send; [x] local tool/repo gates pass and b2b2 remains separate.
 
 ### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
 status: Done (typed observation only) · 2026-10-11 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3
