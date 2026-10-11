@@ -29,25 +29,24 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2b2a Pricing SDK pagination | Devin / `d152a73` | `feat/M4-08A3b2b2a-pricing-sdk-pagination` / Mac fake SDK pages | #128 CI pending; credential provenance and unknown image/other charges block paid admission |
+| M4-08A3b2b2b Scoped Pricing read | Unclaimed / after b2b2a | Branch TBD / verified temporary identity and public price read | #128 CI passed; b2b2a has 60 local proxy tests; exact model binding and unknown charges block paid traffic |
 
 ---
 
 ## In progress
 
-### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
-status: In progress · claimed: Devin · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: S
-Exclusive scope: Mac proxy manifest, type-checked `AWSPricing` GetProducts reader and synthetic fake-SDK tests. Use separate exact input/output token requests with AWS service, Nova Lite model *label*, us-east-1 product Region and On-demand Inference feature filters; default-standard rows omit `service_tier`. Require configured pricing API Region and complete bounded pagination with no duplicate/empty/replayed token. Pass only two complete public rows to `CatalogTokenRates`; never construct `PilotPriceEvidence`, an SDK client, a model request or an app route in tests. Do not use ambient credentials or put user content in the request/logs.
-Acceptance:
-- [ ] Exact public filters and SDK types compile only in the Mac tool, with fake-client success/failure, pagination, cancellation and extra-row refusal tests
-- [ ] Missing/incomplete/ambiguous rows yield no token observation and no paid send; real profile/identity remains b2b2b
-- [ ] Full tool/repo tests and lint pass with a small diff, no account or model call
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
+status: Done (typed fake-client source only) · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3
+Note: The Mac proxy alone now imports `AWSPricing` from the already-approved pinned Swift SDK. An injected reader verifies a configured us-east-1 pricing API Region and makes separate content-free `GetProducts` requests filtered by service/model **label**/product Region/On-demand Inference/input-or-output tokens (no nonexistent default-standard `service_tier` filter). It requires an `aws_v1` response, bounded rows/strings, complete ≤3-page pagination per token type and no missing/empty/replayed token; only then does the previously tested `CatalogTokenRates` parser inspect exactly two rows. Five fake-client tests cover exact filters, missing/extra/ambiguous pages, cancellation, SDK error and wrong Region. A hand-written success fixture initially lacked its outer JSON brace; the fixture was corrected without relaxing production validation. **60 proxy tests**, full repo test/build/lint and Mac release build pass. No SDK client or ambient credential is constructed in tests; no account price request, model call, user data transfer or provider/hosting charge occurred ($0 of $10). B2b2b must verify limited temporary credentials and read actual catalog pages; Q18 exact Runtime model binding and image/non-model charge bounds still block `PilotPriceEvidence` and paid sends.
+Acceptance: [x] Mac-only typed SDK filters with fake paginated success/denial/cancellation; [x] incomplete/ambiguous rows cannot authorize price or send; [x] full local gates pass, real read remains b2b2b.
 
 ### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
 status: Done (catalog observation only) · 2026-10-11 · base: ed65385 · branch: feat/M4-08A3b2b1-price-catalog-validation · refs: ADR-021/024, BUSINESS.md §3.3
