@@ -417,7 +417,6 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected for the Mac pilot.** An in-memory actor alone loses reservations on restart. A hosted database or new third-party SQLite wrapper adds cost/dependency before the single-device pilot has evidence. No decision is made here about the beta backend.
 
 **Revisit when.** A2b cannot prove the maximum cost per request, the Local Mac is no longer the pilot host, or a shared hosted beta ledger is chosen.
-
 ---
 
 ## ADR-024 — Use the official AWS Swift SDK only inside the Mac pilot tool
