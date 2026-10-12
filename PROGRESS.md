@@ -29,18 +29,15 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | b1b has 45 local proxy tests and full gates pass with process-local TMPDIR; #124/#125 CI passed; no paid traffic |
+| M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
+| M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
+| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | #124 CI passed; #125 updated CI pending; exact model eligibility remains blocked |
 
 ---
 
 ## In progress
 
-### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
-status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · base: f3bdbef · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2 · estimate: S
-Note: #125's parent was updated by a normal merge; #126 now conflicts only in PROGRESS/SESSIONS. Preserve all normalized-path adversarial denial assertions and both histories; no fake/real transport change or personal PNG transfer. Keep the resulting PR diff under ~400 lines.
-Acceptance:
-- [ ] Preserve all existing adversarial PNG tests and resolve only real parent conflicts
-- [ ] Proxy and full test/lint gates pass and #126 becomes mergeable by a normal push
+_(empty)_
 
 ## Review
 
@@ -48,10 +45,31 @@ _(empty)_
 
 ## Done
 
+### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2
+Note: Merged the updated #125 normalization parent into an isolated #126 repair branch. Only PROGRESS/SESSIONS conflicted; all PNG adversarial assertions, the normalizer and no-call SDK seam remain unchanged. Forty-five proxy tests, full repo test/build/lint and Mac release build pass. No user image, provider call, paid charge or iPad build occurred ($0 of $10). Normal PR push and hosted CI still need confirmation.
+Acceptance:
+- [x] Preserved all adversarial PNG tests and resolved only parent documentation conflicts
+- [x] Proxy and full repo test/lint gates and Mac release build pass, without force-push or agent PR merge
+
 ### M4-08A3b1b — Extend normalized PNG adversarial coverage
 status: Done (test-only Mac tool) · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021
 Note: Three new synthetic tests on the normalized fake-dispatch path deny CRC-correct `tEXt` metadata, truncated frames, over-limit crop bytes/pixels, and `eXIf` tampering after an intact dimension-only EXIF is accepted. All failures make zero fake sends. Existing A1/b1 tests and shipping code were not changed; **45 proxy tests**, full repo test/build and lint pass. The first full run hit macOS `EPERM` at `GlyphBankStore.swift:30` when creating protected atomic test files in the system temporary directory; a temp-directory write-scope grant did not help. Setting `TMPDIR` **only for the test process** to the checkout's existing `Packages/Handwriting/.build` made the isolated and unchanged full `./scripts/test.sh` run pass. No file-protection setting or test was weakened. Physical iPad PNG compatibility and Nova Lite eligibility under `none` remain unverified; no paid call or ink transfer occurred.
 Acceptance: [x] All targeted denials make zero fake sends; [x] prior suites and full repo gates pass with the documented test environment; [x] lint clean.
+
+### M4-REC125 — Reconcile #125 PNG normalization with updated SDK parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC125-reconcile-upstream · refs: PR #125, M4-08A3b1, AGENTS.md §1–2
+Note: Merged the updated #124 SDK parent into a separate #125 repair branch, preserving the PNG decoder, its 42 fake-admission tests, and both task/session histories. Only task/session docs conflicted; no PNG safety, SDK dependency, or provider transport was weakened. Proxy and full repo test/build/lint gates and Mac release build pass. No model call, user content or charge occurred ($0 of $10). Push to #125 and hosted CI remain to confirm.
+Acceptance:
+- [x] Reconciled updated parent without weakening PNG safety or modifying provider transport
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force push or agent PR merge
+
+### M4-REC124 — Reconcile #124 with its updated admission parent
+status: Done (conflict reconciliation only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC124-reconcile-upstream · refs: PR #124, ADR-021/024, AGENTS.md §1–2
+Note: The parent was force-updated with ledger/fake-admission commits after #124 forked. Merged the current parent into a new repair branch without rewriting history; resolved six conflicts by retaining both default-deny admission/rate/ledger code and the Mac-only pinned SDK/no-call seam. The duplicate, older CONTEXT status paragraph was dropped with explicit human approval; both histories remain in PROGRESS/SESSIONS. The merged tree passes 40 proxy tests, full repo test/build/lint and a Mac release build. No model request, ink transfer, permission change or provider cost occurred ($0 of $10). Normal fast-forward push to #124 and hosted CI still need confirmation.
+Acceptance:
+- [x] Resolved exact parent/head conflicts without dropping ledger/admission tests, weakening security, or changing iPad dependencies
+- [x] Full repo test/lint and Mac release build pass; no force push or agent PR merge
 
 ### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
 status: Done (Mac tool only) · 2026-10-09 · base: 760d5bd · branch: feat/M4-08A3b1-png-normalization · refs: ADR-021/024, AI_PIPELINE.md §1/§5
@@ -1880,6 +1898,23 @@ Acceptance:
 ---
 
 ## Ready — M4: Real intelligence
+
+### M4-REC125 — Recheck #125 PNG normalization parent
+status: Ready · depends: M4-REC124 · refs: PR #125 · Acceptance: [ ] Preserve decoding and verify full gates after a normal repair push.
+### M4-REC126 — Recheck #126 PNG adversarial parent
+status: Ready · depends: M4-REC125 · refs: PR #126 · Acceptance: [ ] Preserve denial tests and verify full gates.
+### M4-REC127 — Recheck #127 metadata parent
+status: Ready · depends: M4-REC126 · refs: PR #127 · Acceptance: [ ] Keep retention non-authorizing and verify full gates.
+### M4-REC128 — Recheck #128 catalog parent
+status: Ready · depends: M4-REC127 · refs: PR #128 · Acceptance: [ ] Keep token prices non-authorizing and verify full gates.
+### M4-REC129 — Recheck #129 pagination parent
+status: Ready · depends: M4-REC128 · refs: PR #129 · Acceptance: [ ] Preserve bounded complete pages and verify full gates.
+### M4-REC130 — Recheck #130 scoped Pricing parent
+status: Ready · depends: M4-REC129 · refs: PR #130 · Acceptance: [ ] Preserve login-only read and verify full gates.
+### M4-REC131 — Recheck #131 independent Ask-test branch
+status: Ready · depends: M4-REC130 · refs: PR #131 · Acceptance: [ ] Preserve terminal-state synchronization; verify full gates.
+### M4-REC132 — Recheck #132 independent metadata branch
+status: Ready · depends: M4-REC130/M4-REC131 · refs: PR #132 · Acceptance: [ ] Keep IDs distinct and paid traffic denied; verify full gates.
 
 **Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
 (ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
