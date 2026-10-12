@@ -30,7 +30,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
 | M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
-| M4-08A3b1b PNG adversarial tests | Unclaimed / after b1 | Branch TBD / normalized-path metadata, truncation and size tests | b1 core decoder passes locally; exact Nova Lite `none` eligibility and paid transport remain blocked |
+| M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
+| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | #124 CI passed; #125 updated CI pending; exact model eligibility remains blocked |
 
 ---
 
@@ -43,6 +44,18 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2
+Note: Merged the updated #125 normalization parent into an isolated #126 repair branch. Only PROGRESS/SESSIONS conflicted; all PNG adversarial assertions, the normalizer and no-call SDK seam remain unchanged. Forty-five proxy tests, full repo test/build/lint and Mac release build pass. No user image, provider call, paid charge or iPad build occurred ($0 of $10). Normal PR push and hosted CI still need confirmation.
+Acceptance:
+- [x] Preserved all adversarial PNG tests and resolved only parent documentation conflicts
+- [x] Proxy and full repo test/lint gates and Mac release build pass, without force-push or agent PR merge
+
+### M4-08A3b1b — Extend normalized PNG adversarial coverage
+status: Done (test-only Mac tool) · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021
+Note: Three new synthetic tests on the normalized fake-dispatch path deny CRC-correct `tEXt` metadata, truncated frames, over-limit crop bytes/pixels, and `eXIf` tampering after an intact dimension-only EXIF is accepted. All failures make zero fake sends. Existing A1/b1 tests and shipping code were not changed; **45 proxy tests**, full repo test/build and lint pass. The first full run hit macOS `EPERM` at `GlyphBankStore.swift:30` when creating protected atomic test files in the system temporary directory; a temp-directory write-scope grant did not help. Setting `TMPDIR` **only for the test process** to the checkout's existing `Packages/Handwriting/.build` made the isolated and unchanged full `./scripts/test.sh` run pass. No file-protection setting or test was weakened. Physical iPad PNG compatibility and Nova Lite eligibility under `none` remain unverified; no paid call or ink transfer occurred.
+Acceptance: [x] All targeted denials make zero fake sends; [x] prior suites and full repo gates pass with the documented test environment; [x] lint clean.
 
 ### M4-REC125 — Reconcile #125 PNG normalization with updated SDK parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC125-reconcile-upstream · refs: PR #125, M4-08A3b1, AGENTS.md §1–2
@@ -2213,15 +2226,8 @@ Acceptance:
 - [ ] Fully decode/normalize selected crop/neighborhood PNGs under byte/pixel bounds; verify actual app PNG compatibility separately before any handwriting transfer
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
 
-### M4-08A3b1b — Extend normalized PNG adversarial coverage
-status: Ready after M4-08A3b1 · refs: AI_PIPELINE.md §1/§5, ADR-021 · estimate: S
-Exclusive scope: `Tools/bedrock-proxy` normalization tests only; keep the core image-code PR below the review-size target. Test metadata-bearing app-pattern PNGs, truncated frames and over-limit bytes/pixels against the new normalized dispatch path, not just the older A1 signature checker. Make no provider/account call. Do not delete or weaken existing A1 denial tests.
-Acceptance:
-- [ ] Correctly checksummed metadata, truncated input, oversized bytes/pixels and dimension-only EXIF tampering make zero fake sends
-- [ ] Existing A1 and b1 decoder suites stay green; repo gates and lint pass
-
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
-status: Ready after M4-08A3b1; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
+status: Ready after M4-08A3b1b; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
 Acceptance:
 - [ ] From the limited Mac login, SDK read-only checks return current Runtime retention and exact Nova Lite on-demand price SKUs for us-east-1 with a bounded age; missing/ambiguous rate or unknown other charges stops admission
 - [ ] Test offline with injected SDK clients; keep all content-free errors, no app credential and no model invocation

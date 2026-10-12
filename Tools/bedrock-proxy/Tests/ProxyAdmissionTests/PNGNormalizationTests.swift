@@ -39,6 +39,62 @@ final class PNGNormalizationTests: XCTestCase {
         XCTAssertEqual(sends, 0)
     }
 
+    func testMetadataAndTruncationRemainDeniedBeforeNormalizedDispatch() async throws {
+        let original = [UInt8](try Self.png(width: 4, height: 4, opaque: true))
+        let end = try XCTUnwrap(Self.chunkOffset("IEND", in: original))
+        let metadata = Self.chunk(kind: "tEXt", payload: Array("note\0private".utf8))
+        var inserted = original
+        inserted.insert(contentsOf: metadata, at: end)
+        let transport = RecordedImageTransport()
+        await expect(.malformed, crop: Data(inserted), transport: transport)
+        await expect(.malformed, crop: Data(original.dropLast(4)), transport: transport)
+        let sends = await transport.sends
+        XCTAssertEqual(sends, 0)
+    }
+
+    func testByteAndPixelCapsRejectBeforeNormalizedDispatch() async throws {
+        let transport = RecordedImageTransport()
+        await expect(.oversized, crop: Data(repeating: 0xFF, count: 1_000_001), transport: transport)
+        var bytes = [UInt8](try Self.png(width: 4, height: 4, opaque: true))
+        bytes[16...19] = [0, 0, 16, 0]
+        bytes[20...23] = [0, 0, 16, 0]
+        Self.putCRC(&bytes, at: 8, length: 13)
+        await expect(.oversized, crop: Data(bytes), transport: transport)
+        let sends = await transport.sends
+        XCTAssertEqual(sends, 0)
+    }
+
+    func testExtraExifMetadataWithCorrectCRCNeverReachesTransport() async throws {
+        let original = try Self.png(width: 4, height: 4, opaque: true)
+        let baseline = RecordedImageTransport()
+        try await gate().invoke(try body(crop: original, neighborhood: original), proof: "pilot", transport: baseline)
+        let recorded = await baseline.request
+        var bytes = [UInt8](try XCTUnwrap(recorded).cropPNG)
+        let imageData = try XCTUnwrap(Self.chunkOffset("IDAT", in: bytes))
+        let dimensionsOnlyExif: [UInt8] = [
+            0x4D, 0x4D, 0, 0x2A, 0, 0, 0, 8,
+            0, 1, 0x87, 0x69, 0, 4, 0, 0, 0, 1, 0, 0, 0, 26,
+            0, 0, 0, 0, 0, 2, 0xA0, 0x02, 0, 4, 0, 0, 0, 1,
+            0, 0, 0, 4, 0xA0, 0x03, 0, 4, 0, 0, 0, 1,
+            0, 0, 0, 4, 0, 0, 0, 0,
+        ]
+        bytes.insert(contentsOf: Self.chunk(kind: "eXIf", payload: dimensionsOnlyExif), at: imageData)
+        let accepted = RecordedImageTransport()
+        try await gate().invoke(
+            try body(crop: Data(bytes), neighborhood: original), proof: "pilot", transport: accepted
+        )
+        let acceptedSends = await accepted.sends
+        XCTAssertEqual(acceptedSends, 1)
+
+        let exif = try XCTUnwrap(Self.chunkOffset("eXIf", in: bytes))
+        bytes[exif + 8 + 52] = 0x41
+        Self.putCRC(&bytes, at: exif, length: dimensionsOnlyExif.count)
+        let rejected = RecordedImageTransport()
+        await expect(.malformed, crop: Data(bytes), transport: rejected)
+        let rejectedSends = await rejected.sends
+        XCTAssertEqual(rejectedSends, 0)
+    }
+
     private func gate() -> AdmissionGate {
         let identity = PilotIdentity(subjectID: UUID().uuidString)
         return AdmissionGate(
@@ -150,6 +206,14 @@ final class PNGNormalizationTests: XCTestCase {
 
     private static func chunkLength(_ bytes: [UInt8], at offset: Int) -> Int {
         bytes[offset..<(offset + 4)].reduce(0) { ($0 << 8) | Int($1) }
+    }
+
+    private static func chunk(kind: String, payload: [UInt8]) -> [UInt8] {
+        var bytes = [UInt8](repeating: 0, count: 4) + Array(kind.utf8) + payload + [0, 0, 0, 0]
+        let length = payload.count
+        for index in 0..<4 { bytes[index] = UInt8(truncatingIfNeeded: length >> (24 - index * 8)) }
+        putCRC(&bytes, at: 0, length: length)
+        return bytes
     }
 
     private static func putCRC(_ bytes: inout [UInt8], at offset: Int, length: Int) {
