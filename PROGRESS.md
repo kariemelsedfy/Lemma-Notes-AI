@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC128 — Reconcile #128 token catalog with updated metadata parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC128-reconcile-upstream · base: f8b6634 · refs: PR #128, M4-08A3b2b1, ADR-021/024 · estimate: S
+Note: #127's parent was updated by a normal merge; #128 now conflicts only in PROGRESS/SESSIONS. Preserve strict SKU/term parsing and its refusal to authorize unknown image/other charges. No live SDK read or model call is part of this repair.
+Acceptance:
+- [ ] Preserve all token-catalog refusal tests and non-authorizing rates
+- [ ] Proxy and full repo tests/lint and Mac release build pass; normal fast-forward PR push restores mergeability
 
 ## Review
 
