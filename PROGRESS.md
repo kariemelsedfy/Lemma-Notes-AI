@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-14C — Await local Ask terminal state in app tests
+status: In progress · claimed: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2 · estimate: S
+Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy`: after a fixed 150 ms wait, the Ask phase was still `working` and local failure unset. The same app suite passed on #129; #130 modifies no app code. Diagnose/synchronize the test without changing production behavior or weakening cancellation/ink assertions; separate this app-test change from the proxy PR.
+Acceptance:
+- [ ] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
+- [ ] Focused simulator tests and full repo test/lint pass, with no model, data transfer or budget change
 
 ## Review
 
