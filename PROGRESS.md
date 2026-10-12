@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC125 — Reconcile #125 PNG normalization with updated SDK parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC125-reconcile-upstream · base: ff57f73 · refs: PR #125, M4-08A3b1, AGENTS.md §1–2 · estimate: S
+Note: #124's approved no-call SDK parent was repaired by a normal fast-forward update. #125 predates that parent merge and now conflicts in task/session docs. Preserve the PNG decoder, normalized-path fake tests and both parent/child histories. No model send or personal image transfer; keep the eventual PR diff under ~400 lines.
+Acceptance:
+- [ ] Reconcile the updated parent into #125 without weakening PNG safety or modifying provider transport
+- [ ] Proxy and full repo tests/lint, Mac release build, and normal fast-forward PR update pass
 
 ## Review
 
