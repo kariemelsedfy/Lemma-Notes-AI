@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3 Synthetic eligibility/transport | Unclaimed / blocked on hard gates | Branch TBD / scoped, synthetic-only AWS verification | Fake composition passes; model `none` eligibility, trusted callbacks, bounded image/price and reviewed invocation permission still missing |
+| M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
 
 ---
 
@@ -42,6 +42,21 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC124 — Reconcile #124 with its updated admission parent
+status: Done (conflict reconciliation only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC124-reconcile-upstream · refs: PR #124, ADR-021/024, AGENTS.md §1–2
+Note: The parent was force-updated with ledger/fake-admission commits after #124 forked. Merged the current parent into a new repair branch without rewriting history; resolved six conflicts by retaining both default-deny admission/rate/ledger code and the Mac-only pinned SDK/no-call seam. The duplicate, older CONTEXT status paragraph was dropped with explicit human approval; both histories remain in PROGRESS/SESSIONS. The merged tree passes 40 proxy tests, full repo test/build/lint and a Mac release build. No model request, ink transfer, permission change or provider cost occurred ($0 of $10). Normal fast-forward push to #124 and hosted CI still need confirmation.
+Acceptance:
+- [x] Resolved exact parent/head conflicts without dropping ledger/admission tests, weakening security, or changing iPad dependencies
+- [x] Full repo test/lint and Mac release build pass; no force push or agent PR merge
+
+### M4-08A3a — Pin a Mac-only Bedrock SDK with a disabled-by-default transport seam
+status: Done (offline SDK seam only) · implemented: Devin · 2026-10-09 · base: 4e48bd2 · branch: feat/M4-08A3a-mac-sdk-seam · depends: ADR-021/024, A2b2b2 · refs: ARCHITECTURE.md §2, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: S
+Note: the owner explicitly approved an official **Mac-tool-only** AWS SDK; `Tools/bedrock-proxy` now depends exactly on `aws-sdk-swift` **1.8.2** (2026-09-30) and links only `AWSBedrockRuntime` in `ProxyAdmission`. Its committed `Package.resolved` pins transitive releases; five initial resolver choices from 2026-10-05–07 were replaced with older compatible versions after checking their publication dates. Direct override declarations caused new SwiftPM unused-dependency warnings, so the manifest keeps only the exact SDK package and the lockfile retains the older resolutions. A specialized IDE buffer disagreed with disk after SwiftPM wrote the manifest; the owner saved the intended one-dependency file and disk/Git checks matched before tests. `SyntheticNovaProbe` constructs a fixed text-only `ConverseInput` for `amazon.nova-lite-v1:0` capped at **32 output tokens** but **never sends** it. `DisabledBedrockTransport` always throws `.disabled`; no SDK client or network endpoint is constructed. Two new tests plus all 38 existing proxy tests pass; the full repo test/build/lint gates and the tool release build pass. The iPad app target and `Packages/` have no AWS dependency or credential. No account permissions changed, no model call or user ink crossed a boundary; estimated provider/hosting spend remains $0 of $10. A3b must supply authenticated price/retention/identity sources and full PNG validation; A3's paid synthetic call needs separate scoped IAM permission and approval.
+Acceptance:
+- [x] Mac proxy alone imports pinned SDK and builds a disabled transport plus bounded synthetic request; app modules contain no AWS code or key
+- [x] No SDK client/request is executed; the disabled transport rejects in tests and previous fake-admission tests remain green
+- [x] ADR-024 records human approval and alternatives; locked vetted transitives, full tool/repo gates and release build pass without new dependency warnings
 
 ### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
 status: Done (mock-only) · implemented: Devin · 2026-10-08 · base: f1fe069 · branch: feat/M4-08A2b2b2-fake-admission · depends: M4-08A1/A2b2a/b2b1, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: M
@@ -1858,6 +1873,23 @@ Acceptance:
 
 ## Ready — M4: Real intelligence
 
+### M4-REC125 — Recheck #125 PNG normalization parent
+status: Ready · depends: M4-REC124 · refs: PR #125 · Acceptance: [ ] Preserve decoding and verify full gates after a normal repair push.
+### M4-REC126 — Recheck #126 PNG adversarial parent
+status: Ready · depends: M4-REC125 · refs: PR #126 · Acceptance: [ ] Preserve denial tests and verify full gates.
+### M4-REC127 — Recheck #127 metadata parent
+status: Ready · depends: M4-REC126 · refs: PR #127 · Acceptance: [ ] Keep retention non-authorizing and verify full gates.
+### M4-REC128 — Recheck #128 catalog parent
+status: Ready · depends: M4-REC127 · refs: PR #128 · Acceptance: [ ] Keep token prices non-authorizing and verify full gates.
+### M4-REC129 — Recheck #129 pagination parent
+status: Ready · depends: M4-REC128 · refs: PR #129 · Acceptance: [ ] Preserve bounded complete pages and verify full gates.
+### M4-REC130 — Recheck #130 scoped Pricing parent
+status: Ready · depends: M4-REC129 · refs: PR #130 · Acceptance: [ ] Preserve login-only read and verify full gates.
+### M4-REC131 — Recheck #131 independent Ask-test branch
+status: Ready · depends: M4-REC130 · refs: PR #131 · Acceptance: [ ] Preserve terminal-state synchronization; verify full gates.
+### M4-REC132 — Recheck #132 independent metadata branch
+status: Ready · depends: M4-REC130/M4-REC131 · refs: PR #132 · Acceptance: [ ] Keep IDs distinct and paid traffic denied; verify full gates.
+
 **Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
 (ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
 iPad mini (6th generation) is not Apple Intelligence-capable; Q13 and M4-13 track the route
@@ -2160,6 +2192,13 @@ Acceptance:
 - [ ] Scoped server-only role/account/Region and exact model access under effective `none` are verified without leaking credentials or user notes
 - [ ] A durable combined provider/hosting cap and authorization mechanism are demonstrated, or live work stays blocked
 - [ ] Fake-transport tests cover refusal, malformed responses, timeout, cancellation and cost reconciliation before a separately authorized capped pilot
+
+### M4-08A3b — Bind trusted Mac-side evidence and decode selected PNGs before any live request
+status: Ready after M4-08A3a; actual model invocation stays blocked on A3's hard gates · refs: BUSINESS.md §3.3, AI_PIPELINE.md §5, ADR-021/024 · estimate: M
+Acceptance:
+- [ ] The Mac-side adapter can obtain fresh exact-model/Region retention and authoritative on-demand price evidence using the scoped login, fail closed on unknown image/other charges, and avoid content logging
+- [ ] Fully decode/normalize synthetic and actual app-selected crop/neighborhood PNGs under strict pixel/byte limits; no whole page or glyph bank crosses the boundary
+- [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed model invocation access and a separately approved capped synthetic call remain A3 gates
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
