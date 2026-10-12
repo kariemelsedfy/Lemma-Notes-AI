@@ -39,14 +39,16 @@ _(empty)_
 
 ## Review
 
+_(empty)_
+
+## Done
+
 ### M4-08A3b2a2 — Bind read-only Bedrock metadata to the limited Mac identity
-status: Review · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · base: 9992503 · refs: ADR-021/024/025/026, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: M
-Note: The pinned SDK's login-only temporary `margin-pilot` credentials are frozen and verified by exact expected IAM account/user STS before the fixed us-east-1 Bedrock **control-plane** read. An explicit-profile CLI STS check returned only `True` before the SDK observation; the latter read account retention `none` and availability. AWS returned **`amazon.nova-lite-v1`** for the requested **`amazon.nova-lite-v1:0`**. The first attempt correctly declined on strict echo; the observer now preserves both identifiers separately rather than guessing equivalence. The output is non-authorizing and never populates `RetentionEvidence.allowedModes`; Q15 model-specific eligibility and Q18 image/non-model cost remain blocked. Fake wrong/root/role/endpoint/cancelled reads make zero metadata requests; **67 proxy tests**, full repository test/build/lint, the Mac release build and the scoped command pass. No Runtime/model call, user content, account mutation or charge occurred ($0 of $10). PR review is pending.
+status: Done (non-authorizing observation only) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · PR: #132 (stacked on #130, open) · refs: ADR-021/024/025/026, AI_PIPELINE.md §5, BUSINESS.md §3.3
+Note: The pinned SDK's login-only temporary `margin-pilot` credentials are frozen and verified by exact expected IAM account/user STS before the fixed us-east-1 Bedrock **control-plane** read. An explicit-profile CLI STS check returned only `True` before the SDK observation; the latter read account retention `none` and availability. AWS returned **`amazon.nova-lite-v1`** for the requested **`amazon.nova-lite-v1:0`**. The first attempt correctly declined on strict echo; the observer now preserves both identifiers separately rather than guessing equivalence. The output is non-authorizing and never populates `RetentionEvidence.allowedModes`; Q15 model-specific eligibility and Q18 image/non-model cost remain blocked. Fake wrong/root/role/endpoint/cancelled reads make zero metadata requests; **67 proxy tests**, full repository test/build/lint, the Mac release build and the scoped command pass. No Runtime/model call, user content, account mutation or charge occurred ($0 of $10). PR #132 is open, not merged; hosted CI is pending.
 Acceptance:
 - [x] Login-only temporary IAM pilot identity, expected account and fixed regional HTTPS endpoint verified before a bounded SDK Bedrock metadata read; no root/ambient fallback
 - [x] Fake denial tests make zero metadata reads; real command returns only fresh requested/reported model identifiers plus account mode, not eligibility or a paid send
-
-## Done
 
 ### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
 status: Done (read-only token observation, no paid authorization) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · PR: #130 (stacked on #129, open) · refs: ADR-021/024/025, BUSINESS.md §3.3
