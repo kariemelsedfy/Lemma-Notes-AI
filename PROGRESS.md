@@ -29,7 +29,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A3b2b2b Scoped Pricing read | Devin / read-only check complete | `feat/M4-08A3b2b2b-scoped-pricing-read` / explicit identity and public token read | Limited STS identity verified; SDK returned two public token rates, unknown charges still block paid traffic; PR awaits push approval |
+| M4-08A3b2b2b Scoped Pricing read | Devin / read-only check complete | `feat/M4-08A3b2b2b-scoped-pricing-read` / explicit identity and public token read | Limited STS identity verified; SDK returned two public token rates, unknown charges still block paid traffic; PR #130 open |
 
 ---
 
@@ -39,16 +39,16 @@ _(empty)_
 
 ## Review
 
-### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
-status: Review · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · refs: ADR-021/024/025, BUSINESS.md §3.3 · estimate: M
-Note: The renewed `margin-pilot` session passed an explicit-profile STS check for the expected account and exact IAM `MarginPilot` user before any Pricing SDK call. The Mac-only command then read complete bounded public SDK pages through the pinned login-only temporary resolver and parsed exactly two Nova Lite/us-east-1 classic on-demand token rates: **60,000 input and 240,000 output micro-USD per million tokens** (2026-10-12 UTC). The command emitted no identity, token, account identifier or row JSON. These are public token *observations*, not exact `amazon.nova-lite-v1:0` SKU binding or any image/other-cost maximum. The request used no handwriting, Bedrock invocation, hosting or new charge ($0 of $10); paid admission remains closed. 64 proxy tests, full repo tests/build/lint and Mac release build pass; PR needs explicit push authorization.
-Acceptance:
-- [x] Login-only temporary identity is frozen, fixed HTTPS Region/signing endpoints and exact STS account/user precede Pricing; root/ambient and fake failures make zero pricing reads
-- [x] Actual bounded Pricing SDK read parsed only fresh token observations; no Runtime model ID, image/other-cost bound or paid transport was enabled
-
 _(empty)_
 
 ## Done
+
+### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
+status: Done (read-only token observation, no paid authorization) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · PR: #130 (stacked on #129, open) · refs: ADR-021/024/025, BUSINESS.md §3.3
+Note: The renewed `margin-pilot` session passed an explicit-profile STS check for the expected account and exact IAM `MarginPilot` user before any Pricing SDK call. The Mac-only command then read complete bounded public SDK pages through the pinned login-only temporary resolver and parsed exactly two Nova Lite/us-east-1 classic on-demand token rates: **60,000 input and 240,000 output micro-USD per million tokens** (2026-10-12 UTC). The command emitted no identity, token, account identifier or row JSON. These are public token *observations*, not exact `amazon.nova-lite-v1:0` SKU binding or any image/other-cost maximum. The request used no handwriting, Bedrock invocation, hosting or new charge ($0 of $10); paid admission remains closed. 64 proxy tests, full repo tests/build/lint and Mac release build pass. PR #130 is open for review, not merged.
+Acceptance:
+- [x] Login-only temporary identity is frozen, fixed HTTPS Region/signing endpoints and exact STS account/user precede Pricing; root/ambient and fake failures make zero pricing reads
+- [x] Actual bounded Pricing SDK read parsed only fresh token observations; no Runtime model ID, image/other-cost bound or paid transport was enabled
 
 ### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
 status: Done (typed fake-client source only) · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3

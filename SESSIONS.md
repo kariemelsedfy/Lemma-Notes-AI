@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-12 · Devin · M4-08A3b2b2b — PR #130 review handoff
+
+The owner explicitly authorized pushing this branch and opening a PR. PR #130 is stacked on the still-open pagination PR #129, keeping the review diff under 400 lines; no PR was merged. The task board is Done for the scoped public token observation only. A reviewer must keep Q15/Q16/Q18 and the A3 hard gates separate: a successful read-only Pricing query cannot authorize a paid model call, and known provider/hosting spend remains $0 of $10. Local full test/build/lint and Mac release build passed before the review handoff; hosted CI on #130 still needs its own result.
+
 ## 2026-10-12 · Devin · M4-08A3b2b2b — Renewed limited login produced public token observations only
 
 The owner renewed the Mac's `margin-pilot` browser login after the earlier expired-session stop. Before any Pricing SDK call, an explicit `--profile margin-pilot` STS read returned only `True` for the expected account and exact IAM `MarginPilot` user (not root or an assumed role). The Mac-only `pricing-observe` executable, given that expected account locally, then successfully fetched and parsed the bounded public Price List pages. Output was just `Nova Lite`/us-east-1 and **60,000 input / 240,000 output micro-USD per million tokens** with a UTC fetch time; no account identifier, secret or raw price row was printed. This agrees with the earlier read-only CLI rates, but agreement is **not** an authoritative SKU-to-`amazon.nova-lite-v1:0` mapping, a model-specific retention grant, proof about image tokenization or a bound on other costs. The budget gate still declines and no Bedrock Runtime request, handwriting transfer, hosting charge or paid provider call occurred ($0 of $10). The surprise was that renewing a profile from the owner's OneDrive shell also refreshed the user-level login visible from the clean clone; do not infer anything about the OneDrive repository contents from that. PR review/push remains a separate human approval step.
