@@ -3,7 +3,7 @@ import SQLite3
 
 enum LedgerError: Error, Equatable {
     case invalidCost, duplicate, overBudget, storageUnavailable, configurationMismatch
-    case unknownRequest, costExceeded
+    case unknownRequest, costExceeded, rateLimited, invalidPilot
 }
 
 actor SpendLedger {
@@ -20,6 +20,8 @@ actor SpendLedger {
             guard total >= 0, total <= limitMicros else { throw LedgerError.overBudget }
             _ = try Self.observedTotal(database)
             _ = try Self.halted(database)
+            let schema = try Self.prepare(database, "SELECT pilot_id, created_at FROM reservations LIMIT 0")
+            sqlite3_finalize(schema)
         }
     }
 
@@ -44,10 +46,13 @@ actor SpendLedger {
                 """
                 CREATE TABLE reservations (
                     request_id TEXT PRIMARY KEY,
+                    pilot_id TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
                     max_micros INTEGER NOT NULL CHECK(max_micros > 0)
                 )
                 """
             )
+            try execute(database, "CREATE INDEX reservations_by_pilot_time ON reservations(pilot_id, created_at)")
             try execute(
                 database,
                 """
@@ -71,15 +76,17 @@ actor SpendLedger {
         return try SpendLedger(databaseURL: databaseURL, limitMicros: limitMicros)
     }
 
-    func reserve(requestID: UUID, maximumMicros: Int64) throws -> Int64 {
+    func reserve(requestID: UUID, pilotID: UUID, maximumMicros: Int64) throws -> Int64 {
         guard maximumMicros > 0, maximumMicros <= limitMicros else { throw LedgerError.invalidCost }
+        guard pilotID.uuidString != "00000000-0000-0000-0000-000000000000" else { throw LedgerError.invalidPilot }
         return try Self.withDatabase(at: databaseURL) { database in
             try Self.execute(database, "PRAGMA synchronous=FULL")
             try Self.execute(database, "BEGIN IMMEDIATE")
             do {
                 guard try Self.persistedLimit(database) == limitMicros else { throw LedgerError.configurationMismatch }
                 guard try !Self.halted(database) else { throw LedgerError.costExceeded }
-                try Self.insert(requestID: requestID, maximumMicros: maximumMicros, into: database)
+                try Self.insert(requestID: requestID, pilotID: pilotID, maximumMicros: maximumMicros, into: database)
+                guard try Self.recentCount(for: pilotID, in: database) <= 40 else { throw LedgerError.rateLimited }
                 let total = try Self.total(database)
                 guard total >= 0, total <= limitMicros else { throw LedgerError.overBudget }
                 try Self.execute(database, "COMMIT")
@@ -163,16 +170,38 @@ actor SpendLedger {
         return statement
     }
 
-    private static func insert(requestID: UUID, maximumMicros: Int64, into database: OpaquePointer) throws {
-        let statement = try prepare(database, "INSERT INTO reservations (request_id, max_micros) VALUES (?, ?)")
+    private static func insert(
+        requestID: UUID, pilotID: UUID, maximumMicros: Int64, into database: OpaquePointer
+    ) throws {
+        let statement = try prepare(
+            database,
+            "INSERT INTO reservations (request_id, pilot_id, created_at, max_micros) VALUES (?, ?, unixepoch(), ?)"
+        )
         defer { sqlite3_finalize(statement) }
-        try requestID.uuidString.withCString { identifier in
+        try requestID.uuidString.withCString { request in
+            try pilotID.uuidString.withCString { pilot in
+                guard sqlite3_bind_text(statement, 1, request, -1, nil) == SQLITE_OK,
+                    sqlite3_bind_text(statement, 2, pilot, -1, nil) == SQLITE_OK,
+                    sqlite3_bind_int64(statement, 3, maximumMicros) == SQLITE_OK
+                else { throw LedgerError.storageUnavailable }
+                let result = sqlite3_step(statement)
+                if result & 0xFF == SQLITE_CONSTRAINT { throw LedgerError.duplicate }
+                guard result == SQLITE_DONE else { throw LedgerError.storageUnavailable }
+            }
+        }
+    }
+
+    private static func recentCount(for pilotID: UUID, in database: OpaquePointer) throws -> Int64 {
+        let statement = try prepare(
+            database,
+            "SELECT COUNT(*) FROM reservations WHERE pilot_id = ? AND created_at > unixepoch() - 3600"
+        )
+        defer { sqlite3_finalize(statement) }
+        return try pilotID.uuidString.withCString { identifier in
             guard sqlite3_bind_text(statement, 1, identifier, -1, nil) == SQLITE_OK,
-                sqlite3_bind_int64(statement, 2, maximumMicros) == SQLITE_OK
+                sqlite3_step(statement) == SQLITE_ROW
             else { throw LedgerError.storageUnavailable }
-            let result = sqlite3_step(statement)
-            if result & 0xFF == SQLITE_CONSTRAINT { throw LedgerError.duplicate }
-            guard result == SQLITE_DONE else { throw LedgerError.storageUnavailable }
+            return sqlite3_column_int64(statement, 0)
         }
     }
 
