@@ -68,6 +68,7 @@ final class LocalArithmeticAskTests: XCTestCase {
         let harness = Harness(reading: SelectionReading(transcript: "2+3=", confidence: 0.95), delayed: true)
         harness.pipeline.run(harness.input, verb: .answer)
         harness.pipeline.cancel(.superseded)
+        try await Task.sleep(for: .milliseconds(150))
         try await harness.settle()
 
         XCTAssertEqual(harness.model.state.name, "discarded.superseded")
@@ -118,7 +119,11 @@ final class LocalArithmeticAskTests: XCTestCase {
         }
 
         func settle() async throws {
-            try await Task.sleep(for: .milliseconds(150))
+            let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+            while model.phase == .working && ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            XCTAssertNotEqual(model.phase, .working, "Ask must leave working state before assertions")
         }
     }
 }

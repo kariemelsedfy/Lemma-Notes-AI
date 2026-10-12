@@ -48,6 +48,20 @@ _(empty)_
 
 ## Done
 
+### M4-REC131 — Reconcile #131 Ask-test fix with updated Pricing parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC131-await-updated-parent · refs: PR #131, M4-14C, AGENTS.md §1–2
+Note: Merged updated #130 into an isolated #131 branch. Only PROGRESS/SESSIONS conflicted; the bounded terminal-state wait, cancellation late-ink interval and every assertion remain unchanged. Five focused and all 190 simulator app tests passed on iOS 26.5, as did full repo tests/build/lint and Mac proxy release build. No production Ask edit, personal content, AWS request or charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved five focused Ask tests and 190 full simulator cases against updated parent
+- [x] Full repo test/lint and Mac proxy release build pass; no force-push or agent PR merge
+
+### M4-14C — Await local Ask terminal state in app tests
+status: Done (test-only, review pending) · implemented: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · PR: #131 (stacked on #130, open) · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2
+Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy` after a 150 ms sleep: Ask remained `working` and had no local failure. A focused iOS 26.5 simulator run reproduced the same failure on the first unsupported case. The test now waits for the phase to leave `working` within 3 seconds and fails if it does not, while preserving the cancellation test's 150 ms late-ink observation and all original assertions; no production code changed. The focused **5 tests**, full **190 simulator app tests**, and `./scripts/test.sh`/`./scripts/lint.sh` pass. PR #131 is open for review and not merged; PR #130's unchanged-code CI rerun is pending. No model, user notes, charge or budget change ($0 of $10).
+Acceptance:
+- [x] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
+- [x] Focused simulator suite, full app tests and full repo test/lint pass, with no model, data transfer or budget change
+
 ### M4-REC130 — Reconcile #130 scoped Pricing with updated pagination parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC130-reconcile-upstream · refs: PR #130, M4-08A3b2b2b, ADR-021/024/025
 Note: Merged updated #129 into an isolated #130 branch; only task/session histories conflicted. Login-only temporary identity, exact STS account/user before bounded Pricing and all wrong/root/role/endpoint fake denials are unchanged. Sixty-four proxy tests, full repo tests/build/lint and Mac release build pass. No new AWS request, handwritten content, model call or charge occurred ($0 of $10); token observations remain non-authorizing. Normal PR push and hosted CI remain to confirm.
