@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC131 — Reconcile #131 Ask-test fix with updated Pricing parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC131-await-updated-parent · base: d2830c3 · refs: PR #131, M4-14C, AGENTS.md §1–2 · estimate: S
+Note: #130's parent was repaired by a normal merge. #131 now conflicts only in PROGRESS/SESSIONS; retain the bounded terminal-state test wait and explicit post-cancellation late-ink interval. Do not change production Ask behavior or weaken app assertions.
+Acceptance:
+- [ ] Preserve all five focused Ask tests and the 190 full simulator cases against the updated parent
+- [ ] Full repo test/lint and Mac proxy release build pass; normal fast-forward PR push restores mergeability
 
 ## Review
 
