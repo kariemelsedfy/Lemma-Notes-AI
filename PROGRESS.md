@@ -25,9 +25,10 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
-| M0-10 Reconcile restart baseline | Devin / `6abf27a` | `chore/M0-10-restart-baseline` / root status docs only | Doc PR after green test, lint and separate app tests; no worker |
-| M0-11 Fresh baseline device build | Unclaimed / after M0-10 | Branch TBD / device build and handoff | Existing `edu.bowdoin.margin` confirmed; await matching signing Team ID; fresh install and human Checkpoint A |
-| M4-13 Broad-device AI route | Unclaimed / after baseline | Branch TBD / provider options and ADR proposal | Human approval for provider, hosting and spending; no paid calls or provider keys |
+| M4-13 Broad-device AI route | Devin / `f8dd4b9` | `docs/M4-13-broad-device-ai` / root planning docs only | ADR-021 and split tasks; user approved Nova Lite pilot with $10 total ceiling, no live calls on this branch |
+| M0-11 Fresh baseline device build | Unclaimed / after M4-13 | Branch TBD / device build and handoff | Existing `edu.bowdoin.margin` confirmed; await matching signing Team ID; fresh install and human Checkpoint A |
+| M4-14 Local arithmetic subset | Unclaimed / after M4-13 | Branch TBD / `Intelligence` parser and tests | Test-first, no cloud or new dependency; do not overlap M4-08B in that package |
+| M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
@@ -40,6 +41,18 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
+status: Done · claimed/completed: Devin · 2026-10-07 · base: f8dd4b9 · branch: docs/M4-13-broad-device-ai · refs: DECISIONS.md ADR-017, ADR-019–021, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
+Note: user approved support for mini 6 users, Nova Lite on AWS Bedrock as the first paid candidate, and $10 **total** new external provider+hosting spend, not a monthly allowance. ADR-021 supersedes ADR-020 for hardware eligibility; ADR-019's iPadOS 27 1.0 target is still accepted and must be revisited before it excludes this beta hardware. Docs only: no paid call, service deployment, provider credential, app edit or new dependency. AWS account exists but neither CLI access nor exact Nova Lite eligibility under retention `none` is verified.
+| Path | What it can answer | Trade-offs and next evidence |
+|---|---|---|
+| Local deterministic arithmetic | A small explicit confident transcript grammar; no model | Zero provider cost, no network, valid in Private Mode; no prose or unsupported math; test precedences and declines (M4-14) |
+| Bedrock Nova Lite via first-party proxy | Candidate for crop-based handwritten reads and short prose/math | Requires consent, eligible `none` retention, server auth/spend control and network; ~$0.000108/action at the old 1,200/150-token estimate **excluding** real image size, retries and hosting; quality unknown pending M4-15 |
+Acceptance:
+- [x] Compare provider/proxy with a strictly local arithmetic subset and record privacy, offline, quality and budget limits
+- [x] Record hardware-scope reversal in ADR-021; split provider, integration, local arithmetic and pilot work into M4-08A/B/C, M4-14, M4-15
+- [x] No paid calls, provider keys in the app, new dependencies, or silently broadened provider consent
 
 ### M0-10 — Reconcile restart baseline and device capability
 status: Done · claimed/completed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M
@@ -1980,14 +1993,6 @@ Acceptance:
 - [ ] Human transcription and intent labels accompany each sample
 - [ ] Stored so that no sample leaves the device without its writer's consent
 
-### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
-status: Ready · owner: lead for options; human for provider, external spending and ADR approval · refs: DECISIONS.md ADR-017, ADR-019, ADR-020, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
-Note: the only connected test device is an iPad mini (6th generation), and the user expects other users to have similarly ineligible hardware. On 2026-10-07 the user asked to consider another provider; this does not yet approve a paid service, changing the 1.0 OS target, or broadening the accepted ADR-020 market scope. Prefer a small deterministic arithmetic subset on-device and a consent-gated first-party proxy for broader answers, subject to a provider, hosting and per-period spend cap. Do not send content or embed an API key before approval.
-Acceptance:
-- [ ] Compare an external provider/proxy route against a strictly local supported subset, with privacy, offline, latency, budget, availability, and notebook-data implications
-- [ ] Propose superseding ADRs where ADR-019/020 or the routing policy change; get explicit approval for provider/dependency/hosting/spending decisions
-- [ ] Split implementation into small testable provider, app-integration and device-verification tasks without assuming the mini runs T0
-
 ### M4-07 — T1 provider: Apple PCC
 status: Blocked · blocker: PCC API, terms, entitlement and cost are not verified against the now-installed iOS 27 SDK; M0-07 Developer/Small Business Program enrollment is deferred · depends: M4-01, M4-02 · refs: AI_PIPELINE.md §5, BUSINESS.md §3.2 · estimate: M
 Note 2026-10-07: the old iOS 26 SDK blocker is historical. The probe still targets iOS 26,
@@ -2000,20 +2005,51 @@ Acceptance:
 - [ ] Same fail-closed decoding and no-content-logging guarantees as M4-02
 
 ### M4-08 — T2 provider and the proxy
-status: Blocked · blocker: Q6 (provider), Q13 (non-Apple-Intelligence-device scope, consent/hosting/cost cap) · depends: M4-01, M4-03, M4-09 · refs: AI_PIPELINE.md §5, §5.1, BUSINESS.md, AGENTS.md §7 · estimate: L
-Note from M4-01: **a provider swap is not one line.** The `LanguageModel` protocol that would
-have made it one does not exist on our SDK, and the Anthropic and Google packages that would
-conform to it are announced rather than shipped. This tier needs its own client, retry policy
-and error mapping, which is most of why it is an L.
-Note: the only tier that sends a user's work to a third party, so it carries the obligations the
-others do not: the 5.1.2(i) consent assertion in the provider layer (M4-09), server-side
-entitlement (M6), and a per-action cost that shows up in `BUSINESS.md`'s unit economics. Never
-send a whole page — only the selection crop and bounded neighborhood (`AGENTS.md` §7).
+status: Ready (decomposed) · depends: M4-08A, M4-08B, M4-08C, ADR-021 · refs: AI_PIPELINE.md §5, BUSINESS.md, AGENTS.md §7 · estimate: L
+Note: the first candidate for a mini-6-compatible paid tier is AWS Bedrock Nova Lite, subject to verified model access under `data_retention_mode: none`, measured handwritten answer quality and the $10 **total** external spend ceiling. The app never holds a project credential. This parent closes only after safe server authorization, provider-layer consent, shipping Ask wiring and a physical-device check. No whole page or glyph bank is transmitted.
 Acceptance:
-- [ ] The proxy never sees an API key belonging to the client, and the client never holds one
-- [ ] Only the crop, the bounded neighborhood and the spec contract cross the boundary
-- [ ] A test proves a request cannot be issued without a recorded consent (M4-09)
-- [ ] Timeout, transport and offline map onto the §8 failure states already built
+- [ ] M4-08A/B/C pass their security, budget, validation, cancellation and app tests
+- [ ] Each delivered path reports unavailable/refused instead of silently returning the demo `4`
+- [ ] Physical-device end-to-end result is recorded separately from mock/simulator tests
+
+### M4-08A — Bound and authorize the Bedrock proxy before live traffic
+status: Ready (offline design/tests); blocked for live traffic on account/region, model `none` eligibility, hosting and hard combined-spend control · depends: ADR-021 · refs: BUSINESS.md §3, §5–6, AGENTS.md §7 · estimate: M
+Exclusive scope: server-side adapter, transport tests and cost authorization; no app or shared task docs except through the integration queue. Start with a fake Bedrock transport, not a paid call. AWS account exists, but CLI/role access and region are not set up in this checkout. Do not deploy or provision a billable resource before a specific authorization and a verified bound below $10 total, including hosting.
+Acceptance:
+- [ ] Credential stays on server (prefer scoped role); every request has server-side pilot authorization or verified StoreKit entitlement, per-user rate limits, atomic bounded-spend admission, and bounded images/tokens/concurrency
+- [ ] `none` retention and `allowed_modes` are checked for the exact model/region; refused/unsupported requests fail closed; no page content in logs or persisted proxy state
+- [ ] Tests prove unauthorized, oversized, duplicate and over-budget requests make zero provider calls, including simultaneous requests; actual cost/remaining headroom is recorded before any approved pilot call
+
+### M4-08B — Build the client provider with consent and validated specs
+status: Ready (mock transport only) · depends: M4-09, ADR-021; live endpoint depends: M4-08A · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: M
+Exclusive scope: `Packages/Intelligence` provider and tests; no app Ask composition or server code. No new third-party dependency without a separate approved dependency ADR.
+Acceptance:
+- [ ] The existing provider-layer consent gate rejects before any request is sent; only selection crop, bounded neighborhood and permitted hints are transiently transferred
+- [ ] Decode then validate every answer, decline on unsupported blocks/read confidence, and map refusal, malformed output, cancellation, timeout and offline without leaking content into errors or logs
+- [ ] Fake-transport tests cover two distinct questions and cancellation; no real network or charge in the test suite
+
+### M4-08C — Wire the real route into the shipping Ask on the mini
+status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
+Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance.
+Acceptance:
+- [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
+- [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
+- [ ] A fresh build installs over `edu.bowdoin.margin` and the physical iPad result is recorded with SHA, OS and consent/offline failure behavior
+
+### M4-14 — Evaluate a safe local arithmetic subset
+status: Ready · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
+Exclusive scope: pure `Intelligence` parsing/evaluation and tests, not app wiring; do not run concurrently with M4-08B in the same package. Define a small grammar before testing, never evaluate executable input, and decline any unsupported notation or low-confidence read.
+Acceptance:
+- [ ] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink
+- [ ] Supported confident arithmetic returns a validator-approved LaTeX answer deterministically with no network or paid model
+- [ ] The local provider exposes an explicit unsupported decline; M4-08C owns wiring it into offline and Private Mode rather than claiming general offline AI
+
+### M4-15 — Measure the real mini-6 answer path before expanding
+status: Blocked · depends: M4-08C, M0-11, explicit consent and verified remaining spend under ADR-021 · refs: AI_PIPELINE.md §9, AGENTS.md §8 · estimate: M
+Acceptance:
+- [ ] Small consented pilot of 20–30 real selections reports reading, answer correctness, decline, handwriting legibility, latency and actual provider/hosting charges separately
+- [ ] Human/symbolic checks judge math independently; no personal ink/glyph bank is committed or uploaded beyond the consented bounded selection
+- [ ] Stop before $10 **total** external spend, retaining a held-out subset; this is not the M4-06B 200-selection golden set
 
 ### M4-09 — Assert third-party AI consent in the provider layer
 status: Done · completed: Claude · merged: PR #104 · 2026-08-12 · refs: CONTEXT.md invariant 8, BUSINESS.md, AGENTS.md §7 · estimate: S

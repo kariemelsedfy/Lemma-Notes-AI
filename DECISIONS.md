@@ -351,7 +351,7 @@ expects to serve **35% of all actions at zero marginal cost**.
 
 ## ADR-020 — Ship where Apple Intelligence runs
 
-**Status:** Accepted · 2026-08-12 · decided by: human
+**Status:** Superseded by ADR-021 for device eligibility · 2026-08-12 · decided by: human
 
 **Context.** ADR-017 established that routing asks the framework rather than a region table, and
 §5.2 recorded the one genuine exclusion: mainland China has no Apple Intelligence today. That
@@ -367,3 +367,21 @@ unavailable model degrades gracefully rather than crashing, which is still the r
 for a user who travels or turns Apple Intelligence off. What changes is that no work is owed to
 making a T2-only region economically viable, and mainland China is out of scope for 1.0 rather
 than pending.
+
+---
+
+## ADR-021 — Support iPads without Apple Intelligence via a bounded provider path
+
+**Status:** Accepted · 2026-10-07 · decided by: human · supersedes ADR-020 for device eligibility; does not change ADR-017's availability-based routing or reopen region scope
+
+**Context.** The only connected test device is an iPad mini (6th generation) on iPadOS 26.6. It cannot run Apple Intelligence, regardless of OS update. The owner expects other users to have similarly ineligible iPads; a T0/PCC-only strategy cannot deliver real answers to them. The shipping Ask still uses a canned `4`. ADR-020's premise that targeted users have Apple Intelligence therefore does not hold for device eligibility. A direct third-party API without strict consent, cost controls or server authorization would violate the existing privacy and money invariants.
+
+**Decision.** The private beta supports this iPad and similarly ineligible hardware. Keep the current iPadOS 26 deployment target for the beta; ADR-019's 1.0 target of 27 is **not** changed here and must be reconsidered separately before a release that would exclude this device. For supported, consented requests that cannot run on device, use a first-party, authenticated proxy with a project-owned server-side provider credential. Evaluate Amazon Bedrock Nova Lite as the first image-capable, low-cost candidate, not a proven answer-quality winner. Only the bounded selection crop, neighborhood and necessary ephemeral reading/stroke hints may cross the boundary. Never upload a glyph bank, a page or a notebook. Return only a validated semantic spec to the existing app renderer. Preserve the provider-layer third-party consent check and an honest unavailable/offline/Private Mode path; no silent canned answer in shipping Ask.
+
+The owner approved a **$10 USD total ceiling** for new external provider and hosting charges for the initial pilot, not a monthly allowance. Do not deploy or issue a paid request until the AWS account/region, Nova Lite model access under `data_retention_mode: none`, and an enforceable combined spend bound are verified. AWS budget alerts alone are not hard stops. Limit payload size, output tokens and concurrency, authorize and rate-limit on the server, keep a charge ledger, and stop before the ceiling. If the costs cannot be bounded, remain on mock/local paths and ask for a revised cap; never enable automatic credit reload or top-ups. A paid public plan still requires server-verified StoreKit entitlements (ADR-006/M6); private pilot access must be explicitly authorized server-side rather than trusting a client credit count. No external account or service is provisioned by this ADR.
+
+**Consequences.** The zero-marginal-cost tier mix in `BUSINESS.md` §3.2 is not a forecast for mini-6 users. The proxy adds setup, operating cost and authorization work, and a network answer is unavailable offline or in Private Mode. A small, deterministic arithmetic grammar can serve a declared offline subset without pretending to be a general model; unsupported work declines. Nova Lite must pass a consented handwriting-read, answer-correctness and latency pilot before it is called sufficient. No third-party package is approved here; use platform facilities or request separate approval with a dependency ADR. Regional policy remains as recorded in ADR-017/020; this decision changes the hardware assumption, not a country allowlist.
+
+**Alternatives rejected for this pilot.** Requiring an Apple Intelligence-capable iPad excludes the owner's device. Embedding an API key in the iPad app exposes the project credential and permits unmetered requests. ChatGPT-plan sharing exists for participating apps, but this private product lacks the required partner approval; Claude consumer subscriptions are not general third-party API entitlements. A strictly local arithmetic evaluator alone cannot answer prose or harder questions. Direct developer APIs without confirmed zero-retention controls do not meet the existing handwriting-data promise.
+
+**Revisit when.** Nova Lite fails the measured quality subset, `none` retention is unavailable for the chosen model/region, the $10 pilot limit cannot be enforced, the iPadOS 27 release target is due, or a supported subscription-sharing arrangement becomes available.
