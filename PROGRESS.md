@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC130 — Reconcile #130 scoped Pricing with updated pagination parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC130-reconcile-upstream · base: 9992503 · refs: PR #130, M4-08A3b2b2b, ADR-021/024/025 · estimate: S
+Note: #129's parent was updated by a normal merge. #130 now conflicts only in PROGRESS/SESSIONS; preserve login-only temporary credentials, exact IAM STS verification before bounded public Pricing, and its token-only non-authorizing result. No live request or ambient credential fallback is part of this repair.
+Acceptance:
+- [ ] Preserve wrong/root/role/endpoint refusals before Pricing with no model send
+- [ ] Proxy and full repo tests/lint and Mac release build pass; normal fast-forward PR push restores mergeability
 
 ## Review
 
