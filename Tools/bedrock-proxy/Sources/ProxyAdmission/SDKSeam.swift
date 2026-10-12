@@ -1,5 +1,6 @@
 import AWSBedrock
 import AWSBedrockRuntime
+import AWSPricing
 import Foundation
 
 enum SDKTransportError: Error, Equatable {
@@ -77,6 +78,70 @@ struct ReadOnlyBedrockObserver: Sendable {
                 modelID: "amazon.nova-lite-v1:0", requestedRegion: "us-east-1",
                 accountMode: .none, checkedAt: now()
             )
+        } catch {
+            return nil
+        }
+    }
+}
+
+protocol PricingCatalogReader: Sendable {
+    var configuredRegion: String? { get }
+    func getProducts(input: GetProductsInput) async throws -> GetProductsOutput
+}
+
+extension PricingClient: PricingCatalogReader {
+    var configuredRegion: String? { config.region }
+}
+
+struct ReadOnlyPricingCatalog: Sendable {
+    private let client: any PricingCatalogReader
+    private let now: @Sendable () -> Date
+
+    init(client: any PricingCatalogReader, now: @escaping @Sendable () -> Date = { Date() }) {
+        self.client = client
+        self.now = now
+    }
+
+    func observe() async -> CatalogTokenRates? {
+        do {
+            try Task.checkCancellation()
+            guard client.configuredRegion == "us-east-1" else { return nil }
+            var rows: [String] = []
+            for kind in ["Input tokens", "Output tokens"] {
+                let filters = [
+                    PricingClientTypes.Filter(field: "model", type: .termMatch, value: "Nova Lite"),
+                    PricingClientTypes.Filter(field: "regionCode", type: .termMatch, value: "us-east-1"),
+                    PricingClientTypes.Filter(field: "feature", type: .termMatch, value: "On-demand Inference"),
+                    PricingClientTypes.Filter(field: "inferenceType", type: .termMatch, value: kind),
+                ]
+                var nextToken: String?
+                var seenTokens = Set<String>()
+                var pageCount = 0
+                repeat {
+                    try Task.checkCancellation()
+                    guard pageCount < 3 else { return nil }
+                    pageCount += 1
+                    let input = GetProductsInput(
+                        filters: filters, formatVersion: "aws_v1", maxResults: 2,
+                        nextToken: nextToken, serviceCode: "AmazonBedrock"
+                    )
+                    let result = try await client.getProducts(input: input)
+                    try Task.checkCancellation()
+                    guard result.formatVersion == "aws_v1", let page = result.priceList,
+                        !page.isEmpty, page.count <= 2, rows.count + page.count <= 2,
+                        page.allSatisfy({ $0.utf8.count <= 50_000 })
+                    else { return nil }
+                    rows.append(contentsOf: page)
+                    nextToken = result.nextToken
+                    if let nextToken {
+                        guard !nextToken.isEmpty, nextToken.utf8.count <= 4_096,
+                            seenTokens.insert(nextToken).inserted
+                        else { return nil }
+                    }
+                } while nextToken != nil
+            }
+            let fetchedAt = now()
+            return CatalogTokenRates.parse(rows, formatVersion: "aws_v1", fetchedAt: fetchedAt, now: fetchedAt)
         } catch {
             return nil
         }

@@ -51,7 +51,7 @@ Apps/
 Tools/
   bedrock-proxy/   Provisional SwiftPM request/retention, price and SQLite budget/rate
                    gates composed before fake transport; Mac-only AWS SDK v1.8.2
-                   has no-call Runtime and read-only control-plane observation seams;
+                   has no-call Runtime and read-only Bedrock/Pricing observation seams;
                    no deployed or live server (M4-08A3a/b2a)
   evalrunner/      CLI: runs the golden set against a provider, emits metrics JSON
   glyphlab/        macOS dev tool: inspect a glyph bank, render sample text, tune layout

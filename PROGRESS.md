@@ -33,7 +33,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
 | M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; no paid traffic |
 | M4-08A3b2b Price evidence | Devin / b2b1 done | Branch TBD / exact on-demand SKU parsing and fake tests | 55 local proxy tests; token-only observation cannot authorize cost |
-| M4-08A3b2b2 Pricing SDK source | Unclaimed / after b2b1 | Branch TBD / paginated scoped price lookup and fake SDK tests | SKU/model mapping and image/other charges still block paid admission |
+| M4-08A3b2b2 Pricing SDK source | Devin / b2b2a done | Branch TBD / paginated public price lookup and fake SDK tests | 60 local proxy tests; model mapping/image/other charges still block paid admission |
+| M4-08A3b2b2b Scoped Pricing read | Unclaimed / after b2b2a | Branch TBD / verified temporary identity and public price read | No ambient credentials; exact model binding and unknown charges block paid traffic |
 
 ---
 
@@ -46,6 +47,18 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC129 — Reconcile #129 pagination with updated catalog parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC129-reconcile-upstream · refs: PR #129, M4-08A3b2b2a, ADR-021/024
+Note: Merged updated #128 into an isolated #129 branch; only task/session history conflicted. The fake Pricing reader still requires complete ≤3-page responses, exact filters and bounded rows; returned token rates cannot authorize image/other charges or a model call. Sixty proxy tests, full repo tests/build/lint and Mac release build pass. No live Pricing read, handwriting or provider charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved fake pagination and refusal tests and reconciled only parent history
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
+### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
+status: Done (typed fake-client source only) · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3
+Note: The Mac proxy alone now imports `AWSPricing` from the already-approved pinned Swift SDK. An injected reader verifies a configured us-east-1 pricing API Region and makes separate content-free `GetProducts` requests filtered by service/model **label**/product Region/On-demand Inference/input-or-output tokens (no nonexistent default-standard `service_tier` filter). It requires an `aws_v1` response, bounded rows/strings, complete ≤3-page pagination per token type and no missing/empty/replayed token; only then does the previously tested `CatalogTokenRates` parser inspect exactly two rows. Five fake-client tests cover exact filters, missing/extra/ambiguous pages, cancellation, SDK error and wrong Region. A hand-written success fixture initially lacked its outer JSON brace; the fixture was corrected without relaxing production validation. **60 proxy tests**, full repo test/build/lint and Mac release build pass. No SDK client or ambient credential is constructed in tests; no account price request, model call, user data transfer or provider/hosting charge occurred ($0 of $10). B2b2b must verify limited temporary credentials and read actual catalog pages; Q18 exact Runtime model binding and image/non-model charge bounds still block `PilotPriceEvidence` and paid sends.
+Acceptance: [x] Mac-only typed SDK filters with fake paginated success/denial/cancellation; [x] incomplete/ambiguous rows cannot authorize price or send; [x] full local gates pass, real read remains b2b2b.
 
 ### M4-REC128 — Reconcile #128 token catalog with updated metadata parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC128-reconcile-upstream · refs: PR #128, M4-08A3b2b1, ADR-021/024
@@ -2266,10 +2279,16 @@ Acceptance:
 - [ ] Injected fake SDK clients cover malformed/duplicate/stale SKU, zero-price guesses and cancellation with zero model sends
 
 ### M4-08A3b2b2 — Obtain paginated authoritative price evidence with a scoped SDK client
-status: Ready after b2b1; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+status: Ready (split b2b2a/b after b2b1); paid invocation still blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
 Acceptance:
-- [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content goes into pricing requests or logs
-- [ ] Any unverified image/non-model overhead keeps `otherMaximumMicros` absent and paid admission closed; fake SDK error/cancellation/ambiguity tests emit zero sends
+- [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content enters requests or logs
+- [ ] Unverified image/non-model overhead leaves `otherMaximumMicros` absent; fake SDK errors/cancellation/ambiguous pages emit zero sends
+
+### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
+status: Ready after b2b2a; paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Explicit limited temporary pilot credentials and endpoint provenance are verified before a read-only, bounded public price query; never fall back to root/ambient app credentials
+- [ ] Actual paginated output parses only into token observations; no guessed model ID, image/other-cost bound or paid transport is enabled
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
