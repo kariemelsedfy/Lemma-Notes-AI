@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC127 — Reconcile #127 read-only observer with updated PNG parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC127-reconcile-upstream · base: dfcb35a · refs: PR #127, M4-08A3b2a, ADR-021/024 · estimate: S
+Note: #126's parent was updated by a normal merge; #127 now conflicts only in ARCHITECTURE/PROGRESS/SESSIONS. Preserve the Mac-only fake-client metadata observer and its refusal to grant `RetentionEvidence.allowedModes`. Do not add an AWS request, Runtime route or paid call.
+Acceptance:
+- [ ] Preserve all read-only tests and resolve only parent documentation conflicts
+- [ ] Proxy and full repo test/lint and Mac release build pass; normal fast-forward PR push restores mergeability
 
 ## Review
 
