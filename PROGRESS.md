@@ -35,16 +35,16 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-14C — Await local Ask terminal state in app tests
-status: In progress · claimed: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2 · estimate: S
-Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy`: after a fixed 150 ms wait, the Ask phase was still `working` and local failure unset. The same app suite passed on #129; #130 modifies no app code. Diagnose/synchronize the test without changing production behavior or weakening cancellation/ink assertions; separate this app-test change from the proxy PR.
-Acceptance:
-- [ ] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
-- [ ] Focused simulator tests and full repo test/lint pass, with no model, data transfer or budget change
+_(empty)_
 
 ## Review
 
-_(empty)_
+### M4-14C — Await local Ask terminal state in app tests
+status: Review · implemented: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2 · estimate: S
+Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy` after a 150 ms sleep: Ask remained `working` and had no local failure. A focused iOS 26.5 simulator run reproduced the same failure on the first unsupported case. The test now waits for the phase to leave `working` within 3 seconds and fails if it does not, while preserving the cancellation test's 150 ms late-ink observation and all original assertions; no production code changed. The focused **5 tests**, full **190 simulator app tests**, and `./scripts/test.sh`/`./scripts/lint.sh` pass. PR #130's unchanged-code CI rerun is pending; this app-test follow-up stays separate and needs PR review authorization. No model, user notes, charge or budget change ($0 of $10).
+Acceptance:
+- [x] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
+- [x] Focused simulator suite, full app tests and full repo test/lint pass, with no model, data transfer or budget change
 
 ## Done
 

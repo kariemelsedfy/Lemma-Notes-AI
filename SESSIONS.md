@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-12 · Devin · M4-14C — A fixed Ask-test sleep failed locally too
+
+PR #130's hosted `verify` failed in a pre-existing app test, not the scoped Pricing tool. The assertion caught `working` with no local failure after the test harness's 150 ms sleep; an isolated iOS 26.5 simulator run reproduced it in the first unsupported-arithmetic case, while PR #129 had passed the same 190-test suite. The pipeline launches its work in a `Task`, so an elapsed sleep is not an arrival signal. In a separate stacked branch, the test harness now polls its phase for up to 3 seconds, fails if it remains `working`, and keeps the original 150 ms late-ink window after cancellation. The focused five tests, full 190 app tests and repo test/build/lint pass locally; production behavior and all expected failure/ink assertions are unchanged. The first #130 failure is real CI red, not a pass. One unchanged-code CI rerun was requested to distinguish timing; at this writing it is still running and is **not** evidence of a green PR. No AWS inference, handwriting transfer or provider/hosting charge occurred; $0 of $10 spent.
+
 ## 2026-10-12 · Devin · M4-08A3b2b2b — PR #130 review handoff
 
 The owner explicitly authorized pushing this branch and opening a PR. PR #130 is stacked on the still-open pagination PR #129, keeping the review diff under 400 lines; no PR was merged. The task board is Done for the scoped public token observation only. A reviewer must keep Q15/Q16/Q18 and the A3 hard gates separate: a successful read-only Pricing query cannot authorize a paid model call, and known provider/hosting spend remains $0 of $10. Local full test/build/lint and Mac release build passed before the review handoff; hosted CI on #130 still needs its own result.
