@@ -13,9 +13,15 @@ let package = Package(
     targets: [
         .target(
             name: "ProxyAdmission",
-            dependencies: [.product(name: "AWSBedrockRuntime", package: "aws-sdk-swift")],
+            dependencies: [
+                .product(name: "AWSBedrock", package: "aws-sdk-swift"),
+                .product(name: "AWSBedrockRuntime", package: "aws-sdk-swift"),
+            ],
             linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
         ),
-        .testTarget(name: "ProxyAdmissionTests", dependencies: ["ProxyAdmission"]),
+        .testTarget(
+            name: "ProxyAdmissionTests",
+            dependencies: ["ProxyAdmission", .product(name: "AWSBedrock", package: "aws-sdk-swift")]
+        ),
     ]
 )

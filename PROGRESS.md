@@ -31,7 +31,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
 | M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
 | M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
-| M4-08A3b2 Read-only evidence | Unclaimed / after b1b | Branch TBD / Mac-scoped price and retention, fake tests | #124 CI passed; #125 updated CI pending; exact model eligibility remains blocked |
+| M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; #124 CI passed and #125/#126 repair checks pending |
+| M4-08A3b2b Price evidence | Unclaimed / after b2a | Branch TBD / exact on-demand SKU parsing and fake tests | b2a has 51 local proxy tests; model availability does not prove `none` eligibility; no paid traffic |
 
 ---
 
@@ -44,6 +45,18 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC127 — Reconcile #127 read-only observer with updated PNG parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC127-reconcile-upstream · refs: PR #127, M4-08A3b2a, ADR-021/024
+Note: Merged updated #126 into an isolated #127 repair branch; only ARCHITECTURE/PROGRESS/SESSIONS conflicted. The read-only observer still refuses missing/unknown retention and cannot populate model-specific `allowedModes`. Fifty-one proxy tests, full repo tests/build/lint and Mac release build pass. No Runtime request, user ink, account mutation or charge occurred ($0 of $10). Normal PR push and CI remain to confirm.
+Acceptance:
+- [x] Preserved all read-only tests while resolving only parent documentation conflicts
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
+### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
+status: Done (typed observation only) · 2026-10-11 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3
+Note: The Mac tool alone now imports the already approved SDK `AWSBedrock` product and type-checks a read-only retention/availability client protocol; all tests inject actors and construct **no SDK client or AWS request**. The observer first checks its configured `us-east-1` Region, then requires exact Nova Lite ID, account mode `none` and available authorization/entitlement/agreement/Region status; unknown, missing, wrong, cancelled and expired observations decline. A failing test caught Swift interpreting `retention.mode == .none` as **Optional.none (nil)** rather than `DataRetentionMode.none`; the explicit enum case fixes it. The result is only `ReadOnlyBedrockObservation`, **not** model-specific `RetentionEvidence.allowedModes`; default admission still makes zero sends. **51 proxy tests**, full repo test/build/lint and Mac release build pass locally. Authenticated identity/endpoint binding and authoritative pricing remain b2c/b2b, actual eligibility under `none` remains A3; no model call, user content, IAM change or charge occurred ($0 of $10).
+Acceptance: [x] Mac-only typed SDK metadata and injected fake tests, no AWS calls; [x] none-mode availability never grants model-specific retention permission or a send; [x] all local gates pass, price/live binding remain blocked.
 
 ### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2
@@ -2227,10 +2240,23 @@ Acceptance:
 - [ ] Fake SDK transport tests prove cancellation, refusal, malformed payload/response and unknown charge cause zero paid sends; reviewed invocation permission and a separately approved capped synthetic call remain A3 gates
 
 ### M4-08A3b2 — Source exact scoped price and retention evidence read-only
-status: Ready after M4-08A3b1b; live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: M
+status: Ready (split b2a/b2b/b2c after b1b); live eligibility remains blocked under A3 · refs: BUSINESS.md §3.3, ADR-021/024 · estimate: L
 Acceptance:
-- [ ] From the limited Mac login, SDK read-only checks return current Runtime retention and exact Nova Lite on-demand price SKUs for us-east-1 with a bounded age; missing/ambiguous rate or unknown other charges stops admission
-- [ ] Test offline with injected SDK clients; keep all content-free errors, no app credential and no model invocation
+- [ ] Limited Mac identity sources fresh us-east-1 Runtime retention and exact Nova Lite status and on-demand pricing; ambiguous/missing charge evidence keeps admission closed
+- [ ] Only independently verified model eligibility under effective `none` may populate `RetentionEvidence.allowedModes`; model authorization/availability metadata alone is insufficient
+- [ ] Offline-injected tests cover failure/cancellation/unknown states without content or an SDK invoke; no paid call from this task
+
+### M4-08A3b2b — Bind exact Nova Lite on-demand catalog prices with unknown-charge denial
+status: Ready after b2a; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; any unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
+- [ ] Injected fake SDK clients cover malformed/duplicate/stale SKU, zero-price guesses and cancellation with zero model sends
+
+### M4-08A3b2c — Verify credential provenance and effective model retention before admission
+status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
+Acceptance:
+- [ ] Limit authenticated reads to the scoped pilot identity; never use an ambient root session or an app credential
+- [ ] Fail closed unless trusted price and actual model-specific `allowedModes` evidence are both available; paid synthetic evaluation still needs separate authorization
 
 ### M4-08A3b3 — Verify fake SDK response path and actual selected-image compatibility
 status: Ready after M4-08A3b1/b2; paid traffic remains blocked under A3 · refs: AI_PIPELINE.md §3/§5, ADR-021/024 · estimate: M
