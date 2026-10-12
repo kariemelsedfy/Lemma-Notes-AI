@@ -97,6 +97,7 @@ struct VirtualizedPageStack: View {
                         phase: askModel.phase,
                         explanation: askModel.explanation,
                         renderingNotice: askModel.renderingNotice,
+                        failureOverride: askModel.failureMessageKey,
                         onVerb: { ask($0) },
                         onCancel: { cancelAsk() },
                         onAccept: { acceptSuggestion() },
@@ -152,10 +153,11 @@ struct VirtualizedPageStack: View {
             persistEditedPages()
         }
         .onChange(of: visiblePageID) { _, newValue in
-            guard let newValue else {
-                return
+            guard let newValue else { return }
+            if Self.shouldCancelAsk(selectedPage: askSelection.questionSelection?.pageID, visiblePage: newValue) {
+                askPipeline?.cancel(.superseded)
+                cancelSelection()
             }
-
             cachePagesOutsideLiveWindow(around: newValue)
         }
     }
