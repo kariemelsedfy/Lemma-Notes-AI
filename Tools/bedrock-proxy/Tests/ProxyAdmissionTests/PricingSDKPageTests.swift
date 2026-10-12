@@ -1,4 +1,5 @@
 import AWSPricing
+import AWSSTS
 import Foundation
 import XCTest
 
@@ -125,6 +126,105 @@ final class PricingSDKPageTests: XCTestCase {
         XCTAssertEqual(failedRequests.count, 1)
     }
 
+    func testScopedSessionVerifiesExactIdentityBeforePricing() async throws {
+        let account = "123456789012"
+        let caller = FakePilotCaller(
+            identity: GetCallerIdentityOutput(
+                account: account, arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot-id"
+            )
+        )
+        let client = FakePricingCatalogClient(responses: Self.standardPages())
+        let rates = await ScopedPricingSession(caller: caller, client: client, expectedAccount: account).observe()
+        XCTAssertNotNil(rates)
+        let calls = await caller.calls
+        let requests = await client.requests
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertThrowsError(try PilotPriceEnvelope.quote(maxOutputTokens: 512))
+    }
+
+    func testScopedSessionDeniesWrongAccountRootRoleAndEndpointBeforePricing() async {
+        let account = "123456789012"
+        let identities = [
+            GetCallerIdentityOutput(account: account, arn: "arn:aws:iam::\(account):root", userId: "root"),
+            GetCallerIdentityOutput(
+                account: account, arn: "arn:aws:sts::\(account):assumed-role/Admin/pilot", userId: "role"
+            ),
+            GetCallerIdentityOutput(
+                account: "999999999999", arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot"
+            ),
+            GetCallerIdentityOutput(account: account, arn: "arn:aws:iam::\(account):user/MarginPilot"),
+        ]
+        for identity in identities {
+            let caller = FakePilotCaller(identity: identity)
+            let client = FakePricingCatalogClient(responses: Self.standardPages())
+            let result = await ScopedPricingSession(caller: caller, client: client, expectedAccount: account).observe()
+            XCTAssertNil(result)
+            let requests = await client.requests
+            XCTAssertTrue(requests.isEmpty)
+        }
+        for (stsEndpoint, pricingEndpoint) in [
+            ("https://sts.us-west-2.amazonaws.com", "https://api.pricing.us-east-1.amazonaws.com"),
+            ("https://sts.us-east-1.amazonaws.com", "https://untrusted.example.com"),
+        ] {
+            let caller = FakePilotCaller(
+                endpoint: stsEndpoint,
+                identity: GetCallerIdentityOutput(
+                    account: account, arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot"
+                )
+            )
+            let client = FakePricingCatalogClient(endpoint: pricingEndpoint, responses: Self.standardPages())
+            let result = await ScopedPricingSession(caller: caller, client: client, expectedAccount: account).observe()
+            XCTAssertNil(result)
+            let requests = await client.requests
+            XCTAssertTrue(requests.isEmpty)
+        }
+    }
+
+    func testMissingExpectedAccountCallerErrorAndCancellationNeverReadPrices() async {
+        let identity = GetCallerIdentityOutput(
+            account: "123456789012", arn: "arn:aws:iam::123456789012:user/MarginPilot", userId: "pilot"
+        )
+        let caller = FakePilotCaller(identity: identity, fails: true)
+        let client = FakePricingCatalogClient(responses: Self.standardPages())
+        let invalid = await ScopedPricingSession(caller: caller, client: client, expectedAccount: "").observe()
+        XCTAssertNil(invalid)
+        let session = ScopedPricingSession(caller: caller, client: client, expectedAccount: "123456789012")
+        let failed = await session.observe()
+        XCTAssertNil(failed)
+        let cancelled = await Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return await session.observe()
+        }.value
+        XCTAssertNil(cancelled)
+        let calls = await caller.calls
+        let requests = await client.requests
+        XCTAssertEqual(calls, 1)
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testTemporaryCredentialsRequireExactAccountSessionAndFutureExpiration() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertTrue(
+            ScopedPricingSession.isTemporary(
+                accountID: "123456789012", sessionToken: "session", expiration: now.addingTimeInterval(600),
+                expectedAccount: "123456789012", now: now
+            )
+        )
+        for (account, token, expiration) in [
+            ("123456789012", nil, now.addingTimeInterval(600)),
+            ("123456789012", "session", now.addingTimeInterval(299)),
+            ("999999999999", "session", now.addingTimeInterval(600)),
+        ] {
+            XCTAssertFalse(
+                ScopedPricingSession.isTemporary(
+                    accountID: account, sessionToken: token, expiration: expiration,
+                    expectedAccount: "123456789012", now: now
+                )
+            )
+        }
+    }
+
     private static func standardPages() -> [String: [GetProductsOutput]] {
         let input = GetProductsOutput(
             formatVersion: "aws_v1", priceList: [row(kind: "Input tokens", usd: "0.0000600000")]
@@ -159,14 +259,43 @@ private enum PricingReadFailure: Error {
     case unavailable
 }
 
+private actor FakePilotCaller: PilotCallerReader {
+    nonisolated let configuredRegion: String? = "us-east-1"
+    nonisolated let configuredEndpoint: String?
+    let identity: GetCallerIdentityOutput
+    let fails: Bool
+    private(set) var calls = 0
+
+    init(
+        endpoint: String = "https://sts.us-east-1.amazonaws.com",
+        identity: GetCallerIdentityOutput, fails: Bool = false
+    ) {
+        configuredEndpoint = endpoint
+        self.identity = identity
+        self.fails = fails
+    }
+
+    func getCallerIdentity(input: GetCallerIdentityInput) async throws -> GetCallerIdentityOutput {
+        calls += 1
+        if fails { throw PricingReadFailure.unavailable }
+        return identity
+    }
+}
+
 private actor FakePricingCatalogClient: PricingCatalogReader {
     nonisolated let configuredRegion: String?
+    nonisolated let configuredEndpoint: String?
     private var responses: [String: [GetProductsOutput]]
     private let fails: Bool
     private(set) var requests: [GetProductsInput] = []
 
-    init(configuredRegion: String? = "us-east-1", responses: [String: [GetProductsOutput]], fails: Bool = false) {
+    init(
+        configuredRegion: String? = "us-east-1",
+        endpoint: String? = "https://api.pricing.us-east-1.amazonaws.com",
+        responses: [String: [GetProductsOutput]], fails: Bool = false
+    ) {
         self.configuredRegion = configuredRegion
+        configuredEndpoint = endpoint
         self.responses = responses
         self.fails = fails
     }

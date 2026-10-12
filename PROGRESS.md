@@ -34,7 +34,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; no paid traffic |
 | M4-08A3b2b Price evidence | Devin / b2b1 done | Branch TBD / exact on-demand SKU parsing and fake tests | 55 local proxy tests; token-only observation cannot authorize cost |
 | M4-08A3b2b2 Pricing SDK source | Devin / b2b2a done | Branch TBD / paginated public price lookup and fake SDK tests | 60 local proxy tests; model mapping/image/other charges still block paid admission |
-| M4-08A3b2b2b Scoped Pricing read | Unclaimed / after b2b2a | Branch TBD / verified temporary identity and public price read | No ambient credentials; exact model binding and unknown charges block paid traffic |
+| M4-08A3b2b2b Scoped Pricing read | Devin / read-only check complete | `feat/M4-08A3b2b2b-scoped-pricing-read` / explicit identity and public token read | Limited STS identity verified; SDK returned two public token rates, unknown charges still block paid traffic; PR #130 open |
 
 ---
 
@@ -47,6 +47,20 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC130 — Reconcile #130 scoped Pricing with updated pagination parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC130-reconcile-upstream · refs: PR #130, M4-08A3b2b2b, ADR-021/024/025
+Note: Merged updated #129 into an isolated #130 branch; only task/session histories conflicted. Login-only temporary identity, exact STS account/user before bounded Pricing and all wrong/root/role/endpoint fake denials are unchanged. Sixty-four proxy tests, full repo tests/build/lint and Mac release build pass. No new AWS request, handwritten content, model call or charge occurred ($0 of $10); token observations remain non-authorizing. Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved wrong/root/role/endpoint refusals before Pricing with no model send
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
+### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
+status: Done (read-only token observation, no paid authorization) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · PR: #130 (stacked on #129, open) · refs: ADR-021/024/025, BUSINESS.md §3.3
+Note: The renewed `margin-pilot` session passed an explicit-profile STS check for the expected account and exact IAM `MarginPilot` user before any Pricing SDK call. The Mac-only command then read complete bounded public SDK pages through the pinned login-only temporary resolver and parsed exactly two Nova Lite/us-east-1 classic on-demand token rates: **60,000 input and 240,000 output micro-USD per million tokens** (2026-10-12 UTC). The command emitted no identity, token, account identifier or row JSON. These are public token *observations*, not exact `amazon.nova-lite-v1:0` SKU binding or any image/other-cost maximum. The request used no handwriting, Bedrock invocation, hosting or new charge ($0 of $10); paid admission remains closed. 64 proxy tests, full repo tests/build/lint and Mac release build pass. PR #130 is open for review, not merged.
+Acceptance:
+- [x] Login-only temporary identity is frozen, fixed HTTPS Region/signing endpoints and exact STS account/user precede Pricing; root/ambient and fake failures make zero pricing reads
+- [x] Actual bounded Pricing SDK read parsed only fresh token observations; no Runtime model ID, image/other-cost bound or paid transport was enabled
 
 ### M4-REC129 — Reconcile #129 pagination with updated catalog parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC129-reconcile-upstream · refs: PR #129, M4-08A3b2b2a, ADR-021/024
@@ -2283,12 +2297,6 @@ status: Ready (split b2b2a/b after b2b1); paid invocation still blocked under A3
 Acceptance:
 - [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content enters requests or logs
 - [ ] Unverified image/non-model overhead leaves `otherMaximumMicros` absent; fake SDK errors/cancellation/ambiguous pages emit zero sends
-
-### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
-status: Ready after b2b2a; paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
-Acceptance:
-- [ ] Explicit limited temporary pilot credentials and endpoint provenance are verified before a read-only, bounded public price query; never fall back to root/ambient app credentials
-- [ ] Actual paginated output parses only into token observations; no guessed model ID, image/other-cost bound or paid transport is enabled
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M

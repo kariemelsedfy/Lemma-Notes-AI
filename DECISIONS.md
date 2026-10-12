@@ -432,3 +432,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected for this pilot.** Embedding credentials in the app violates ADR-021. An unreviewed CLI subprocess risks exposing binary user content through shell arguments, temporary files or logs; hand-written SigV4 increases signing and retry risk. No new cloud hosting or always-on server is needed for the one-device Mac pilot.
 
 **Revisit when.** The pinned SDK cannot use the scoped console login, its transitive dependencies cannot meet supply-chain age constraints, CI cannot build it within the Mac runner budget, or a hosted beta requires a different transport.
+
+---
+
+## ADR-025 — Expose only non-authorizing token snapshots from a scoped Mac pricing read
+
+**Status:** Proposed · 2026-10-12 · by: Devin · implementation of ADR-021/024; no paid-route approval
+
+**Context.** The pinned SDK supports the CLI browser login through `LoginAWSCredentialIdentityResolver`, while a default SDK client silently selects ambient credentials. The price-page parser is deliberately internal and cannot authorize a bound for image or other charges.
+
+**Proposal.** Only the Mac tool gains a read-only `pricing-observe` command and a public token-only snapshot. Require a caller-supplied expected account, explicit `margin-pilot` login resolver with an unexpired session token, and `GetCallerIdentity` proving exactly that account's IAM `MarginPilot` user before any `GetProducts` call. Freeze that temporary identity for STS and Pricing, with explicit us-east-1 signing/HTTPS endpoints and bounded SDK retries. Neither an AWS default credential chain nor root, assumed-role, other account, or missing identity may fall back. Return only observed `Nova Lite` token prices; no Runtime model ID, image/other-charge bound, `PilotPriceEvidence` or model transport is exposed.
+
+**Consequences.** The CLI still needs a human-renewed temporary login and an expected account from the operator; the public snapshot is not an authorization API. STS and public catalog reads may reach AWS, but no paid model request, notebook content or hosting is enabled. A later hosted backend needs its own reviewed identity policy rather than copying the Mac login flow.
+
+**Alternatives rejected.** Default SDK constructors, `ProfileAWSCredentialIdentityResolver` (which can fall through to other credential types), and printing or copying temporary credentials weaken provenance. Reusing a catalog-only observation as a price envelope would fabricate the unverified model binding and non-token charges.
+
+**Revisit when.** A non-login scoped service identity is selected for hosting or authoritative image/non-model price evidence changes the quote boundary.
