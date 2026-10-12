@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-08A3b2a2 — Bind read-only Bedrock metadata to the limited Mac identity
+status: In progress · claimed: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · base: 9992503 · refs: ADR-021/024/025, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: M
+Note: M4-08A3b2a typed a fake-client observation only; M4-08A3b2b2b proved a scoped temporary Pricing read. Reuse the limited-session provenance to check us-east-1 Bedrock control-plane retention and exact model availability without deriving model-specific `allowedModes` or authorizing any Runtime call. Split from b2 because b2c remains blocked on independent eligibility and price evidence.
+Acceptance:
+- [ ] The explicit login-only temporary IAM pilot identity, expected account and fixed regional HTTPS endpoint are verified before a bounded SDK Bedrock metadata read; root/ambient credentials cannot fall back
+- [ ] Fake-client refusal/cancellation/wrong identity/endpoint tests make zero metadata reads; real read returns only a fresh, non-authorizing observation, with no paid model request or user ink
 
 ## Review
 
