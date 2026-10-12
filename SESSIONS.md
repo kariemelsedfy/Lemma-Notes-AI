@@ -11,10 +11,20 @@ unless you check.
 
 ---
 
+## 2026-10-12 · Devin · M4-REC132 — restack metadata after the Ask-test timing failure
+
+#132 failed CI on the pre-#131 fixed-sleep Ask test. Retargeted it to repaired #131, merged that parent into an isolated #132 branch without rewriting either PR, and reconciled only task/session conflicts. Sixty-eight proxy tests, full repo test/build/lint, 190 iOS 26.5 simulator app tests and Mac release build passed. Requested `amazon.nova-lite-v1:0` remains distinct from returned `amazon.nova-lite-v1`; no `allowedModes`, Runtime request, handwriting or provider charge was enabled ($0 of $10). Check remote ancestry and new hosted CI before any human merge.
+
+## 2026-10-12 · Devin · M4-08A3b2a2 — PR #132 review handoff
+
+The read-only Bedrock SDK observation now passes 67 proxy tests, full repository test/build/lint and the Mac release build. PR #132 is open against the scoped Pricing PR #130 and CI is pending; PR #131 remains a separate app-test branch, not included here. There are no paid model requests, note uploads, IAM changes or new hosting costs ($0 of $10). Do not promote this account-mode/availability read to `RetentionEvidence.allowedModes`: the control-plane response reported a different model ID than requested and does not attest to exact model-specific eligibility under `none`. A separate authoritative eligibility/price decision is still required before any Runtime work.
+
+## 2026-10-12 · Devin · M4-08A3b2a2 — Bedrock availability returned a different ID than requested
+
+PR #130's unchanged-code rerun and PR #131's test-only check both passed hosted CI; neither is merged. I then split a narrow Mac-only read-only metadata slice from b2: reuse the Pricing command's login-only temporary `margin-pilot` identity, fixed STS user/account proof and explicit control-plane endpoint, with new fake-client tests. Test-first compilation failed as expected before the scoped observer existed; new test fixtures also hit Swift's `Optional.none` ambiguity, corrected to explicit `DataRetentionMode.none` instead of relaxing a test. The first real SDK command **declined**, though the scoped CLI showed retention `none` and all availability statuses positive: the availability API returned `modelId: amazon.nova-lite-v1` for a request for `amazon.nova-lite-v1:0`. AWS's API reference describes the returned ID but not their equivalence. A follow-up fake test pins this shape; the informational CLI now prints both IDs, refuses all other IDs and never grants `RetentionEvidence.allowedModes`. Exact-version eligibility under `none` and image/other-cost proof still block any paid call. The 67 proxy tests pass locally; full repository and release gates follow before handoff. No Bedrock Runtime request, handwriting, account setting change, provider/hosting charge or secret was logged ($0 of $10).
 ## 2026-10-12 · Devin · M4-REC131 — keep the terminal-state test after parent repair
 
 #131 conflicted with the repaired #130 parent only in PROGRESS and SESSIONS. The normal merge preserved the bounded terminal wait and 150 ms post-cancellation check; five focused and all 190 iOS 26.5 simulator app tests passed alongside full repo test/build/lint and Mac proxy release build. No shipping Ask change, model call, handwriting transfer or charge occurred ($0 of $10). Verify remote heads before fast-forwarding the PR. #132 is a sibling and must be tested with this fix in its effective base, not assumed green from an earlier CI run.
-
 ## 2026-10-12 · Devin · M4-14C — Separate test-only PR #131 is open
 
 The owner authorized pushing and reviewing additional PRs. PR #131 stacks only the seven-line app-test synchronization diff and task/session context on #130; it is not merged and hosted CI is pending. The unchanged #130 rerun is also pending, so neither PR should be called CI-green yet. The iOS 26.5 simulator reproduction and full 190-test pass after the fix are the local evidence. Return to the bounded proxy work only after distinguishing the two review branches; no paid model call or user ink transfer occurred ($0 of $10).
@@ -25,6 +35,7 @@ PR #130's hosted `verify` failed in a pre-existing app test, not the scoped Pric
 ## 2026-10-12 · Devin · M4-REC130 — keep scoped Pricing identity bound to the repaired parent
 
 #130 conflicted with the updated #129 parent only in PROGRESS and SESSIONS. An isolated normal merge preserved login-only temporary credentials, exact IAM-user STS verification before Pricing, fixed HTTPS endpoints and bounded public pages. Sixty-four proxy tests, full repo test/build/lint and Mac release build passed. No new AWS call, personal ink, Runtime/model request or charge occurred ($0 of $10). Token observations still cannot authorize spending. Check remote heads before normal PR push; #131 and #132 are siblings, not a linear continuation.
+
 ## 2026-10-12 · Devin · M4-08A3b2b2b — PR #130 review handoff
 
 The owner explicitly authorized pushing this branch and opening a PR. PR #130 is stacked on the still-open pagination PR #129, keeping the review diff under 400 lines; no PR was merged. The task board is Done for the scoped public token observation only. A reviewer must keep Q15/Q16/Q18 and the A3 hard gates separate: a successful read-only Pricing query cannot authorize a paid model call, and known provider/hosting spend remains $0 of $10. Local full test/build/lint and Mac release build passed before the review handoff; hosted CI on #130 still needs its own result.

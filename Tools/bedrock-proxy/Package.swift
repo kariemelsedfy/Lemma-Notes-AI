@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .library(name: "ProxyAdmission", targets: ["ProxyAdmission"]),
         .executable(name: "pricing-observe", targets: ["PricingObserve"]),
+        .executable(name: "bedrock-observe", targets: ["BedrockObserve"]),
     ],
     dependencies: [
         .package(url: "https://github.com/awslabs/aws-sdk-swift.git", exact: "1.8.2")
@@ -24,6 +25,7 @@ let package = Package(
             linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
         ),
         .executableTarget(name: "PricingObserve", dependencies: ["ProxyAdmission"]),
+        .executableTarget(name: "BedrockObserve", dependencies: ["ProxyAdmission"]),
         .testTarget(
             name: "ProxyAdmissionTests",
             dependencies: [

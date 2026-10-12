@@ -48,6 +48,20 @@ _(empty)_
 
 ## Done
 
+### M4-REC132 — Restack read-only Bedrock observation on the Ask-test fix
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC132-reconcile-upstream · refs: PR #132, PR #131, ADR-021/024/026
+Note: Retargeted #132 onto repaired #131 after old CI failed in its fixed-sleep Ask test, then merged #131 into #132 in an isolated branch. Parent task/session histories were reconciled; the bounded terminal-state wait and distinct requested `amazon.nova-lite-v1:0` / reported `amazon.nova-lite-v1` metadata remain. The observer never grants `RetentionEvidence.allowedModes` or a paid send. All 68 proxy tests, full repo test/build/lint, 190 simulator app tests and Mac release build pass. No Runtime request, user content or charge occurred ($0 of $10). Normal PR push and new CI still need confirmation.
+Acceptance:
+- [x] New #132 head contains repaired #131 and preserves fake denials with zero Bedrock Runtime requests
+- [x] Proxy, full repo tests/lint, app simulator suite and Mac release build pass; no force-push or agent PR merge
+
+### M4-08A3b2a2 — Bind read-only Bedrock metadata to the limited Mac identity
+status: Done (non-authorizing observation only) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · PR: #132 (stacked on #131, open) · refs: ADR-021/024/025/026, AI_PIPELINE.md §5, BUSINESS.md §3.3
+Note: The pinned SDK's login-only temporary `margin-pilot` credentials are frozen and verified by exact expected IAM account/user STS before the fixed us-east-1 Bedrock **control-plane** read. An explicit-profile CLI STS check returned only `True` before the SDK observation; the latter read account retention `none` and availability. AWS returned **`amazon.nova-lite-v1`** for the requested **`amazon.nova-lite-v1:0`**. The first attempt correctly declined on strict echo; the observer now preserves both identifiers separately rather than guessing equivalence. The output is non-authorizing and never populates `RetentionEvidence.allowedModes`; Q15 model-specific eligibility and Q18 image/non-model cost remain blocked. Fake wrong/root/role/endpoint/cancelled reads make zero metadata requests; **67 proxy tests**, full repository test/build/lint, the Mac release build and the scoped command pass. No Runtime/model call, user content, account mutation or charge occurred ($0 of $10). PR #132 is open, not merged; hosted CI is pending.
+Acceptance:
+- [x] Login-only temporary IAM pilot identity, expected account and fixed regional HTTPS endpoint verified before a bounded SDK Bedrock metadata read; no root/ambient fallback
+- [x] Fake denial tests make zero metadata reads; real command returns only fresh requested/reported model identifiers plus account mode, not eligibility or a paid send
+
 ### M4-REC131 — Reconcile #131 Ask-test fix with updated Pricing parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC131-await-updated-parent · refs: PR #131, M4-14C, AGENTS.md §1–2
 Note: Merged updated #130 into an isolated #131 branch. Only PROGRESS/SESSIONS conflicted; the bounded terminal-state wait, cancellation late-ink interval and every assertion remain unchanged. Five focused and all 190 simulator app tests passed on iOS 26.5, as did full repo tests/build/lint and Mac proxy release build. No production Ask edit, personal content, AWS request or charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
