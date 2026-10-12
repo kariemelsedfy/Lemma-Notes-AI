@@ -38,6 +38,21 @@ final class AdmissionTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
+    func testPNGMetadataAndCorruptChecksumsNeverReachTransport() async throws {
+        let transport = CountingTransport()
+        let admission = gate()
+        let encoded =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9o8cRcwAAAAO"
+            + "dEVYdG5vdGU9c3ludGhldGljaZOn3QAAAABJRU5ErkJggg=="
+        let tagged = try XCTUnwrap(Data(base64Encoded: encoded))
+        await expect(.malformed, admission, try body(crop: tagged), transport: transport)
+        var corrupt = Self.pixelPNG
+        corrupt[45] ^= 0x01
+        await expect(.malformed, admission, try body(crop: corrupt), transport: transport)
+        let calls = await transport.calls
+        XCTAssertEqual(calls, 0)
+    }
+
     func testTranscriptAndTokenLimitsRejectBeforeTransport() async throws {
         let transport = CountingTransport()
         let admission = gate()
@@ -62,6 +77,58 @@ final class AdmissionTests: XCTestCase {
         await expect(.retentionUnavailable, gate(verifiedAt: .distantFuture), input, transport: transport)
         let calls = await transport.calls
         XCTAssertEqual(calls, 0)
+    }
+
+    func testCancellationBeforeAuthorizationReturnsCannotInvokeTransport() async throws {
+        let transport = CountingTransport()
+        let admission = AdmissionGate(
+            modelID: "amazon.nova-lite-v1:0", region: "us-east-1",
+            authorize: { _ in
+                try? await Task.sleep(for: .milliseconds(100))
+                return PilotIdentity(subjectID: "test-pilot")
+            },
+            retention: {
+                RetentionEvidence(
+                    modelID: "amazon.nova-lite-v1:0", region: "us-east-1", effectiveMode: "none",
+                    allowedModes: ["none"], verifiedAt: Date()
+                )
+            }
+        )
+        let input = try body()
+        let request = Task { try await admission.invoke(input, proof: "pilot", transport: transport) }
+        try await Task.sleep(for: .milliseconds(10))
+        request.cancel()
+        do {
+            try await request.value
+            XCTFail("A cancelled request reached the fake transport")
+        } catch is CancellationError {
+            XCTAssertTrue(request.isCancelled)
+        } catch {
+            XCTFail("Expected cancellation rather than an admission error")
+        }
+        let calls = await transport.calls
+        XCTAssertEqual(calls, 0)
+    }
+
+    func testOnlyOneFakeTransportCallCanBeInFlight() async throws {
+        let transport = BlockingTransport()
+        let admission = gate()
+        let input = try body()
+        let first = Task { try await admission.invoke(input, proof: "pilot", transport: transport) }
+        var started = false
+        for _ in 0..<200 {
+            if await transport.calls > 0 {
+                started = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        if started { await expect(.busy, admission, input, transport: transport) }
+        await transport.finish()
+        try await first.value
+        XCTAssertTrue(started, "The first request never reached the fake transport")
+        let calls = await transport.calls
+        XCTAssertEqual(calls, 1)
     }
 
     private func gate(
@@ -137,5 +204,23 @@ private actor CountingTransport: ProxyTransport {
 
     func send(_ request: AdmittedRequest) async throws {
         calls += 1
+    }
+}
+
+private actor BlockingTransport: ProxyTransport {
+    private(set) var calls = 0
+    private var pending: CheckedContinuation<Void, Never>?
+    private var released = false
+
+    func send(_ request: AdmittedRequest) async throws {
+        calls += 1
+        guard !released else { return }
+        await withCheckedContinuation { pending = $0 }
+    }
+
+    func finish() {
+        released = true
+        pending?.resume()
+        pending = nil
     }
 }
