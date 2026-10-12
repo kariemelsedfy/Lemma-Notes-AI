@@ -49,6 +49,8 @@ Apps/
   Margin/          The app target: SwiftUI shell, canvas view controller, onboarding,
                    library, settings, paywall
 Tools/
+  bedrock-proxy/   Provisional SwiftPM request/retention admission gate with fake transport;
+                   not a deployed server, spend cap or provider SDK (M4-08A1)
   evalrunner/      CLI: runs the golden set against a provider, emits metrics JSON
   glyphlab/        macOS dev tool: inspect a glyph bank, render sample text, tune layout
 ```

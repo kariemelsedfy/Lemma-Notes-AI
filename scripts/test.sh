@@ -14,12 +14,12 @@ for package in Packages/*; do
     swift test --package-path "$package"
 done
 
-# The tools have no tests of their own — their logic lives in `Intelligence` where it can be
-# unit-tested — but they must keep building, and the eval run is a smoke test of the whole
-# harness: cases load, requests build, specs validate, metrics compute, JSON writes.
+# Keep tool targets building; the proxy also has independent security tests. The eval run
+# smoke-tests the full harness: cases load, requests build, specs validate and metrics write.
 for tool in Tools/*/Package.swift; do
     swift build --package-path "$(dirname "$tool")"
 done
+swift test --package-path Tools/bedrock-proxy
 ./scripts/eval.sh --provider mock > /dev/null
 
 ./scripts/generate.sh

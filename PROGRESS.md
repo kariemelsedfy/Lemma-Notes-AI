@@ -29,17 +29,28 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
-| M4-08A1 Mock-only proxy admission | Unclaimed / `b52f88f` | `feat/M4-08A1-proxy-admission` / isolated server/tool core and tests | No AWS access or paid calls; A2/A3 own durable money and real transport |
+| M4-08A1 Mock-only proxy admission | Devin / `bdc79c4` | `feat/M4-08A1-proxy-admission` / isolated server/tool core and tests | No AWS access or paid calls; A2/A3 own durable money and real transport |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A1 — Mock-only proxy request admission and privacy bounds
+status: In progress · claimed: Devin · 2026-10-08 · base: bdc79c4 · branch: feat/M4-08A1-proxy-admission · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
+Exclusive scope: provisional isolated `Tools/bedrock-proxy` Swift package and tests, plus `scripts/test.sh` / `scripts/lint.sh` integration and task docs. No app module/dependency, AWS SDK, deployment, or paid calls. A fake transport and trusted server-side authorization/retention inputs may exercise synthetic requests; this slice is **not deployable** until M4-08A2/A3 enforce durable combined spend and verify real AWS access. M4-08A1a (core) and M4-08A1b (adversarial regression) are separate PRs to stay below the 400-line review limit; **do not mark this parent Done after only A1a**.
+Acceptance:
+- [ ] No fake transport call before server-verified pilot identity or entitlement; unknown request fields and unsupported intent decline
+- [ ] Actual PNG crop/neighborhood dimensions, pixel counts and bytes, transcript, output tokens and request concurrency are bounded without trusting client sizes; no admitted whole-page or bank field
+- [ ] Unverified model/region retention or missing `none` in allowed modes fails closed; tests cover malformed, unauthorized, oversize and retention mismatches without logging or storing content
 
 ## Review
 
-_(empty)_
+### M4-08A1a — Establish a deny-by-default proxy admission core
+status: Review · implemented: Devin · 2026-10-08 · base: bdc79c4 · branch: feat/M4-08A1-proxy-admission · depends: ADR-021 · refs: PROGRESS.md M4-08A1, BUSINESS.md §6 · estimate: S
+Note: a provisional server-only Swift package under `Tools/bedrock-proxy` has no AWS transport or executable. Without injected server authorization and fresh exact-model/Region retention evidence it denies. It parses an exact JSON request shape with no page/bank fields; PNG signature, IHDR dimensions, byte/pixel caps, allowed chunks and CRC are checked before a fake transport can receive anything. Five focused tests cover authorized synthetic dispatch, unverified users, unknown fields, unsupported verbs, malformed/oversized images, transcript/token limits and retention mismatch. The tool builds/tests from `scripts/test.sh` and is included in SwiftLint/swift-format. **A1b still owns cancellation, concurrency and metadata/checksum regression tests; A1 parent and A2/A3 remain open.** This code is not deployable, not a hard budget cap, and has never sent a model request.
+Acceptance:
+- [x] Five fake-transport tests and full repo test/lint gates pass without secrets, AWS calls or persistent user content
+- [x] The source has no live endpoint or provider credential path; default authentication/retention callbacks deny
 
 ## Done
 
@@ -2050,13 +2061,13 @@ Acceptance:
 - [ ] Invalid/unauthorized/duplicate/over-budget work and retention/model mismatches make zero billable calls, including concurrent admission
 - [ ] Actual provider and hosting cost/remaining cap can be bounded before any paid pilot request, not merely alerted after it
 
-### M4-08A1 — Mock-only proxy request admission and privacy bounds
-status: Ready · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: M
-Exclusive scope: isolated server/tool admission core and tests, integrated into repo test gates; no app/module changes, new external dependency, AWS account configuration, deployment, or live calls. A fake transport and trusted server-side authorization/retention inputs may exercise accepted requests; production defaults must remain unable to send traffic until M4-08A2/A3 are complete. A separate package under `Tools/` is provisional, not an app module or a shipping client API.
+### M4-08A1b — Prove cancellation, concurrency and PNG metadata fail closed
+status: Ready after M4-08A1a · owner: Devin continuation · depends: M4-08A1a, ADR-021 · refs: PROGRESS.md M4-08A1, AGENTS.md §7 · estimate: S
+Exclusive scope: `Tools/bedrock-proxy` adversarial tests and scoped admission fixes only; no app/server deployment, AWS account configuration, SDK or paid traffic. Branch from the A1a PR. The first in-development concurrency test hung when its synthetic PNG fixture had a bad CRC; use bounded test waiting rather than creating a CI hang if admission regresses.
 Acceptance:
-- [ ] No fake transport call before a server-verified pilot identity or entitlement; requests with unrecognized or unsupported fields decline
-- [ ] PNG crop and neighborhood actual dimensions/pixel counts and bytes, transcript/hints, output tokens, and request concurrency are bounded without trusting client-supplied sizes; whole-page or bank fields have no admitted shape
-- [ ] Unverified region/model retention evidence or missing `none` in allowed modes fails closed; tests cover malformed, unauthorized, oversize and retention mismatches without storing/logging user content
+- [ ] A cancelled asynchronous authorization cannot later invoke the fake transport
+- [ ] Simultaneous requests respect the in-flight cap; tests have bounded waits and cannot deadlock when the first request is rejected
+- [ ] Validly checksummed PNG ancillary metadata and tampered checksums are refused before the fake transport; full tool/repo gates pass
 
 ### M4-08A2 — Atomic pilot spend, idempotency and rate gates
 status: Ready after M4-08A1; no live use until a persistent cross-instance store and complete provider-plus-hosting hard bound are verified · refs: BUSINESS.md §3.3, ADR-021, AGENTS.md §7 · estimate: M
