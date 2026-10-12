@@ -4,7 +4,7 @@
 
 Working codename: **Margin**. (Placeholder — trademark search required before any public use. Alternates: Inkwell, Quill, Marginalia, Scribe, Loop.)
 
-Circle anything you've written with your Apple Pencil, and the app answers it, continues it, plots it, or checks it — rendered as real ink, in your own handwriting, in the right place on the page.
+Margin is an iPad notebook aiming to put answers directly on the page in your handwriting. Today, tap Ask, lasso the question, then mark the allowed answer area. The app's visible response is still the canned `4`; real AI answering is not yet wired into Ask.
 
 ---
 
@@ -12,10 +12,10 @@ Circle anything you've written with your Apple Pencil, and the app answers it, c
 
 | | |
 |---|---|
-| Phase | **M0 — not started** |
-| Target platform | iPadOS 26.0+ (optimized for iPadOS 27) |
-| Target ship | App Store, ~24 weeks from M0 kickoff |
-| Repo state | Docs only. No code yet. |
+| Phase | M3 handwriting implemented; M4 real AI and private beta integration pending |
+| Current deployment target | iPadOS 26.0; ADR-019 proposes iPadOS 27 for 1.0, pending a compatible device and the broader-device decision |
+| Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting calibration and synthesis, two-region Ask, undo, and export; Ask still returns a canned `4` |
+| Verification | 2026-10-07: package/build gate, lint, and 180 simulator app tests pass at `6abf27a`; new physical-device build not yet installed |
 
 ---
 
@@ -41,7 +41,7 @@ If you are a human:
 
 ## The one-paragraph pitch
 
-Note-taking apps have bolted AI on as a sidebar: you ask a chatbot, it answers in a panel, you copy the answer back into your notes by hand. Margin removes the panel. The AI's output lands *on the page*, as ink, in your handwriting, positioned where the answer belongs — after the equals sign, on the next line of the derivation, in the empty space to the right. The interaction is a gesture, not a conversation. You circle and it continues.
+Note-taking apps often put AI in a sidebar: you ask a question, then copy the answer into your notes. Margin aims to put the answer *on the page* as editable ink in your handwriting. You arm Ask, lasso the question, and mark the area where the answer is allowed; placement stays inside that area. The real-answer provider is still to be integrated.
 
 ## The three hard problems
 

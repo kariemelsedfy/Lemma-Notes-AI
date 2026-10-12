@@ -159,14 +159,14 @@ Audio recording, cross-note Q&A, flashcard generation, shared notebooks, Mac app
 | **M0** | Foundations | 1 | Repo, Tuist project generation, SPM module skeleton, CI green on empty tests, all docs in place, Apple Developer account + bundle ID + TestFlight pipeline proven with a hello-world build |
 | **M1** | Canvas | 4 | Write, erase, undo, zoom on a multi-page document; document package format reads/writes; iCloud sync between two iPads; export PDF; 60fps with 50 pages of dense ink |
 | **M2** | Selection & fake AI | 3 | All four selection paths work; selection extracts strokes + raster + context; a **mocked** responder returns canned specs; specs render as ink; accept/reject/undo works end to end. **No real model calls yet.** |
-| **M3** | Handwriting synthesis v1 | 4 | Calibration flow captures a glyph bank in <3 min; layout engine renders arbitrary ASCII + math symbols in the user's hand; OCR round-trip legibility ≥95%; blind human panel ranks output as "plausibly mine" ≥60% |
+| **M3** | Handwriting synthesis v1 | 4 | Calibration flow captures a glyph bank in <3 min; layout engine renders supported glyphs in the user's hand; OCR round-trip legibility is measured; blind similarity panel reports "plausibly mine" against a ≥60% quality target (not a gate, ADR-018) |
 | **M4** | Real intelligence | 3 | On-device + PCC + cloud routing; strict JSON spec validation; streaming first-ink <2.5s p50; eval harness runs on the golden set and reports accuracy/latency/cost; graceful offline and failure states |
 | **M5** | Plots, math layout, check | 2 | Plot verb produces correct hand-drawn axes and curves; multi-line math layout (fractions, radicals, integrals, matrices); Check verb marks errors accurately on the eval set |
 | **M6** | Monetization & compliance | 2 | StoreKit 2 subscriptions, credit metering, paywall, BYOK setting, 5.1.2(i) consent flow, privacy manifest, privacy nutrition labels, age rating questionnaire |
 | **M7** | Polish & beta | 3 | Accessibility pass, VoiceOver, Dynamic Type in chrome, error copy, onboarding, 100-user TestFlight, crash-free ≥99.5%, retention instrumented |
 | **M8** | Submission | 2 | App Review notes with demo account, marketing site, screenshots, submitted, approved |
 
-**Gate reviews.** At the end of M2, M3, and M4, stop and evaluate against the kill criteria in §7 before proceeding. Do not let sunk cost carry a failing M3 into M4.
+**Reviews.** Measure quality at each milestone. ADR-018 withdrew the R-01 handwriting pivot: M3-10 measures realism and directs improvements, but does not gate M4 or authorize removing handwriting.
 
 ---
 
@@ -192,7 +192,7 @@ This is not just ethics theater — it is the answer when a university procureme
 
 ### 6.4 iPad only, iPadOS 26 minimum
 
-Foundation Models framework (on-device LLM, no API key, no per-token cost) requires iPadOS 26. iPadOS 27 adds multimodal image input to that on-device model plus free Private Cloud Compute access for small developers — both are directly load-bearing for our cost structure. Deployment target 26.0, feature-gate the 27 paths with `if #available`.
+`Project.swift` currently deploys to iPadOS 26.0; ADR-019 targets 27 for 1.0 but does not authorize updating an existing test device. On-device Foundation Models require Apple Intelligence-capable hardware, which the connected iPad mini (6th generation) lacks. As of 2026-10-07, broader-device AI access, PCC availability/terms, and the eventual deployment target need reassessment (CONTEXT.md Q13); no model or cloud fallback is wired into the shipping app.
 
 ---
 
@@ -206,8 +206,8 @@ Foundation Models framework (on-device LLM, no API key, no per-token cost) requi
 | R-04 | Notebook substrate takes far longer than planned | High | Severe | PencilKit instead of a custom engine; cut PDF annotation to post-1.0 if M1 slips >2 weeks | — |
 | R-05 | Unit economics don't work at consumer price points | Low | Severe | On-device/PCC routing for the majority of calls; hard credit caps; see `BUSINESS.md` | If blended cost/action >$0.03 at M4, restrict frontier routing |
 | R-06 | App Review rejection (4.1 copycat, 4.3, 5.1.2(i) AI consent) | Medium | Moderate | Visual distinctiveness, explicit consent flow naming providers, thorough review notes | — |
-| R-07 | Apple Intelligence unavailable in EU/China at launch (verify) | Medium | Moderate | Cloud path must be a first-class fallback, not an afterthought; region-aware routing | — |
-| R-08 | Solo-dev burnout / scope creep | High | Fatal | The non-goals list in §1.4 is a contract. Gate reviews. Ship M2 as an internal demo to keep morale | — |
+| R-07 | Apple Intelligence unavailable on otherwise supported iPads, including the connected iPad mini (6th generation) | High | Severe | Route on actual framework availability (ADR-017), not a region table; decide a consent-gated non-Apple-Intelligence provider and spending limit before implementation (CONTEXT.md Q13) | — |
+| R-08 | Solo-dev burnout / scope creep | High | Fatal | The non-goals list in §1.4 is a contract. Quality reviews. Ship M2 as an internal demo to keep morale | — |
 
 ---
 
