@@ -82,6 +82,7 @@
 
 /* Handwriting sample — debug-only surface that produces material for the M3-10 panel (M3-24). */
 "sample.title" = "Handwriting sample";
+"sample.done" = "Done";
 "sample.line" = "Line to write";
 "sample.suggestion" = "Suggestions";
 "sample.yours" = "Write it yourself";
