@@ -27,6 +27,7 @@ enum SyntheticNovaProbe {
 
 protocol BedrockMetadataReader: Sendable {
     var configuredRegion: String? { get }
+    var configuredEndpoint: String? { get }
 
     func getAccountDataRetention(input: GetAccountDataRetentionInput) async throws -> GetAccountDataRetentionOutput
     func getFoundationModelAvailability(
@@ -36,10 +37,12 @@ protocol BedrockMetadataReader: Sendable {
 
 extension BedrockClient: BedrockMetadataReader {
     var configuredRegion: String? { config.region }
+    var configuredEndpoint: String? { config.endpoint }
 }
 
 struct ReadOnlyBedrockObservation: Sendable {
     let modelID: String
+    let requestedModelID: String
     let requestedRegion: String
     let accountMode: BedrockClientTypes.DataRetentionMode
     let checkedAt: Date
@@ -69,7 +72,8 @@ struct ReadOnlyBedrockObserver: Sendable {
                 input: GetFoundationModelAvailabilityInput(modelId: "amazon.nova-lite-v1:0")
             )
             try Task.checkCancellation()
-            guard availability.modelId == "amazon.nova-lite-v1:0",
+            guard let reportedID = availability.modelId,
+                reportedID == "amazon.nova-lite-v1:0" || reportedID == "amazon.nova-lite-v1",
                 availability.authorizationStatus == .authorized,
                 availability.entitlementAvailability == .available,
                 availability.regionAvailability == .available,
@@ -77,8 +81,8 @@ struct ReadOnlyBedrockObserver: Sendable {
                 availability.agreementAvailability?.errorMessage == nil
             else { return nil }
             return ReadOnlyBedrockObservation(
-                modelID: "amazon.nova-lite-v1:0", requestedRegion: "us-east-1",
-                accountMode: .none, checkedAt: now()
+                modelID: reportedID, requestedModelID: "amazon.nova-lite-v1:0",
+                requestedRegion: "us-east-1", accountMode: .none, checkedAt: now()
             )
         } catch {
             return nil
@@ -163,6 +167,61 @@ extension STSClient: PilotCallerReader {
     var configuredEndpoint: String? { config.endpoint }
 }
 
+struct ScopedPilotCaller: Sendable {
+    let caller: any PilotCallerReader
+    let expectedAccount: String
+
+    func verify() async -> Bool {
+        do {
+            try Task.checkCancellation()
+            guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) }),
+                caller.configuredRegion == "us-east-1",
+                caller.configuredEndpoint == "https://sts.us-east-1.amazonaws.com"
+            else { return false }
+            let identity = try await caller.getCallerIdentity(input: GetCallerIdentityInput())
+            try Task.checkCancellation()
+            return identity.account == expectedAccount
+                && identity.arn == "arn:aws:iam::\(expectedAccount):user/MarginPilot"
+                && identity.userId?.isEmpty == false
+        } catch {
+            return false
+        }
+    }
+}
+
+struct ScopedPilotCredentials {
+    let credential: AWSCredentialIdentity
+    let resolver: StaticAWSCredentialIdentityResolver
+    let caller: STSClient
+
+    static func resolve(expectedAccount: String) async throws -> ScopedPilotCredentials? {
+        try Task.checkCancellation()
+        guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) })
+        else { return nil }
+        let awsDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".aws")
+        let login = try LoginAWSCredentialIdentityResolver(
+            profileName: "margin-pilot",
+            configFilePath: awsDirectory.appendingPathComponent("config").path,
+            credentialsFilePath: awsDirectory.appendingPathComponent("credentials").path
+        )
+        let credential = try await login.getIdentity(identityProperties: nil)
+        try Task.checkCancellation()
+        guard
+            ScopedPricingSession.isTemporary(
+                accountID: credential.accountID, sessionToken: credential.sessionToken,
+                expiration: credential.expiration, expectedAccount: expectedAccount, now: Date()
+            )
+        else { return nil }
+        let resolver = StaticAWSCredentialIdentityResolver(credential)
+        let config = try await STSClient.STSClientConfig(
+            awsCredentialIdentityResolver: resolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
+            region: "us-east-1", signingRegion: "us-east-1",
+            endpoint: "https://sts.us-east-1.amazonaws.com"
+        )
+        return ScopedPilotCredentials(credential: credential, resolver: resolver, caller: STSClient(config: config))
+    }
+}
+
 struct ScopedPricingSession: Sendable {
     private let caller: any PilotCallerReader
     private let client: any PricingCatalogReader
@@ -182,24 +241,31 @@ struct ScopedPricingSession: Sendable {
     }
 
     func observe() async -> CatalogTokenRates? {
-        do {
-            try Task.checkCancellation()
-            guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) }),
-                caller.configuredRegion == "us-east-1",
-                caller.configuredEndpoint == "https://sts.us-east-1.amazonaws.com",
-                client.configuredRegion == "us-east-1",
-                client.configuredEndpoint == "https://api.pricing.us-east-1.amazonaws.com"
-            else { return nil }
-            let identity = try await caller.getCallerIdentity(input: GetCallerIdentityInput())
-            try Task.checkCancellation()
-            guard identity.account == expectedAccount,
-                identity.arn == "arn:aws:iam::\(expectedAccount):user/MarginPilot",
-                identity.userId?.isEmpty == false
-            else { return nil }
-            return await ReadOnlyPricingCatalog(client: client).observe()
-        } catch {
-            return nil
-        }
+        guard client.configuredRegion == "us-east-1",
+            client.configuredEndpoint == "https://api.pricing.us-east-1.amazonaws.com",
+            await ScopedPilotCaller(caller: caller, expectedAccount: expectedAccount).verify()
+        else { return nil }
+        return await ReadOnlyPricingCatalog(client: client).observe()
+    }
+}
+
+struct ScopedBedrockSession: Sendable {
+    private let caller: any PilotCallerReader
+    private let client: any BedrockMetadataReader
+    private let expectedAccount: String
+
+    init(caller: any PilotCallerReader, client: any BedrockMetadataReader, expectedAccount: String) {
+        self.caller = caller
+        self.client = client
+        self.expectedAccount = expectedAccount
+    }
+
+    func observe() async -> ReadOnlyBedrockObservation? {
+        guard client.configuredRegion == "us-east-1",
+            client.configuredEndpoint == "https://bedrock.us-east-1.amazonaws.com",
+            await ScopedPilotCaller(caller: caller, expectedAccount: expectedAccount).verify()
+        else { return nil }
+        return await ReadOnlyBedrockObserver(client: client).observe()
     }
 }
 
@@ -213,47 +279,62 @@ public struct PilotCatalogSnapshot: Sendable {
 public enum PilotPricingObservation {
     public static func observe(expectedAccount: String) async -> PilotCatalogSnapshot? {
         do {
-            try Task.checkCancellation()
-            guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) })
+            guard let session = try await ScopedPilotCredentials.resolve(expectedAccount: expectedAccount)
             else { return nil }
-            let awsDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".aws")
-            let resolver = try LoginAWSCredentialIdentityResolver(
-                profileName: "margin-pilot",
-                configFilePath: awsDirectory.appendingPathComponent("config").path,
-                credentialsFilePath: awsDirectory.appendingPathComponent("credentials").path
-            )
-            let credential = try await resolver.getIdentity(identityProperties: nil)
-            try Task.checkCancellation()
-            guard
-                ScopedPricingSession.isTemporary(
-                    accountID: credential.accountID, sessionToken: credential.sessionToken,
-                    expiration: credential.expiration, expectedAccount: expectedAccount, now: Date()
-                )
-            else { return nil }
-            let fixedResolver = StaticAWSCredentialIdentityResolver(credential)
-            let stsConfig = try await STSClient.STSClientConfig(
-                awsCredentialIdentityResolver: fixedResolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
-                region: "us-east-1", signingRegion: "us-east-1",
-                endpoint: "https://sts.us-east-1.amazonaws.com"
-            )
-            let pricingConfig = try await PricingClient.PricingClientConfig(
-                awsCredentialIdentityResolver: fixedResolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
+            let config = try await PricingClient.PricingClientConfig(
+                awsCredentialIdentityResolver: session.resolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
                 region: "us-east-1", signingRegion: "us-east-1",
                 endpoint: "https://api.pricing.us-east-1.amazonaws.com"
             )
             guard
                 let rates = await ScopedPricingSession(
-                    caller: STSClient(config: stsConfig), client: PricingClient(config: pricingConfig),
-                    expectedAccount: expectedAccount
+                    caller: session.caller, client: PricingClient(config: config), expectedAccount: expectedAccount
                 ).observe(),
                 ScopedPricingSession.isTemporary(
-                    accountID: credential.accountID, sessionToken: credential.sessionToken,
-                    expiration: credential.expiration, expectedAccount: expectedAccount, now: Date()
+                    accountID: session.credential.accountID, sessionToken: session.credential.sessionToken,
+                    expiration: session.credential.expiration, expectedAccount: expectedAccount, now: Date()
                 )
             else { return nil }
             return PilotCatalogSnapshot(
                 modelLabel: rates.modelLabel, inputMicrosPerMillion: rates.inputMicrosPerMillion,
                 outputMicrosPerMillion: rates.outputMicrosPerMillion, fetchedAt: rates.fetchedAt
+            )
+        } catch {
+            return nil
+        }
+    }
+}
+
+public struct PilotBedrockSnapshot: Sendable {
+    public let requestedModelID: String
+    public let reportedModelID: String
+    public let requestedRegion: String
+    public let accountMode: String
+    public let checkedAt: Date
+}
+
+public enum PilotBedrockObservation {
+    public static func observe(expectedAccount: String) async -> PilotBedrockSnapshot? {
+        do {
+            guard let session = try await ScopedPilotCredentials.resolve(expectedAccount: expectedAccount)
+            else { return nil }
+            let config = try await BedrockClient.BedrockClientConfig(
+                awsCredentialIdentityResolver: session.resolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
+                region: "us-east-1", signingRegion: "us-east-1",
+                endpoint: "https://bedrock.us-east-1.amazonaws.com"
+            )
+            guard
+                let observed = await ScopedBedrockSession(
+                    caller: session.caller, client: BedrockClient(config: config), expectedAccount: expectedAccount
+                ).observe(),
+                ScopedPricingSession.isTemporary(
+                    accountID: session.credential.accountID, sessionToken: session.credential.sessionToken,
+                    expiration: session.credential.expiration, expectedAccount: expectedAccount, now: Date()
+                ), observed.isFresh()
+            else { return nil }
+            return PilotBedrockSnapshot(
+                requestedModelID: observed.requestedModelID, reportedModelID: observed.modelID,
+                requestedRegion: observed.requestedRegion, accountMode: "none", checkedAt: observed.checkedAt
             )
         } catch {
             return nil

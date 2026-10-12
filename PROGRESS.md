@@ -35,16 +35,16 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-08A3b2a2 — Bind read-only Bedrock metadata to the limited Mac identity
-status: In progress · claimed: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · base: 9992503 · refs: ADR-021/024/025, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: M
-Note: M4-08A3b2a typed a fake-client observation only; M4-08A3b2b2b proved a scoped temporary Pricing read. Reuse the limited-session provenance to check us-east-1 Bedrock control-plane retention and exact model availability without deriving model-specific `allowedModes` or authorizing any Runtime call. Split from b2 because b2c remains blocked on independent eligibility and price evidence.
-Acceptance:
-- [ ] The explicit login-only temporary IAM pilot identity, expected account and fixed regional HTTPS endpoint are verified before a bounded SDK Bedrock metadata read; root/ambient credentials cannot fall back
-- [ ] Fake-client refusal/cancellation/wrong identity/endpoint tests make zero metadata reads; real read returns only a fresh, non-authorizing observation, with no paid model request or user ink
+_(empty)_
 
 ## Review
 
-_(empty)_
+### M4-08A3b2a2 — Bind read-only Bedrock metadata to the limited Mac identity
+status: Review · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2a2-scoped-bedrock-read · base: 9992503 · refs: ADR-021/024/025/026, AI_PIPELINE.md §5, BUSINESS.md §3.3 · estimate: M
+Note: The pinned SDK's login-only temporary `margin-pilot` credentials are frozen and verified by exact expected IAM account/user STS before the fixed us-east-1 Bedrock **control-plane** read. An explicit-profile CLI STS check returned only `True` before the SDK observation; the latter read account retention `none` and availability. AWS returned **`amazon.nova-lite-v1`** for the requested **`amazon.nova-lite-v1:0`**. The first attempt correctly declined on strict echo; the observer now preserves both identifiers separately rather than guessing equivalence. The output is non-authorizing and never populates `RetentionEvidence.allowedModes`; Q15 model-specific eligibility and Q18 image/non-model cost remain blocked. Fake wrong/root/role/endpoint/cancelled reads make zero metadata requests; **67 proxy tests**, full repository test/build/lint, the Mac release build and the scoped command pass. No Runtime/model call, user content, account mutation or charge occurred ($0 of $10). PR review is pending.
+Acceptance:
+- [x] Login-only temporary IAM pilot identity, expected account and fixed regional HTTPS endpoint verified before a bounded SDK Bedrock metadata read; no root/ambient fallback
+- [x] Fake denial tests make zero metadata reads; real command returns only fresh requested/reported model identifiers plus account mode, not eligibility or a paid send
 
 ## Done
 
