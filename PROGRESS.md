@@ -35,7 +35,11 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
+status: In progress · claimed: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Explicit limited temporary pilot credentials and endpoint provenance are verified before a read-only, bounded public price query; never fall back to root/ambient app credentials
+- [ ] Actual paginated output parses only into token observations; no guessed model ID, image/other-cost bound or paid transport is enabled
 
 ## Review
 
@@ -2219,12 +2223,6 @@ status: Ready (split b2b2a/b after b2b1); paid invocation still blocked under A3
 Acceptance:
 - [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content enters requests or logs
 - [ ] Unverified image/non-model overhead leaves `otherMaximumMicros` absent; fake SDK errors/cancellation/ambiguous pages emit zero sends
-
-### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
-status: Ready after b2b2a; paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
-Acceptance:
-- [ ] Explicit limited temporary pilot credentials and endpoint provenance are verified before a read-only, bounded public price query; never fall back to root/ambient app credentials
-- [ ] Actual paginated output parses only into token observations; no guessed model ID, image/other-cost bound or paid transport is enabled
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
