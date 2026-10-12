@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC129 — Reconcile #129 pagination with updated catalog parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC129-reconcile-upstream · base: a0f76c6 · refs: PR #129, M4-08A3b2b2a, ADR-021/024 · estimate: S
+Note: #128's catalog parent was updated by a normal merge. #129 now conflicts only in PROGRESS/SESSIONS; preserve its bounded fake Pricing client, complete-page refusal and token-only non-authorizing observation. No ambient credentials, live Pricing query or provider send belong in this repair.
+Acceptance:
+- [ ] Preserve all fake pagination and refusal tests and reconcile only parent history
+- [ ] Proxy and full repo test/lint and Mac release build pass; normal fast-forward PR push restores mergeability
 
 ## Review
 
