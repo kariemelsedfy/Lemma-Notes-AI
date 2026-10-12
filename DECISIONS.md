@@ -385,3 +385,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected for this pilot.** Requiring an Apple Intelligence-capable iPad excludes the owner's device. Embedding an API key in the iPad app exposes the project credential and permits unmetered requests. ChatGPT-plan sharing exists for participating apps, but this private product lacks the required partner approval; Claude consumer subscriptions are not general third-party API entitlements. A strictly local arithmetic evaluator alone cannot answer prose or harder questions. Direct developer APIs without confirmed zero-retention controls do not meet the existing handwriting-data promise.
 
 **Revisit when.** Nova Lite fails the measured quality subset, `none` retention is unavailable for the chosen model/region, the $10 pilot limit cannot be enforced, the iPadOS 27 release target is due, or a supported subscription-sharing arrangement becomes available.
+
+---
+
+## ADR-022 — Require provider-layer consent when constructing the frontier client
+
+**Status:** Proposed · 2026-10-08 · by: Devin · implementation detail of ADR-021, pending human review before a real cloud route ships
+
+**Context.** The mini 6 needs a third-party model for work outside local arithmetic, but the proxy is not yet deployed or spend-safe. ADR-021 forbids embedding a provider credential in the app and requires consent before transmitting. A public raw frontier-provider initializer would let a future retry or new call site bypass an optional UI check.
+
+**Proposal.** The package-level `ProxySpecProvider` may be built publicly only via `consentGated(transport:isConsentGranted:)`, which returns the existing `ConsentGatedProvider` and checks consent on every request. Keep the raw initializer private. Its fake transport accepts only an encoded request ID, bounded selection crop/neighborhood PNG bytes, an optional local reading, predicted intent and output-token cap; it has no URL or credential. Every fake response must pass `SpecValidator`, and typed failures carry no user content. Shipping composition waits for M4-08A2/A3 server authorization, verified regional zero retention and a hard $10 combined provider/hosting bound. M4-08C must map the new typed errors to honest localized UI copy before wiring it.
+
+**Consequences.** New public request/transport/error types are a reviewable client seam, not approval for a real endpoint. The Mac-hosted one-device pilot selected by the owner avoids new hosting charges but cannot serve a distributed beta; it does not answer which AWS account/Region can safely use account-wide `none`. Raw app PNGs and Nova Lite response shape remain unverified. No third-party package, billable call, account setting or user-content upload is authorized by this proposal.
+
+**Alternatives rejected.** A raw public initializer with only a view-level consent check is bypassable. Putting AWS keys or credit counts in the app violates ADR-021 and AGENTS.md §7. Assuming Nova Lite structured output or treating a mock reply as a real answer is unsupported.
+
+**Revisit when.** A real transport, verified consent wording, authenticated local proxy or hosted backend, model eligibility and a durable total spend bound are ready for M4-08C review.
