@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC132 — Restack read-only Bedrock observation on the Ask-test fix
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC132-reconcile-upstream · base: 9e1d2ea · refs: PR #132, PR #131, ADR-021/024/026 · estimate: S
+Note: #132 was an independent child of #130, with CI red on the old fixed-sleep Ask test. Its PR now targets the repaired #131 branch. Reconcile parent task/session histories while preserving the bounded terminal-state test and separate requested `amazon.nova-lite-v1:0` / reported `amazon.nova-lite-v1` metadata; neither grants `RetentionEvidence.allowedModes` or a paid send.
+Acceptance:
+- [ ] New #132 head contains repaired #131 and preserves fake denial tests with zero Bedrock Runtime requests
+- [ ] Proxy, full repo tests/lint, app simulator suite and Mac release build pass; normal PR push restores mergeability
 
 ## Review
 
