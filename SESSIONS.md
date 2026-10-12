@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-12 · Devin · M4-14C — Separate test-only PR #131 is open
+
+The owner authorized pushing and reviewing additional PRs. PR #131 stacks only the seven-line app-test synchronization diff and task/session context on #130; it is not merged and hosted CI is pending. The unchanged #130 rerun is also pending, so neither PR should be called CI-green yet. The iOS 26.5 simulator reproduction and full 190-test pass after the fix are the local evidence. Return to the bounded proxy work only after distinguishing the two review branches; no paid model call or user ink transfer occurred ($0 of $10).
+
 ## 2026-10-12 · Devin · M4-14C — A fixed Ask-test sleep failed locally too
 
 PR #130's hosted `verify` failed in a pre-existing app test, not the scoped Pricing tool. The assertion caught `working` with no local failure after the test harness's 150 ms sleep; an isolated iOS 26.5 simulator run reproduced it in the first unsupported-arithmetic case, while PR #129 had passed the same 190-test suite. The pipeline launches its work in a `Task`, so an elapsed sleep is not an arrival signal. In a separate stacked branch, the test harness now polls its phase for up to 3 seconds, fails if it remains `working`, and keeps the original 150 ms late-ink window after cancellation. The focused five tests, full 190 app tests and repo test/build/lint pass locally; production behavior and all expected failure/ink assertions are unchanged. The first #130 failure is real CI red, not a pass. One unchanged-code CI rerun was requested to distinguish timing; at this writing it is still running and is **not** evidence of a green PR. No AWS inference, handwriting transfer or provider/hosting charge occurred; $0 of $10 spent.

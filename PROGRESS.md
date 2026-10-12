@@ -39,14 +39,16 @@ _(empty)_
 
 ## Review
 
+_(empty)_
+
+## Done
+
 ### M4-14C — Await local Ask terminal state in app tests
-status: Review · implemented: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2 · estimate: S
-Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy` after a 150 ms sleep: Ask remained `working` and had no local failure. A focused iOS 26.5 simulator run reproduced the same failure on the first unsupported case. The test now waits for the phase to leave `working` within 3 seconds and fails if it does not, while preserving the cancellation test's 150 ms late-ink observation and all original assertions; no production code changed. The focused **5 tests**, full **190 simulator app tests**, and `./scripts/test.sh`/`./scripts/lint.sh` pass. PR #130's unchanged-code CI rerun is pending; this app-test follow-up stays separate and needs PR review authorization. No model, user notes, charge or budget change ($0 of $10).
+status: Done (test-only, review pending) · implemented: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · PR: #131 (stacked on #130, open) · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2
+Note: PR #130 hosted CI failed in the unchanged `LocalArithmeticAskTests.testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy` after a 150 ms sleep: Ask remained `working` and had no local failure. A focused iOS 26.5 simulator run reproduced the same failure on the first unsupported case. The test now waits for the phase to leave `working` within 3 seconds and fails if it does not, while preserving the cancellation test's 150 ms late-ink observation and all original assertions; no production code changed. The focused **5 tests**, full **190 simulator app tests**, and `./scripts/test.sh`/`./scripts/lint.sh` pass. PR #131 is open for review and not merged; PR #130's unchanged-code CI rerun is pending. No model, user notes, charge or budget change ($0 of $10).
 Acceptance:
 - [x] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
 - [x] Focused simulator suite, full app tests and full repo test/lint pass, with no model, data transfer or budget change
-
-## Done
 
 ### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
 status: Done (read-only token observation, no paid authorization) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · PR: #130 (stacked on #129, open) · refs: ADR-021/024/025, BUSINESS.md §3.3
