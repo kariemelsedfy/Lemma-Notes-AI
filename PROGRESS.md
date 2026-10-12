@@ -29,24 +29,31 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / `7b3eb9f` | `chore/M0-11-device-baseline` / build and handoff only | Tested `43cc3e7` on mini 6: core steps pass; handwriting sample works but looks unlike source and is clipped (M3-27) |
 | M4-14 Local arithmetic subset | Devin / `e6ca178` | `feat/M4-14-local-arithmetic` / `Intelligence` evaluator and tests | Package tests pass; no shipping Ask change, no worker |
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
+| M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
+| M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
+| M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; no paid traffic |
+| M4-08A3b2b Price evidence | Devin / b2b1 done | Branch TBD / exact on-demand SKU parsing and fake tests | 55 local proxy tests; token-only observation cannot authorize cost |
+| M4-08A3b2b2 Pricing SDK source | Devin / b2b2a done | Branch TBD / paginated public price lookup and fake SDK tests | 60 local proxy tests; model mapping/image/other charges still block paid admission |
 | M4-08A3b2b2b Scoped Pricing read | Devin / read-only check complete | `feat/M4-08A3b2b2b-scoped-pricing-read` / explicit identity and public token read | Limited STS identity verified; SDK returned two public token rates, unknown charges still block paid traffic; PR #130 open |
 
 ---
 
 ## In progress
 
-### M4-REC131 — Reconcile #131 Ask-test fix with updated Pricing parent
-status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC131-await-updated-parent · base: d2830c3 · refs: PR #131, M4-14C, AGENTS.md §1–2 · estimate: S
-Note: #130's parent was repaired by a normal merge. #131 now conflicts only in PROGRESS/SESSIONS; retain the bounded terminal-state test wait and explicit post-cancellation late-ink interval. Do not change production Ask behavior or weaken app assertions.
-Acceptance:
-- [ ] Preserve all five focused Ask tests and the 190 full simulator cases against the updated parent
-- [ ] Full repo test/lint and Mac proxy release build pass; normal fast-forward PR push restores mergeability
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-REC131 — Reconcile #131 Ask-test fix with updated Pricing parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC131-await-updated-parent · refs: PR #131, M4-14C, AGENTS.md §1–2
+Note: Merged updated #130 into an isolated #131 branch. Only PROGRESS/SESSIONS conflicted; the bounded terminal-state wait, cancellation late-ink interval and every assertion remain unchanged. Five focused and all 190 simulator app tests passed on iOS 26.5, as did full repo tests/build/lint and Mac proxy release build. No production Ask edit, personal content, AWS request or charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved five focused Ask tests and 190 full simulator cases against updated parent
+- [x] Full repo test/lint and Mac proxy release build pass; no force-push or agent PR merge
 
 ### M4-14C — Await local Ask terminal state in app tests
 status: Done (test-only, review pending) · implemented: Devin · 2026-10-12 · branch: test/M4-14C-await-local-ask-terminal-state · base: 9992503 · PR: #131 (stacked on #130, open) · refs: PROGRESS.md M4-14B, AI_PIPELINE.md §8, AGENTS.md §2
@@ -55,6 +62,13 @@ Acceptance:
 - [x] Bounded terminal-state wait replaces the arbitrary completion sleep; a hung pipeline still fails, and cancellation keeps its late-ink check
 - [x] Focused simulator suite, full app tests and full repo test/lint pass, with no model, data transfer or budget change
 
+### M4-REC130 — Reconcile #130 scoped Pricing with updated pagination parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC130-reconcile-upstream · refs: PR #130, M4-08A3b2b2b, ADR-021/024/025
+Note: Merged updated #129 into an isolated #130 branch; only task/session histories conflicted. Login-only temporary identity, exact STS account/user before bounded Pricing and all wrong/root/role/endpoint fake denials are unchanged. Sixty-four proxy tests, full repo tests/build/lint and Mac release build pass. No new AWS request, handwritten content, model call or charge occurred ($0 of $10); token observations remain non-authorizing. Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved wrong/root/role/endpoint refusals before Pricing with no model send
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
 ### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
 status: Done (read-only token observation, no paid authorization) · implemented: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · PR: #130 (stacked on #129, open) · refs: ADR-021/024/025, BUSINESS.md §3.3
 Note: The renewed `margin-pilot` session passed an explicit-profile STS check for the expected account and exact IAM `MarginPilot` user before any Pricing SDK call. The Mac-only command then read complete bounded public SDK pages through the pinned login-only temporary resolver and parsed exactly two Nova Lite/us-east-1 classic on-demand token rates: **60,000 input and 240,000 output micro-USD per million tokens** (2026-10-12 UTC). The command emitted no identity, token, account identifier or row JSON. These are public token *observations*, not exact `amazon.nova-lite-v1:0` SKU binding or any image/other-cost maximum. The request used no handwriting, Bedrock invocation, hosting or new charge ($0 of $10); paid admission remains closed. 64 proxy tests, full repo tests/build/lint and Mac release build pass. PR #130 is open for review, not merged.
@@ -62,25 +76,67 @@ Acceptance:
 - [x] Login-only temporary identity is frozen, fixed HTTPS Region/signing endpoints and exact STS account/user precede Pricing; root/ambient and fake failures make zero pricing reads
 - [x] Actual bounded Pricing SDK read parsed only fresh token observations; no Runtime model ID, image/other-cost bound or paid transport was enabled
 
+### M4-REC129 — Reconcile #129 pagination with updated catalog parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC129-reconcile-upstream · refs: PR #129, M4-08A3b2b2a, ADR-021/024
+Note: Merged updated #128 into an isolated #129 branch; only task/session history conflicted. The fake Pricing reader still requires complete ≤3-page responses, exact filters and bounded rows; returned token rates cannot authorize image/other charges or a model call. Sixty proxy tests, full repo tests/build/lint and Mac release build pass. No live Pricing read, handwriting or provider charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved fake pagination and refusal tests and reconciled only parent history
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
 ### M4-08A3b2b2a — Read bounded Price List pages through an injected SDK client
 status: Done (typed fake-client source only) · 2026-10-11 · base: d152a73 · branch: feat/M4-08A3b2b2a-pricing-sdk-pagination · refs: ADR-021/024, BUSINESS.md §3.3
 Note: The Mac proxy alone now imports `AWSPricing` from the already-approved pinned Swift SDK. An injected reader verifies a configured us-east-1 pricing API Region and makes separate content-free `GetProducts` requests filtered by service/model **label**/product Region/On-demand Inference/input-or-output tokens (no nonexistent default-standard `service_tier` filter). It requires an `aws_v1` response, bounded rows/strings, complete ≤3-page pagination per token type and no missing/empty/replayed token; only then does the previously tested `CatalogTokenRates` parser inspect exactly two rows. Five fake-client tests cover exact filters, missing/extra/ambiguous pages, cancellation, SDK error and wrong Region. A hand-written success fixture initially lacked its outer JSON brace; the fixture was corrected without relaxing production validation. **60 proxy tests**, full repo test/build/lint and Mac release build pass. No SDK client or ambient credential is constructed in tests; no account price request, model call, user data transfer or provider/hosting charge occurred ($0 of $10). B2b2b must verify limited temporary credentials and read actual catalog pages; Q18 exact Runtime model binding and image/non-model charge bounds still block `PilotPriceEvidence` and paid sends.
 Acceptance: [x] Mac-only typed SDK filters with fake paginated success/denial/cancellation; [x] incomplete/ambiguous rows cannot authorize price or send; [x] full local gates pass, real read remains b2b2b.
+
+### M4-REC128 — Reconcile #128 token catalog with updated metadata parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC128-reconcile-upstream · refs: PR #128, M4-08A3b2b1, ADR-021/024
+Note: Merged updated #127 into an isolated #128 branch; only task/session histories conflicted. The strict catalog parser still yields token-only observations with no Runtime model ID or image/other-charge maximum and cannot authorize a send. Fifty-five proxy tests, full repo tests/build/lint and Mac release build pass. No live SDK read, user ink, model call or charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved catalog refusal tests and non-authorizing rates
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
 
 ### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
 status: Done (catalog observation only) · 2026-10-11 · base: ed65385 · branch: feat/M4-08A3b2b1-price-catalog-validation · refs: ADR-021/024, BUSINESS.md §3.3
 Note: A renewed **limited** pilot CLI identity read only the current 2026-10-10 AWS Price List rows: model label `Nova Lite`, us-east-1, classic on-demand input/output units and USD rates, **no exact Runtime model ID and no `service_tier` on default-standard rows**. A pure Mac parser now requires two uniquely bound SKUs with exact label/Region/feature/usage type, USD/1K-token dimensions, one matching OnDemand term each, publication/effective date and a ≤300-second observed fetch age. Decimal conversion rounds positive USD-per-1K values **up** to integer micro-USD per million tokens; malformed, zero/overflowing, stale, duplicate, extra-charge, wrong-scope or wrong-currency rows decline. It returns `CatalogTokenRates` with **no model ID, no other-cost maximum and no conversion to `PilotPriceEvidence`**, so the existing price gate still refuses any real call or refund. Four new synthetic tests and **55 proxy tests** pass; full repo test/build/lint and Mac release build pass locally. B2b2 must supply the authenticated paginated SDK source and Q18's SKU-to-model binding plus image/other-charge bound remain open. No model request, handwriting transfer or provider/hosting charge occurred; $0 of $10 used.
 Acceptance: [x] grounded exact positive/invalid catalog rows tested without a shipping price default; [x] token-only observation cannot authorize a hold/send; [x] local tool/repo gates pass and b2b2 remains separate.
 
+### M4-REC127 — Reconcile #127 read-only observer with updated PNG parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC127-reconcile-upstream · refs: PR #127, M4-08A3b2a, ADR-021/024
+Note: Merged updated #126 into an isolated #127 repair branch; only ARCHITECTURE/PROGRESS/SESSIONS conflicted. The read-only observer still refuses missing/unknown retention and cannot populate model-specific `allowedModes`. Fifty-one proxy tests, full repo tests/build/lint and Mac release build pass. No Runtime request, user ink, account mutation or charge occurred ($0 of $10). Normal PR push and CI remain to confirm.
+Acceptance:
+- [x] Preserved all read-only tests while resolving only parent documentation conflicts
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
 ### M4-08A3b2a — Observe Bedrock account/model metadata without authorizing traffic
 status: Done (typed observation only) · 2026-10-11 · base: 73a040b · branch: feat/M4-08A3b2a-readonly-bedrock-evidence · refs: ADR-021/024, AI_PIPELINE.md §5, BUSINESS.md §3.3
 Note: The Mac tool alone now imports the already approved SDK `AWSBedrock` product and type-checks a read-only retention/availability client protocol; all tests inject actors and construct **no SDK client or AWS request**. The observer first checks its configured `us-east-1` Region, then requires exact Nova Lite ID, account mode `none` and available authorization/entitlement/agreement/Region status; unknown, missing, wrong, cancelled and expired observations decline. A failing test caught Swift interpreting `retention.mode == .none` as **Optional.none (nil)** rather than `DataRetentionMode.none`; the explicit enum case fixes it. The result is only `ReadOnlyBedrockObservation`, **not** model-specific `RetentionEvidence.allowedModes`; default admission still makes zero sends. **51 proxy tests**, full repo test/build/lint and Mac release build pass locally. Authenticated identity/endpoint binding and authoritative pricing remain b2c/b2b, actual eligibility under `none` remains A3; no model call, user content, IAM change or charge occurred ($0 of $10).
 Acceptance: [x] Mac-only typed SDK metadata and injected fake tests, no AWS calls; [x] none-mode availability never grants model-specific retention permission or a send; [x] all local gates pass, price/live binding remain blocked.
 
+### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2
+Note: Merged the updated #125 normalization parent into an isolated #126 repair branch. Only PROGRESS/SESSIONS conflicted; all PNG adversarial assertions, the normalizer and no-call SDK seam remain unchanged. Forty-five proxy tests, full repo test/build/lint and Mac release build pass. No user image, provider call, paid charge or iPad build occurred ($0 of $10). Normal PR push and hosted CI still need confirmation.
+Acceptance:
+- [x] Preserved all adversarial PNG tests and resolved only parent documentation conflicts
+- [x] Proxy and full repo test/lint gates and Mac release build pass, without force-push or agent PR merge
+
 ### M4-08A3b1b — Extend normalized PNG adversarial coverage
 status: Done (test-only Mac tool) · 2026-10-09 · base: ff57f73 · branch: feat/M4-08A3b1b-png-adversarial · refs: AI_PIPELINE.md §1/§5, ADR-021
 Note: Three new synthetic tests on the normalized fake-dispatch path deny CRC-correct `tEXt` metadata, truncated frames, over-limit crop bytes/pixels, and `eXIf` tampering after an intact dimension-only EXIF is accepted. All failures make zero fake sends. Existing A1/b1 tests and shipping code were not changed; **45 proxy tests**, full repo test/build and lint pass. The first full run hit macOS `EPERM` at `GlyphBankStore.swift:30` when creating protected atomic test files in the system temporary directory; a temp-directory write-scope grant did not help. Setting `TMPDIR` **only for the test process** to the checkout's existing `Packages/Handwriting/.build` made the isolated and unchanged full `./scripts/test.sh` run pass. No file-protection setting or test was weakened. Physical iPad PNG compatibility and Nova Lite eligibility under `none` remain unverified; no paid call or ink transfer occurred.
 Acceptance: [x] All targeted denials make zero fake sends; [x] prior suites and full repo gates pass with the documented test environment; [x] lint clean.
+
+### M4-REC125 — Reconcile #125 PNG normalization with updated SDK parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC125-reconcile-upstream · refs: PR #125, M4-08A3b1, AGENTS.md §1–2
+Note: Merged the updated #124 SDK parent into a separate #125 repair branch, preserving the PNG decoder, its 42 fake-admission tests, and both task/session histories. Only task/session docs conflicted; no PNG safety, SDK dependency, or provider transport was weakened. Proxy and full repo test/build/lint gates and Mac release build pass. No model call, user content or charge occurred ($0 of $10). Push to #125 and hosted CI remain to confirm.
+Acceptance:
+- [x] Reconciled updated parent without weakening PNG safety or modifying provider transport
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force push or agent PR merge
+
+### M4-REC124 — Reconcile #124 with its updated admission parent
+status: Done (conflict reconciliation only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC124-reconcile-upstream · refs: PR #124, ADR-021/024, AGENTS.md §1–2
+Note: The parent was force-updated with ledger/fake-admission commits after #124 forked. Merged the current parent into a new repair branch without rewriting history; resolved six conflicts by retaining both default-deny admission/rate/ledger code and the Mac-only pinned SDK/no-call seam. The duplicate, older CONTEXT status paragraph was dropped with explicit human approval; both histories remain in PROGRESS/SESSIONS. The merged tree passes 40 proxy tests, full repo test/build/lint and a Mac release build. No model request, ink transfer, permission change or provider cost occurred ($0 of $10). Normal fast-forward push to #124 and hosted CI still need confirmation.
+Acceptance:
+- [x] Resolved exact parent/head conflicts without dropping ledger/admission tests, weakening security, or changing iPad dependencies
+- [x] Full repo test/lint and Mac release build pass; no force push or agent PR merge
 
 ### M4-08A3b1 — Fully decode and normalize bounded selected PNGs offline
 status: Done (Mac tool only) · 2026-10-09 · base: 760d5bd · branch: feat/M4-08A3b1-png-normalization · refs: ADR-021/024, AI_PIPELINE.md §1/§5
@@ -1909,6 +1965,23 @@ Acceptance:
 ---
 
 ## Ready — M4: Real intelligence
+
+### M4-REC125 — Recheck #125 PNG normalization parent
+status: Ready · depends: M4-REC124 · refs: PR #125 · Acceptance: [ ] Preserve decoding and verify full gates after a normal repair push.
+### M4-REC126 — Recheck #126 PNG adversarial parent
+status: Ready · depends: M4-REC125 · refs: PR #126 · Acceptance: [ ] Preserve denial tests and verify full gates.
+### M4-REC127 — Recheck #127 metadata parent
+status: Ready · depends: M4-REC126 · refs: PR #127 · Acceptance: [ ] Keep retention non-authorizing and verify full gates.
+### M4-REC128 — Recheck #128 catalog parent
+status: Ready · depends: M4-REC127 · refs: PR #128 · Acceptance: [ ] Keep token prices non-authorizing and verify full gates.
+### M4-REC129 — Recheck #129 pagination parent
+status: Ready · depends: M4-REC128 · refs: PR #129 · Acceptance: [ ] Preserve bounded complete pages and verify full gates.
+### M4-REC130 — Recheck #130 scoped Pricing parent
+status: Ready · depends: M4-REC129 · refs: PR #130 · Acceptance: [ ] Preserve login-only read and verify full gates.
+### M4-REC131 — Recheck #131 independent Ask-test branch
+status: Ready · depends: M4-REC130 · refs: PR #131 · Acceptance: [ ] Preserve terminal-state synchronization; verify full gates.
+### M4-REC132 — Recheck #132 independent metadata branch
+status: Ready · depends: M4-REC130/M4-REC131 · refs: PR #132 · Acceptance: [ ] Keep IDs distinct and paid traffic denied; verify full gates.
 
 **Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
 (ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
