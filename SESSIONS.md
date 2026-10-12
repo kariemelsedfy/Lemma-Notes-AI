@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-07 · Devin · M4-14 — arithmetic is not a license to guess
+
+The mini 6 cannot run Apple Intelligence, but a strictly supported local arithmetic read is a useful independent path. Tests were written first and failed because the evaluator did not exist. The new pure package API returns either a validator-approved LaTeX spec or an explicit unsupported result; **nothing here changes the shipping Ask**, which still returns the demo `4`. M4-14B must connect this to offline/Private Mode with localized decline copy, not treat it as a general math solver. No notebook ink, network traffic, model call or charge was involved.
+
+The surprising trap was Foundation `NSDecimalDivide`: it reports `noError` for `1/3` while returning a 38-digit approximation. The evaluator checks that the quotient multiplies back exactly and refuses output longer than six decimal places, so it declines rather than rendering a believable false answer. Arithmetic stays bounded to 80 characters, small decimal operands and a limited parentheses depth; unsupported OCR notation and low confidence fail closed. Tests include 21×21 integer pairs, signs, decimal precedence, division by zero, repeating fractions and invalid syntax. The full `Intelligence` package suite passed 190 tests, `./scripts/test.sh` and `./scripts/lint.sh` passed, and the separate iOS 26.1 simulator app suite passed 180 tests. Physical handwriting recognition and integration have not been verified. Do not broaden the grammar to arbitrary LaTeX without a new parser/evaluation task and evidence.
+
 ## 2026-10-07 · Devin · M4-13 — the zero-cost tier mix excluded the beta iPad
 
 The user explicitly wants real answers for the connected iPad mini 6 and expects other users to lack Apple Intelligence hardware. They approved AWS Bedrock Nova Lite as the first paid *candidate*, with a **$10 total** provider-plus-hosting ceiling. The currently installed `edu.bowdoin.margin` and its notebooks remain untouched. ADR-021 reverses ADR-020's hardware assumption, not its regional availability rule; ADR-019's eventual iPadOS 27 target still needs a separate device-impact decision. No AWS service was configured, no model call was made, and no bill was incurred. The user has an AWS account, but this clone has no `aws` CLI or verified scoped access yet; a model allowing retention mode `none` has not been confirmed for their account/region.
