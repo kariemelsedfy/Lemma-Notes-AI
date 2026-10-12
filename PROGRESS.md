@@ -31,8 +31,9 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-14B Interim Ask path | Devin / `9bc2719` | `feat/M4-14B-local-ask` / named app Ask and tests only | `687d26e` device-confirmed: distinct answers, unsupported decline, Keep/erase/undo/reopen/export pass |
 | M4-08A3b Authenticated evidence and PNG decoding | Unclaimed / after A3a | Branch TBD / Mac SDK adapter, bounded image and fake tests | Fake admission composition and SDK no-call seam pass; exact `none` eligibility, trusted evidence, image/price bounds and invocation permission still block paid traffic |
 | M4-08A3b1b PNG adversarial tests | Devin / reviewed #126 | `test/M4-08A3b1b-png-adversarial` / normalized-path denial tests | 45 local proxy tests and full gates pass with process-local TMPDIR; no paid traffic |
-| M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; #124 CI passed and #125/#126 repair checks pending |
-| M4-08A3b2b Price evidence | Unclaimed / after b2a | Branch TBD / exact on-demand SKU parsing and fake tests | b2a has 51 local proxy tests; model availability does not prove `none` eligibility; no paid traffic |
+| M4-08A3b2 Read-only evidence | Devin / b2a done | Branch TBD / Mac-scoped price and retention, fake tests | Account/model availability observed, not model-specific `none` permission; no paid traffic |
+| M4-08A3b2b Price evidence | Devin / b2b1 done | Branch TBD / exact on-demand SKU parsing and fake tests | 55 local proxy tests; token-only observation cannot authorize cost |
+| M4-08A3b2b2 Pricing SDK source | Unclaimed / after b2b1 | Branch TBD / paginated scoped price lookup and fake SDK tests | SKU/model mapping and image/other charges still block paid admission |
 
 ---
 
@@ -45,6 +46,18 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-REC128 — Reconcile #128 token catalog with updated metadata parent
+status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC128-reconcile-upstream · refs: PR #128, M4-08A3b2b1, ADR-021/024
+Note: Merged updated #127 into an isolated #128 branch; only task/session histories conflicted. The strict catalog parser still yields token-only observations with no Runtime model ID or image/other-charge maximum and cannot authorize a send. Fifty-five proxy tests, full repo tests/build/lint and Mac release build pass. No live SDK read, user ink, model call or charge occurred ($0 of $10). Normal PR push and hosted CI remain to confirm.
+Acceptance:
+- [x] Preserved catalog refusal tests and non-authorizing rates
+- [x] Proxy and full repo tests/lint and Mac release build pass; no force-push or agent PR merge
+
+### M4-08A3b2b1 — Validate exact catalog token rates but never authorize unknown charges
+status: Done (catalog observation only) · 2026-10-11 · base: ed65385 · branch: feat/M4-08A3b2b1-price-catalog-validation · refs: ADR-021/024, BUSINESS.md §3.3
+Note: A renewed **limited** pilot CLI identity read only the current 2026-10-10 AWS Price List rows: model label `Nova Lite`, us-east-1, classic on-demand input/output units and USD rates, **no exact Runtime model ID and no `service_tier` on default-standard rows**. A pure Mac parser now requires two uniquely bound SKUs with exact label/Region/feature/usage type, USD/1K-token dimensions, one matching OnDemand term each, publication/effective date and a ≤300-second observed fetch age. Decimal conversion rounds positive USD-per-1K values **up** to integer micro-USD per million tokens; malformed, zero/overflowing, stale, duplicate, extra-charge, wrong-scope or wrong-currency rows decline. It returns `CatalogTokenRates` with **no model ID, no other-cost maximum and no conversion to `PilotPriceEvidence`**, so the existing price gate still refuses any real call or refund. Four new synthetic tests and **55 proxy tests** pass; full repo test/build/lint and Mac release build pass locally. B2b2 must supply the authenticated paginated SDK source and Q18's SKU-to-model binding plus image/other-charge bound remain open. No model request, handwriting transfer or provider/hosting charge occurred; $0 of $10 used.
+Acceptance: [x] grounded exact positive/invalid catalog rows tested without a shipping price default; [x] token-only observation cannot authorize a hold/send; [x] local tool/repo gates pass and b2b2 remains separate.
 
 ### M4-REC127 — Reconcile #127 read-only observer with updated PNG parent
 status: Done (mergeability repair only) · implemented: Devin · 2026-10-12 · branch: fix/M4-REC127-reconcile-upstream · refs: PR #127, M4-08A3b2a, ADR-021/024
@@ -2247,10 +2260,16 @@ Acceptance:
 - [ ] Offline-injected tests cover failure/cancellation/unknown states without content or an SDK invoke; no paid call from this task
 
 ### M4-08A3b2b — Bind exact Nova Lite on-demand catalog prices with unknown-charge denial
-status: Ready after b2a; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+status: Ready (split b2b1/b2b2 after b2a); live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
 Acceptance:
-- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; any unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
+- [ ] Scoped read-only price source verifies exact product/Region/tier/currency/unit, freshness and unambiguous input/output SKUs; unknown image or other maximum leaves `PilotPriceEvidence.otherMaximumMicros` absent
 - [ ] Injected fake SDK clients cover malformed/duplicate/stale SKU, zero-price guesses and cancellation with zero model sends
+
+### M4-08A3b2b2 — Obtain paginated authoritative price evidence with a scoped SDK client
+status: Ready after b2b1; live paid invocation remains blocked under A3 · refs: ADR-021/024, BUSINESS.md §3.3 · estimate: M
+Acceptance:
+- [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content goes into pricing requests or logs
+- [ ] Any unverified image/non-model overhead keeps `otherMaximumMicros` absent and paid admission closed; fake SDK error/cancellation/ambiguity tests emit zero sends
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
