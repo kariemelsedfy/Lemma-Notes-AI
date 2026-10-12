@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
+status: In progress · claimed: Devin · 2026-10-12 · branch: feat/M4-08A3b2b2b-scoped-pricing-read · refs: ADR-021/024/025, BUSINESS.md §3.3 · estimate: M
+Note: The owner reports the limited browser login has been renewed; verify STS identity before the bounded SDK query. Prior offline implementation and 64 proxy tests pass; live Pricing output is not yet observed. No paid call is authorized.
+Acceptance:
+- [x] Offline limited-login and exact account/user/endpoint denial tests before price reads; no ambient/root fallback in the implemented Mac command
+- [ ] Verify limited identity, then read and inspect actual paginated SDK token output; no guessed model ID, image/other-cost bound or paid transport
 
 ## Review
 
@@ -2219,13 +2224,6 @@ status: Ready (split b2b2a/b after b2b1); paid invocation still blocked under A3
 Acceptance:
 - [ ] Mac-only `AWSPricing` source uses limited temporary credentials, exact service/Region filters and complete pagination with a bounded age; no user content enters requests or logs
 - [ ] Unverified image/non-model overhead leaves `otherMaximumMicros` absent; fake SDK errors/cancellation/ambiguous pages emit zero sends
-
-### M4-08A3b2b2b — Authenticate the limited Pricing SDK session and read public rates
-status: Ready (awaiting renewed limited browser login; claimed and released by Devin 2026-10-12) · branch: feat/M4-08A3b2b2b-scoped-pricing-read · refs: ADR-021/024/025, BUSINESS.md §3.3 · estimate: M
-Note: The Mac-only explicit login resolver, frozen temporary identity, exact pilot STS/account/user check and fixed Pricing endpoint are implemented and mock-tested; **64 proxy tests**, full repo test/build/lint and Mac release build pass. A scoped CLI STS check on 2026-10-12 failed with an expired `margin-pilot` session; owner was asked to renew `aws login --profile margin-pilot`. The actual Pricing SDK read and fresh rate read-back remain **unverified**. Resume by verifying the renewed limited identity before the command, supplying the expected account locally without exposing it in logs, then read only the bounded public catalog. Never claim token rows bound image/other charges or enable paid traffic; $0 of $10 spent.
-Acceptance:
-- [x] Offline limited-login and exact account/user/endpoint denial tests before price reads; no ambient/root fallback in the implemented Mac command
-- [ ] Renew and verify limited identity, then read and inspect actual paginated SDK token output; no guessed model ID, image/other-cost bound or paid transport
 
 ### M4-08A3b2c — Verify credential provenance and effective model retention before admission
 status: Blocked until b2a/b2b and independent exact-model `none` evidence under A3 · refs: ADR-021/024 · estimate: M
