@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC126 — Reconcile #126 PNG denial tests with updated normalization parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC126-reconcile-upstream · base: f3bdbef · refs: PR #126, M4-08A3b1b, AGENTS.md §1–2 · estimate: S
+Note: #125's parent was updated by a normal merge; #126 now conflicts only in PROGRESS/SESSIONS. Preserve all normalized-path adversarial denial assertions and both histories; no fake/real transport change or personal PNG transfer. Keep the resulting PR diff under ~400 lines.
+Acceptance:
+- [ ] Preserve all existing adversarial PNG tests and resolve only real parent conflicts
+- [ ] Proxy and full test/lint gates pass and #126 becomes mergeable by a normal push
 
 ## Review
 
