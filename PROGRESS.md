@@ -35,7 +35,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-REC124 — Reconcile #124 with its updated admission parent
+status: In progress · claimed: Devin · 2026-10-12 · branch: fix/M4-REC124-reconcile-upstream · base: 95a0316 · refs: PR #124, ADR-021/024, AGENTS.md §1–2 · estimate: M
+Note: The parent of #124 was force-updated after this branch forked. GitHub reports #124 as conflicting with 11 parent commits missing from its history; read-only merge analysis found conflicts in ARCHITECTURE.md, CONTEXT.md, DECISIONS.md, PROGRESS.md, SESSIONS.md and the Mac proxy Package.swift. Preserve both the parent's money/privacy gates and #124's approved pinned SDK. Do not rewrite any existing branch or merge an agent-authored PR. The repair must be a fast-forward update to #124's head only after full gates pass and the PR diff remains under ~400 lines.
+Acceptance:
+- [ ] Resolve exact parent/head conflicts without dropping ledger/admission tests, weakening security, or changing iPad dependencies
+- [ ] Full repo test/lint and Mac release build pass; #124 becomes mergeable into its original parent by normal push, never force
 
 ## Review
 
@@ -1865,6 +1870,38 @@ Acceptance:
 ---
 
 ## Ready — M4: Real intelligence
+
+### M4-REC125 — Recheck and repair #125 PNG normalization parent
+status: Ready · depends: M4-REC124 · refs: PR #125, AGENTS.md §1–2 · estimate: S
+Acceptance: [ ] Preserve reviewed PNG decoding; reconcile only actual conflicts and verify full gates before a normal push.
+
+### M4-REC126 — Recheck and repair #126 PNG adversarial parent
+status: Ready · depends: M4-REC125 · refs: PR #126, AGENTS.md §1–2 · estimate: S
+Acceptance: [ ] Preserve adversarial tests; reconcile only actual conflicts and verify full gates before a normal push.
+
+### M4-REC127 — Recheck and repair #127 metadata parent
+status: Ready · depends: M4-REC126 · refs: PR #127, ADR-021/024 · estimate: S
+Acceptance: [ ] Keep retention observation non-authorizing; reconcile only actual conflicts and verify full gates.
+
+### M4-REC128 — Recheck and repair #128 catalog parent
+status: Ready · depends: M4-REC127 · refs: PR #128, ADR-021/024 · estimate: S
+Acceptance: [ ] Keep token-only rates non-authorizing; reconcile only actual conflicts and verify full gates.
+
+### M4-REC129 — Recheck and repair #129 pagination parent
+status: Ready · depends: M4-REC128 · refs: PR #129, ADR-021/024 · estimate: S
+Acceptance: [ ] Preserve bounded complete pages; reconcile only actual conflicts and verify full gates.
+
+### M4-REC130 — Recheck and repair #130 scoped Pricing parent
+status: Ready · depends: M4-REC129 · refs: PR #130, ADR-021/024/025 · estimate: S
+Acceptance: [ ] Preserve login-only scoped read and no model route; reconcile only actual conflicts and verify full gates.
+
+### M4-REC131 — Recheck #131 independent Ask-test branch
+status: Ready · depends: M4-REC130 · refs: PR #131, AGENTS.md §2 · estimate: S
+Acceptance: [ ] Preserve terminal-state test synchronization without weakening tests; verify full gates if retargeting changes it.
+
+### M4-REC132 — Recheck #132 independent metadata branch
+status: Ready · depends: M4-REC130/M4-REC131 · refs: PR #132, ADR-026 · estimate: S
+Acceptance: [ ] Preserve separate requested/reported IDs and default-deny paid traffic; verify full gates after any rebase-free reconciliation.
 
 **Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
 (ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
