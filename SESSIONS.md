@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-13 review follow-up — ineligible devices need honest copy
+
+Independent reviewer `16210520-27D2-4326-BF7B-D91C90AA9EB5` requested changes to PR #135: the consent checklist still promised on-device AI after refusal even on a mini 6, the active T0/T2 table still described an old provider mix, and Ready/README summaries called the approved device decision pending. Corrected those active claims while keeping ADR-021's $10 total cap, no-training/retention evidence gate, and unsupported/offline decline. No production code or old test was weakened. The amended PR requires fresh checks and re-review before any merge; do not report the old-head CI result as current.
+
 ## 2026-10-13 · Devin · M4-13 — recover the reviewed decision without recovering a live model
 
 PR #110 was marked merged into its already-merged parent, so `main` still lacked the approved mini-6 provider decision after #134 activated serial, independently reviewed main merges. Replayed only #110's planning/ADR commit onto current main and preserved #134's workflow, task board and session entries rather than cherry-picking the old claim. A first full local gate hit the unchanged GlyphBank protected atomic temp-file `EPERM` despite an unrelated checkout's `TMPDIR`; the same tests passed with process-local `TMPDIR` set to this worktree's existing `Packages/Handwriting/.build`, without weakening file protection or tests. No code for a provider, physical-iPad build, handwriting upload, Runtime call, or provider/hosting charge occurred ($0 of $10). Do not start #111's recovery until this small PR has independent approval, green CI, specific owner merge confirmation and a verified merge commit on main.

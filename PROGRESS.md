@@ -51,7 +51,7 @@ Acceptance:
 
 ### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
 status: Done (decision recovered in a main-target review branch; not yet on main) · claimed: Devin · 2026-10-13 · branch: docs/M4-13-main-recovery · source: PR #110 · refs: DECISIONS.md ADR-017, ADR-019–021, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
-Note: user approved support for mini 6 users, Nova Lite on AWS Bedrock as the first paid candidate, and $10 **total** new external provider+hosting spend, not a monthly allowance. ADR-021 supersedes ADR-020 for hardware eligibility; ADR-019's iPadOS 27 1.0 target is still accepted and must be revisited before it excludes this beta hardware. Docs only: no paid call, service deployment, provider credential, app edit or new dependency. At the original decision date, limited CLI access and exact Nova Lite eligibility under retention `none` were unverified; later off-main read-only observations confirm scoped access and account mode, not exact-model eligibility or a paid send. This recovery PR only restores the reviewed planning decision.
+Note: user approved support for mini 6 users, Nova Lite on AWS Bedrock as the first paid candidate, and $10 **total** new external provider+hosting spend, not a monthly allowance. ADR-021 supersedes ADR-020 for hardware eligibility; ADR-019's iPadOS 27 1.0 target is still accepted and must be revisited before it excludes this beta hardware. Docs only: no paid call, service deployment, provider credential, app edit or new dependency. At the original decision date, limited CLI access and exact Nova Lite eligibility under retention `none` were unverified; later off-main read-only observations confirm scoped access and account mode, not exact-model eligibility or a paid send. This recovery PR only restores the reviewed planning decision. Following independent review of #135, the active consent, routing, M4 queue and README summaries now describe limited local support or an honest decline on ineligible hardware.
 | Path | What it can answer | Trade-offs and next evidence |
 |---|---|---|
 | Local deterministic arithmetic | A small explicit confident transcript grammar; no model | Zero provider cost, no network, valid in Private Mode; no prose or unsupported math; test precedences and declines (M4-14) |
@@ -1764,20 +1764,21 @@ Acceptance:
 
 ## Ready — M4: Real intelligence
 
-**Filed 2026-08-12 by Claude.** M3-10 is a quality measurement, not a gate to M4
-(ADR-018). Do not postpone real answers to await a handwriting-pivot verdict. The connected
-iPad mini (6th generation) is not Apple Intelligence-capable; Q13 and M4-13 track the route
-to real answers on that hardware without silently changing ADR-019/020.
+**Filed 2026-08-12 by Claude; updated under ADR-021.** M3-10 is a quality measurement,
+not a gate to M4 (ADR-018). The connected iPad mini 6 is not Apple Intelligence-capable;
+M4-13 approved a bounded beta provider path and local arithmetic subset without changing
+ADR-019's 1.0 target or ADR-020's regional scope. This is a decision, not a live app route.
 
 **What M4 replaces.** `CannedSpecProvider` answers every request with the same hardcoded spec,
 so the app always writes `4`. That is M2's stated exit condition, not a bug. Everything below
 the provider boundary — validation, placement, rendering, failure states — is built and tested
 against it, so M4 is genuinely about the model and not about the pipeline.
 
-**Two human decisions block the paid tier, and neither blocks starting.** Q6 (which frontier
-provider, and whether a second is worth the abstraction cost at 1.0) gates M4-08. M0-07 (the
-Developer Program, and the Small Business Program with it) gates M4-07, because PCC's zero cost
-depends on that enrolment. T0 needs neither.
+**Live traffic still has hard gates.** ADR-021 names Nova Lite as a candidate for a consented,
+authenticated mini-6 pilot, not an eligible model or a bounded image price; M4-08A must prove
+retention, authorization and the combined $10 ceiling before any paid send. Q6 remains open
+for the broader 1.0 provider choice. M0-07 and verified eligibility/cost gate M4-07's PCC path;
+T0 can run only where the framework reports it available. Unsupported local work declines.
 
 ### M4-01 — Confirm the Foundation Models API before writing a line against it
 status: Done · completed: Claude · merged: PR #101 · 2026-08-12 · refs: AI_PIPELINE.md §5, AGENTS.md §2 · estimate: S
