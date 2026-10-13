@@ -35,7 +35,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: In progress · claimed: Devin · 2026-10-13 · branch: feat/M4-14B-main-recovery · source: reviewed PR #113 (merged off-main) · depends: M4-14, M0-11 historical check · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Note: Recover the app-only local arithmetic Ask wiring and original tests onto current main; no AWS dependency, network fallback, paid call or new physical install. Preserve honest localized declines, late cancellation and separate Keep/undo/provenance behavior. User previously tested the limited route on an older device revision, not this main revision; do not claim fresh device verification.
+Acceptance:
+- [ ] Confident supported `2+3=` and `7-2=` produce distinct validated suggestions; unsupported/unclear reads create no ink or canned `4`
+- [ ] App simulator tests and full gates preserve cancellation, navigation, Keep, erase, undo and export boundaries
+- [ ] Main-target PR is independently reviewed, green and small; physical iPad handoff only for a new behavior requiring user testing
 
 ## Review
 
@@ -2065,14 +2071,6 @@ Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
 - [ ] A fresh build installs over `edu.bowdoin.margin` and the physical iPad result is recorded with SHA, OS and consent/offline failure behavior
-
-### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: Ready · needs-device-verification · depends: M4-14, M0-11 for hardware check · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: app Ask composition, localized decline copy and app-target tests; no changes to the pure evaluator or AWS proxy. This is an interim supported-subset flow, not a claim that a real AI model has reached the mini.
-Acceptance:
-- [ ] A selection read confidently as `2+3=` and `7-2=` produces their respective validator-approved suggestions, never a canned `4` for unrelated/unsupported input
-- [ ] Low-confidence, unrecognized and out-of-grammar reads explain the limited offline path with localized recoverable copy, with no generated ink; cancellation/page changes still suppress late suggestions
-- [ ] Automated Ask-path tests plus a fresh iPad mini build/check verify Keep, erase, undo and save/reopen without uninstalling notebooks
 
 ### M4-15 — Measure the real mini-6 answer path before expanding
 status: Blocked · depends: M4-08C, M0-11, explicit consent and verified remaining spend under ADR-021 · refs: AI_PIPELINE.md §9, AGENTS.md §8 · estimate: M
