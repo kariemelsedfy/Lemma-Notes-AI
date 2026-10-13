@@ -11,6 +11,14 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-14 review follow-up — refuse Unicode digit lookalikes
+
+Independent reviewer `reviewer-PR136-20261013-1c7b61f4` found that Swift `Character` ordering accepted keycap `1️⃣` as a digit and Foundation parsed its leading `1`, yielding a validated `3` for `1️⃣+2=` even though the grammar promised ASCII only. A focused failing test reproduced the answer before the fix; the parser now rejects non-ASCII bytes and overlong input before constructing its character array. Added other digit lookalikes and pinned the existing combined unary/parentheses nesting bound in tests and docs, without broadening the grammar. The shipping Ask remains unwired and no provider, iPad build or cost was involved. Full repo gates and fresh independent review/CI are required again for this amended PR.
+
+## 2026-10-13 · Devin · M4-14 — recover the pure evaluator, not an app answer route
+
+After verifying #135's merge commit on main, replayed only the reviewed #111 evaluator and tests onto a new main-based branch. The old task/session history conflicted with #134/#135 process records; reconciled them without bringing back the former stacked base. The evaluator accepts a small high-confidence arithmetic grammar, checks exact decimal division and output bounds, and returns a `ValidatedSpec` or explicit unsupported result. The iPad shipping Ask still uses the canned provider; no app wiring, handwriting transfer, AWS request or charge changed ($0 of $10). Run the package and full gates with this worktree's existing `.build` as process-local `TMPDIR` before claiming verification, then seek independent review and exact-head CI; do not start another recovery slice until this one lands on main.
+
 ## 2026-10-13 · Devin · M4-13 second review — distinguish old SDK evidence from current gates
 
 The same independent reviewer (`16210520-27D2-4326-BF7B-D91C90AA9EB5`) confirmed the first #135 fixes but found the active T1 table still treated an iOS 26.5 probe as evidence about the now-installed iOS 27 SDK, and the routing introduction implied Apple PCC needs third-party consent. Clarified that the PCC surface/entitlement/cost remain unverified, that third-party consent specifically guards the external provider, and that Q13's beta route is resolved while the 1.0 iPadOS-27 device-impact decision is separate. No implementation, model request, user content, or charge changed. The amended PR again needs fresh CI and independent re-review.
@@ -30,6 +38,12 @@ An independent read-only agent (session `b8b5d62b`) requested changes to PR #134
 ## 2026-10-13 · Devin · M0-12 — a merged PR can still miss main
 
 The owner merged PRs #110–#132 into feature-parent branches, but GitHub main remained at #109; each PR's MERGED label alone concealed that the app and proxy work never reached main. The owner chose independent **agent** review before future agent merges, not author self-review. This policy requires a written non-author verdict, green current-head checks, explicit owner confirmation for each merge, a direct main base, and verification that main contains the merge commit before starting another PR. If a separate reviewer cannot be identified or post a verifiable review, stop rather than treating the author's own review as independent. This PR is only a policy proposal: its author cannot merge it under the old rule, and it does not bring the earlier work to main or justify another iPad build.
+
+## 2026-10-07 · Devin · M4-14 — arithmetic is not a license to guess
+
+The mini 6 cannot run Apple Intelligence, but a strictly supported local arithmetic read is a useful independent path. Tests were written first and failed because the evaluator did not exist. The new pure package API returns either a validator-approved LaTeX spec or an explicit unsupported result; **nothing here changes the shipping Ask**, which still returns the demo `4`. M4-14B must connect this to offline/Private Mode with localized decline copy, not treat it as a general math solver. No notebook ink, network traffic, model call or charge was involved.
+
+The surprising trap was Foundation `NSDecimalDivide`: it reports `noError` for `1/3` while returning a 38-digit approximation. The evaluator checks that the quotient multiplies back exactly and refuses output longer than six decimal places, so it declines rather than rendering a believable false answer. Arithmetic stays bounded to 80 characters, small decimal operands and a limited parentheses depth; unsupported OCR notation and low confidence fail closed. Tests include 21×21 integer pairs, signs, decimal precedence, division by zero, repeating fractions and invalid syntax. The full `Intelligence` package suite passed 190 tests, `./scripts/test.sh` and `./scripts/lint.sh` passed, and the separate iOS 26.1 simulator app suite passed 180 tests. Physical handwriting recognition and integration have not been verified. Do not broaden the grammar to arbitrary LaTeX without a new parser/evaluation task and evidence.
 
 ## 2026-10-07 · Devin · M4-13 — the zero-cost tier mix excluded the beta iPad
 
