@@ -35,7 +35,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M3-27 — Handwriting sample clips its line and exposes a raw Done key
+status: In progress · claimed: Devin · 2026-10-13 · branch: fix/M3-27-main-recovery · source: reviewed PR #114 (merged off-main) · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
+Note: Recover the reviewed preview fit/nib-inset and localized Done label onto current main; no glyph-bank or synthesizer changes. The owner confirmed the preview behavior on an older mini revision, not this main SHA. Keep the subjective likeness problem separate and do not build, install, or request another device test for unchanged behavior.
+Acceptance:
+- [ ] Long/short stroke and pen-width tests keep visible ink inside preview bounds without altering stored strokes
+- [ ] Done is localized and synthetic PNG export retains margins, with no private screenshot/glyph samples committed
+- [ ] Focused simulator/full gates and independent review pass; document the dated mini result without claiming this recovery SHA was installed
 
 ## Review
 
@@ -1195,14 +1201,6 @@ The screen working is not a blind-panel result (M3-10) or evidence of convincing
 M3-08C's variation already reaches sample selection, spacing and slant, but the current
 one-pass bank has few alternatives to sample; M3-19 is the larger quality lever.
 Neither this finding nor the panel delays the real-AI path (ADR-018).
-
-### M3-27 — Handwriting sample clips its line and exposes a raw Done key
-status: Ready · needs-device-verification · found: human Checkpoint A, `43cc3e7`, iPad mini 6 / iPadOS 26.6 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
-Note: the user's screenshot shows the generated sentence cut off at both horizontal edges and a `sample.done` button label. `SampleInkView` maps point-only `InkLineGrouping.bounds` directly to x=0 and the full view width, leaving no margin for the drawn nib; `Localizable.strings` lacks `sample.done`. This is a preview/UI defect, **not** an explanation for why the generated glyph shapes look unlike the author's line. Do not alter the bank or synthesis jitter to hide it; M3-19 and a later blind measurement own style quality. Keep the bank on-device and do not commit the screenshot or glyph samples.
-Acceptance:
-- [ ] A regression test exercises long strokes and nonzero nib width at both preview edges; the entire line is visible on an iPad mini without changing intended ink height/pen width
-- [ ] Done uses localized copy, and PNG sharing remains uncropped when tested
-- [ ] Fresh physical-device look confirms the preview no longer clips; the user's subjective similarity judgement is recorded separately
 
 ### M3-00 — Typeset fallback style
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
