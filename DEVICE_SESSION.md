@@ -42,6 +42,14 @@ A free Apple ID is enough for everything in this list except item 4. It gives 7-
 provisioning: the build stops launching after a week and you re-run it. TestFlight and
 iCloud need the paid programme, which is M0-07.
 
+A signed app may install successfully yet fail to **launch** with iPadOS Security saying its
+developer profile has not been explicitly trusted. First verify the built artifact's signature
+and bundle ID locally; ask the human to check iPad Settings → General → VPN & Device Management
+for the Developer App profile and trust it there if offered. Do not uninstall, change the bundle
+ID, or weaken signing to bypass this. An install without a successful launch is not a device
+handoff. If the branch changes before a later human handoff, regenerate and build again with a
+new DerivedData directory per the rule above.
+
 If signing fails with a bundle-ID conflict, `edu.bowdoin.margin` is registered to someone
 else — free provisioning needs a globally unique ID. Override it:
 
