@@ -35,7 +35,13 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-11 — Recover the data-preserving iPad baseline record on main
+status: In progress (historical handoff recovery only) · claimed: Devin · 2026-10-13 · branch: chore/M0-11-main-recovery · source: reviewed PR #112 · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+Note: PR #112 documented the already completed 2026-10-07 mini-6 build and human Checkpoint A, but merged into an off-main parent. Restore its dated evidence without claiming this main revision was installed; do not build, uninstall, upload a glyph bank or request another physical test. Original #112 used M0-12 for actor-warning follow-up, but main now uses that ID for the active PR workflow; track warnings separately without duplicating task IDs.
+Acceptance:
+- [ ] Keep exact historical build SHA, iPadOS, bundle ID and owner-reported test outcome distinct from current main
+- [ ] Record preview clipping/localization separately from subjective handwriting likeness and preserve private bank/screenshot boundaries
+- [ ] Preserve main review policy and task IDs, run gates, and open a small docs-only main PR
 
 ## Review
 
@@ -237,14 +243,6 @@ _(empty)_
 ---
 
 ## Ready — M0: Foundations
-
-### M0-11 — Install a fresh baseline on the existing iPad without removing its data
-status: Blocked · owner: Devin after human signing Team ID confirmation · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
-Note: the connected iPad mini (6th generation), iPadOS 26.6, is paired, Developer Mode is on, and the developer disk image is now mounted. Margin is installed as `edu.bowdoin.margin`; `TUIST_DEVELOPMENT_TEAM` is unset in the new clone. Checkpoint A tests the existing canned `4`, not real AI. Reopen once the matching signing team is provided; do not uninstall or change the app's bundle ID.
-Acceptance:
-- [ ] Regenerate with the intended signing and make a new DerivedData directory for the exact revision
-- [ ] Build, install over the existing app, launch, and open the regenerated workspace on the connected iPad
-- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
 
 ### M0-04 — Module dependency rule enforcement
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S
