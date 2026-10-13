@@ -40,6 +40,10 @@ private struct ArithmeticParser {
     private let limit = Decimal(1_000_000)
 
     init(_ input: String) {
+        guard input.utf8.count <= 80, input.utf8.allSatisfy({ $0 < 128 }) else {
+            characters = []
+            return
+        }
         characters = Array(input)
     }
 

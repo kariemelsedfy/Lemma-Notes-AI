@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-14 review follow-up — refuse Unicode digit lookalikes
+
+Independent reviewer `reviewer-PR136-20261013-1c7b61f4` found that Swift `Character` ordering accepted keycap `1️⃣` as a digit and Foundation parsed its leading `1`, yielding a validated `3` for `1️⃣+2=` even though the grammar promised ASCII only. A focused failing test reproduced the answer before the fix; the parser now rejects non-ASCII bytes and overlong input before constructing its character array. Added other digit lookalikes and pinned the existing combined unary/parentheses nesting bound in tests and docs, without broadening the grammar. The shipping Ask remains unwired and no provider, iPad build or cost was involved. Full repo gates and fresh independent review/CI are required again for this amended PR.
+
 ## 2026-10-13 · Devin · M4-14 — recover the pure evaluator, not an app answer route
 
 After verifying #135's merge commit on main, replayed only the reviewed #111 evaluator and tests onto a new main-based branch. The old task/session history conflicted with #134/#135 process records; reconciled them without bringing back the former stacked base. The evaluator accepts a small high-confidence arithmetic grammar, checks exact decimal division and output bounds, and returns a `ValidatedSpec` or explicit unsupported result. The iPad shipping Ask still uses the canned provider; no app wiring, handwriting transfer, AWS request or charge changed ($0 of $10). Run the package and full gates with this worktree's existing `.build` as process-local `TMPDIR` before claiming verification, then seek independent review and exact-head CI; do not start another recovery slice until this one lands on main.

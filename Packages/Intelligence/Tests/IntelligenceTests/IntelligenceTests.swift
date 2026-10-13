@@ -30,6 +30,10 @@ final class LocalArithmeticTests: XCTestCase {
         XCTAssertEqual(try answer("(2+3)*4="), "20")
         XCTAssertEqual(try answer("8/2*2="), "8")
         XCTAssertEqual(try answer("10-(3+2)*2="), "0")
+        let sevenLevels = "-" + String(repeating: "(", count: 7) + "1+2" + String(repeating: ")", count: 7)
+        XCTAssertEqual(try answer(sevenLevels), "-3")
+        let nineCombined = "-" + String(repeating: "(", count: 8) + "1+2" + String(repeating: ")", count: 8)
+        XCTAssertEqual(try outcome(nineCombined), .unsupported)
     }
 
     func testSignsAndExactDecimals() throws {
@@ -42,7 +46,10 @@ final class LocalArithmeticTests: XCTestCase {
     }
 
     func testAmbiguousOrUnsupportedExpressionsDecline() throws {
-        for input in ["x+2=", "2x3=", "2^3=", "1e3+2=", "2+3=4", "2++=", "4", "", "1/3=", "1/3*3="] {
+        for input in [
+            "x+2=", "2x3=", "2^3=", "1e3+2=", "2+3=4", "2++=", "4", "", "1/3=", "1/3*3=",
+            "1️⃣+2=", "１+2=", "١+2=",
+        ] {
             XCTAssertEqual(try outcome(input), .unsupported, input)
         }
     }
