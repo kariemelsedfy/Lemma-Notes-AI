@@ -251,7 +251,7 @@ who has not read the code — because they have not.
 
 ## 4. Environment notes
 
-**Current, 2026-10-07:** Work in `/Users/kelsedfy/Lemma-Notes-AI-work`, not the OneDrive checkout. Xcode 27.0 and iOS 27 SDK are installed; iOS 26.1 and 26.5 simulator runtimes are available. The connected iPad mini 6 is on 26.6; its developer disk image now mounts. `edu.bowdoin.margin` is installed, but the Team ID has not been confirmed. Do not change minimum iPadOS or install a device build without verifying signing and preserving its existing app data. The notes below describe the August OneDrive copy and toolchain, not the current clone.
+**Current, 2026-10-13:** Work in `/Users/kelsedfy/Lemma-Notes-AI-work`, not the OneDrive checkout. Xcode 27.0 and iOS 27 SDK are installed; iOS 26.1 and 26.5 simulator runtimes are available. The connected iPad mini 6 was on 26.6 at the 2026-10-07 Checkpoint A, when the owner trusted a working Personal Team profile and `edu.bowdoin.margin` was installed over the existing app. Signing and profile trust must be reverified for any later handoff; this docs-only PR performs no new device build. Do not change minimum iPadOS or the bundle ID, uninstall the app, or risk its existing notebooks and glyph bank. The notes below describe the August OneDrive copy and toolchain, not the current clone.
 
 **Five traps in the August working copy:**
 

@@ -50,12 +50,11 @@ ID, or weaken signing to bypass this. An install without a successful launch is 
 handoff. If the branch changes before a later human handoff, regenerate and build again with a
 new DerivedData directory per the rule above.
 
-If signing fails with a bundle-ID conflict, `edu.bowdoin.margin` is registered to someone
-else — free provisioning needs a globally unique ID. Override it:
-
-```bash
-export TUIST_BUNDLE_ID_PREFIX=com.yourname
-```
+If signing reports a conflict for `edu.bowdoin.margin`, stop and verify the Xcode account,
+Personal Team and existing app registration. **Do not change the bundle ID for a normal
+handoff:** a different ID installs a different app and does not preserve access to the
+existing app's notebooks or glyph bank. A separate clean-app test needs the owner's
+explicit approval and a warning about that data boundary; never use it as a signing fix.
 
 **Then check the simulator first.** The whole loop works there, so if something is badly
 wrong you will see it before you pick up the Pencil: circle some ink, hold, pick a verb,
