@@ -33,18 +33,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M0-12 — Require independent PR review and main-branch integration
-status: In progress · claimed: Devin · 2026-10-13 · branch: chore/M0-12-independent-pr-review · refs: AGENTS.md §1–2, §4 · estimate: S
-Note: The owner chose a different agent's review before an agent may merge a green PR. Previously reviewed PRs #110–#132 were merged into ancestor branches after their parents had already merged, leaving main at #109; this policy change must not claim to recover those commits or retroactively authorize merging its own PR.
-Acceptance:
-- [ ] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
-- [ ] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M0-12 — Require independent PR review and main-branch integration
+status: Done (policy proposal; not effective until merged into main) · implemented: Devin · 2026-10-13 · branch: chore/M0-12-independent-pr-review · refs: AGENTS.md §1–2, §4 · estimate: S
+Note: The owner chose review by a different agent before each green PR can be merged into main. The author may perform the normal merge after that written approval and the owner's explicit confirmation for that specific PR; never bypass required checks or review. Verify the PR and merge commit actually reached main before the next PR. Previously reviewed #110–#132 were merged into ancestor branches after their parents had landed, leaving main at #109; this policy PR cannot repair those commits or merge itself under the current rule. Full repo test/build/lint gates pass locally.
+Acceptance:
+- [x] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
+- [x] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
 
 ### M0-10 — Reconcile restart baseline and device capability
 status: Done · claimed/completed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M

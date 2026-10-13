@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M0-12 — a merged PR can still miss main
+
+The owner merged PRs #110–#132 into feature-parent branches, but GitHub main remained at #109; each PR's MERGED label alone concealed that the app and proxy work never reached main. The owner chose independent **agent** review before future agent merges, not author self-review. This policy requires a written non-author verdict, green current-head checks, explicit owner confirmation for each merge, a direct main base, and verification that main contains the merge commit before starting another PR. If a separate reviewer cannot be identified or post a verifiable review, stop rather than treating the author's own review as independent. This PR is only a policy proposal: its author cannot merge it under the old rule, and it does not bring the earlier work to main or justify another iPad build.
+
 ## 2026-10-07 · Devin · M0-10 — restart audit exposed a hardware-level AI gap
 
 The OneDrive checkout was not merely stale: `CONTEXT.md` and other tracked documents were missing and Git could not resolve HEAD. A fresh clone outside OneDrive restored a clean `6abf27a` tree; GitHub `main` has not advanced since the August handoff. Do not repair or build from the broken copy.

@@ -16,7 +16,7 @@ Every session, without exception:
 5. State your plan in 3–8 bullets before writing code. If the task is bigger than ~400 changed lines, stop and split it into subtasks in `PROGRESS.md` first.
 
 ### Work
-6. Implement on a branch: `<type>/<task-id>-<slug>`, e.g. `feat/M2-04-lasso-selection`.
+6. Implement on a branch from the latest fetched `origin/main`: `<type>/<task-id>-<slug>`, e.g. `feat/M2-04-lasso-selection`.
 7. Write the test first when the task has a testable core (geometry, parsing, layout, validation — most of them do).
 8. Run `./scripts/test.sh` and `./scripts/lint.sh` before every commit. Never commit red.
 
@@ -25,7 +25,10 @@ Every session, without exception:
 10. Append a session entry to `SESSIONS.md` using the template at the top of that file. Be honest about what didn't work — a session log that only records successes is worthless to the next agent.
 11. Update `CONTEXT.md` if any of these changed: module structure, invariants, environment/setup, open questions, or "what's next."
 12. Add an ADR to `DECISIONS.md` if you made a decision that is expensive to reverse (see §5).
-13. Open a PR with the template in §6. Do not merge your own PR unless the task is explicitly marked `automerge: true`.
+13. Open a PR with the template in §6 against the latest `main`, not another feature branch. Do not start the next PR while this one remains outside `main`.
+14. Have a different agent who neither authored nor edited the PR review its full diff against `main`, relevant invariants, tests and risks. Record that agent's identity and written approval or requested changes on the PR. The author cannot approve their own work; any new commit or base change requires fresh checks and review.
+15. Merge only when the exact reviewed head has passing required CI checks and GitHub reports that the PR can merge into `main` without conflicts. Obtain the owner's explicit confirmation for that specific PR merge, then an agent may use a normal, non-force merge without an `automerge: true` task marker. Never bypass checks, merge a conflicted PR, treat `--auto` as conflict resolution or delete a branch without approval. Independent review does not replace explicit human approvals required by ADRs or §2/§7.
+16. Fetch `main` and verify both GitHub's merged PR state and that the merged commit is reachable from `origin/main` before starting the next PR. A PR marked merged into a feature branch is not integrated; stop and report the blocker instead of continuing a stack.
 
 **The docs updates in steps 9–12 are part of the task, not overhead. A task with code but no doc updates is not done.**
 
