@@ -1,7 +1,7 @@
 import ProjectDescription
 
-/// Signing for on-device builds, supplied by the environment so nobody's team ID or
-/// bundle ID ends up in the repository.
+/// Signing for on-device builds, supplied by the environment so a personal team ID
+/// or alternate bundle prefix is never committed.
 ///
 ///     export TUIST_DEVELOPMENT_TEAM=ABCDE12345
 ///     ./scripts/generate.sh
@@ -11,10 +11,11 @@ import ProjectDescription
 /// provisioning, which covers a device session but not TestFlight (that is M0-07).
 let developmentTeam = Environment.developmentTeam.getString(default: "")
 
-/// Free provisioning registers the bundle ID to your personal team, so it has to be
-/// globally unique. Override it if `edu.bowdoin.margin` is already taken:
-///
-///     export TUIST_BUNDLE_ID_PREFIX=com.yourname
+/// Free provisioning ties the bundle ID to the signing team. For a data-preserving
+/// handoff, keep `edu.bowdoin.margin`: a different prefix creates a different app
+/// without access to the installed app's notebooks or glyph bank. If signing rejects
+/// this ID, fix the Xcode account/team or stop and ask the owner. Only an explicitly
+/// approved clean-app test may use an alternate prefix.
 let bundleIDPrefix = Environment.bundleIdPrefix.getString(default: "edu.bowdoin")
 
 let signingSettings: SettingsDictionary =
