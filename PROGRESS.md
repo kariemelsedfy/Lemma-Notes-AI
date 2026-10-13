@@ -41,6 +41,13 @@ _(empty)_
 
 ## Done
 
+### M0-12 — Require independent PR review and main-branch integration
+status: Done (policy proposal; not effective until merged into main) · implemented: Devin · 2026-10-13 · branch: chore/M0-12-independent-pr-review · refs: AGENTS.md §1–2, §4 · estimate: S
+Note: The owner chose review by a different agent before each green PR can be merged into main. The author may perform the normal merge after that written approval and the owner's explicit confirmation for that specific PR; never bypass required checks or review. Verify the PR and merge commit actually reached main before the next PR. Previously reviewed #110–#132 were merged into ancestor branches after their parents had landed, leaving main at #109; this policy PR cannot repair those commits or merge itself under the current rule. Full repo test/build/lint gates pass locally. PR #134 is awaiting fresh independent review and CI after the review follow-up; the policy is not effective until merged into main.
+Acceptance:
+- [x] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
+- [x] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
+
 ### M0-10 — Reconcile restart baseline and device capability
 status: Done · claimed/completed: Devin · 2026-10-07 · refs: AGENTS.md §1, CONTEXT.md §4–5, DECISIONS.md ADR-018–020, DEVICE_SESSION.md §0 · estimate: M
 Note: documentation/environment audit at `6abf27a`; no worker or package edits. On the clean local clone, `./scripts/test.sh` and `./scripts/lint.sh` passed, and a separate iOS 26.1 iPad Pro 13-inch (M5) simulator run passed 180 app tests. No new physical build or real-model inference was performed. Xcode 27 SDK is installed; the installed app on the connected iPad mini 6 is `edu.bowdoin.margin`, the developer disk image mounted on retry, and the signing Team ID is pending. Q13/M4-13 tracks its lack of Apple Intelligence without changing ADR-019/020 or spending money.
