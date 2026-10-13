@@ -335,8 +335,9 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 **Q12 was resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. The Xcode 27 SDK
 blocker is now gone, but the connected iPad still runs 26.6 and the user has not approved an
 OS update. Its mini 6 hardware cannot run Apple Intelligence even after an OS update. Keep the
-current iPadOS 26 deployment target until Q13 and device compatibility are deliberately resolved;
-verify the iOS 27 SDK surface separately instead of interpreting an iOS 26-targeted probe.
+current iPadOS 26 deployment target for the beta until ADR-021's separate 1.0 device-impact
+decision and compatible physical-device test are completed; verify the iOS 27 SDK surface
+separately instead of interpreting an iOS 26-targeted probe.
 
 **Handwriting is not optional (ADR-018)**, and R-01's pivot-to-typeset exit is withdrawn. M3-10's
 panel still runs, as a measurement rather than a verdict, and **M3-19 is now the main lever** on

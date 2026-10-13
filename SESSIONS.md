@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-13 second review — distinguish old SDK evidence from current gates
+
+The same independent reviewer (`16210520-27D2-4326-BF7B-D91C90AA9EB5`) confirmed the first #135 fixes but found the active T1 table still treated an iOS 26.5 probe as evidence about the now-installed iOS 27 SDK, and the routing introduction implied Apple PCC needs third-party consent. Clarified that the PCC surface/entitlement/cost remain unverified, that third-party consent specifically guards the external provider, and that Q13's beta route is resolved while the 1.0 iPadOS-27 device-impact decision is separate. No implementation, model request, user content, or charge changed. The amended PR again needs fresh CI and independent re-review.
+
 ## 2026-10-13 · Devin · M4-13 review follow-up — ineligible devices need honest copy
 
 Independent reviewer `16210520-27D2-4326-BF7B-D91C90AA9EB5` requested changes to PR #135: the consent checklist still promised on-device AI after refusal even on a mini 6, the active T0/T2 table still described an old provider mix, and Ready/README summaries called the approved device decision pending. Corrected those active claims while keeping ADR-021's $10 total cap, no-training/retention evidence gate, and unsupported/offline decline. No production code or old test was weakened. The amended PR requires fresh checks and re-review before any merge; do not report the old-head CI result as current.
