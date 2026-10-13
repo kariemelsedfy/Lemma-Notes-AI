@@ -33,7 +33,12 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-_(empty)_
+### M0-12 — Require independent PR review and main-branch integration
+status: In progress · claimed: Devin · 2026-10-13 · branch: chore/M0-12-independent-pr-review · refs: AGENTS.md §1–2, §4 · estimate: S
+Note: The owner chose a different agent's review before an agent may merge a green PR. Previously reviewed PRs #110–#132 were merged into ancestor branches after their parents had already merged, leaving main at #109; this policy change must not claim to recover those commits or retroactively authorize merging its own PR.
+Acceptance:
+- [ ] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
+- [ ] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
 
 ## Review
 
