@@ -11,6 +11,18 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-13 second review — distinguish old SDK evidence from current gates
+
+The same independent reviewer (`16210520-27D2-4326-BF7B-D91C90AA9EB5`) confirmed the first #135 fixes but found the active T1 table still treated an iOS 26.5 probe as evidence about the now-installed iOS 27 SDK, and the routing introduction implied Apple PCC needs third-party consent. Clarified that the PCC surface/entitlement/cost remain unverified, that third-party consent specifically guards the external provider, and that Q13's beta route is resolved while the 1.0 iPadOS-27 device-impact decision is separate. No implementation, model request, user content, or charge changed. The amended PR again needs fresh CI and independent re-review.
+
+## 2026-10-13 · Devin · M4-13 review follow-up — ineligible devices need honest copy
+
+Independent reviewer `16210520-27D2-4326-BF7B-D91C90AA9EB5` requested changes to PR #135: the consent checklist still promised on-device AI after refusal even on a mini 6, the active T0/T2 table still described an old provider mix, and Ready/README summaries called the approved device decision pending. Corrected those active claims while keeping ADR-021's $10 total cap, no-training/retention evidence gate, and unsupported/offline decline. No production code or old test was weakened. The amended PR requires fresh checks and re-review before any merge; do not report the old-head CI result as current.
+
+## 2026-10-13 · Devin · M4-13 — recover the reviewed decision without recovering a live model
+
+PR #110 was marked merged into its already-merged parent, so `main` still lacked the approved mini-6 provider decision after #134 activated serial, independently reviewed main merges. Replayed only #110's planning/ADR commit onto current main and preserved #134's workflow, task board and session entries rather than cherry-picking the old claim. A first full local gate hit the unchanged GlyphBank protected atomic temp-file `EPERM` despite an unrelated checkout's `TMPDIR`; the same tests passed with process-local `TMPDIR` set to this worktree's existing `Packages/Handwriting/.build`, without weakening file protection or tests. No code for a provider, physical-iPad build, handwriting upload, Runtime call, or provider/hosting charge occurred ($0 of $10). Do not start #111's recovery until this small PR has independent approval, green CI, specific owner merge confirmation and a verified merge commit on main.
+
 ## 2026-10-13 · Devin · M0-12 review follow-up — make approval and checks observable
 
 An independent read-only agent (session `b8b5d62b`) requested changes to PR #134: a shared GitHub login alone cannot prove a reviewer was separate, zero required checks can vacuously pass, and an owner confirmation left only in chat is hard to audit. The revised rule requires a distinct reviewer/session identity and written PR verdict, at least one reported check with every reported check passing, and an owner confirmation recorded on the PR before its author merges. If those records cannot be verified, stop; this policy PR still needs review of the new commit and cannot be self-merged under the old rule.
@@ -18,6 +30,12 @@ An independent read-only agent (session `b8b5d62b`) requested changes to PR #134
 ## 2026-10-13 · Devin · M0-12 — a merged PR can still miss main
 
 The owner merged PRs #110–#132 into feature-parent branches, but GitHub main remained at #109; each PR's MERGED label alone concealed that the app and proxy work never reached main. The owner chose independent **agent** review before future agent merges, not author self-review. This policy requires a written non-author verdict, green current-head checks, explicit owner confirmation for each merge, a direct main base, and verification that main contains the merge commit before starting another PR. If a separate reviewer cannot be identified or post a verifiable review, stop rather than treating the author's own review as independent. This PR is only a policy proposal: its author cannot merge it under the old rule, and it does not bring the earlier work to main or justify another iPad build.
+
+## 2026-10-07 · Devin · M4-13 — the zero-cost tier mix excluded the beta iPad
+
+The user explicitly wants real answers for the connected iPad mini 6 and expects other users to lack Apple Intelligence hardware. They approved AWS Bedrock Nova Lite as the first paid *candidate*, with a **$10 total** provider-plus-hosting ceiling. The currently installed `edu.bowdoin.margin` and its notebooks remain untouched. ADR-021 reverses ADR-020's hardware assumption, not its regional availability rule; ADR-019's eventual iPadOS 27 target still needs a separate device-impact decision. No AWS service was configured, no model call was made, and no bill was incurred. The user has an AWS account, but this clone has no `aws` CLI or verified scoped access yet; a model allowing retention mode `none` has not been confirmed for their account/region.
+
+Surprise: `BUSINESS.md`'s absolute claim that ChatGPT subscription sharing is impossible is obsolete. OpenAI now supports it for participating apps, but this private product is not approved; Claude Pro is still not a general commercial API entitlement. Do not build a subscription-OAuth detour, copy an API key into the iPad app, or take the old 85% margin estimate as a mini-6 forecast. Bedrock's cheap token estimate is conditional on real image token use, no retries and zero hosting costs; handwriting/math correctness is wholly unmeasured. The safer implementation order is a pure local arithmetic subset, mock-only proxy and client tests, server-side authorization/spend controls and `none` eligibility verification, then a narrowly consented paid pilot with actual cost accounting. If $10 cannot be enforced across all new charges, stop rather than trusting an AWS budget alert.
 
 ## 2026-10-07 · Devin · M0-10 — restart audit exposed a hardware-level AI gap
 

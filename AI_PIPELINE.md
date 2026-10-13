@@ -120,13 +120,14 @@ If nothing fits, ask for another area rather than cramming.
 
 ## 5. Model routing
 
-Three tiers. Route down only when necessary; each step up costs money and latency.
+Three model tiers plus a separate deterministic local subset; network tiers add availability and latency constraints, while third-party providers additionally require explicit consent and cost controls. **ADR-021 adds support for an iPad mini 6 with no Apple Intelligence:** on that device T0 is permanently unavailable, and T1 must never be assumed available merely because Xcode has an iOS 27 SDK. Route only to implemented, currently eligible providers. Offline/Private Mode can answer a narrowly supported deterministic arithmetic subset locally; otherwise fail honestly instead of returning the canned `4`. Online requests can reach a consent-gated, server-authorized provider after model eligibility, retention and a combined $10 pilot ceiling are enforced. No project API key belongs in the app. This is the target contract, not an assertion that the shipping Ask has been rewired; it still uses `CannedSpecProvider`.
 
 | Tier | What | When | Cost to us |
 |---|---|---|---|
-| **T0 — on-device** | Foundation Models framework, on-device model. **Text only on iPadOS 26** — image input is iPadOS 27, so the crop cannot go in and the tier works from the Vision transcript and stroke data (§5.1) | Intent classification always. Simple arithmetic, unit conversion, short reads, spell/grammar. Everything when offline or when the user picks Private Mode | $0 |
-| **T1 — Apple PCC** | Same Swift API against Apple's server model via `PrivateCloudComputeLanguageModel` — **iOS 27 only; the type does not exist on our SDK, see §5.1** | Medium difficulty: algebra, short derivations, prose continuation | **$0** while we're in the App Store Small Business Program and under 2M lifetime first-time downloads — Apple grants PCC access at no cloud API cost under those conditions. Verify eligibility annually |
-| **T2 — frontier cloud** | Our proxy → Claude or Gemini | Hard multi-step reasoning, unusual notation, plots with tricky domains, low-confidence T0/T1 reads | Per-token (see `BUSINESS.md`) |
+| **Local deterministic subset** | A small, explicitly supported arithmetic grammar, not Foundation Models and not general offline AI (M4-14) | Offline, Private Mode or ineligible hardware only when the local evaluator is wired; unsupported requests decline without ink or network | $0 |
+| **T0 — on-device** | Foundation Models framework, on-device model. **Text only on iPadOS 26** — image input is iPadOS 27, so the crop cannot go in and the tier works from the Vision transcript and stroke data (§5.1) | Only when the framework reports availability on this device; never assume it runs on the iPad mini 6 | $0 |
+| **T1 — Apple PCC** | Proposed Apple server tier; `PrivateCloudComputeLanguageModel` was absent in the dated iOS 26.5 probe (§5.1), while the now-installed iOS 27 SDK surface remains unverified | Medium difficulty only after its actual API, entitlement and eligibility are confirmed | Verify entitlement, eligibility and cost before treating it as free |
+| **T2 — consented proxy** | First-party proxy; Bedrock Nova Lite is the mini-6 pilot candidate, not an approved live route. Claude or Gemini would require separate review | Supported requests only after provider-layer consent, server authorization, exact-model `none` eligibility and a hard combined provider/hosting spend bound; never offline or in Private Mode | Unknown until image and other charges are bounded; $10 total pilot ceiling (ADR-021) |
 
 ### 5.1 What the SDK we build against actually has (verified 2026-08-12, M4-01)
 
@@ -146,7 +147,7 @@ Those last three arrive with the iOS 27 surface shown at WWDC26, where `Language
 **Three consequences, and none of them are small:**
 
 1. **T1 cannot be built at all on iPadOS 26.** PCC is not a matter of entitlement or enrolment here; the type does not exist. M4-07 is blocked on the OS, not only on M0-07.
-2. **T0 cannot see the crop.** With no image input, the on-device tier works from the Vision transcript and the stroke trajectory only — so §10's "IMAGE 1 is the selected region" prompt structure applies to T2, not to T0. That is a real quality ceiling on the free, offline, Private Mode tier, and it is the tier every user without credits lives in.
+2. **T0 cannot see the crop.** With no image input, the on-device tier works from the Vision transcript and the stroke trajectory only — so §10's "IMAGE 1 is the selected region" prompt structure applies to T2, not to T0. That is a real quality ceiling where T0 is available; on ineligible hardware, offline or Private Mode can use only an implemented local subset and must otherwise decline.
 3. **A provider swap is not one line.** `SpecProvider` stays the seam, and a frontier provider (M4-08) needs its own client, retry and error mapping rather than a different `LanguageModel` value.
 
 `scripts/check-foundation-models-api.sh` asserts both halves of this — that the T0 surface still type-checks, and that the iOS 27 surface is still absent. When the second assertion starts failing, this section is out of date in the good direction.
