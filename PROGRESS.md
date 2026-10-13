@@ -27,20 +27,15 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 |---|---|---|---|
 | M4-13 Broad-device AI route | Devin / main `fef2f40` | `docs/M4-13-main-recovery` / root planning docs only | Recover approved ADR-021 from #110 on main; Nova Lite remains a candidate with $10 total ceiling, no paid call |
 | M0-11 Fresh baseline device build | Unclaimed / after M4-13 | Branch TBD / device build and handoff | Existing `edu.bowdoin.margin` confirmed; await matching signing Team ID; fresh install and human Checkpoint A |
-| M4-14 Local arithmetic subset | Unclaimed / after M4-13 | Branch TBD / `Intelligence` parser and tests | Test-first, no cloud or new dependency; do not overlap M4-08B in that package |
+| M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / `Intelligence` evaluator and tests | Recover reviewed #111; no shipping Ask change, network or iPad build |
+| M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-### M4-14 — Evaluate a safe local arithmetic subset
-status: In progress · claimed: Devin · 2026-10-13 · branch: feat/M4-14-main-recovery · source: reviewed PR #111 (merged off-main) · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
-Note: Recover the pure, test-first `Intelligence` evaluator from #111 onto current main after #135; no shipping Ask wiring, broad OCR promise, provider request or new dependency. Keep refusal for uncertain or unsupported input and require validation before output can become ink.
-Acceptance:
-- [ ] Tests pin precedence, signs, decimals, unsupported notation and division by zero without creating ink
-- [ ] Supported confident arithmetic returns only a validator-approved LaTeX spec deterministically, without network
-- [ ] Expose an explicit unsupported decline; app/offline wiring remains a separate reviewed PR
+_(empty)_
 
 ## Review
 
@@ -55,8 +50,16 @@ Acceptance:
 - [x] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
 - [x] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
 
+### M4-14 — Evaluate a safe local arithmetic subset
+status: Done (pure evaluator recovered in a main-target review branch; not yet on main) · claimed: Devin · 2026-10-13 · branch: feat/M4-14-main-recovery · source: reviewed PR #111 · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
+Note: a pure `Intelligence` evaluator, not yet a shipping provider or Ask route. It accepts only a high-confidence answer reading in the bounded grammar documented in `AI_PIPELINE.md` §5. Checked `Decimal` operations reject divide-by-zero, overflow, inexact repeating division, overlong readings and excess output precision. Supported answers become LaTeX runs only through `SpecValidator`; unsupported input returns `.unsupported` and produces no ink. Test-first: the new tests initially failed to compile without this API, then all 190 Intelligence package tests passed, including integer-oracle cases. No network, paid call, model, app change or glyph-bank upload; M4-14B owns localized decline copy and interim shipping arithmetic; M4-08C owns the later cloud routing. This remains unverified on a physical iPad. The 2026-10-13 recovery replays only the original pure evaluator/tests onto main's current parent; shipping Ask still uses the canned `4`, and later app wiring/device checks require separate review.
+Acceptance:
+- [x] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink on tested inputs
+- [x] Supported confident arithmetic returns a validator-approved LaTeX answer deterministically with no network or paid model
+- [x] The local evaluator exposes an explicit unsupported outcome; M4-14B owns offline/Private Mode UI wiring rather than claiming general offline AI
+
 ### M4-13 — Choose a real-AI route for iPads without Apple Intelligence
-status: Done (decision recovered in a main-target review branch; not yet on main) · claimed: Devin · 2026-10-13 · branch: docs/M4-13-main-recovery · source: PR #110 · refs: DECISIONS.md ADR-017, ADR-019–021, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
+status: Done (decision on main via PR #135) · claimed: Devin · 2026-10-13 · branch: docs/M4-13-main-recovery · source: PR #110 · refs: DECISIONS.md ADR-017, ADR-019–021, BUSINESS.md §5–6, AI_PIPELINE.md §5 · estimate: S
 Note: user approved support for mini 6 users, Nova Lite on AWS Bedrock as the first paid candidate, and $10 **total** new external provider+hosting spend, not a monthly allowance. ADR-021 supersedes ADR-020 for hardware eligibility; ADR-019's iPadOS 27 1.0 target is still accepted and must be revisited before it excludes this beta hardware. Docs only: no paid call, service deployment, provider credential, app edit or new dependency. At the original decision date, limited CLI access and exact Nova Lite eligibility under retention `none` were unverified; later off-main read-only observations confirm scoped access and account mode, not exact-model eligibility or a paid send. This recovery PR only restores the reviewed planning decision. Following independent review of #135, the active consent, routing, M4 queue and README summaries now describe limited local support or an honest decline on ineligible hardware.
 | Path | What it can answer | Trade-offs and next evidence |
 |---|---|---|
@@ -2043,12 +2046,20 @@ Acceptance:
 - [ ] Fake-transport tests cover two distinct questions and cancellation; no real network or charge in the test suite
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
-status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
+status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
 Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance.
 Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance
 - [ ] A fresh build installs over `edu.bowdoin.margin` and the physical iPad result is recorded with SHA, OS and consent/offline failure behavior
+
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: Ready · needs-device-verification · depends: M4-14, M0-11 for hardware check · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Exclusive scope: app Ask composition, localized decline copy and app-target tests; no changes to the pure evaluator or AWS proxy. This is an interim supported-subset flow, not a claim that a real AI model has reached the mini.
+Acceptance:
+- [ ] A selection read confidently as `2+3=` and `7-2=` produces their respective validator-approved suggestions, never a canned `4` for unrelated/unsupported input
+- [ ] Low-confidence, unrecognized and out-of-grammar reads explain the limited offline path with localized recoverable copy, with no generated ink; cancellation/page changes still suppress late suggestions
+- [ ] Automated Ask-path tests plus a fresh iPad mini build/check verify Keep, erase, undo and save/reopen without uninstalling notebooks
 
 ### M4-15 — Measure the real mini-6 answer path before expanding
 status: Blocked · depends: M4-08C, M0-11, explicit consent and verified remaining spend under ADR-021 · refs: AI_PIPELINE.md §9, AGENTS.md §8 · estimate: M
