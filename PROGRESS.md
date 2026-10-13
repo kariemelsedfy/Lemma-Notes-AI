@@ -26,28 +26,30 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
 | M4-13 Broad-device AI route | Devin / main `fef2f40` | `docs/M4-13-main-recovery` / root planning docs only | ADR-021 recovered on main via #135; Nova Lite candidate, $10 total ceiling, no paid call |
-| M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Tested `43cc3e7` on mini 6: core steps passed; handwriting preview clipped and likeness remains separate (M3-27/M3-19) |
+| M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Historical Checkpoint A at `43cc3e7` recorded on main via #137; likeness remains separate (M3-27/M3-19) |
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
-| M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
+| M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recover reviewed #113 local-only route; previously tested on older mini SHA, current branch not installed |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: In progress · claimed: Devin · 2026-10-13 · branch: feat/M4-14B-main-recovery · source: reviewed PR #113 (merged off-main) · depends: M4-14, M0-11 historical check · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
-Note: Recover the app-only local arithmetic Ask wiring and original tests onto current main; no AWS dependency, network fallback, paid call or new physical install. Preserve honest localized declines, late cancellation and separate Keep/undo/provenance behavior. User previously tested the limited route on an older device revision, not this main revision; do not claim fresh device verification.
-Acceptance:
-- [ ] Confident supported `2+3=` and `7-2=` produce distinct validated suggestions; unsupported/unclear reads create no ink or canned `4`
-- [ ] App simulator tests and full gates preserve cancellation, navigation, Keep, erase, undo and export boundaries
-- [ ] Main-target PR is independently reviewed, green and small; physical iPad handoff only for a new behavior requiring user testing
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
+status: Done (main-target app recovery; prior mini-6 check at `687d26e`, current branch not installed) · recovered: Devin · 2026-10-13 · branch: feat/M4-14B-main-recovery · source: PR #113 · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+Note: the current branch replaces the shipping Ask's `CannedSpecProvider` with an app adapter for the pure local evaluator; the canned provider is `#if DEBUG` for tests only. No Apple Intelligence or network call is made. Unsupported/unclear OCR and unimplemented verbs produce no suggestion, with distinct localized recovery copy. The app cancels a selection when the visible page changes, while an in-flight cancel prevents late ink; tests exercise the app pipeline and navigation decision. `./scripts/test.sh` and `./scripts/lint.sh` pass, and 186 app-target tests passed on the original iOS 26.1 simulator; this recovery ran five focused Ask tests and all 186 app-target tests on iOS 26.5, plus full repository test/build/lint gates. The owner later tested `687d26e` on the mini 6 and reported distinct answers (`2+3=5`, `3+3=6`), an unsupported `x+2=` decline without ink, and pass for Keep/erase/undo/navigation/reopen/export. That is a historical four-case handoff, not evidence this recovery SHA was installed or that Pencil/OCR accuracy generalizes; only a new user-requested device handoff would require a fresh build. The reviewed #131 Ask-test synchronization is included here so CI waits up to three seconds for a terminal state instead of assuming a 150 ms completion; its separate 150 ms post-cancel late-ink assertion remains. Cloud-provider routing still belongs to M4-08C; `.onDevice` here means no network, not Apple Foundation Models availability.
+Acceptance:
+- [x] Synthetic selections read confidently as `2+3=`, `7-2=` and `3*3=` produce their respective validator-approved suggestions rather than a canned `4`
+- [x] Simulator tests cover low-confidence/unsupported/unrecognized declines, localized copy, cancellation, and the page-navigation cancellation decision with no generated ink
+- [x] Historical mini-6 handoff at `687d26e` reported distinct answers, decline and Keep/erase/undo/navigation/reopen/export; this recovery SHA is not installed, and no new iPad build is requested for unchanged behavior
 
 ### M0-12 — Require independent PR review and main-branch integration
 status: Done (policy active on main via PR #134) · implemented: Devin · 2026-10-13 · branch: chore/M0-12-independent-pr-review · refs: AGENTS.md §1–2, §4 · estimate: S
@@ -57,7 +59,7 @@ Acceptance:
 - [x] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
 
 ### M0-11 — Install a fresh baseline on the existing iPad without removing its data
-status: Done (historical 2026-10-07 Checkpoint A recorded in a main-target branch; this revision was not installed) · recovered: Devin · 2026-10-13 · branch: chore/M0-11-main-recovery · source: PR #112 · device-confirmed: human · tested: `43cc3e7` on iPad mini (6th generation), iPadOS 26.6 · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+status: Done (historical 2026-10-07 Checkpoint A recorded on main via #137; this revision was not installed) · recovered: Devin · 2026-10-13 · branch: chore/M0-11-main-recovery · source: PR #112 · device-confirmed: human · tested: `43cc3e7` on iPad mini (6th generation), iPadOS 26.6 · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
 Note: after the owner trusted the Personal Team profile, regenerated with the matching team supplied only through the process environment. A new DerivedData physical-device Debug build of `43cc3e7` passed signing and `codesign --verify --deep --strict` as `edu.bowdoin.margin`. Installed that exact `.app` over the existing app without uninstalling, launched it, observed its process still running, and opened the regenerated workspace in Xcode before handoff. `./scripts/test.sh` and `./scripts/lint.sh` passed; the simulator app suite had 180 passes on the same code. Two actor-isolation warnings on that dated Xcode 27 device build were already present in `MarginDocument` and `InkAppearance` (tracked as M0-13 here; original PR #112 called them M0-12, now reserved for the PR workflow). The human reported **pass** for notebook reopen, the two Ask lassos and known canned `4`, grouped erase/undo, and reopen/export. The debug handwriting-sample screen displayed a generated sentence, but the user said it did **not** look the same as their writing and showed clipping and a raw `sample.done` key; this is not a quality pass (M3-27/M3-19). No personal handwriting/screenshot was committed. $0 of the $10 provider/hosting ceiling was used.
 Acceptance:
 - [x] Regenerate and build the tested revision for the connected iPad in brand-new DerivedData
@@ -66,7 +68,7 @@ Acceptance:
 
 ### M4-14 — Evaluate a safe local arithmetic subset
 status: Done (pure evaluator on main via PR #136) · claimed: Devin · 2026-10-13 · branch: feat/M4-14-main-recovery · source: reviewed PR #111 · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
-Note: a pure `Intelligence` evaluator, not yet a shipping provider or Ask route. It accepts only a high-confidence answer reading in the bounded grammar documented in `AI_PIPELINE.md` §5. Checked `Decimal` operations reject divide-by-zero, overflow, inexact repeating division, overlong readings and excess output precision. Supported answers become LaTeX runs only through `SpecValidator`; unsupported input returns `.unsupported` and produces no ink. Test-first: the new tests initially failed to compile without this API, then all 190 Intelligence package tests passed, including integer-oracle cases. No network, paid call, model, app change or glyph-bank upload; M4-14B owns localized decline copy and interim shipping arithmetic; M4-08C owns the later cloud routing. This remains unverified on a physical iPad. The 2026-10-13 recovery restores the pure evaluator/tests and adds an ASCII-only input guard after independent review: a keycap OCR digit had incorrectly produced a validated answer. A failing regression pinned that refusal before the fix; the combined unary/parentheses depth limit is now explicit and tested. Shipping Ask still uses the canned `4`, and later app wiring/device checks require separate review.
+Note: a pure `Intelligence` evaluator, not yet a shipping provider or Ask route. It accepts only a high-confidence answer reading in the bounded grammar documented in `AI_PIPELINE.md` §5. Checked `Decimal` operations reject divide-by-zero, overflow, inexact repeating division, overlong readings and excess output precision. Supported answers become LaTeX runs only through `SpecValidator`; unsupported input returns `.unsupported` and produces no ink. Test-first: the new tests initially failed to compile without this API, then all 190 Intelligence package tests passed, including integer-oracle cases. No network, paid call, model, app change or glyph-bank upload; M4-14B owns localized decline copy and interim shipping arithmetic; M4-08C owns the later cloud routing. This remains unverified on a physical iPad. The 2026-10-13 recovery restores the pure evaluator/tests and adds an ASCII-only input guard after independent review: a keycap OCR digit had incorrectly produced a validated answer. A failing regression pinned that refusal before the fix; the combined unary/parentheses depth limit is now explicit and tested. The separate M4-14B recovery now wires this evaluator into Ask on its main-target branch; the original pure evaluator task did not change app routing.
 Acceptance:
 - [x] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink on tested inputs
 - [x] Supported confident arithmetic returns a validator-approved LaTeX answer deterministically with no network or paid model
@@ -1797,10 +1799,10 @@ not a gate to M4 (ADR-018). The connected iPad mini 6 is not Apple Intelligence-
 M4-13 approved a bounded beta provider path and local arithmetic subset without changing
 ADR-019's 1.0 target or ADR-020's regional scope. This is a decision, not a live app route.
 
-**What M4 replaces.** `CannedSpecProvider` answers every request with the same hardcoded spec,
-so the app always writes `4`. That is M2's stated exit condition, not a bug. Everything below
-the provider boundary — validation, placement, rendering, failure states — is built and tested
-against it, so M4 is genuinely about the model and not about the pipeline.
+**What M4 replaces.** At the original M2 baseline, `CannedSpecProvider` answered every request
+with `4`. The M4-14B branch replaces that in the shipping Ask with an honest, narrow offline
+arithmetic path; this is not a general AI model or a claim that Bedrock is integrated.
+Validation, placement, rendering and cancellation must still be verified through the actual app.
 
 **Live traffic still has hard gates.** ADR-021 names Nova Lite as a candidate for a consented,
 authenticated mini-6 pilot, not an eligible model or a bounded image price; M4-08A must prove
@@ -2066,7 +2068,7 @@ Acceptance:
 
 ### M4-08C — Wire the real route into the shipping Ask on the mini
 status: Ready after M4-08A/B; needs-device-verification · depends: M0-11, M4-14B, ADR-021 · refs: AI_PIPELINE.md §4, §5, §8, AGENTS.md §8 · estimate: M
-Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance.
+Exclusive scope: named `Apps/Margin` Ask/consent/settings files and app-target tests, assigned only after provider code is ready. Preserve ADR-016's two lassos and existing notebooks, ink, undo and provenance. M4-14B labels its deterministic local adapter `.onDevice` for no-network telemetry even though Apple T0 is unavailable on the mini; future routing must not confuse that local subset with Foundation Models availability.
 Acceptance:
 - [ ] Provider availability, signed-in pilot access, credits, network and per-provider consent determine routing; no unimplemented tier or mock in shipping Ask
 - [ ] Two different selected questions get their respective validated answers; cancel or page navigation suppresses late ink; Keep/reopen/export preserves accepted provenance

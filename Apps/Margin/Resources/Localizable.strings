@@ -49,6 +49,8 @@
 "ask.failure.noRoom" = "The answer won’t fit there at your writing size. Choose a larger area.";
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t reach the model — try again.";
+"ask.failure.local-unclear" = "Couldn’t read that clearly. Try a smaller, clearer selection.";
+"ask.failure.local-unsupported" = "Only short arithmetic using +, -, * or / is available right now. Try a simpler expression.";
 
 
 "pen.black" = "Black pen";

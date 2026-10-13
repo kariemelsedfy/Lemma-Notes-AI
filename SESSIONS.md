@@ -11,6 +11,18 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M4-14B verification — zero tests is not a pass
+
+The first focused simulator command exited 0 but executed **zero** app tests because the generated Tuist workspace predated the newly recovered `LocalArithmeticAskTests.swift`. Regenerated the workspace, reran the focused suite and confirmed five Ask tests executed and passed, then ran all 186 iOS 26.5 simulator app tests with zero failures. Full package/build/test and lint gates pass with this worktree's existing Handwriting `.build` as process-local `TMPDIR`. The reviewed M4-14C wait retains the 150 ms post-cancellation no-late-ink interval. Nothing in this verification installs the current app on the mini 6 or makes a model/AWS request.
+
+## 2026-10-13 · Devin · M4-14C — preserve late-ink cancellation while waiting for Ask completion
+
+The historical #113 app tests used a fixed 150 ms completion sleep. An independent test-only PR #131 had already reproduced its failure locally and in CI and replaced completion timing with a bounded wait for Ask to leave `working`. Brought only that reviewed test patch into this mainline Ask recovery: a hung pipeline still fails within three seconds, while cancellation retains an explicit 150 ms late-ink observation window before asserting no suggestion. No production behavior, cloud model, personal content or cost changed. Run focused and full simulator tests plus repo gates before claiming this integration is verified.
+
+## 2026-10-13 · Devin · M4-14B — restore local-only Ask without a new device install
+
+After verifying PR #137 on main, replayed #113's reviewed app-only Ask adapter, localized declines and app tests into an isolated main-based worktree. Reconciled old task, routing and context histories with the active PR policy and preserved the dated #112 baseline: `43cc3e7` drew a canned `4`, while the owner later tested the limited local Ask on the older `687d26e` revision. This branch is **not** a new physical install; the user asked for an iPad build only when there is new behavior to test. No Apple model, AWS SDK, network fallback, handwriting upload or external charge was enabled ($0 of $10). A known old fixed-sleep app test may still need the reviewed bounded-terminal-state fix; run focused simulator and full gates before claiming this mainline recovery is verified.
+
 ## 2026-10-13 · Devin · M0-11 review follow-up — signing advice must preserve app identity
 
 Independent reviewer `reviewer-PR137-20261013-a58f62e9` accepted the historical Checkpoint A framing but found an unchanged `Project.swift` comment still suggested overriding `TUIST_BUNDLE_ID_PREFIX` for a signing conflict, contradicting the data-preserving device checklist. Corrected the comment without changing Tuist settings or the `edu.bowdoin.margin` default: only a separately approved clean-app test may use another prefix, never an over-install. Also distinguished #112's recovered dated record from #113–#132 app/proxy code still missing on main. No physical build or data transfer occurred; these edits require fresh checks and independent review before merging.
@@ -46,6 +58,18 @@ An independent read-only agent (session `b8b5d62b`) requested changes to PR #134
 ## 2026-10-13 · Devin · M0-12 — a merged PR can still miss main
 
 The owner merged PRs #110–#132 into feature-parent branches, but GitHub main remained at #109; each PR's MERGED label alone concealed that the app and proxy work never reached main. The owner chose independent **agent** review before future agent merges, not author self-review. This policy requires a written non-author verdict, green current-head checks, explicit owner confirmation for each merge, a direct main base, and verification that main contains the merge commit before starting another PR. If a separate reviewer cannot be identified or post a verifiable review, stop rather than treating the author's own review as independent. This PR is only a policy proposal: its author cannot merge it under the old rule, and it does not bring the earlier work to main or justify another iPad build.
+
+## 2026-10-08 · Devin · M4-14B — the mini answered two different questions
+
+After the mock OCR tests passed, a fresh signed `687d26e` build was installed **over** `edu.bowdoin.margin` on the iPad mini 6/iPadOS 26.6 without uninstalling. The owner reported four focused passes: distinct short arithmetic questions returned non-canned `5` and `6`, symbolic `x+2=` declined without ink, and Keep/erase/Undo/navigation/reopen/export behaved as expected. This historical test does not certify messy OCR, broader math/prose, the current mainline recovery SHA or a real model. The only answer path was deterministic and local; no third-party content left the device or used the $10 external pilot budget.
+
+The owner separately reiterated that the handwriting-sample preview and glyph likeness still needed work; M3-27 tracks clipping/localization, M3-19/M3-10 track measured similarity. A four-case arithmetic success does not improve handwriting realism or enable Bedrock.
+
+## 2026-10-08 · Devin · M4-14B — local answers replace the demo, but not the missing model
+
+The baseline iPad build always drew `4`. M4-14's checked arithmetic evaluator existed in `Intelligence` but nothing in the shipping Ask called it. An app-target test failed to compile before the adapter and shipping provider factory existed. `VirtualizedPageStack` now constructs a local adapter instead of the canned provider, which is debug-only. It consumes only the local Vision reading, has no network path, and refuses other verbs and ambiguous/unsupported notation rather than fabricating an answer. Localized copy distinguishes unreadable from only-simple-arithmetic-supported; page navigation and in-flight cancellation suppress late suggestions.
+
+Mock OCR tests passed distinct answers and declines, and the dated branch reported 186 iOS 26.1 simulator app tests with zero failures plus full repo test/lint. The Release simulator build succeeded but printed existing actor warnings; it was not warning-free. At this initial implementation checkpoint **no M4-14B physical build had been installed**; the last mini-6 app tested at `43cc3e7` still drew canned `4`. Later human testing of `687d26e` is recorded separately. `.onDevice` telemetry here means no network, not proof Apple Foundation Models can run on this mini; M4-08C owns cloud routing. No AWS request or charge occurred.
 
 ## 2026-10-07 · Devin · M0-11 — the device passed the core, not the handwriting comparison
 

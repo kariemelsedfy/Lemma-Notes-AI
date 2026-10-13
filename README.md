@@ -4,7 +4,7 @@
 
 Working codename: **Margin**. (Placeholder — trademark search required before any public use. Alternates: Inkwell, Quill, Marginalia, Scribe, Loop.)
 
-Margin is an iPad notebook aiming to put answers directly on the page in your handwriting. Today, tap Ask, lasso the question, then mark the allowed answer area. The app's visible response is still the canned `4`; real AI answering is not yet wired into Ask.
+Margin is an iPad notebook aiming to put answers directly on the page in your handwriting. Tap Ask, lasso the question, then mark the allowed answer area. On the M4-14B branch, Ask supports only short, confidently read arithmetic and declines unsupported work; a real AI model is not yet wired in. The last human-tested iPad build still uses the canned `4` until a fresh M4-14B build is installed.
 
 ---
 
@@ -14,8 +14,8 @@ Margin is an iPad notebook aiming to put answers directly on the page in your ha
 |---|---|
 | Phase | M3 handwriting implemented; M4 real AI and private beta integration pending |
 | Current deployment target | iPadOS 26.0 for the mini-6 beta; ADR-019 accepts iPadOS 27 for 1.0, but ADR-021 requires revisiting its device impact before that target moves |
-| Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting calibration and synthesis, two-region Ask, undo, and export; `main` still returns a canned `4`. ADR-021 approves a bounded provider plan, not a wired model |
-| Verification | 2026-10-13: full package/build gate and lint pass for the docs-only M4-13 recovery; earlier device tests ran on separate branches, not on current `main` |
+| Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting calibration and synthesis, two-region Ask, undo and export. This M4-14B review branch answers a bounded local arithmetic subset; `main` remains canned until the PR lands. No real model or cloud path is wired |
+| Verification | Five focused Ask tests and all 186 iOS 26.5 simulator app tests plus full repo test/build/lint pass for this recovery. The owner tested local arithmetic on earlier mini-6 SHA `687d26e`, not this revision; no new physical handoff is claimed |
 
 ---
 
