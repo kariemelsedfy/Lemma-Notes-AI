@@ -117,17 +117,12 @@
 
         var body: some View {
             GeometryReader { geometry in
-                let bounds = InkLineGrouping.bounds(of: strokes)
-                let scale = bounds.width > 0 ? min(geometry.size.width / bounds.width, 1) : 1
+                let layout = HandwritingSample.previewLayout(of: strokes, width: geometry.size.width)
                 Canvas { context, _ in
+                    guard let layout else { return }
                     for stroke in strokes {
                         var path = Path()
-                        let points = stroke.points.map {
-                            CGPoint(
-                                x: ($0.location.x - bounds.minX) * scale,
-                                y: ($0.location.y - bounds.minY) * scale
-                            )
-                        }
+                        let points = stroke.points.map { layout.position($0.location) }
                         guard let first = points.first else { continue }
                         path.move(to: first)
                         for point in points.dropFirst() { path.addLine(to: point) }
@@ -136,7 +131,7 @@
                             with: .color(MarginColor.ink),
                             style: StrokeStyle(
                                 lineWidth: InkRenderingLimits.drawnWidth(
-                                    forSize: stroke.points[0].size.width) * scale,
+                                    forSize: stroke.points[0].size.width) * layout.scale,
                                 lineCap: .round,
                                 lineJoin: .round
                             )

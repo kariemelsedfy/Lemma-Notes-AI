@@ -11,6 +11,14 @@ unless you check.
 
 ---
 
+## 2026-10-13 · Devin · M3-27 verification — the preview fix stays separate from likeness
+
+After regenerating Tuist, all 11 HandwritingSample tests executed and passed on iOS 26.5, including nib-edge fit, localized Done, synthetic PNG margin and the 200-stroke layout measure. All 190 simulator app tests passed; full package/build/test and lint gates also passed with this worktree's `.build` as process-local `TMPDIR`. The simulator layout measure averaged about 16 ms per 100 calls, not a physical canvas FPS claim. No fresh iPad build or device-side shared PNG inspection happened; the only on-device preview confirmation remains the owner's older `e106f7e` look, and glyph likeness remains a separate issue. No private ink or bank was committed or transmitted.
+
+## 2026-10-13 · Devin · M3-27 — restore nib-safe preview without claiming new glyph quality
+
+PR #114 was marked merged into an older feature parent, leaving main without its already-reviewed preview inset and localized Done copy. Replayed only its preview layout, synthetic edge/PNG tests and string, preserving app Ask and bank storage. The owner had already confirmed the fixed on-screen preview on the mini at older `e106f7e`, but said the generated writing still did not look like their own; this main-target SHA has not been installed or retested physically. Keep nib geometry, subjective likeness and the M3-10 blind panel separate. No screenshot/glyph-bank data, network path or charge was added ($0 of $10). Await current focused simulator/full gates and independent review before claiming this recovery complete.
+
 ## 2026-10-13 · Devin · M4-14B verification — zero tests is not a pass
 
 The first focused simulator command exited 0 but executed **zero** app tests because the generated Tuist workspace predated the newly recovered `LocalArithmeticAskTests.swift`. Regenerated the workspace, reran the focused suite and confirmed five Ask tests executed and passed, then ran all 186 iOS 26.5 simulator app tests with zero failures. Full package/build/test and lint gates pass with this worktree's existing Handwriting `.build` as process-local `TMPDIR`. The reviewed M4-14C wait retains the 150 ms post-cancellation no-late-ink interval. Nothing in this verification installs the current app on the mini 6 or makes a model/AWS request.
@@ -58,6 +66,16 @@ An independent read-only agent (session `b8b5d62b`) requested changes to PR #134
 ## 2026-10-13 · Devin · M0-12 — a merged PR can still miss main
 
 The owner merged PRs #110–#132 into feature-parent branches, but GitHub main remained at #109; each PR's MERGED label alone concealed that the app and proxy work never reached main. The owner chose independent **agent** review before future agent merges, not author self-review. This policy requires a written non-author verdict, green current-head checks, explicit owner confirmation for each merge, a direct main base, and verification that main contains the merge commit before starting another PR. If a separate reviewer cannot be identified or post a verifiable review, stop rather than treating the author's own review as independent. This PR is only a policy proposal: its author cannot merge it under the old rule, and it does not bring the earlier work to main or justify another iPad build.
+
+## 2026-10-08 · Devin · M3-27 — the mini preview fits, but does not yet look like the writer
+
+The owner inspected the fix from `e106f7e` on iPad mini 6/iPadOS 26.6 and confirmed the whole generated line is visible and the Done label is localized. This is a human on-screen preview check for that dated SHA, not a claim that this recovery SHA has been installed or that exported PNG was viewed by the owner. The generated glyph shapes still looked unlike the writer's own line; M3-19/M3-10 separately track that quality. No private screenshot or glyph bank left the device, and there was no AWS request or charge.
+
+## 2026-10-08 · Devin · M3-27 — preview clipping was not a handwriting-model defect
+
+The owner twice showed a private mini-6 screenshot of the same generated sentence cut at both preview edges, with `sample.done` shown literally. Point-only `InkLineGrouping.bounds` put the first/last point centers at the view edges, clipping the drawn nib. Tests initially failed without a pure preview layout that reserves the maximum visible nib radius plus a small inset, uniformly fits long text and leaves short text at scale 1. The generated strokes, pen dynamics and bank were not changed. The missing localized key was added, and synthetic PNG tests retain separate raster padding. Eleven focused sample tests, 190 original iOS 26.1 simulator app tests and full repo test/lint passed. A synthetic 200-stroke benchmark measured 13.69–20.59ms per 100 layouts, not physical Pencil FPS. At this implementation checkpoint the fixed preview had not yet been viewed on device; the later entry above records the subsequent look.
+
+**Keep the issues distinct.** The private image also showed letterform and spacing differences that inset geometry cannot fix. This was neither an M3-10 blind-panel score nor permission to remove handwriting (ADR-018); M3-19 owns bank-quality work. The screenshot and bank were not committed or uploaded.
 
 ## 2026-10-08 · Devin · M4-14B — the mini answered two different questions
 

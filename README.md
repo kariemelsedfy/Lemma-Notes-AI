@@ -14,8 +14,8 @@ Margin is an iPad notebook aiming to put answers directly on the page in your ha
 |---|---|
 | Phase | M3 handwriting implemented; M4 real AI and private beta integration pending |
 | Current deployment target | iPadOS 26.0 for the mini-6 beta; ADR-019 accepts iPadOS 27 for 1.0, but ADR-021 requires revisiting its device impact before that target moves |
-| Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting calibration and synthesis, two-region Ask, undo and export. This M4-14B review branch answers a bounded local arithmetic subset; `main` remains canned until the PR lands. No real model or cloud path is wired |
-| Verification | Five focused Ask tests and all 186 iOS 26.5 simulator app tests plus full repo test/build/lint pass for this recovery. The owner tested local arithmetic on earlier mini-6 SHA `687d26e`, not this revision; no new physical handoff is claimed |
+| Repo state | Native SwiftUI/PencilKit app with persisted notebooks, handwriting synthesis, two-region Ask, undo and export. `main` answers a bounded local arithmetic subset, not arbitrary questions; this review branch improves the debug sample preview. No real model or cloud path is wired |
+| Verification | All 11 focused sample tests and 190 iOS 26.5 simulator app tests plus full repo test/build/lint pass for this preview recovery. The owner saw the older fix at mini SHA `e106f7e`, not this revision; handwriting likeness and device-side PNG sharing remain unverified |
 
 ---
 

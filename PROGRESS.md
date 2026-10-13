@@ -25,23 +25,18 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
+| M3-27 Sample preview clip/key | Devin / main `f68b2fd` | `fix/M3-27-main-recovery` / sample view, layout, strings and tests | Recover reviewed #114; owner saw fixed preview at older `e106f7e`, glyph likeness remains M3-19 |
 | M4-13 Broad-device AI route | Devin / main `fef2f40` | `docs/M4-13-main-recovery` / root planning docs only | ADR-021 recovered on main via #135; Nova Lite candidate, $10 total ceiling, no paid call |
 | M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Historical Checkpoint A at `43cc3e7` recorded on main via #137; likeness remains separate (M3-27/M3-19) |
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
-| M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recover reviewed #113 local-only route; previously tested on older mini SHA, current branch not installed |
+| M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-### M3-27 — Handwriting sample clips its line and exposes a raw Done key
-status: In progress · claimed: Devin · 2026-10-13 · branch: fix/M3-27-main-recovery · source: reviewed PR #114 (merged off-main) · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
-Note: Recover the reviewed preview fit/nib-inset and localized Done label onto current main; no glyph-bank or synthesizer changes. The owner confirmed the preview behavior on an older mini revision, not this main SHA. Keep the subjective likeness problem separate and do not build, install, or request another device test for unchanged behavior.
-Acceptance:
-- [ ] Long/short stroke and pen-width tests keep visible ink inside preview bounds without altering stored strokes
-- [ ] Done is localized and synthetic PNG export retains margins, with no private screenshot/glyph samples committed
-- [ ] Focused simulator/full gates and independent review pass; document the dated mini result without claiming this recovery SHA was installed
+_(empty)_
 
 ## Review
 
@@ -49,8 +44,16 @@ _(empty)_
 
 ## Done
 
+### M3-27 — Handwriting sample clips its line and exposes a raw Done key
+status: Done (main-target preview recovery; historical mini confirmation at `e106f7e`, current branch not installed) · recovered: Devin · 2026-10-13 · branch: fix/M3-27-main-recovery · source: reviewed PR #114 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
+Note: the owner's private Checkpoint A screenshot showed clipped generated preview ink and the raw `sample.done` key. `InkLineGrouping.bounds` reports sampled point positions only; the old preview put the first center at x=0 and filled the entire view width, so its pen cap was necessarily cut off. A pure preview layout now reserves the maximum visible nib radius plus a small inset before uniformly fitting a long line; it does not mutate synthesized strokes, capture pressure or bank samples. Added `sample.done` to localized copy. The export still uses `InkRasterizer`'s separate 12pt padding. Test-first app regression initially failed to compile without the layout; 11 sample tests and 190 iOS 26.1 simulator app tests passed on the original branch; the mainline recovery passes all 11 focused and 190 full iOS 26.5 simulator app tests plus full repo tests/build/lint. A synthetic 200-stroke preview-layout benchmark measured 13.69–20.59ms per 100 layouts (about 0.14–0.21ms each) on that simulator; this is not a physical Pencil frame-rate trace. The owner subsequently reported the full generated line and localized Done were visible on the mini at `e106f7e`, but this mainline recovery SHA is not installed; the shared PNG was not inspected on device. Its on-screen fit may reduce the displayed size of long text; exported raw strokes keep the original matched height/pen. Letterform resemblance remains a separate M3-19/M3-10 question, not something this UI fix resolves. No screenshot or glyph-bank data is committed.
+Acceptance:
+- [x] Synthetic long/short strokes and nonzero nib widths are fully within mini-sized preview bounds without mutating generated stroke height/pen width
+- [x] Done resolves from `Localizable.strings`; PNG raster test confirms it retains a margin around the visible nib
+- [x] Dated mini-6 screenshot and human report at `e106f7e` confirm the on-screen line and Done label; glyph likeness remains unpassed and device-side shared PNG inspection is not claimed
+
 ### M4-14B — Use only the supported arithmetic subset in Ask while cloud is absent
-status: Done (main-target app recovery; prior mini-6 check at `687d26e`, current branch not installed) · recovered: Devin · 2026-10-13 · branch: feat/M4-14B-main-recovery · source: PR #113 · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
+status: Done (bounded local Ask on main via PR #138; prior mini-6 check at `687d26e`, current main revision not installed) · recovered: Devin · 2026-10-13 · branch: feat/M4-14B-main-recovery · source: PR #113 · depends: M4-14, M0-11 · refs: AI_PIPELINE.md §3, §5, §8, AGENTS.md §8 · estimate: M
 Note: the current branch replaces the shipping Ask's `CannedSpecProvider` with an app adapter for the pure local evaluator; the canned provider is `#if DEBUG` for tests only. No Apple Intelligence or network call is made. Unsupported/unclear OCR and unimplemented verbs produce no suggestion, with distinct localized recovery copy. The app cancels a selection when the visible page changes, while an in-flight cancel prevents late ink; tests exercise the app pipeline and navigation decision. `./scripts/test.sh` and `./scripts/lint.sh` pass, and 186 app-target tests passed on the original iOS 26.1 simulator; this recovery ran five focused Ask tests and all 186 app-target tests on iOS 26.5, plus full repository test/build/lint gates. The owner later tested `687d26e` on the mini 6 and reported distinct answers (`2+3=5`, `3+3=6`), an unsupported `x+2=` decline without ink, and pass for Keep/erase/undo/navigation/reopen/export. That is a historical four-case handoff, not evidence this recovery SHA was installed or that Pencil/OCR accuracy generalizes; only a new user-requested device handoff would require a fresh build. The reviewed #131 Ask-test synchronization is included here so CI waits up to three seconds for a terminal state instead of assuming a 150 ms completion; its separate 150 ms post-cancel late-ink assertion remains. Cloud-provider routing still belongs to M4-08C; `.onDevice` here means no network, not Apple Foundation Models availability.
 Acceptance:
 - [x] Synthetic selections read confidently as `2+3=`, `7-2=` and `3*3=` produce their respective validator-approved suggestions rather than a canned `4`
