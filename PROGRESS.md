@@ -25,9 +25,9 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 | Task | Owner / base | Branch / exclusive scope | Dependency, next checkpoint, evidence |
 |---|---|---|---|
-| M4-13 Broad-device AI route | Devin / main `fef2f40` | `docs/M4-13-main-recovery` / root planning docs only | Recover approved ADR-021 from #110 on main; Nova Lite remains a candidate with $10 total ceiling, no paid call |
-| M0-11 Fresh baseline device build | Unclaimed / after M4-13 | Branch TBD / device build and handoff | Existing `edu.bowdoin.margin` confirmed; await matching signing Team ID; fresh install and human Checkpoint A |
-| M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / `Intelligence` evaluator and tests | Recover reviewed #111; no shipping Ask change, network or iPad build |
+| M4-13 Broad-device AI route | Devin / main `fef2f40` | `docs/M4-13-main-recovery` / root planning docs only | ADR-021 recovered on main via #135; Nova Lite candidate, $10 total ceiling, no paid call |
+| M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Tested `43cc3e7` on mini 6: core steps passed; handwriting preview clipped and likeness remains separate (M3-27/M3-19) |
+| M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
 | M4-14B Interim Ask path | Unclaimed / after M4-14 | Branch TBD / named app Ask and tests only | Limited local answers before cloud; physical confirmation depends on M0-11 signing |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
@@ -50,8 +50,16 @@ Acceptance:
 - [x] Future PRs target main by default, receive independent written approval and current green required checks before an agent merges
 - [x] Verify the merged commit reaches main before starting the next PR; halt on failed checks, conflicts or missing review
 
+### M0-11 — Install a fresh baseline on the existing iPad without removing its data
+status: Done (historical 2026-10-07 Checkpoint A recorded in a main-target branch; this revision was not installed) · recovered: Devin · 2026-10-13 · branch: chore/M0-11-main-recovery · source: PR #112 · device-confirmed: human · tested: `43cc3e7` on iPad mini (6th generation), iPadOS 26.6 · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
+Note: after the owner trusted the Personal Team profile, regenerated with the matching team supplied only through the process environment. A new DerivedData physical-device Debug build of `43cc3e7` passed signing and `codesign --verify --deep --strict` as `edu.bowdoin.margin`. Installed that exact `.app` over the existing app without uninstalling, launched it, observed its process still running, and opened the regenerated workspace in Xcode before handoff. `./scripts/test.sh` and `./scripts/lint.sh` passed; the simulator app suite had 180 passes on the same code. Two actor-isolation warnings on that dated Xcode 27 device build were already present in `MarginDocument` and `InkAppearance` (tracked as M0-13 here; original PR #112 called them M0-12, now reserved for the PR workflow). The human reported **pass** for notebook reopen, the two Ask lassos and known canned `4`, grouped erase/undo, and reopen/export. The debug handwriting-sample screen displayed a generated sentence, but the user said it did **not** look the same as their writing and showed clipping and a raw `sample.done` key; this is not a quality pass (M3-27/M3-19). No personal handwriting/screenshot was committed. $0 of the $10 provider/hosting ceiling was used.
+Acceptance:
+- [x] Regenerate and build the tested revision for the connected iPad in brand-new DerivedData
+- [x] Verify matching signed bundle ID; install that exact artifact over the existing app, launch, and open regenerated workspace
+- [x] Give a focused Checkpoint A script and record human pass/fail against the tested SHA, device and OS; track the sample defects separately
+
 ### M4-14 — Evaluate a safe local arithmetic subset
-status: Done (pure evaluator recovered in a main-target review branch; not yet on main) · claimed: Devin · 2026-10-13 · branch: feat/M4-14-main-recovery · source: reviewed PR #111 · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
+status: Done (pure evaluator on main via PR #136) · claimed: Devin · 2026-10-13 · branch: feat/M4-14-main-recovery · source: reviewed PR #111 · depends: ADR-021 · refs: AI_PIPELINE.md §3, §5, AGENTS.md §7 · estimate: M
 Note: a pure `Intelligence` evaluator, not yet a shipping provider or Ask route. It accepts only a high-confidence answer reading in the bounded grammar documented in `AI_PIPELINE.md` §5. Checked `Decimal` operations reject divide-by-zero, overflow, inexact repeating division, overlong readings and excess output precision. Supported answers become LaTeX runs only through `SpecValidator`; unsupported input returns `.unsupported` and produces no ink. Test-first: the new tests initially failed to compile without this API, then all 190 Intelligence package tests passed, including integer-oracle cases. No network, paid call, model, app change or glyph-bank upload; M4-14B owns localized decline copy and interim shipping arithmetic; M4-08C owns the later cloud routing. This remains unverified on a physical iPad. The 2026-10-13 recovery restores the pure evaluator/tests and adds an ASCII-only input guard after independent review: a keycap OCR digit had incorrectly produced a validated answer. A failing regression pinned that refusal before the fix; the combined unary/parentheses depth limit is now explicit and tested. Shipping Ask still uses the canned `4`, and later app wiring/device checks require separate review.
 Acceptance:
 - [x] Tests first for precedence, signs, decimals, unsupported symbols and division by zero; no mistaken math becomes ink on tested inputs
@@ -238,13 +246,12 @@ _(empty)_
 
 ## Ready — M0: Foundations
 
-### M0-11 — Install a fresh baseline on the existing iPad without removing its data
-status: Blocked · owner: Devin after human signing Team ID confirmation · needs-device-verification · refs: AGENTS.md §8, DEVICE_SESSION.md §0 · estimate: S
-Note: the connected iPad mini (6th generation), iPadOS 26.6, is paired, Developer Mode is on, and the developer disk image is now mounted. Margin is installed as `edu.bowdoin.margin`; `TUIST_DEVELOPMENT_TEAM` is unset in the new clone. Checkpoint A tests the existing canned `4`, not real AI. Reopen once the matching signing team is provided; do not uninstall or change the app's bundle ID.
+### M0-13 — Recheck dated Xcode 27 physical-build actor warnings
+status: Ready · source: reviewed PR #112 (originally M0-12; renamed to avoid the active workflow-policy task) · refs: ARCHITECTURE.md §2, AGENTS.md §7 · estimate: S
+Note: the 2026-10-07 build of `43cc3e7` warned in `DocumentStore/MarginDocument.swift` about capturing non-Sendable `self` and in `InkCore/InkAppearance.swift` about main-actor UIKit mutation from a nonisolated method. Recheck whether these still occur on current main before fixing; do not suppress diagnostics, broaden module boundaries or mix code fixes into this docs-only device-record recovery.
 Acceptance:
-- [ ] Regenerate with the intended signing and make a new DerivedData directory for the exact revision
-- [ ] Build, install over the existing app, launch, and open the regenerated workspace on the connected iPad
-- [ ] Give a short Checkpoint A script covering notebook reopen, two lassos, handwriting sample, keep/erase/undo, persistence and export; record human results against SHA and OS
+- [ ] Verify the current Xcode 27 device/simulator diagnostic state while preserving the dated warning evidence
+- [ ] If still present, fix warnings in scoped main-target changes with full call-site and concurrency checks
 
 ### M0-04 — Module dependency rule enforcement
 status: Done · completed: Codex · 2026-07-26 · refs: ARCHITECTURE.md §2 · estimate: S
@@ -562,6 +569,10 @@ variance mechanism is worth about a point — invisible, as the device confirmed
 downstream of "how many samples does this bank hold" is currently starved: sample selection
 (M3-08C) has nothing to select between, and §8's third style cannot come back until it does.
 Reconsider the neat style once this ships, and measure again before re-adding it.
+Checkpoint A 2026-10-07: the writer compared one real line with a generated sentence on the mini 6
+and said it was not really the same. This is an individual qualitative observation, not the M3-10
+blind-panel score; the preview clipping and raw key are a separate M3-27 UI defect. Keep the bank
+private and measure matched samples before altering synthesis.
 Acceptance:
 - [ ] Only high-confidence user-authored ink is eligible; generated/provenance strokes are excluded
 - [ ] Character-to-stroke alignment fails closed rather than teaching the wrong glyph
@@ -1160,29 +1171,30 @@ Expand each into tasks at the start of its milestone, not before. Writing 200 sp
 
 ## Ready — M3: Handwriting synthesis
 
-**The gate.** R-01 in `PROJECT_PLAN.md` §7: if a blind panel says "plausibly mine" <40%
-after two iterations, we pivot to typeset output and drop handwriting matching from the
-pitch. Everything here is sequenced to reach that verdict as early as possible — the worst
-outcome is building all of M3 and *then* discovering it does not convince anyone.
+**Handwriting quality is measured, not a pivot gate (ADR-018).** M3-10's blind panel
+quantifies how convincing output is; a poor score prioritizes synthesis/bank improvements
+rather than removing handwriting or delaying real-AI work. The first on-device sentence
+was shown at Checkpoint A and did not look the same as the writer's own line. See M3-27
+for preview clipping and M3-19 for sample diversity after the core AI path is stable.
 
 ADR-011 raised the stakes: with loop-and-dwell gone, "the answer is in your handwriting"
 is carrying more of the product's differentiation than it was.
 
-**Status 2026-08-08: everything an agent can build in M3 is built.** The only remaining
-item is **M3-10, the panel, and only a human can run it.** Two things to know before
-running it:
+**Status 2026-10-07:** M3-24's debug sample screen has now shown a generated sentence
+on the physical mini 6. Its preview clips the line, the Done control shows a raw key,
+and the writer judged the generated lettering noticeably different from their own.
+The screen working is not a blind-panel result (M3-10) or evidence of convincing style.
+M3-08C's variation already reaches sample selection, spacing and slant, but the current
+one-pass bank has few alternatives to sample; M3-19 is the larger quality lever.
+Neither this finding nor the panel delays the real-AI path (ADR-018).
 
-- **Nobody has yet looked at generated ink in a real hand.** The whole path is verified by
-  tests, never by eye. `DEVICE_SESSION.md` §6 is the dress rehearsal — do that first.
-- **If it looks mechanical, M3-08C is the first place to look.** `Variation` reaches only
-  vertical jitter and baseline drift, not glyph-sample selection, so a bank with four
-  samples per letter currently behaves identically to one with a single sample. That
-  undercuts §3.1's repeated pass, which exists precisely to kill the "robot repeating the
-  identical 'e'" tell.
-
-The follow-ups filed during M3 — M3-01B, M3-02B, M3-03B, M3-04B, M3-08B, M3-08C, M3-09B,
-M3-11, M3-13 — are deliberately *not* prerequisites for the gate. Polishing before
-the verdict is the failure mode this milestone is sequenced to avoid.
+### M3-27 — Handwriting sample clips its line and exposes a raw Done key
+status: Ready · needs-device-verification · found: human Checkpoint A, `43cc3e7`, iPad mini 6 / iPadOS 26.6 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
+Note: the user's screenshot shows the generated sentence cut off at both horizontal edges and a `sample.done` button label. `SampleInkView` maps point-only `InkLineGrouping.bounds` directly to x=0 and the full view width, leaving no margin for the drawn nib; `Localizable.strings` lacks `sample.done`. This is a preview/UI defect, **not** an explanation for why the generated glyph shapes look unlike the author's line. Do not alter the bank or synthesis jitter to hide it; M3-19 and a later blind measurement own style quality. Keep the bank on-device and do not commit the screenshot or glyph samples.
+Acceptance:
+- [ ] A regression test exercises long strokes and nonzero nib width at both preview edges; the entire line is visible on an iPad mini without changing intended ink height/pen width
+- [ ] Done uses localized copy, and PNG sharing remains uncropped when tested
+- [ ] Fresh physical-device look confirms the preview no longer clips; the user's subjective similarity judgement is recorded separately
 
 ### M3-00 — Typeset fallback style
 status: Done · completed: Claude · 2026-08-02 · refs: HANDWRITING.md §8 · estimate: S
@@ -1718,7 +1730,7 @@ Acceptance:
 - [ ] Whatever it becomes, it is stable across repeated Asks on one page
 
 ### M3-24 — The panel cannot be run: the app can only draw `4`
-status: Review · implemented: Claude · merged: PR #108 · needs-device-verification · 2026-08-12 · blocks: M3-10 physical sample capture · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
+status: Review · implemented: Claude · merged: PR #108 · device-viewed: human · 2026-10-07 · preview-follow-up: M3-27 · refs: PROGRESS.md M3-10, HANDWRITING.md §7 · estimate: S
 Note: noticed while writing device-test instructions, and it is the reason M3-10 has not been
 runnable at any point it was "ready". The panel needs **five generated lines in the writer's own
 hand**. The only generated ink the app can produce is `CannedSpecProvider.arithmetic`, whose
@@ -1753,7 +1765,7 @@ Acceptance:
       sizes and against a known pen width
 - [x] Not reachable in a shipping build — `#if DEBUG`, with a note that a designed version of
       this would make a good M3-13 moment rather than being inherited from a diagnostic screen
-- [ ] **Confirm on device**: the first time anyone sees a sentence in their own synthesized hand
+- [x] **Confirm on device**: a generated sentence appears in the saved bank's hand on the mini 6; the user says it is visibly unlike their own line and the preview clips (M3-27). This confirms reachability, not realism or panel readiness
 
 ### M3-10 — Blind similarity panel ~~*(the gate)*~~ — a measurement, not a verdict
 status: Ready · owner: human · needs-device-verification: M3-24 debug sample flow · 2026-08-12
@@ -1763,7 +1775,8 @@ at M3-19 rather than at removing the feature. · refs: PROJECT_PLAN.md §7, HAND
 Note: a human-led quality measurement, not a kill-criterion review (ADR-018). Compare five
 written and five generated matched lines per writer with labels hidden; record the number of
 writers, sample count, and rubric. A low score prioritizes handwriting improvements, not a
-pivot to typeset. The debug sample screen exists but still needs physical-device confirmation.
+pivot to typeset. The debug sample screen appeared on a physical iPad on 2026-10-07,
+but the preview clipping (M3-27) should be fixed before treating its images as panel material.
 Acceptance:
 - [ ] Record the blind "plausibly mine" score, sample count, writer count, and scoring method (quality targets: ≥60% at M3, ≥75% at 1.0; not gates)
 - [ ] Note size/pen matching and observed defects; use results to prioritize M3-19

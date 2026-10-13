@@ -42,12 +42,19 @@ A free Apple ID is enough for everything in this list except item 4. It gives 7-
 provisioning: the build stops launching after a week and you re-run it. TestFlight and
 iCloud need the paid programme, which is M0-07.
 
-If signing fails with a bundle-ID conflict, `edu.bowdoin.margin` is registered to someone
-else — free provisioning needs a globally unique ID. Override it:
+A signed app may install successfully yet fail to **launch** with iPadOS Security saying its
+developer profile has not been explicitly trusted. First verify the built artifact's signature
+and bundle ID locally; ask the human to check iPad Settings → General → VPN & Device Management
+for the Developer App profile and trust it there if offered. Do not uninstall, change the bundle
+ID, or weaken signing to bypass this. An install without a successful launch is not a device
+handoff. If the branch changes before a later human handoff, regenerate and build again with a
+new DerivedData directory per the rule above.
 
-```bash
-export TUIST_BUNDLE_ID_PREFIX=com.yourname
-```
+If signing reports a conflict for `edu.bowdoin.margin`, stop and verify the Xcode account,
+Personal Team and existing app registration. **Do not change the bundle ID for a normal
+handoff:** a different ID installs a different app and does not preserve access to the
+existing app's notebooks or glyph bank. A separate clean-app test needs the owner's
+explicit approval and a warning about that data boundary; never use it as a signing fix.
 
 **Then check the simulator first.** The whole loop works there, so if something is badly
 wrong you will see it before you pick up the Pencil: circle some ink, hold, pick a verb,
