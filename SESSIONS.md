@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-14 · Claude · M4-08A1 recovery — the proxy code was never on main
+
+The owner approved AWS setup and asked for the live Nova Lite path. Before writing anything new I found that the entire mock-only proxy (`Tools/bedrock-proxy`, #116–#122) and the client provider (#118) exist only on `origin/feat/M4-08A1-proxy-admission`: the same off-main merge problem #135–#139 fixed for app code. A stale, untracked `Tools/bedrock-proxy/.build` in the clean clone makes the directory *look* present on main; `git ls-files Tools` is the honest check. Recovering in four sub-400-line PRs: A1 admission (this), B client provider, A2a durable ledger + ADR-023, A2b price envelope + rate limits. This one is the reviewed `e8e3c2d` state verbatim; no behavior change.
+
+Same session, AWS: the owner's existing `MarginPilot` IAM user already had a well-scoped read-only policy; I added only an inline `MarginPilotInvokeNovaLite` (InvokeModel/InvokeModelWithResponseStream on `amazon.nova-lite-v1:0`, us-east-1). Bedrock's Model access page is retired; serverless models enable on first invoke. Free CLI checks via profile `margin-pilot` confirmed the identity, Nova Lite ACTIVE/AUTHORIZED/AVAILABLE and account retention `none`. The owner approved one sub-cent synthetic text call to prove eligibility under `none`; AWS refused it with **"Your account is currently being verified"** (new-account verification, up to ~2 h). Refused calls are not billed; $0 of $10 used. Retry before A3.
+
 ## 2026-10-13 · Devin · M3-27 verification — the preview fix stays separate from likeness
 
 After regenerating Tuist, all 11 HandwritingSample tests executed and passed on iOS 26.5, including nib-edge fit, localized Done, synthetic PNG margin and the 200-stroke layout measure. All 190 simulator app tests passed; full package/build/test and lint gates also passed with this worktree's `.build` as process-local `TMPDIR`. The simulator layout measure averaged about 16 ms per 100 calls, not a physical canvas FPS claim. No fresh iPad build or device-side shared PNG inspection happened; the only on-device preview confirmation remains the owner's older `e106f7e` look, and glyph likeness remains a separate issue. No private ink or bank was committed or transmitted.
