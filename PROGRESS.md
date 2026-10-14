@@ -30,6 +30,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Historical Checkpoint A at `43cc3e7` recorded on main via #137; likeness remains separate (M3-27/M3-19) |
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
 | M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
+| M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovering reviewed #116/#117 (merged off-main); mock-only, no AWS call |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
@@ -43,6 +44,13 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-08A1 — Mock-only proxy request admission and privacy bounds
+status: Done (mock-only; mainline recovery) · implemented: Devin (A1a #116, A1b #117) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A1-main-recovery · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: S
+Note: #116/#117 were reviewed but merged into an off-main parent, so this reapplies their final reviewed state (`e8e3c2d`) unchanged: the isolated `Tools/bedrock-proxy` SwiftPM library and its eight synthetic tests, plus the `scripts/test.sh`/`lint.sh` hooks. It has **no endpoint, AWS SDK, app dependency, credential, ledger or live transport**. Without a trusted server-injected pilot identity and fresh exact-model/Region `none` retention evidence it denies. Its exact JSON shape excludes page/bank fields; PNG signature, IHDR dimensions, bytes/pixels, allowed chunks and CRC, transcript and output tokens are bounded; in-flight fake transport is capped; cancellation after async authorization stops dispatch. It checks PNG structure, not decompression. The durable spend ledger (A2) is a separate recovery; the live transport (A3) is new work. Full `./scripts/test.sh` (190 app tests, 8 proxy tests) and `./scripts/lint.sh` pass locally.
+Acceptance:
+- [x] Eight admission tests pass from `scripts/test.sh`; tool sources are covered by SwiftLint and swift-format
+- [x] Main-target PR is independently reviewed and green before merge
 
 ### M3-27 — Handwriting sample clips its line and exposes a raw Done key
 status: Done (main-target preview recovery; historical mini confirmation at `e106f7e`, current branch not installed) · recovered: Devin · 2026-10-13 · branch: fix/M3-27-main-recovery · source: reviewed PR #114 · refs: PROGRESS.md M3-24, HANDWRITING.md §7, DEVICE_SESSION.md §10 · estimate: M
