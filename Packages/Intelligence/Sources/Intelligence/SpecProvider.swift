@@ -98,6 +98,104 @@ public protocol SpecProvider: Sendable {
     func spec(for request: SpecRequest) async throws -> ValidatedSpec
 }
 
+public enum ProxyTransportFailure: Error, Equatable, Sendable, CaseIterable {
+    case offline, timeout, refused, unauthorized, overBudget
+}
+
+public enum ProxyProviderFailure: Error, Equatable, Sendable {
+    case invalidRequest, invalidResponse, offline, refused, unauthorized, budgetExceeded
+}
+
+public struct ProxyClientRequest: Encodable, Sendable {
+    public let requestID: UUID
+    public let cropPNG: Data
+    public let neighborhoodPNG: Data
+    public let transcript: String
+    public let intent: SpecIntent
+    public let maxOutputTokens: Int
+}
+
+public protocol ProxyClientTransport: Sendable {
+    func response(to request: ProxyClientRequest) async throws -> Data
+}
+
+public struct ProxySpecProvider: SpecProvider {
+    public let tier = ModelTier.frontierCloud
+    private let transport: any ProxyClientTransport
+
+    private init(transport: any ProxyClientTransport) {
+        self.transport = transport
+    }
+
+    public static func consentGated(
+        transport: any ProxyClientTransport,
+        isConsentGranted: @escaping @Sendable () -> Bool
+    ) -> ConsentGatedProvider {
+        Self(transport: transport).gated(by: isConsentGranted)
+    }
+
+    public func spec(for request: SpecRequest) async throws -> ValidatedSpec {
+        try Task.checkCancellation()
+        let wire = try Self.wireRequest(for: request)
+        let response = try await send(wire)
+        try Task.checkCancellation()
+        return try Self.validate(response, intent: wire.intent)
+    }
+
+    private static func wireRequest(for request: SpecRequest) throws -> ProxyClientRequest {
+        guard let raster = request.rasterizedSelection, let intent = request.intent else {
+            throw ProxyProviderFailure.invalidRequest
+        }
+        let crop = raster.crop
+        let neighborhood = raster.neighborhood
+        let cropPixels = Double(crop.size.width * crop.size.height * crop.scale * crop.scale)
+        let nearbyPixels = Double(
+            neighborhood.size.width * neighborhood.size.height * neighborhood.scale * neighborhood.scale
+        )
+        let transcript = request.selectedAreaReading?.transcript ?? ""
+        guard !crop.data.isEmpty, crop.data.count <= 1_000_000,
+            !neighborhood.data.isEmpty, neighborhood.data.count <= 500_000,
+            cropPixels.isFinite, (1...1_500_000).contains(cropPixels),
+            nearbyPixels.isFinite, (1...500_000).contains(nearbyPixels),
+            transcript.utf8.count <= 256
+        else { throw ProxyProviderFailure.invalidRequest }
+        return ProxyClientRequest(
+            requestID: UUID(), cropPNG: crop.data, neighborhoodPNG: neighborhood.data,
+            transcript: transcript, intent: intent, maxOutputTokens: 256
+        )
+    }
+
+    private func send(_ wire: ProxyClientRequest) async throws -> Data {
+        do {
+            return try await transport.response(to: wire)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as ProxyTransportFailure {
+            switch error {
+            case .timeout: throw ProviderError.timeout
+            case .offline: throw ProxyProviderFailure.offline
+            case .refused: throw ProxyProviderFailure.refused
+            case .unauthorized: throw ProxyProviderFailure.unauthorized
+            case .overBudget: throw ProxyProviderFailure.budgetExceeded
+            }
+        } catch {
+            throw ProviderError.transport
+        }
+    }
+
+    private static func validate(_ response: Data, intent: SpecIntent) throws -> ValidatedSpec {
+        guard response.count <= 65_536 else { throw ProxyProviderFailure.invalidResponse }
+        let spec: ValidatedSpec
+        do {
+            spec = try SpecValidator.validate(response)
+        } catch {
+            throw ProxyProviderFailure.invalidResponse
+        }
+        guard spec.intent == intent else { throw ProxyProviderFailure.invalidResponse }
+        return spec
+    }
+}
+
 /// A tiny, deterministic 64-bit string digest.
 private struct FNV1a {
     private var state: UInt64 = 0xCBF2_9CE4_8422_2325

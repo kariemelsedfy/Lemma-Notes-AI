@@ -38,18 +38,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-08B — Build the client provider with consent and validated specs (mainline recovery)
-status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08B-main-recovery · source: reviewed PR #118, merged off-main · depends: M4-09, ADR-021 · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: S
-Note: Reapply #118's `ProxySpecProvider` (consent-gated factory, fake transport, validated replies, content-free typed errors) and its tests onto current main, with proposed ADR-022. No URL, AWS SDK or app wiring.
-Acceptance:
-- [ ] Seven fake-transport provider tests and the full Intelligence suite pass; repo gates pass
-- [ ] Main-target PR independently reviewed and green before merge
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08B — Build the client provider with consent and validated specs
+status: Done (fake transport only; mainline recovery) · implemented: Devin (#118) · recovered: Claude · 2026-10-14 · branch: feat/M4-08B-main-recovery · depends: M4-09, ADR-021, ADR-022 (proposed) · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: S
+Note: #118 was reviewed but merged into an off-main parent. Its `SpecProvider.swift` addition and `ProxySpecProviderTests.swift` are reapplied unchanged. The frontier `ProxySpecProvider` has **no URL or live transport**; its only public factory returns the existing `ConsentGatedProvider`, so no caller can transmit without the provider-layer consent callback. `ProxyClientRequest` carries only bounded crop/neighborhood bytes, the local transcript, predicted intent, request ID and an output-token cap. Replies are size-limited, decoded and passed through `SpecValidator`; refusal, timeout, offline, unauthorized and budget failures are content-free, and late cancellation suppresses a reply. ADR-022 (proposed) records the factory seam. Docs: #118's AI_PIPELINE §5 sentence is re-added to main's newer text; its CONTEXT/Q15–Q16 edits are superseded by main and the later recoveries. Nothing is wired into the iPad Ask (M4-08C).
+Acceptance:
+- [x] Seven fake-transport provider tests and the full Intelligence suite (197) pass; `./scripts/test.sh` and `./scripts/lint.sh` pass
+- [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08A1 — Mock-only proxy request admission and privacy bounds
 status: Done (mock-only; mainline recovery) · implemented: Devin (A1a #116, A1b #117) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A1-main-recovery · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: S

@@ -11,6 +11,14 @@ unless you check.
 
 ---
 
+## 2026-10-14 · Claude · M4-08B recovery — and a correction to the M4-08A1 entry
+
+#118 reapplied cleanly; only AI_PIPELINE §5 conflicted, because main's routing paragraph was rewritten after #118 branched. I kept main's text and appended #118's one-sentence M4-08B note rather than restoring the older wording.
+
+**Correction:** the M4-08A1 Done entry and PR #140 say `./scripts/test.sh` ran "190 app tests". It did not. 190 was the **Intelligence package** count (197 now, with #118's seven). `scripts/test.sh` *builds* the app but runs no simulator app tests; those need a separate `xcodebuild test` (last recorded: 190 on iOS 26.5 for M3-27, which is a coincidence that made the misreading easy). Neither #140 nor this PR changes app code, so no app-test claim is needed.
+
+Scope found while preparing this: the off-main proxy chain runs through #132, not #122. That is about 3,900 lines including ADR-023 (system SQLite), ADR-024 (pinned `aws-sdk-swift` 1.8.2, Mac tool only), PNG normalization and read-only Bedrock/Pricing evidence. Even at the chain tip there is **no InvokeModel path**. Recover in order, one sub-400-line PR at a time; the `/private/tmp/lemma-pr12x-fix` worktrees are earlier reconcile attempts of those branches.
+
 ## 2026-10-14 · Claude · M4-08A1 recovery — the proxy code was never on main
 
 The owner approved AWS setup and asked for the live Nova Lite path. Before writing anything new I found that the entire mock-only proxy (`Tools/bedrock-proxy`, #116–#122) and the client provider (#118) exist only on `origin/feat/M4-08A1-proxy-admission`: the same off-main merge problem #135–#139 fixed for app code. A stale, untracked `Tools/bedrock-proxy/.build` in the clean clone makes the directory *look* present on main; `git ls-files Tools` is the honest check. Recovering in four sub-400-line PRs: A1 admission (this), B client provider, A2a durable ledger + ADR-023, A2b price envelope + rate limits. This one is the reviewed `e8e3c2d` state verbatim; no behavior change.
