@@ -40,18 +40,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-08A2b — Refuse unverified or costly quotes and bind hourly rate limits to reservations (mainline recovery)
-status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A2b-main-recovery · source: reviewed PRs #121 (A2b2a) and #122 (A2b2b1), merged off-main · depends: M4-08A2a, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AGENTS.md §7 · estimate: S
-Note: Reapply `PilotPriceEnvelope` and the per-pilot rolling-hour limit in `SpendLedger` as reviewed at `1813705`. Offline only. Also records #142 review follow-ups.
-Acceptance:
-- [ ] Price, rate, ledger and admission tests pass; full repo gates pass
-- [ ] Main-target PR independently reviewed and green before merge
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2b — Refuse unverified or costly quotes and bind hourly rate limits to reservations
+status: Done (offline only; mainline recovery) · implemented: Devin (A2b2a #121, A2b2b1 #122) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2b-main-recovery · depends: M4-08A2a, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AGENTS.md §7 · estimate: S
+Note: reapplied unchanged from `1813705`. `PilotPriceEnvelope` is a pure calculator that **always refuses without evidence**. Evidence must match `amazon.nova-lite-v1:0`, us-east-1, standard tier, be at most 300 s old, and carry positive per-million rates and a bounded non-model amount. It reserves the 300K-context worst case plus at most 512 output tokens with overflow-checked integer arithmetic and refuses anything above **5¢**; a passing quote still holds a fixed 50,000 micro-USD. Test rates are fixtures, not a verified quote. `SpendLedger` now requires a server-issued opaque pilot UUID (all-zero refused) and admits at most **40 requests per pilot per rolling hour**, atomically with the budget reservation; two connections cannot both take the fortieth slot, and older prototype schemas fail closed. 30 proxy tests pass. Still not connected to admission or any transport. No AWS call; $0 of $10.
+Acceptance:
+- [x] Price, rate, ledger and admission tests (30) pass; `./scripts/test.sh` and `./scripts/lint.sh` pass
+- [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08A2a — Durable local-Mac worst-case reservation, replay denial and cost observations
 status: Done (offline ledger only; mainline recovery) · implemented: Devin (A2a #119, A2b1 #120) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2a-main-recovery · depends: M4-08A1, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
