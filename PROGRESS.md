@@ -31,14 +31,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
 | M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
 | M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovered on main via #140; mock-only, no AWS call |
-| M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recover reviewed #118 (merged off-main); fake transport only, no app route |
+| M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recovered on main via #141; fake transport only, no app route |
+| M4-08A2a Durable spend ledger | Claude / main `9b4c77f` | `feat/M4-08A2a-main-recovery` / proxy `SpendLedger`, tests, ADR-023 | Recover reviewed #119/#120 (merged off-main); offline, no AWS call |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2a — Durable local-Mac worst-case reservation, replay denial and cost observations (mainline recovery)
+status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A2a-main-recovery · source: reviewed PRs #119 (A2a) and #120 (A2b1), merged off-main · depends: M4-08A1, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
+Note: Reapply the system-SQLite3 `SpendLedger` and its tests as reviewed at `017dca3`, with proposed ADR-023. Offline only; no AWS call.
+Acceptance:
+- [ ] Ledger and admission tests pass; full repo gates pass
+- [ ] Main-target PR independently reviewed and green before merge
 
 ## Review
 
@@ -48,14 +54,14 @@ _(empty)_
 
 ### M4-08B — Build the client provider with consent and validated specs
 status: Done (fake transport only; mainline recovery) · implemented: Devin (#118) · recovered: Claude · 2026-10-14 · branch: feat/M4-08B-main-recovery · depends: M4-09, ADR-021, ADR-022 (proposed) · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: S
-Note: #118 was reviewed but merged into an off-main parent. Its `SpecProvider.swift` addition and `ProxySpecProviderTests.swift` are reapplied unchanged. The frontier `ProxySpecProvider` has **no URL or live transport**; its only public factory returns the existing `ConsentGatedProvider`, so no caller can transmit without the provider-layer consent callback. `ProxyClientRequest` carries only bounded crop/neighborhood bytes, the local transcript, predicted intent, request ID and an output-token cap. Replies are size-limited, decoded and passed through `SpecValidator`; refusal, timeout, offline, unauthorized and budget failures are content-free, and late cancellation suppresses a reply. ADR-022 (proposed) records the factory seam. Docs: #118's AI_PIPELINE §5 sentence is re-added to main's newer text; its CONTEXT/Q15–Q16 edits are superseded by main and the later recoveries. Nothing is wired into the iPad Ask (M4-08C).
+Note: #118 was reviewed but merged into an off-main parent. Its `SpecProvider.swift` addition and `ProxySpecProviderTests.swift` are reapplied unchanged. The frontier `ProxySpecProvider` has **no URL or live transport**; its only public factory returns the existing `ConsentGatedProvider`, so no caller can transmit without the provider-layer consent callback. `ProxyClientRequest` carries only bounded crop/neighborhood bytes, the local transcript, predicted intent, request ID and an output-token cap. Replies are size-limited, decoded and passed through `SpecValidator`; refusal, timeout, offline, unauthorized and budget failures are content-free, and late cancellation suppresses a reply (its test tolerates either timing outcome, so it may not exercise the late-reply path every run; inherited from #118). ADR-022 (proposed) records the factory seam. Docs: #118's AI_PIPELINE §5 sentence is re-added to main's newer text; its CONTEXT/Q15–Q16 edits are superseded by main and the later recoveries. Nothing is wired into the iPad Ask (M4-08C).
 Acceptance:
 - [x] Seven fake-transport provider tests and the full Intelligence suite (197) pass; `./scripts/test.sh` and `./scripts/lint.sh` pass
 - [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08A1 — Mock-only proxy request admission and privacy bounds
 status: Done (mock-only; mainline recovery) · implemented: Devin (A1a #116, A1b #117) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A1-main-recovery · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: S
-Note: #116/#117 were reviewed but merged into an off-main parent, so this reapplies their final reviewed state (`e8e3c2d`) unchanged: the isolated `Tools/bedrock-proxy` SwiftPM library and its eight synthetic tests, plus the `scripts/test.sh`/`lint.sh` hooks. It has **no endpoint, AWS SDK, app dependency, credential, ledger or live transport**. Without a trusted server-injected pilot identity and fresh exact-model/Region `none` retention evidence it denies. Its exact JSON shape excludes page/bank fields; PNG signature, IHDR dimensions, bytes/pixels, allowed chunks and CRC, transcript and output tokens are bounded; in-flight fake transport is capped; cancellation after async authorization stops dispatch. It checks PNG structure, not decompression. The durable spend ledger (A2) is a separate recovery; the live transport (A3) is new work. Full `./scripts/test.sh` (190 app tests, 8 proxy tests) and `./scripts/lint.sh` pass locally.
+Note: #116/#117 were reviewed but merged into an off-main parent, so this reapplies their final reviewed state (`e8e3c2d`) unchanged: the isolated `Tools/bedrock-proxy` SwiftPM library and its eight synthetic tests, plus the `scripts/test.sh`/`lint.sh` hooks. It has **no endpoint, AWS SDK, app dependency, credential, ledger or live transport**. Without a trusted server-injected pilot identity and fresh exact-model/Region `none` retention evidence it denies. Its exact JSON shape excludes page/bank fields; PNG signature, IHDR dimensions, bytes/pixels, allowed chunks and CRC, transcript and output tokens are bounded; in-flight fake transport is capped; cancellation after async authorization stops dispatch. It checks PNG structure, not decompression. The durable spend ledger (A2) is a separate recovery; the live transport (A3) is new work. Full `./scripts/test.sh` (all packages incl. 190 Intelligence tests, 8 proxy tests, app build; it runs no simulator app tests) and `./scripts/lint.sh` pass locally.
 Acceptance:
 - [x] Eight admission tests pass from `scripts/test.sh`; tool sources are covered by SwiftLint and swift-format
 - [x] Main-target PR is independently reviewed and green before merge
