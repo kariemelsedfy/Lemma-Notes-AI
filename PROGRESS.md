@@ -41,18 +41,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport (mainline recovery)
-status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A2b2b2-main-recovery · source: reviewed PR #123, merged off-main · depends: M4-08A1, M4-08A2a, M4-08A2b, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
-Note: Reapply `PilotAdmission` and `AdmissionGate.validate` as reviewed at `71a8719`. Fake transport only. The AWS SDK seam (#124) is the next, separate recovery.
-Acceptance:
-- [ ] Composition, price, rate, ledger and admission tests pass; full repo gates pass
-- [ ] Main-target PR independently reviewed and green before merge
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
+status: Done (mock-only; mainline recovery) · implemented: Devin (#123) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2b2b2-main-recovery · depends: M4-08A1, M4-08A2a, M4-08A2b, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
+Note: reapplied unchanged from `71a8719`. `AdmissionGate.validate` exposes the strict body/authorization/retention/PNG checks without sending. `PilotAdmission` then parses a server-injected UUID identity, checks injected fresh standard-tier Nova Lite/us-east-1 price evidence, holds a single-flight slot, atomically reserves 5¢ and the 40/hour allowance in the ledger, checks cancellation, and only then calls a **fake** transport. A fake-transport failure keeps the hold and denies replay. 38 proxy tests pass, including zero-send cases for missing identity, retention, PNG, quote, duplicate, over-budget, rate-limited and cancelled work, and a two-ledger race for a one-call budget. **Not a deployable gateway:** all callbacks are injected mocks, the older A1 fake `invoke` path still exists, and there is no endpoint, real transport or IAM invocation path. $0 of $10.
+Acceptance:
+- [x] Composition, price, rate, ledger and admission tests (38) pass; repo gates pass
+- [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08A2b — Refuse unverified or costly quotes and bind hourly rate limits to reservations
 status: Done (offline only; mainline recovery) · implemented: Devin (A2b2a #121, A2b2b1 #122) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2b-main-recovery · depends: M4-08A2a, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AGENTS.md §7 · estimate: S

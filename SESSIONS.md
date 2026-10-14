@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-14 · Claude · M4-08A2b2b2 recovery — a sandbox TMPDIR failure that is not a regression
+
+The first `./scripts/test.sh` run failed three Handwriting `GlyphBankTests` with "Creating a temporary file via mktemp failed (errno 1)". That is the sandbox refusing temp writes outside the project, not a code change (this PR touches only `Tools/bedrock-proxy`). Rerunning with `TMPDIR=$PWD/Packages/Handwriting/.build/tmp` passed everything, the same workaround earlier sessions recorded. Do not chase it as a regression.
+
+Also, `timeout` does not exist on macOS: a `timeout 100 gh pr merge` wrapper silently never ran the merge, only the comment before it. Verify `state == MERGED` on the PR rather than trusting a chained command's exit.
+
 ## 2026-10-14 · Claude · M4-08A2b recovery — and the real live blocker is an AWS quota of zero
 
 #121/#122 reapplied cleanly at `1813705`. The #142 review nits (unbounded observed cost, a brief non-0600 window at DB bootstrap, a race test that does not force overlap) are filed as M4-08A2c rather than patched into reviewed recovery code.
