@@ -33,14 +33,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovered on main via #140; mock-only, no AWS call |
 | M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recovered on main via #141; fake transport only, no app route |
 | M4-08A2a Durable spend ledger | Claude / main `9b4c77f` | `feat/M4-08A2a-main-recovery` / proxy `SpendLedger`, tests, ADR-023 | Recovered on main via #142; offline, no AWS call |
-| M4-08A2b Price envelope and rate limits | Claude / main `bb91216` | `feat/M4-08A2b-main-recovery` / proxy price envelope, rate ledger, tests | Recover reviewed #121/#122 (merged off-main); offline, no AWS call |
+| M4-08A2b Price envelope and rate limits | Claude / main `bb91216` | `feat/M4-08A2b-main-recovery` / proxy price envelope, rate ledger, tests | Recovered on main via #143; offline, no AWS call |
+| M4-08A2b2b2 Admission composition | Claude / main `5e50f68` | `feat/M4-08A2b2b2-main-recovery` / proxy `PilotAdmission`, `AdmissionGate.validate`, tests | Recover reviewed #123 (merged off-main); fake transport only |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport (mainline recovery)
+status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A2b2b2-main-recovery · source: reviewed PR #123, merged off-main · depends: M4-08A1, M4-08A2a, M4-08A2b, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
+Note: Reapply `PilotAdmission` and `AdmissionGate.validate` as reviewed at `71a8719`. Fake transport only. The AWS SDK seam (#124) is the next, separate recovery.
+Acceptance:
+- [ ] Composition, price, rate, ledger and admission tests pass; full repo gates pass
+- [ ] Main-target PR independently reviewed and green before merge
 
 ## Review
 
@@ -1833,7 +1839,8 @@ Note: none blocks the offline ledger, but all three should be closed before live
 Acceptance:
 - [ ] Observed cost has an explicit upper bound, so an overflowing value fails closed with the correct error rather than an incidental one
 - [ ] The DB file is created 0600 atomically (no window with default permissions at bootstrap)
-- [ ] The cross-connection race test forces genuinely overlapping `BEGIN IMMEDIATE` attempts instead of relying on scheduling
+- [ ] The cross-connection race tests (budget and the 40/hour rate) force genuinely overlapping `BEGIN IMMEDIATE` attempts instead of relying on scheduling
+- [ ] `SpendLedger.reserve` enforces the 5¢ per-call ceiling itself, so a caller cannot bypass `PilotPriceEnvelope` (#143 review)
 
 **Filed 2026-08-12 by Claude; updated under ADR-021.** M3-10 is a quality measurement,
 not a gate to M4 (ADR-018). The connected iPad mini 6 is not Apple Intelligence-capable;
