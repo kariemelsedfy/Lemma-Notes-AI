@@ -39,18 +39,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 
 ## In progress
 
-### M4-08A2a — Durable local-Mac worst-case reservation, replay denial and cost observations (mainline recovery)
-status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A2a-main-recovery · source: reviewed PRs #119 (A2a) and #120 (A2b1), merged off-main · depends: M4-08A1, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
-Note: Reapply the system-SQLite3 `SpendLedger` and its tests as reviewed at `017dca3`, with proposed ADR-023. Offline only; no AWS call.
-Acceptance:
-- [ ] Ledger and admission tests pass; full repo gates pass
-- [ ] Main-target PR independently reviewed and green before merge
+_(empty)_
 
 ## Review
 
 _(empty)_
 
 ## Done
+
+### M4-08A2a — Durable local-Mac worst-case reservation, replay denial and cost observations
+status: Done (offline ledger only; mainline recovery) · implemented: Devin (A2a #119, A2b1 #120) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2a-main-recovery · depends: M4-08A1, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
+Note: #119/#120 were reviewed but merged off-main; their state at `017dca3` is reapplied unchanged (436 lines, kept as one PR because the observation table and halt are inseparable from the reservation schema). `Tools/bedrock-proxy` now links the **macOS system SQLite3** (ADR-023, proposed: one-device Local Mac pilot only). The ledger stores only opaque request UUIDs and integer micro-USD, with a persisted cap ≤ $10. WAL + synchronous FULL + `BEGIN IMMEDIATE` serialize reservations across connections; duplicate IDs are refused; the DB is 0600; a one-time bootstrap fixes the cap, and a missing DB or a changed cap fails closed. Each request may record one observed cost estimate, which **never refunds** the worst-case hold; an observation above its reservation commits a durable halt that every connection respects. Ten ledger tests plus eight admission tests pass. Not yet connected to admission, pricing, rates or any transport (A2b and later recoveries). No AWS call; $0 of $10.
+Acceptance:
+- [x] Ledger and admission tests (18) pass; `./scripts/test.sh` and `./scripts/lint.sh` pass
+- [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08B — Build the client provider with consent and validated specs
 status: Done (fake transport only; mainline recovery) · implemented: Devin (#118) · recovered: Claude · 2026-10-14 · branch: feat/M4-08B-main-recovery · depends: M4-09, ADR-021, ADR-022 (proposed) · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: S

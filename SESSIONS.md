@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-14 · Claude · M4-08A2a recovery — ledger lands as one 436-line PR
+
+#119 and #120 both edit the same new `SpendLedger.swift` schema (#120 adds the observations table and halt flag, and an A2a-only DB is intentionally unmigratable). Splitting them would put a schema on main that the very next PR declares obsolete, so they land together at `017dca3`, slightly over the ~400-line guideline; the reviewed code is unchanged. The claim commit also fixed the two #141 review nits: the M4-08A1 entry's "190 app tests" wording, and a note that the inherited M4-08B cancellation test can pass without exercising the late-reply path.
+
 ## 2026-10-14 · Claude · M4-08B recovery — and a correction to the M4-08A1 entry
 
 #118 reapplied cleanly; only AI_PIPELINE §5 conflicted, because main's routing paragraph was rewritten after #118 branched. I kept main's text and appended #118's one-sentence M4-08B note rather than restoring the older wording.
