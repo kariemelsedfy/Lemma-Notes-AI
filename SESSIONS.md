@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-14 · Claude · M4-08A2b recovery — and the real live blocker is an AWS quota of zero
+
+#121/#122 reapplied cleanly at `1813705`. The #142 review nits (unbounded observed cost, a brief non-0600 window at DB bootstrap, a race test that does not force overlap) are filed as M4-08A2c rather than patched into reviewed recovery code.
+
+Live-path finding, not visible from code: the approved sub-cent Nova Lite call first failed with "account is currently being verified", then with `ThrottlingException: Too many tokens per day`. Service Quotas (us-east-1, read via the owner's admin console) shows **every applied Nova Lite on-demand quota at 0** (requests/min, tokens/min, tokens/day) against AWS defaults of 2,000 RPM and 5.76B tokens/day, and marks them "Not adjustable". This is a new-account restriction; only an AWS Support case raises it. The owner has been asked to file it. Until then no Bedrock invocation can succeed, so A3 live verification is blocked on AWS, not on code. Neither failed call was billed.
+
 ## 2026-10-14 · Claude · M4-08A2a recovery — ledger lands as one 436-line PR
 
 #119 and #120 both edit the same new `SpendLedger.swift` schema (#120 adds the observations table and halt flag, and an A2a-only DB is intentionally unmigratable). Splitting them would put a schema on main that the very next PR declares obsolete, so they land together at `017dca3`, slightly over the ~400-line guideline; the reviewed code is unchanged. The claim commit also fixed the two #141 review nits: the M4-08A1 entry's "190 app tests" wording, and a note that the inherited M4-08B cancellation test can pass without exercising the late-reply path.

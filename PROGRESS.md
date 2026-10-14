@@ -32,7 +32,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
 | M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovered on main via #140; mock-only, no AWS call |
 | M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recovered on main via #141; fake transport only, no app route |
-| M4-08A2a Durable spend ledger | Claude / main `9b4c77f` | `feat/M4-08A2a-main-recovery` / proxy `SpendLedger`, tests, ADR-023 | Recover reviewed #119/#120 (merged off-main); offline, no AWS call |
+| M4-08A2a Durable spend ledger | Claude / main `9b4c77f` | `feat/M4-08A2a-main-recovery` / proxy `SpendLedger`, tests, ADR-023 | Recovered on main via #142; offline, no AWS call |
+| M4-08A2b Price envelope and rate limits | Claude / main `bb91216` | `feat/M4-08A2b-main-recovery` / proxy price envelope, rate ledger, tests | Recover reviewed #121/#122 (merged off-main); offline, no AWS call |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
@@ -46,6 +47,13 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-08A2b — Refuse unverified or costly quotes and bind hourly rate limits to reservations
+status: Done (offline only; mainline recovery) · implemented: Devin (A2b2a #121, A2b2b1 #122) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2b-main-recovery · depends: M4-08A2a, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.1, §3.3, AGENTS.md §7 · estimate: S
+Note: reapplied unchanged from `1813705`. `PilotPriceEnvelope` is a pure calculator that **always refuses without evidence**. Evidence must match `amazon.nova-lite-v1:0`, us-east-1, standard tier, be at most 300 s old, and carry positive per-million rates and a bounded non-model amount. It reserves the 300K-context worst case plus at most 512 output tokens with overflow-checked integer arithmetic and refuses anything above **5¢**; a passing quote still holds a fixed 50,000 micro-USD. Test rates are fixtures, not a verified quote. `SpendLedger` now requires a server-issued opaque pilot UUID (all-zero refused) and admits at most **40 requests per pilot per rolling hour**, atomically with the budget reservation; two connections cannot both take the fortieth slot, and older prototype schemas fail closed. 30 proxy tests pass. Still not connected to admission or any transport. No AWS call; $0 of $10.
+Acceptance:
+- [x] Price, rate, ledger and admission tests (30) pass; `./scripts/test.sh` and `./scripts/lint.sh` pass
+- [x] Main-target PR independently reviewed and green before merge
 
 ### M4-08A2a — Durable local-Mac worst-case reservation, replay denial and cost observations
 status: Done (offline ledger only; mainline recovery) · implemented: Devin (A2a #119, A2b1 #120) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2a-main-recovery · depends: M4-08A1, ADR-021, ADR-023 (proposed) · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
@@ -1818,6 +1826,14 @@ Acceptance:
 ---
 
 ## Ready — M4: Real intelligence
+
+### M4-08A2c — Harden spend-ledger edge cases found in the #142 review
+status: Ready · found: independent review of PR #142, 2026-10-14 · depends: M4-08A2a · refs: AGENTS.md §7 · estimate: S
+Note: none blocks the offline ledger, but all three should be closed before live traffic (A3).
+Acceptance:
+- [ ] Observed cost has an explicit upper bound, so an overflowing value fails closed with the correct error rather than an incidental one
+- [ ] The DB file is created 0600 atomically (no window with default permissions at bootstrap)
+- [ ] The cross-connection race test forces genuinely overlapping `BEGIN IMMEDIATE` attempts instead of relying on scheduling
 
 **Filed 2026-08-12 by Claude; updated under ADR-021.** M3-10 is a quality measurement,
 not a gate to M4 (ADR-018). The connected iPad mini 6 is not Apple Intelligence-capable;
