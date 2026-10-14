@@ -30,14 +30,20 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Historical Checkpoint A at `43cc3e7` recorded on main via #137; likeness remains separate (M3-27/M3-19) |
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
 | M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
-| M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovering reviewed #116/#117 (merged off-main); mock-only, no AWS call |
+| M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recovered on main via #140; mock-only, no AWS call |
+| M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recover reviewed #118 (merged off-main); fake transport only, no app route |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08B — Build the client provider with consent and validated specs (mainline recovery)
+status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08B-main-recovery · source: reviewed PR #118, merged off-main · depends: M4-09, ADR-021 · refs: AI_PIPELINE.md §3, §5, §8, ARCHITECTURE.md §2 · estimate: S
+Note: Reapply #118's `ProxySpecProvider` (consent-gated factory, fake transport, validated replies, content-free typed errors) and its tests onto current main, with proposed ADR-022. No URL, AWS SDK or app wiring.
+Acceptance:
+- [ ] Seven fake-transport provider tests and the full Intelligence suite pass; repo gates pass
+- [ ] Main-target PR independently reviewed and green before merge
 
 ## Review
 
