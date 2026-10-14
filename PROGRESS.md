@@ -30,13 +30,19 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M0-11 Fresh baseline device build | Devin / main `5c38b41` | `chore/M0-11-main-recovery` / dated device record only | Historical Checkpoint A at `43cc3e7` recorded on main via #137; likeness remains separate (M3-27/M3-19) |
 | M4-14 Local arithmetic subset | Devin / main `e70855c` | `feat/M4-14-main-recovery` / pure `Intelligence` evaluator and tests | Recovered on main via #136; no shipping Ask change, network or new iPad build |
 | M4-14B Interim Ask path | Devin / main `779e047` | `feat/M4-14B-main-recovery` / app Ask and tests only | Recovered local-only route on main via #138; historical mini test `687d26e`, no new physical build |
+| M4-08A1 Proxy admission core | Claude / main `1e6ab13` | `feat/M4-08A1-main-recovery` / `Tools/bedrock-proxy` admission, tests and tool gates | Recover reviewed #116/#117 (merged off-main); mock-only, no AWS call |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
 
 ## In progress
 
-_(empty)_
+### M4-08A1 — Mock-only proxy request admission and privacy bounds (mainline recovery)
+status: In progress · claimed: Claude · 2026-10-14 · branch: feat/M4-08A1-main-recovery · source: reviewed PRs #116 (A1a) and #117 (A1b), merged off-main · depends: ADR-021 · refs: AI_PIPELINE.md §1, §3, §5, BUSINESS.md §6, AGENTS.md §7 · estimate: S
+Note: Reapply the isolated `Tools/bedrock-proxy` admission core and its eight synthetic tests onto current main, plus the test/lint script hooks. No ledger, endpoint, AWS SDK, credential or live transport; those are later recoveries (A2) and new work (A3). Owner authorized this recovery series on 2026-10-14.
+Acceptance:
+- [ ] Eight admission tests pass from `scripts/test.sh`; tool sources are covered by SwiftLint and swift-format
+- [ ] Main-target PR is independently reviewed and green before merge
 
 ## Review
 
