@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E1 — Linux build, first pass
+First Docker build failed on CoreGraphics (PNG re-encode), then zlib and SQLite3. The first two are fixed here; SQLite3 is what E2 removes. Docker Desktop was not running and the `swift:6.2` pull took several minutes; run `docker run --rm -v $PWD/Tools/pilot-proxy:/src:ro swift:6.2 bash -c 'cp -r /src /work && cd /work && swift build'` to re-check. The Apple and portable PNG paths now differ in behavior for RGBA input (flattened vs rejected), so the client must flatten first.
+
 ## 2026-10-15 · Claude · ADR-028 — Cloud Run
 Owner asked for a server "how it will be in the app" instead of a Mac listener, so the PSK/NWConnection plan (and the frame codec just merged in #159) is dead weight; I left it in place until the HTTP handler lands. Biggest risks to check first: the proxy code has only ever built on macOS (needs a Linux Docker build) and the ledger must become transactional Firestore. `docker` and `gcloud` are installed locally; auth is the owner's job.
 

@@ -54,6 +54,10 @@ _(empty)_
 ### M4-16A2 — Skip CI for PRs that change only Markdown files
 status: Done · completed: Claude · 2026-10-15 · branch: chore/ci-skip-markdown-only · refs: AGENTS.md §1 step 15, .github/workflows/ci.yml · estimate: S
 Note: owner decision in chat ("change the rule to be if the PR only modifies .md files then totally skip CI"). `pull_request` and `push: main` both use `paths-ignore: ['**/*.md']`, so a Markdown-only PR gets no CI check (main has no branch protection, so a missing check cannot block a merge). AGENTS §1 step 15 now says so. Review and owner confirmation are unchanged. A PR with any non-`.md` file still runs the full 20-minute CI. This PR changes `ci.yml`, so it runs CI itself.
+### M4-16E1 — Portable PNG normalization and zlib for the Linux build
+status: Done · completed: Claude · 2026-10-15 · branch: feat/M4-16E1-linux-build · depends: ADR-028 · refs: DECISIONS.md ADR-028 · estimate: S
+Note: `CZlib` system-library target replaces Apple's `zlib` module. `PNG.normalized` keeps the CoreGraphics flatten-and-re-encode on Apple platforms and has a portable path elsewhere: it verifies structure, CRCs and the compressed stream, rejects alpha color types (`unsupported`), and strips everything but IHDR/IDAT/IEND. **Consequence for the client (M4-16E4):** the app must send opaque grayscale/RGB PNGs, because the server on Linux cannot flatten alpha. A Linux build in `swift:6.2` now fails only on `import SQLite3` (SpendLedger); the Firestore ledger (E2) removes that. Not yet covered by a Linux test run.
+
 ### M4-16E0 — ADR-028: host the pilot proxy on Google Cloud Run
 status: Done (decision only) · completed: Claude · 2026-10-15 · branch: docs/ADR-028-cloud-run · depends: ADR-027 · refs: DECISIONS.md ADR-028 · estimate: XS
 Note: owner chose Cloud Run in chat. Plan: M4-16E1 Linux build of `ProxyAdmission`; E2 Firestore ledger over REST; E3 HTTP handler plus Dockerfile and deploy script (owner runs `gcloud auth login` and secret creation); E4 `URLSession` client in `Packages/Intelligence`; then M4-08C app wiring (needs an iPad test). The wire frames of M4-16C2 are now unused and will be removed in E3.

@@ -8,8 +8,10 @@ let package = Package(
         .library(name: "ProxyAdmission", targets: ["ProxyAdmission"])
     ],
     targets: [
+        .systemLibrary(name: "CZlib", path: "Sources/CZlib"),
         .target(
             name: "ProxyAdmission",
+            dependencies: ["CZlib"],
             linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
         ),
         .testTarget(name: "ProxyAdmissionTests", dependencies: ["ProxyAdmission"]),
