@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-16E3d — first real deploy run
+The owner's first run of `scripts/deploy-pilot-proxy.sh` enabled the APIs and created the Firestore database (Native, us-central1, free tier) and the `pilot-proxy` service account, then failed on `add-iam-policy-binding` with a concurrent-policy-change ETag conflict, which is normal right after creating a service account. Every step before it is idempotent, so a rerun is safe; the IAM calls now retry with backoff.
+
 ## 2026-10-16 · Claude · M4-16E3c — what the Docker build caught
 Code that built cleanly on the Mac failed three ways on Linux (missing `FoundationNetworking`, unconditional `-lsqlite3`, a test target forcing a `Tests` directory into the image). Run the Dockerfile build and smoke test before every deploy-related change: `docker build -t pilot-proxy-smoke Tools/pilot-proxy`, then `docker run` with throwaway env values and curl `/healthz`. Docker Desktop recovered only after the owner quit and reopened it; my own relaunch had left a stale backend process.
 
