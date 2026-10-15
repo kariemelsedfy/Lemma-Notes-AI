@@ -372,7 +372,7 @@ than pending.
 
 ## ADR-021 — Support iPads without Apple Intelligence via a bounded provider path
 
-**Status:** Accepted · 2026-10-07 · decided by: human · supersedes ADR-020 for device eligibility; does not change ADR-017's availability-based routing or reopen region scope
+**Status:** Accepted · 2026-10-07 · decided by: human · **provider, AWS-account and `none`-retention gates superseded by ADR-027 (2026-10-15)**; supersedes ADR-020 for device eligibility; does not change ADR-017's availability-based routing or reopen region scope
 
 **Context.** The only connected test device is an iPad mini (6th generation) on iPadOS 26.6. It cannot run Apple Intelligence, regardless of OS update. The owner expects other users to have similarly ineligible iPads; a T0/PCC-only strategy cannot deliver real answers to them. The shipping Ask still uses a canned `4`. ADR-020's premise that targeted users have Apple Intelligence therefore does not hold for device eligibility. A direct third-party API without strict consent, cost controls or server authorization would violate the existing privacy and money invariants.
 
@@ -382,7 +382,7 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 **Consequences.** The zero-marginal-cost tier mix in `BUSINESS.md` §3.2 is not a forecast for mini-6 users. The proxy adds setup, operating cost and authorization work, and a network answer is unavailable offline or in Private Mode. A small, deterministic arithmetic grammar can serve a declared offline subset without pretending to be a general model; unsupported work declines. Nova Lite must pass a consented handwriting-read, answer-correctness and latency pilot before it is called sufficient. No third-party package is approved here; use platform facilities or request separate approval with a dependency ADR. Regional policy remains as recorded in ADR-017/020; this decision changes the hardware assumption, not a country allowlist.
 
-**Alternatives rejected for this pilot.** Requiring an Apple Intelligence-capable iPad excludes the owner's device. Embedding an API key in the iPad app exposes the project credential and permits unmetered requests. ChatGPT-plan sharing exists for participating apps, but this private product lacks the required partner approval; Claude consumer subscriptions are not general third-party API entitlements. A strictly local arithmetic evaluator alone cannot answer prose or harder questions. Direct developer APIs without confirmed zero-retention controls do not meet the existing handwriting-data promise.
+**Alternatives rejected for this pilot.** Requiring an Apple Intelligence-capable iPad excludes the owner's device. Embedding an API key in the iPad app exposes the project credential and permits unmetered requests. ChatGPT-plan sharing exists for participating apps, but this private product lacks the required partner approval; Claude consumer subscriptions are not general third-party API entitlements. A strictly local arithmetic evaluator alone cannot answer prose or harder questions. Direct developer APIs without confirmed zero-retention controls do not meet the existing handwriting-data promise. *(Reversed for the pilot by ADR-027, which accepts a paid-tier Gemini API with limited abuse-monitoring log retention.)*
 
 **Revisit when.** Nova Lite fails the measured quality subset, `none` retention is unavailable for the chosen model/region, the $10 pilot limit cannot be enforced, the iPadOS 27 release target is due, or a supported subscription-sharing arrangement becomes available.
 

@@ -37,7 +37,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08A2b2b2 Admission composition | Claude / main `5e50f68` | `feat/M4-08A2b2b2-main-recovery` / proxy `PilotAdmission`, `AdmissionGate.validate`, tests | Recovered on main via #144; fake transport only |
 | M4-08A3a SDK seam | Claude / main `8619f75` | `feat/M4-08A3a-main-recovery` / proxy `Package.swift`, seam, ADR-024 | Recovered on main via #145; disabled transport, no AWS call |
 | M4-08A3b1 PNG normalization | Claude / main `2748a95` | `feat/M4-08A3b1-main-recovery` / proxy `Admission.swift`, tests | Recovered via this PR; fake transport only, no AWS call |
-| M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
+| M4-16 Gemini proxy route (replaces M4-08A) | Claude / after ADR-027 | Branches TBD / proxy Gemini transport, Mac server, then app wiring | AWS Bedrock path superseded by ADR-027; keep the $10 ledger bound; Keychain-only key; no real selection sent before the consented pilot |
 
 ---
 

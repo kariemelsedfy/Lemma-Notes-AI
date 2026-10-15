@@ -329,11 +329,11 @@ Move these to `DECISIONS.md` as they're resolved. Add new ones as you hit them.
 | Q3 | Free-tier AI action allowance — 30/month? | human | M6 |
 | Q4 | Exam Mode: per-document, per-notebook, or both? | human | M6 |
 | Q5 | Final product name + trademark clearance | human | M7 |
-| Q6 | Nova Lite is the first beta candidate (ADR-021); does a second provider make sense after quality/cost evidence for 1.0? | human | M4 after pilot |
+| Q6 | Gemini `gemini-3.1-flash-lite` is the first beta route (ADR-027; Nova Lite was the ADR-021 candidate); does a second provider make sense after quality/cost evidence for 1.0? | human | M4 after pilot |
 | Q9 | Who can run the blind similarity measurement, and with how many writers? ADR-018 withdrew the pivot, so poor scores guide handwriting improvements rather than remove the feature | human | M3-10 measurement, not M4 |
 | Q14 | Should a long debug preview uniformly shrink to fit (current reversible M3-27 choice) or scroll at 1×? Export keeps raw matched height/pen, but on-screen size can differ from the writer's line. Use matched exports, not the fitted preview, for a blind panel until this is decided. | human / M3-10 | Fair on-screen handwriting comparison, not the Ask path |
 
-**Q13 is resolved for beta by ADR-021 (2026-10-07):** support iPads without Apple Intelligence using a bounded, consent-gated proxy; evaluate Nova Lite first under a $10 **total** external-services ceiling. M4-08A/B/C split security and wiring, M4-14 covers local arithmetic, M4-15 records measured quality. These are plans, not shipped paths. No provider is permitted to transmit until server-side authorization, consent, cost and retention checks are in place.
+**Q13 is resolved for beta by ADR-021 (2026-10-07):** support iPads without Apple Intelligence using a bounded, consent-gated proxy; evaluate a model first under a $10 **total** external-services ceiling (Nova Lite per ADR-021, replaced by the Gemini API per ADR-027 on 2026-10-15 after every Bedrock quota read 0). M4-08A/B/C split security and wiring, M4-14 covers local arithmetic, M4-15 records measured quality. These are plans, not shipped paths. No provider is permitted to transmit until server-side authorization, consent, cost and retention checks are in place.
 
 **Q12 was resolved (2026-08-12): 1.0 targets iPadOS 27** — ADR-019. The Xcode 27 SDK
 blocker is now gone, but the connected iPad still runs 26.6 and the user has not approved an
