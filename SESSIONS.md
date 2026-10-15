@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E4 — the app-side client
+Small on purpose: the interesting rule is that every server answer collapses to the five existing `ProxyTransportFailure` cases, so UI code cannot branch on server detail. Verified with a throwaway Swift script that the client's flatten recipe (`CGContext` with `noneSkipLast`) is encoded by ImageIO as PNG color type 2, because the Linux server rejects alpha types; if that recipe changes, the server will answer 422 to every request. The app must keep the token in the Keychain and build the transport from Settings (next, M4-08C).
+
 ## 2026-10-15 · Claude · M4-16E3a — HTTP without a framework
 No third-party HTTP server (SwiftNIO would need an ADR and approval), so the head parser and router are plain code over bytes, and E3b adds a small POSIX-socket loop. The parser refuses rather than interprets anything odd (duplicate Content-Length, chunked bodies, query strings), because the only caller is Cloud Run's front end. Auth lives in the `AdmissionGate` authorizer, not the router, so every path to `PilotAdmission.invoke` goes through the same check.
 
