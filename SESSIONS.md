@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16D — prompt and schema
+Surprise: Gemini's `responseSchema` field rejects an integer enum; `responseJsonSchema` accepts the same shape. Both were probed live with synthetic images only (about $0.001 total). Doc-only merge conflicts in PROGRESS/SESSIONS kept re-breaking the open docs PR; owner now wants no CI on doc-only conflict fixes. Next: M4-16C HTTP transport, which must also record usage on billed failures and use checked token arithmetic (review findings on #155).
+
 ## 2026-10-15 · Claude · M4-16A2 — CI skipped for Markdown-only PRs
 
 `paths-ignore` is evaluated on the whole PR diff, so a PR that mixes one `.md` file with code still runs CI; docs-only PRs (ADRs, planning docs) no longer cost 20 minutes. The catch worth knowing: a workflow skipped by a path filter reports *no* check, not a passing one, which would deadlock a repo with required status checks. `main` has no branch protection today (checked via the API), so nothing blocks. If protection is ever turned on, add a lightweight always-run job instead of relying on this filter. Note that `.md` also matches files like `Packages/**/README.md`; none of those affect builds.
