@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E3a — HTTP without a framework
+No third-party HTTP server (SwiftNIO would need an ADR and approval), so the head parser and router are plain code over bytes, and E3b adds a small POSIX-socket loop. The parser refuses rather than interprets anything odd (duplicate Content-Length, chunked bodies, query strings), because the only caller is Cloud Run's front end. Auth lives in the `AdmissionGate` authorizer, not the router, so every path to `PilotAdmission.invoke` goes through the same check.
+
 ## 2026-10-15 · Claude · M4-16E2b — Firestore over REST
 Wrote the store from the documented REST shape without a live project, so the risky parts are exactly what only a real call can confirm: the error `status` strings on a failed precondition, the `updateTime` round-trip format, and that a combined commit reports `ALREADY_EXISTS` for the create-only document. If the first deploy shows `reserve` always failing, look there first. Firestore needs the project's database created in Native mode before the first call.
 
