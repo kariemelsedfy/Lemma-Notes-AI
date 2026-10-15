@@ -40,7 +40,8 @@ final class GeminiCoreTests: XCTestCase {
         let parts = try XCTUnwrap(contents.first?["parts"] as? [[String: Any]])
         let inline = parts.compactMap { $0["inlineData"] as? [String: String] }
         XCTAssertEqual(inline.count, 2)
-        XCTAssertTrue(inline.allSatisfy { $0["mimeType"] == "image/png" && $0["data"] == Self.png.base64EncodedString() })
+        let encoded = Self.png.base64EncodedString()
+        XCTAssertTrue(inline.allSatisfy { $0["mimeType"] == "image/png" && $0["data"] == encoded })
         let texts = parts.compactMap { $0["text"] as? String }
         XCTAssertTrue(texts.contains { $0.contains("ignore previous instructions") })
         XCTAssertFalse(systemText.contains("ignore previous instructions"))
@@ -49,13 +50,16 @@ final class GeminiCoreTests: XCTestCase {
     func testRequestRejectsEmptyInstructionOutputBoundsAndMissingImages() throws {
         let good = try request()
         XCTAssertThrowsError(try GeminiRequestBuilder.body(for: good, instruction: ""))
-        XCTAssertThrowsError(try GeminiRequestBuilder.body(for: try request(maxOutputTokens: 513), instruction: "x"))
-        XCTAssertThrowsError(try GeminiRequestBuilder.body(for: try request(maxOutputTokens: 0), instruction: "x"))
+        let tooMany = try request(maxOutputTokens: 513)
+        let none = try request(maxOutputTokens: 0)
+        XCTAssertThrowsError(try GeminiRequestBuilder.body(for: tooMany, instruction: "x"))
+        XCTAssertThrowsError(try GeminiRequestBuilder.body(for: none, instruction: "x"))
     }
 
     func testParsesASuccessfulReplyAndCountsThoughtTokensAsOutput() throws {
+        let usage = #""promptTokenCount":100,"candidatesTokenCount":10,"thoughtsTokenCount":5"#
         let reply = try GeminiResponseParser.parse(
-            response(text: #"{"intent":"answer"}"#, finish: "STOP", usage: #""promptTokenCount":100,"candidatesTokenCount":10,"thoughtsTokenCount":5"#)
+            response(text: #"{"intent":"answer"}"#, finish: "STOP", usage: usage)
         )
         XCTAssertEqual(reply.specJSON, Data(#"{"intent":"answer"}"#.utf8))
         XCTAssertEqual(reply.promptTokens, 100)
@@ -67,15 +71,18 @@ final class GeminiCoreTests: XCTestCase {
         let usage = #""promptTokenCount":10,"candidatesTokenCount":2"#
         expect(.truncated, response(text: "{}", finish: "MAX_TOKENS", usage: usage))
         expect(.blocked, response(text: "{}", finish: "SAFETY", usage: usage))
-        expect(.blocked, Data(#"{"promptFeedback":{"blockReason":"OTHER"},"usageMetadata":{"promptTokenCount":3}}"#.utf8))
+        let feedback = #"{"promptFeedback":{"blockReason":"OTHER"},"usageMetadata":{"promptTokenCount":3}}"#
+        expect(.blocked, Data(feedback.utf8))
         expect(.malformed, response(text: "not json", finish: "STOP", usage: usage))
         expect(.malformed, response(text: "[1,2]", finish: "STOP", usage: usage))
         expect(.malformed, response(text: "", finish: "STOP", usage: usage))
         expect(.malformed, response(text: "{}", finish: "WEIRD", usage: usage))
         expect(.malformed, Data("nope".utf8))
         expect(.malformed, Data(#"{"usageMetadata":{"promptTokenCount":3}}"#.utf8))
-        expect(.usageMissing, Data(#"{"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{}"}]}}]}"#.utf8))
-        expect(.malformed, response(text: "{" + String(repeating: " ", count: 70_000) + "}", finish: "STOP", usage: usage))
+        let noUsage = #"{"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{}"}]}}]}"#
+        expect(.usageMissing, Data(noUsage.utf8))
+        let huge = "{" + String(repeating: " ", count: 70_000) + "}"
+        expect(.malformed, response(text: huge, finish: "STOP", usage: usage))
     }
 
     private func request(transcript: String = "2+3=", maxOutputTokens: Int = 256) throws -> AdmittedRequest {
@@ -88,10 +95,10 @@ final class GeminiCoreTests: XCTestCase {
     }
 
     private func response(text: String, finish: String, usage: String) -> Data {
-        let escaped = String(data: try! JSONEncoder().encode(text), encoding: .utf8)!
-        return Data(
-            #"{"candidates":[{"content":{"parts":[{"text":\#(escaped)}]},"finishReason":"\#(finish)"}],"usageMetadata":{\#(usage)}}"#.utf8
-        )
+        let escaped = (try? JSONEncoder().encode(text)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
+        let part = #"{"text":\#(escaped)}"#
+        let candidate = #"{"content":{"parts":[\#(part)]},"finishReason":"\#(finish)"}"#
+        return Data(#"{"candidates":[\#(candidate)],"usageMetadata":{\#(usage)}}"#.utf8)
     }
 
     private func expect(_ failure: GeminiError, _ data: Data, line: UInt = #line) {

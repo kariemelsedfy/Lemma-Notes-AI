@@ -39,45 +39,57 @@ struct GeminiReply: Equatable, Sendable {
     var costMicros: Int64? { GeminiPilot.costMicros(promptTokens: promptTokens, outputTokens: outputTokens) }
 }
 
-enum GeminiRequestBuilder {
-    private struct Body: Encodable {
-        struct Text: Encodable { let text: String }
-        struct Inline: Encodable {
-            struct Data: Encodable { let mimeType: String; let data: String }
-            let inlineData: Data
-        }
-        enum Part: Encodable {
-            case text(String), png(Foundation.Data)
-            func encode(to encoder: Encoder) throws {
-                switch self {
-                case .text(let text): try Text(text: text).encode(to: encoder)
-                case .png(let data):
-                    try Inline(inlineData: .init(mimeType: "image/png", data: data.base64EncodedString()))
-                        .encode(to: encoder)
-                }
-            }
-        }
-        struct Content: Encodable { let role: String?; let parts: [Part] }
-        struct Config: Encodable {
-            let temperature: Int
-            let maxOutputTokens: Int
-            let responseMimeType: String
-        }
-        let systemInstruction: Content
-        let contents: [Content]
-        let generationConfig: Config
-    }
+private struct WireText: Encodable { let text: String }
 
+private struct WireInlineData: Encodable {
+    let mimeType: String
+    let data: String
+}
+
+private struct WireInline: Encodable { let inlineData: WireInlineData }
+
+private enum WirePart: Encodable {
+    case text(String)
+    case png(Data)
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .text(let text): try WireText(text: text).encode(to: encoder)
+        case .png(let data):
+            let inline = WireInlineData(mimeType: "image/png", data: data.base64EncodedString())
+            try WireInline(inlineData: inline).encode(to: encoder)
+        }
+    }
+}
+
+private struct WireContent: Encodable {
+    let role: String?
+    let parts: [WirePart]
+}
+
+private struct WireConfig: Encodable {
+    let temperature: Int
+    let maxOutputTokens: Int
+    let responseMimeType: String
+}
+
+private struct WireBody: Encodable {
+    let systemInstruction: WireContent
+    let contents: [WireContent]
+    let generationConfig: WireConfig
+}
+
+enum GeminiRequestBuilder {
     /// The instruction is trusted prompt text; the transcript and images are untrusted user content
     /// and travel only in `contents`.
     static func body(for request: AdmittedRequest, instruction: String) throws -> Data {
         guard !instruction.isEmpty, (1...GeminiPilot.maxOutputTokens).contains(request.maxOutputTokens),
             !request.cropPNG.isEmpty, !request.neighborhoodPNG.isEmpty
         else { throw GeminiError.invalidRequest }
-        let body = Body(
-            systemInstruction: .init(role: nil, parts: [.text(instruction)]),
+        let body = WireBody(
+            systemInstruction: WireContent(role: nil, parts: [.text(instruction)]),
             contents: [
-                .init(
+                WireContent(
                     role: "user",
                     parts: [
                         .text("Selected handwriting (image):"), .png(request.cropPNG),
@@ -86,7 +98,7 @@ enum GeminiRequestBuilder {
                     ]
                 )
             ],
-            generationConfig: .init(
+            generationConfig: WireConfig(
                 temperature: 0, maxOutputTokens: request.maxOutputTokens, responseMimeType: "application/json"
             )
         )
@@ -96,31 +108,34 @@ enum GeminiRequestBuilder {
     }
 }
 
+private struct ReplyPart: Decodable { let text: String? }
+
+private struct ReplyContent: Decodable { let parts: [ReplyPart]? }
+
+private struct ReplyCandidate: Decodable {
+    let content: ReplyContent?
+    let finishReason: String?
+}
+
+private struct ReplyFeedback: Decodable { let blockReason: String? }
+
+private struct ReplyUsage: Decodable {
+    let promptTokenCount: Int?
+    let candidatesTokenCount: Int?
+    let thoughtsTokenCount: Int?
+}
+
+private struct ReplyEnvelope: Decodable {
+    let candidates: [ReplyCandidate]?
+    let promptFeedback: ReplyFeedback?
+    let usageMetadata: ReplyUsage?
+}
+
 enum GeminiResponseParser {
     private static let maxReplyBytes = 65_536
 
-    private struct Reply: Decodable {
-        struct Candidate: Decodable {
-            struct Content: Decodable {
-                struct Part: Decodable { let text: String? }
-                let parts: [Part]?
-            }
-            let content: Content?
-            let finishReason: String?
-        }
-        struct Feedback: Decodable { let blockReason: String? }
-        struct Usage: Decodable {
-            let promptTokenCount: Int?
-            let candidatesTokenCount: Int?
-            let thoughtsTokenCount: Int?
-        }
-        let candidates: [Candidate]?
-        let promptFeedback: Feedback?
-        let usageMetadata: Usage?
-    }
-
     static func parse(_ data: Data) throws -> GeminiReply {
-        guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(Reply.self, from: data)
+        guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(ReplyEnvelope.self, from: data)
         else { throw GeminiError.malformed }
         if reply.promptFeedback?.blockReason != nil { throw GeminiError.blocked }
         guard let usage = reply.usageMetadata, let prompt = usage.promptTokenCount, prompt >= 0 else {
