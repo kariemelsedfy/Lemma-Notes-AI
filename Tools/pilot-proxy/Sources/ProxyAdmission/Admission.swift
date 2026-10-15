@@ -1,7 +1,10 @@
-import CoreGraphics
+import CZlib
 import Foundation
-import ImageIO
-import zlib
+
+#if canImport(CoreGraphics)
+    import CoreGraphics
+    import ImageIO
+#endif
 
 enum AdmissionError: Error, Equatable {
     case unauthorized, malformed, oversized, unsupported, busy
@@ -130,35 +133,52 @@ private enum PNG {
     static func normalized(_ data: Data, maxBytes: Int, maxPixels: Int) throws -> Data {
         try check(data, maxBytes: maxBytes, maxPixels: maxPixels)
         try inflate(data)
-        let bytes = [UInt8](data)
-        let width = Int(number(bytes, at: 16))
-        let height = Int(number(bytes, at: 20))
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-            CGImageSourceGetCount(source) == 1,
-            let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
-            image.width == width, image.height == height,
-            let context = CGContext(
-                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-            )
-        else { throw AdmissionError.malformed }
-        let frame = CGRect(x: 0, y: 0, width: width, height: height)
-        context.setFillColor(CGColor(gray: 1, alpha: 1))
-        context.fill(frame)
-        context.draw(image, in: frame)
-        guard let opaque = context.makeImage() else { throw AdmissionError.malformed }
-        let encoded = NSMutableData()
-        guard
-            let destination = CGImageDestinationCreateWithData(
-                encoded as CFMutableData, "public.png" as CFString, 1, nil
-            )
-        else { throw AdmissionError.malformed }
-        CGImageDestinationAddImage(destination, opaque, nil)
-        guard CGImageDestinationFinalize(destination) else { throw AdmissionError.malformed }
-        let final = try stripAncillary(encoded as Data, maxBytes: maxBytes, maxPixels: maxPixels)
-        try check(final, maxBytes: maxBytes, maxPixels: maxPixels)
-        return final
+        return try finish(data, maxBytes: maxBytes, maxPixels: maxPixels)
     }
+
+    #if canImport(CoreGraphics)
+        /// Apple platforms: re-render onto an opaque white page (transparent ink must not turn black) and re-encode.
+        private static func finish(_ data: Data, maxBytes: Int, maxPixels: Int) throws -> Data {
+            let header = [UInt8](data)
+            let width = Int(number(header, at: 16))
+            let height = Int(number(header, at: 20))
+            guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                CGImageSourceGetCount(source) == 1,
+                let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+                image.width == width, image.height == height,
+                let context = CGContext(
+                    data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+                )
+            else { throw AdmissionError.malformed }
+            let frame = CGRect(x: 0, y: 0, width: width, height: height)
+            context.setFillColor(CGColor(gray: 1, alpha: 1))
+            context.fill(frame)
+            context.draw(image, in: frame)
+            guard let opaque = context.makeImage() else { throw AdmissionError.malformed }
+            let encoded = NSMutableData()
+            guard
+                let destination = CGImageDestinationCreateWithData(
+                    encoded as CFMutableData, "public.png" as CFString, 1, nil
+                )
+            else { throw AdmissionError.malformed }
+            CGImageDestinationAddImage(destination, opaque, nil)
+            guard CGImageDestinationFinalize(destination) else { throw AdmissionError.malformed }
+            let final = try stripAncillary(encoded as Data, maxBytes: maxBytes, maxPixels: maxPixels)
+            try check(final, maxBytes: maxBytes, maxPixels: maxPixels)
+            return final
+        }
+    #else
+        /// Portable path (Linux, Cloud Run): no pixel decode. The PNG must already be opaque (grayscale or RGB, no
+        /// alpha); the client flattens before sending. Structure, CRCs and the compressed stream are verified,
+        /// then everything but IHDR, IDAT and IEND is stripped.
+        private static func finish(_ data: Data, maxBytes: Int, maxPixels: Int) throws -> Data {
+            guard [UInt8](data)[25] == 0 || [UInt8](data)[25] == 2 else { throw AdmissionError.unsupported }
+            let final = try stripAncillary(data, maxBytes: maxBytes, maxPixels: maxPixels)
+            try check(final, maxBytes: maxBytes, maxPixels: maxPixels)
+            return final
+        }
+    #endif
 
     private static func stripAncillary(_ data: Data, maxBytes: Int, maxPixels: Int) throws -> Data {
         guard data.count <= maxBytes * 8 else { throw AdmissionError.oversized }
