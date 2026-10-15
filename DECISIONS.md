@@ -454,7 +454,7 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 ## ADR-026 — Keep requested and returned Bedrock model IDs separate in Mac metadata
 
-**Status:** Proposed · 2026-10-12 · by: Devin · extends ADR-021/024/025; no model invocation approval
+**Status:** Accepted · 2026-10-15 · approved by: human (owner, in chat) · proposed 2026-10-12 by Devin · extends ADR-021/024/025; no model invocation approval
 
 **Context.** The read-only Bedrock control plane returned `modelId: amazon.nova-lite-v1` for `GetFoundationModelAvailability(modelId: amazon.nova-lite-v1:0)` in the scoped us-east-1 pilot session. AWS's API reference defines a returned model ID but does not say these two identifiers are interchangeable. Account retention `none` and model availability do not prove eligibility under that mode.
 
