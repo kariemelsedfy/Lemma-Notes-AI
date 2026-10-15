@@ -42,8 +42,8 @@ final class AdmissionTests: XCTestCase {
         let transport = CountingTransport()
         let admission = gate()
         let encoded =
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9o8cRcwAAAAO"
-            + "dEVYdG5vdGU9c3ludGhldGljaZOn3QAAAABJRU5ErkJggg=="
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAADnRFWHRub3RlAHN5bnRoZXRp"
+            + "Y/SerlUAAAAKSURBVHjaY2AAAAACAAHlJ978AAAAAElFTkSuQmCC"
         let tagged = try XCTUnwrap(Data(base64Encoded: encoded))
         await expect(.malformed, admission, try body(crop: tagged), transport: transport)
         var corrupt = Self.pixelPNG
@@ -195,7 +195,7 @@ final class AdmissionTests: XCTestCase {
     }
 
     private static let pixelPNG = Data(
-        base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9o8cRcwAAAAASUVORK5CYII="
+        base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNgAAAAAgAB5Sfe/AAAAABJRU5ErkJggg=="
     )!
 }
 

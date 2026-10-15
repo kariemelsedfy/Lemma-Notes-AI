@@ -12,7 +12,7 @@ final class SDKSeamTests: XCTestCase {
 
     func testSDKTransportRefusesEvenAWellFormedRequestWithoutAClient() async throws {
         let pngBase64 =
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/" + "x8AAusB9o8cRcwAAAAASUVORK5CYII="
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNgAAAAAgAB5Sfe/AAAAABJRU5ErkJggg=="
         let pixel = try XCTUnwrap(Data(base64Encoded: pngBase64))
         let body: [String: Any] = [
             "requestID": UUID().uuidString,

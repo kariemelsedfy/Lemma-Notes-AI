@@ -7,7 +7,7 @@ final class PilotAdmissionTests: XCTestCase {
     private static let pilotID = UUID()
     private static let modelID = "amazon.nova-lite-v1:0"
     private static let pixel = Data(
-        base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9o8cRcwAAAAASUVORK5CYII="
+        base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNgAAAAAgAB5Sfe/AAAAABJRU5ErkJggg=="
     )!
 
     func testValidatedRequestReservesBeforeItReachesFakeTransport() async throws {
