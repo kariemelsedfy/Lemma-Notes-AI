@@ -449,3 +449,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected.** Waiting on an AWS support case (unbounded delay for a pilot). OpenAI or Anthropic direct keys (higher price or unverified retention terms in this review; a documented hard spend limit is a point for OpenAI if the ledger proves insufficient). Gemma (no paid tier). An API key inside the iPad app (rejected in ADR-021). Sharing a consumer subscription (no API entitlement).
 
 **Revisit when.** Google retires or reprices `gemini-3.1-flash-lite`; M4-15 shows weak reading or answer quality; a provider offers retention `none` at similar cost; Google documents a hard spend cap or longer log retention; or AWS quotas clear and the owner prefers Bedrock.
+
+---
+
+## ADR-028 — Host the pilot proxy on Google Cloud Run, not on a Mac
+
+**Status:** Accepted · 2026-10-15 · decided by: human (chat: "ok let's use google cloud run then") · supersedes the Mac-listener plan in M4-16C2 and the one-device framing of ADR-023 · keeps ADR-021's $10 total ceiling, consent and bounded-payload rules and ADR-027's Gemini route
+
+**Context.** The Gemini key must stay server-side (ADR-021), and the shipped app cannot depend on a Mac in the owner's home. A LAN-only listener would serve the pilot and then be thrown away; it would also force a pre-shared-key protocol that `URLSession` cannot speak.
+
+**Decision.** Run the existing Swift admission code (`ProxyAdmission`: validation, PNG normalization, price envelope, spend ledger, Gemini transport) as one container on Cloud Run in the same Google Cloud project as the Gemini key. The iPad calls it with ordinary HTTPS and JSON through `URLSession`; the wire frames of M4-16C2 are dropped. The key lives in Secret Manager, is mounted as an environment value by Cloud Run, and is never in the repo, an image layer, the app or chat. The pilot authenticates one device with a high-entropy bearer token held in Secret Manager and the iPad Keychain; App Attest replaces it before any wider release. Cloud Run is capped at one instance and a small request concurrency so rate and in-flight limits stay meaningful. The spend ledger moves from a local SQLite file to Firestore (transactional reserve and observed-cost writes), because Cloud Run's disk is not durable. A Google billing budget alert is added as a second signal, but the ledger remains the only enforcing bound (Google has no hard spend cap, per ADR-027). Firestore and Secret Manager are called over REST with `URLSession` and a service-account token from the metadata server, so no third-party Swift dependency is added. Docker and `gcloud` are build and deploy tools, not code dependencies.
+
+**Consequences.** The owner runs `gcloud auth login`, creates the secrets and runs the deploy script in their own terminal; the agent writes the Dockerfile and scripts but never holds credentials. Hosting must stay inside the $10 total ceiling (expected: free tier). The proxy code must build on Linux (Foundation, system SQLite no longer needed once Firestore holds the ledger). Logs on Cloud Run must stay content-free (no PNGs, transcripts or tokens). The retention caveat of ADR-027 is unchanged. Latency now includes the public internet.
+
+**Alternatives rejected.** A Mac LAN listener (throwaway, needs PSK client code). Cloudflare Workers or AWS Lambda (would mean rewriting the Swift proxy in another language, or a new account). Firebase Functions (JavaScript rewrite). Embedding the key in the app (ADR-021).
+
+**Revisit when.** The Linux build is not feasible, Firestore cannot give transactional reserves at the needed rate, hosting would exceed the $10 ceiling, the pilot grows past one device, or the owner moves to App Attest and a multi-user backend.
