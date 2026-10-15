@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16A — AWS dropped for Gemini; what surprised me
+
+Two things the code cannot show. First, AWS was blocked by account state, not our code: all Bedrock model quotas read 0 and "Not adjustable", and other users report the same on new accounts, so no amount of engineering would have fixed it. Second, `gemini-2.5-flash-lite` is the cheapest Flash-Lite on the pricing page but returns 404 for new users ("no longer available to new users"), so the working cheapest is `gemini-3.1-flash-lite`; run the model-list call before trusting a pricing page. The key was entered through a Keychain prompt and read with `security find-generic-password -w` piped to curl via `-K -`, so it never appeared in a command line or transcript. The AWS recovery PRs #147-#151 were prepared before this decision; after CI went green and review approved, the owner had them closed unmerged because Gemini made them unnecessary.
+
 ## 2026-10-15 · Claude · M4-08A3b1 recovery — PNG normalization on main, #125/#126 merged into one PR
 
 #125 and #126 were stacked on the SDK seam; their net diff on top of main was only `Admission.swift`, `Package.swift` (`-lz`), the test PNG fixtures and `PNGNormalizationTests.swift`, so I recovered both as one PR rather than replaying 11 reconcile/claim commits. Test fixtures in three files changed to a PNG without text chunks, because the gate now strips them.

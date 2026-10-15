@@ -37,7 +37,7 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08A2b2b2 Admission composition | Claude / main `5e50f68` | `feat/M4-08A2b2b2-main-recovery` / proxy `PilotAdmission`, `AdmissionGate.validate`, tests | Recovered on main via #144; fake transport only |
 | M4-08A3a SDK seam | Claude / main `8619f75` | `feat/M4-08A3a-main-recovery` / proxy `Package.swift`, seam, ADR-024 | Recovered on main via #145; disabled transport, no AWS call |
 | M4-08A3b1 PNG normalization | Claude / main `2748a95` | `feat/M4-08A3b1-main-recovery` / proxy `Admission.swift`, tests | Recovered via this PR; fake transport only, no AWS call |
-| M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
+| M4-16 Gemini proxy route (replaces M4-08A) | Claude / after ADR-027 | Branches TBD / proxy Gemini transport, Mac server, then app wiring | AWS Bedrock path superseded by ADR-027; keep the $10 ledger bound; Keychain-only key; no real selection sent before the consented pilot |
 
 ---
 
@@ -50,6 +50,10 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-16A — Record the switch from AWS Bedrock to the Gemini API (ADR-027)
+status: Done (docs only) · completed: Claude · 2026-10-15 · branch: docs/M4-16A-gemini-adr · depends: ADR-021 · refs: DECISIONS.md ADR-027, AI_PIPELINE.md §3 · estimate: S
+Note: owner decided to drop AWS after every Bedrock quota showed 0 and approved the Gemini direct-key path. Verified so far: key accepted by a free model-list call; one synthetic text call to `gemini-3.1-flash-lite` cost about $0.0000033 (7 in, 1 out). Spend: about $0.0000033 of $10. No real selection has been sent; transport is M4-16B, app wiring M4-08C, measurement M4-15.
 
 ### M4-08A3b1 — Decode and strip selected PNGs before dispatch
 status: Done (mock-only; mainline recovery) · implemented: Devin (#125, #126) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b1-main-recovery · depends: M4-08A3a, ADR-021 · refs: AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
