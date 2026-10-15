@@ -108,7 +108,7 @@ run gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" \
 
 if [ "$DRY" != "1" ]; then
     URL="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)')"
-    echo "== Health check: $URL/healthz"
-    curl -fsS "$URL/healthz" && echo
+    echo "== Health check: $URL/status"
+    curl -fsS "$URL/status" && echo
     echo "Service URL: $URL"
 fi
