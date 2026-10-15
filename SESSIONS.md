@@ -11,6 +11,12 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-08A3a recovery — SDK seam reapplied, still cannot call AWS
+
+#124's patch applied cleanly on `8619f75`; ADR-024 was already approved, so no new dependency decision was made. The seam is deliberately inert (`.disabled` transport, request-building probe only).
+
+Process: the owner approved merging the remaining recovery PRs and asked for the fastest route. Review and CI stay (AGENTS §1); only the waiting is trimmed by running the review while CI runs. Live blocker is unchanged: Nova Lite on-demand quotas are all 0 on the new account, so the approved sub-cent call is still unproven.
+
 ## 2026-10-14 · Claude · M4-08A2b2b2 recovery — a sandbox TMPDIR failure that is not a regression
 
 The first `./scripts/test.sh` run failed three Handwriting `GlyphBankTests` with "Creating a temporary file via mktemp failed (errno 1)". That is the sandbox refusing temp writes outside the project, not a code change (this PR touches only `Tools/bedrock-proxy`). Rerunning with `TMPDIR=$PWD/Packages/Handwriting/.build/tmp` passed everything, the same workaround earlier sessions recorded. Do not chase it as a regression.
