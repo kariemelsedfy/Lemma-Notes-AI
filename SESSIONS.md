@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16A2 — CI skipped for Markdown-only PRs
+
+`paths-ignore` is evaluated on the whole PR diff, so a PR that mixes one `.md` file with code still runs CI; docs-only PRs (ADRs, planning docs) no longer cost 20 minutes. The catch worth knowing: a workflow skipped by a path filter reports *no* check, not a passing one, which would deadlock a repo with required status checks. `main` has no branch protection today (checked via the API), so nothing blocks. If protection is ever turned on, add a lightweight always-run job instead of relying on this filter. Note that `.md` also matches files like `Packages/**/README.md`; none of those affect builds.
 ## 2026-10-15 · Claude · M4-16B — Gemini core, and what the first live checks showed
 
 Real numbers that the code and fakes cannot show: a synthetic text-only call used 40 prompt tokens; a synthetic two-image call (a 420x140 crop and a 700x220 neighborhood, rendered by me, not user ink) used 2,477 prompt tokens, 2,145 of them image tokens, and cost about $0.0008, roughly 3x my earlier guess, so the 20,000-token worst case in `GeminiPilot` is still conservative but image size is the real cost driver for M4-15. `generationConfig.responseJsonSchema` is accepted by `gemini-3.1-flash-lite`; the older `responseSchema` field rejects an integer `enum`. The transcribe-then-answer prompt returned a spec with `read` "12 \times 7 =" and an `inline` block "84". Owner approved everything while away; nothing here sends user ink.
