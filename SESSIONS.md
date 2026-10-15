@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16C2 — wire frames
+Chose a tiny length-prefixed protocol over TLS-PSK rather than HTTP: no HTTP parser to get wrong, no certificates for a home LAN, and the PSK handshake doubles as authentication. Cost: URLSession cannot use PSK, so the iPad client must use `NWConnection`. The frame length is validated before any buffering so a peer cannot make the Mac allocate 4 GB. Next: the listener (M4-16C3).
+
 ## 2026-10-15 · Claude · Fast-merge policy
 Owner removed the mandatory independent review (AGENTS §1 step 14) and allowed merging without waiting for CI when they say so. In practice the CI wait (about 13-20 minutes) and repeated PROGRESS/SESSIONS conflicts were what slowed merges, not the review. Local tests and lint still run before every merge.
 ## 2026-10-15 · Claude · M4-16C1 — Gemini transport
