@@ -19,7 +19,7 @@ done
 for tool in Tools/*/Package.swift; do
     swift build --package-path "$(dirname "$tool")"
 done
-swift test --package-path Tools/bedrock-proxy
+swift test --package-path Tools/pilot-proxy
 ./scripts/eval.sh --provider mock > /dev/null
 
 ./scripts/generate.sh

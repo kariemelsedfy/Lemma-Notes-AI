@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-16B1 — Remove the AWS SDK from the proxy tool and rename it `Tools/pilot-proxy`
+status: Done · completed: Claude · 2026-10-15 · branch: chore/M4-16B1-drop-aws-sdk · depends: ADR-027 · refs: DECISIONS.md ADR-024/027, scripts/lint.sh, scripts/test.sh · estimate: S
+Note: with AWS dropped, `aws-sdk-swift` 1.8.2 (26 pins) had no job but a ~20 minute cold CI build. Deleted `SDKSeam.swift`, its tests and `Package.resolved`; the package is now Foundation plus system `sqlite3`/`z`. Renamed `Tools/bedrock-proxy` to `Tools/pilot-proxy` (git renames; lint and test script paths updated). 43 proxy tests pass (45 minus the 2 seam tests). ADR-024 is marked superseded. No behavior change to admission, ledger, price envelope or PNG normalization.
+
 ### M4-16A — Record the switch from AWS Bedrock to the Gemini API (ADR-027)
 status: Done (docs only) · completed: Claude · 2026-10-15 · branch: docs/M4-16A-gemini-adr · depends: ADR-021 · refs: DECISIONS.md ADR-027, AI_PIPELINE.md §3 · estimate: S
 Note: owner decided to drop AWS after every Bedrock quota showed 0 and approved the Gemini direct-key path. Verified so far: key accepted by a free model-list call; one synthetic text call to `gemini-3.1-flash-lite` cost about $0.0000033 (7 in, 1 out). Spend: about $0.0000033 of $10. No real selection has been sent; transport is M4-16B, app wiring M4-08C, measurement M4-15.
