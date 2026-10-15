@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 /// Process entry for the hosted pilot proxy. Configuration comes only from the environment (Cloud Run injects
 /// secrets as environment values), so nothing sensitive is ever in an argument, file or image layer.
 public enum PilotServer {

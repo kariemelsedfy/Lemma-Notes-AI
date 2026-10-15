@@ -3,6 +3,8 @@ FROM swift:6.2 AS build
 WORKDIR /src
 COPY Package.swift ./
 COPY Sources ./Sources
+# Package.swift declares the test target, so its directory must exist (tests are not built or run here).
+COPY Tests ./Tests
 RUN swift build -c release --product pilot-proxy-server --static-swift-stdlib
 
 FROM ubuntu:24.04

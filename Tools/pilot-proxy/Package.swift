@@ -13,7 +13,7 @@ let package = Package(
         .target(
             name: "ProxyAdmission",
             dependencies: ["CZlib"],
-            linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
+            linkerSettings: [.linkedLibrary("sqlite3", .when(platforms: [.macOS])), .linkedLibrary("z")]
         ),
         .executableTarget(name: "pilot-proxy-server", dependencies: ["ProxyAdmission"]),
         .testTarget(name: "ProxyAdmissionTests", dependencies: ["ProxyAdmission"]),
