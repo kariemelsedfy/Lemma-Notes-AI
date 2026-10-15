@@ -11,6 +11,8 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E3b — server, image, deploy script; the disk filled up
+The Mac's data volume hit 100% (121 MB free) mid-task, which broke Docker (I/O errors, hung daemon). Cause: nine old `/private/tmp/lemma-pr12x-fix` worktrees each held a 5 GB `Tools/bedrock-proxy/.build` from the discarded AWS SDK work. I deleted only those nine `.build` folders (about 45 GB, regenerable) and nothing else; 23 GB free afterwards. Worktrees under `/private/tmp/lemma-*` and `lemma-main-recovery-*` still hold other `.build` folders (~0.4 GB each) if space gets tight again. Docker Desktop stayed unresponsive after that; I quit and reopened it, so re-run `docker run --rm -v $PWD/Tools/pilot-proxy:/src:ro swift:6.2 bash -c 'cp -r /src /work && cd /work && swift build'` to check the Linux compile of `PilotSocketServer` (`Glibc` constants differ: `SOCK_STREAM` and `SHUT_RDWR` need `.rawValue`/`Int32()` there, handled but unproven). The deploy script passes the iPad token to `security add-generic-password -w`, so it is briefly visible in the process list on the owner's own Mac.
 ## 2026-10-15 · Claude · M4-16E4 — the app-side client
 Small on purpose: the interesting rule is that every server answer collapses to the five existing `ProxyTransportFailure` cases, so UI code cannot branch on server detail. Verified with a throwaway Swift script that the client's flatten recipe (`CGContext` with `noneSkipLast`) is encoded by ImageIO as PNG color type 2, because the Linux server rejects alpha types; if that recipe changes, the server will answer 422 to every request. The app must keep the token in the Keychain and build the transport from Settings (next, M4-08C).
 
