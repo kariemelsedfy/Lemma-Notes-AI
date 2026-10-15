@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-16A — Record the switch from AWS Bedrock to the Gemini API (ADR-027)
+status: Done (docs only) · completed: Claude · 2026-10-15 · branch: docs/M4-16A-gemini-adr · depends: ADR-021 · refs: DECISIONS.md ADR-027, AI_PIPELINE.md §3 · estimate: S
+Note: owner decided to drop AWS after every Bedrock quota showed 0 and approved the Gemini direct-key path. Verified so far: key accepted by a free model-list call; one synthetic text call to `gemini-3.1-flash-lite` cost about $0.0000033 (7 in, 1 out). Spend: about $0.0000033 of $10. No real selection has been sent; transport is M4-16B, app wiring M4-08C, measurement M4-15.
+
 ### M4-08A3b1 — Decode and strip selected PNGs before dispatch
 status: Done (mock-only; mainline recovery) · implemented: Devin (#125, #126) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b1-main-recovery · depends: M4-08A3a, ADR-021 · refs: AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
 Note: reapplies the net code of #125 and #126 (the cold-SDK CI limit already landed via #145). `AdmissionGate` now decodes each selected-crop PNG, strips ancillary chunks (including text and EXIF metadata, allowing only a dimensions-only EXIF), checks the inflated size and chunk layout against the pixel and byte bounds, and forwards only the normalized bytes. Adversarial tests cover metadata, oversize and malformed chunk cases. 45 proxy tests pass. Still fake transport only: no AWS call. $0 of $10.
