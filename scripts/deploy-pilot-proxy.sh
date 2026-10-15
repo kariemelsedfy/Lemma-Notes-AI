@@ -24,6 +24,20 @@ run() {
     if [ "$DRY" = "1" ]; then printf 'DRY RUN: %s\n' "$*"; else "$@"; fi
 }
 
+# IAM changes can briefly conflict right after a service account is created; retry with backoff.
+retry() {
+    local attempt=1
+    until "$@"; do
+        [ "$attempt" -ge 6 ] && { echo "Failed after $attempt attempts: $1 $2 $3" >&2; return 1; }
+        sleep $((attempt * 5))
+        attempt=$((attempt + 1))
+    done
+}
+
+run_retry() {
+    if [ "$DRY" = "1" ]; then printf 'DRY RUN: %s\n' "$*"; else retry "$@"; fi
+}
+
 secret_exists() { gcloud secrets describe "$1" --project "$PROJECT" >/dev/null 2>&1; }
 
 if [ "$DRY" != "1" ]; then
@@ -46,7 +60,7 @@ if [ "$DRY" = "1" ] || ! gcloud iam service-accounts describe "$ACCOUNT" --proje
     run gcloud iam service-accounts create "$ACCOUNT_NAME" --project "$PROJECT" \
         --display-name "Margin pilot proxy"
 fi
-run gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$ACCOUNT" \
+run_retry gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$ACCOUNT" \
     --role roles/datastore.user --condition=None >/dev/null
 
 echo "== Secrets (values are never printed)"
@@ -73,7 +87,7 @@ else
     fi
 fi
 for name in gemini-api-key pilot-token; do
-    run gcloud secrets add-iam-policy-binding "$name" --project "$PROJECT" \
+    run_retry gcloud secrets add-iam-policy-binding "$name" --project "$PROJECT" \
         --member "serviceAccount:$ACCOUNT" --role roles/secretmanager.secretAccessor >/dev/null
 done
 
