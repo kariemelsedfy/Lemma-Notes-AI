@@ -69,7 +69,7 @@ extension VirtualizedPageStack {
         return suggestions.strokes
     }
 
-    static func makeAskProvider() -> any SpecProvider { LocalArithmeticSpecProvider() }
+    static func makeAskProvider() -> any SpecProvider { makeAskProvider(configuration: .standard) }
 
     static func shouldCancelAsk(selectedPage: UUID?, visiblePage: UUID) -> Bool {
         guard let selectedPage else { return false }
