@@ -5,7 +5,6 @@ import XCTest
 
 final class PilotAdmissionTests: XCTestCase {
     private static let pilotID = UUID()
-    private static let modelID = "amazon.nova-lite-v1:0"
     private static let pixel = Data(
         base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR42mNgAAAAAgAB5Sfe/AAAAABJRU5ErkJggg=="
     )!
@@ -13,7 +12,7 @@ final class PilotAdmissionTests: XCTestCase {
     func testValidatedRequestReservesBeforeItReachesFakeTransport() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
         let transport = FakePilotTransport()
-        let gate = PilotAdmission(admission: admission(), ledger: ledger, price: { Self.quote() })
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
         let requestID = UUID()
 
         let receipt = try await gate.invoke(try body(requestID: requestID), proof: "pilot", transport: transport)
@@ -21,41 +20,22 @@ final class PilotAdmissionTests: XCTestCase {
         XCTAssertEqual(receipt.requestID, requestID)
         XCTAssertEqual(receipt.heldMicros, 50_000)
         XCTAssertEqual(receipt.remainingMicros, 50_000)
-        try await ledger.recordObservedCost(requestID: requestID, observedMicros: 19_123)
         let observed = try await ledger.observedTotalMicros()
         let remaining = try await ledger.remainingMicros()
-        XCTAssertEqual(observed, 19_123)
+        XCTAssertEqual(receipt.observedMicros, 400)  // default fake usage: 1,000 in, 100 out
+        XCTAssertEqual(observed, 400)
         XCTAssertEqual(remaining, 50_000)
         let calls = await transport.calls
         XCTAssertEqual(calls, 1)
     }
 
-    func testUnverifiedIdentityRetentionAndMalformedPayloadNeverReserveOrSend() async throws {
+    func testUnverifiedIdentityAndMalformedPayloadNeverReserveOrSend() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
         let transport = FakePilotTransport()
-        let allowed = PilotAdmission(admission: admission(), ledger: ledger, price: { Self.quote() })
-        let wrongRetention = PilotAdmission(
-            admission: admission(mode: "default"), ledger: ledger, price: { Self.quote() }
-        )
+        let allowed = PilotAdmission(admission: admission(), ledger: ledger)
         await expect(.unauthorized, allowed, try body(), proof: nil, transport: transport)
-        await expect(.retentionUnavailable, wrongRetention, try body(), transport: transport)
         await expect(.malformed, allowed, try body(extra: ["glyphBank": "forbidden"]), transport: transport)
         await expect(.malformed, allowed, try body(crop: Data([0, 1, 2])), transport: transport)
-        let remaining = try await ledger.remainingMicros()
-        let calls = await transport.calls
-        XCTAssertEqual(remaining, 100_000)
-        XCTAssertEqual(calls, 0)
-    }
-
-    func testAbsentOrExpensivePriceNeverReachesFakeTransport() async throws {
-        let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
-        let transport = FakePilotTransport()
-        let missing = PilotAdmission(admission: admission(), ledger: ledger)
-        let expensive = PilotAdmission(
-            admission: admission(), ledger: ledger, price: { Self.quote(inputRate: 200_000) }
-        )
-        await expectPrice(.unavailable, missing, try body(), transport: transport)
-        await expectPrice(.tooExpensive, expensive, try body(), transport: transport)
         let remaining = try await ledger.remainingMicros()
         let calls = await transport.calls
         XCTAssertEqual(remaining, 100_000)
@@ -66,9 +46,9 @@ final class PilotAdmissionTests: XCTestCase {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 50_000)
         let transport = FakePilotTransport()
         let invalidID = PilotAdmission(
-            admission: admission(subjectID: "not-a-uuid"), ledger: ledger, price: { Self.quote() }
+            admission: admission(subjectID: "not-a-uuid"), ledger: ledger
         )
-        let allowed = PilotAdmission(admission: admission(), ledger: ledger, price: { Self.quote() })
+        let allowed = PilotAdmission(admission: admission(), ledger: ledger)
         await expect(.unauthorized, invalidID, try body(), transport: transport)
         let input = try body()
         _ = try await allowed.invoke(input, proof: "pilot", transport: transport)
@@ -81,7 +61,7 @@ final class PilotAdmissionTests: XCTestCase {
     func testRateLimitDeniesFortyFirstFakeSend() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase())
         let transport = FakePilotTransport()
-        let gate = PilotAdmission(admission: admission(), ledger: ledger, price: { Self.quote() })
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
         for _ in 0..<40 {
             _ = try await gate.invoke(try body(), proof: "pilot", transport: transport)
         }
@@ -95,8 +75,8 @@ final class PilotAdmissionTests: XCTestCase {
         let firstLedger = try SpendLedger.bootstrap(databaseURL: database, limitMicros: 50_000)
         let secondLedger = try SpendLedger(databaseURL: database, limitMicros: 50_000)
         let transport = FakePilotTransport()
-        let first = PilotAdmission(admission: admission(), ledger: firstLedger, price: { Self.quote() })
-        let second = PilotAdmission(admission: admission(), ledger: secondLedger, price: { Self.quote() })
+        let first = PilotAdmission(admission: admission(), ledger: firstLedger)
+        let second = PilotAdmission(admission: admission(), ledger: secondLedger)
         let inputs = [try body(), try body()]
         let tasks = [
             Task { try await first.invoke(inputs[0], proof: "pilot", transport: transport) },
@@ -122,7 +102,7 @@ final class PilotAdmissionTests: XCTestCase {
     func testFakeTransportFailureKeepsTheHoldAndCannotReplay() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
         let transport = FakePilotTransport(fails: true)
-        let gate = PilotAdmission(admission: admission(), ledger: ledger, price: { Self.quote() })
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
         let input = try body()
         do {
             _ = try await gate.invoke(input, proof: "pilot", transport: transport)
@@ -139,50 +119,45 @@ final class PilotAdmissionTests: XCTestCase {
         XCTAssertEqual(calls, 1)
     }
 
-    func testCancellationBeforeDelayedQuoteCannotSendOrReserve() async throws {
+    func testCancelledTransportCallKeepsTheHoldAndRecordsNoCost() async throws {
         let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 50_000)
-        let transport = FakePilotTransport()
-        let gate = PilotAdmission(admission: admission(), ledger: ledger) {
-            try? await Task.sleep(for: .milliseconds(100))
-            return Self.quote()
-        }
-        let input = try body()
-        let task = Task { try await gate.invoke(input, proof: "pilot", transport: transport) }
-        try await Task.sleep(for: .milliseconds(10))
-        task.cancel()
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
         do {
-            _ = try await task.value
-            XCTFail("Cancelled request reached fake transport")
-        } catch is CancellationError {
-            XCTAssertTrue(task.isCancelled)
-        } catch {
+            _ = try await gate.invoke(try body(), proof: "pilot", transport: FakePilotTransport(cancels: true))
             XCTFail("Expected cancellation")
+        } catch is CancellationError {
+            let observed = try await ledger.observedTotalMicros()
+            let remaining = try await ledger.remainingMicros()
+            XCTAssertEqual(observed, 0)
+            XCTAssertEqual(remaining, 0)
         }
-        let calls = await transport.calls
-        let remaining = try await ledger.remainingMicros()
-        XCTAssertEqual(calls, 0)
-        XCTAssertEqual(remaining, 50_000)
     }
 
-    private func admission(subjectID: String = pilotID.uuidString, mode: String = "none") -> AdmissionGate {
-        AdmissionGate(
-            modelID: Self.modelID, region: "us-east-1",
-            authorize: { proof in proof == "pilot" ? PilotIdentity(subjectID: subjectID) : nil },
-            retention: {
-                RetentionEvidence(
-                    modelID: Self.modelID, region: "us-east-1", effectiveMode: mode,
-                    allowedModes: ["none"], verifiedAt: Date()
-                )
-            }
-        )
+    func testObservedCostIsRecordedFromTheModelUsage() async throws {
+        let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
+        let reply = GeminiReply(specJSON: Data("{}".utf8), promptTokens: 1_200, outputTokens: 150)
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
+        let answer = try await gate.invoke(try body(), proof: "pilot", transport: FakePilotTransport(reply: reply))
+        XCTAssertEqual(answer.observedMicros, 525)  // 300 + 225
+        XCTAssertEqual(answer.specJSON, Data("{}".utf8))
+        let observed = try await ledger.observedTotalMicros()
+        XCTAssertEqual(observed, 525)
     }
 
-    private static func quote(inputRate: Int64 = 60_000) -> PilotPriceEvidence {
-        PilotPriceEvidence(
-            modelID: modelID, region: "us-east-1", tier: "standard",
-            inputMicrosPerMillion: inputRate, outputMicrosPerMillion: 240_000,
-            otherMaximumMicros: 1_000, verifiedAt: Date()
-        )
+    func testCostAboveTheHoldHaltsTheLedger() async throws {
+        let ledger = try SpendLedger.bootstrap(databaseURL: temporaryDatabase(), limitMicros: 100_000)
+        let reply = GeminiReply(specJSON: Data("{}".utf8), promptTokens: 400_000, outputTokens: 0)
+        let gate = PilotAdmission(admission: admission(), ledger: ledger)
+        do {
+            _ = try await gate.invoke(try body(), proof: "pilot", transport: FakePilotTransport(reply: reply))
+            XCTFail("A charge above the hold must not return an answer")
+        } catch let error as LedgerError {
+            XCTAssertEqual(error, .costExceeded)
+        }
+    }
+
+    private func admission(subjectID: String = pilotID.uuidString) -> AdmissionGate {
+        AdmissionGate(authorize: { proof in proof == "pilot" ? PilotIdentity(subjectID: subjectID) : nil })
     }
 
     private func body(requestID: UUID = UUID(), crop: Data = pixel, extra: [String: Any] = [:]) throws -> Data {
@@ -217,19 +192,6 @@ final class PilotAdmissionTests: XCTestCase {
         }
     }
 
-    private func expectPrice(
-        _ failure: PilotPriceError, _ gate: PilotAdmission, _ input: Data, transport: FakePilotTransport
-    ) async {
-        do {
-            _ = try await gate.invoke(input, proof: "pilot", transport: transport)
-            XCTFail("Invalid price still sent the request")
-        } catch let error as PilotPriceError {
-            XCTAssertEqual(error, failure)
-        } catch {
-            XCTFail("Expected a content-free price error")
-        }
-    }
-
     private func expectLedger(
         _ failure: LedgerError, _ gate: PilotAdmission, _ input: Data, transport: FakePilotTransport
     ) async {
@@ -248,16 +210,25 @@ private enum FakePilotTransportError: Error, Equatable {
     case unavailable
 }
 
-private actor FakePilotTransport: ProxyTransport {
+private actor FakePilotTransport: PilotModelTransport {
     private(set) var calls = 0
     let fails: Bool
+    let cancels: Bool
+    let reply: GeminiReply
 
-    init(fails: Bool = false) {
+    init(
+        fails: Bool = false, cancels: Bool = false,
+        reply: GeminiReply = GeminiReply(specJSON: Data("{}".utf8), promptTokens: 1_000, outputTokens: 100)
+    ) {
         self.fails = fails
+        self.cancels = cancels
+        self.reply = reply
     }
 
-    func send(_ request: AdmittedRequest) async throws {
+    func complete(_ request: AdmittedRequest) async throws -> GeminiReply {
         calls += 1
+        if cancels { throw CancellationError() }
         if fails { throw FakePilotTransportError.unavailable }
+        return reply
     }
 }

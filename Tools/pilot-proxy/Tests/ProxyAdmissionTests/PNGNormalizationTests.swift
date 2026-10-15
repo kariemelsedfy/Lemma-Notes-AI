@@ -97,16 +97,7 @@ final class PNGNormalizationTests: XCTestCase {
 
     private func gate() -> AdmissionGate {
         let identity = PilotIdentity(subjectID: UUID().uuidString)
-        return AdmissionGate(
-            modelID: "amazon.nova-lite-v1:0", region: "us-east-1",
-            authorize: { proof in proof == "pilot" ? identity : nil },
-            retention: {
-                RetentionEvidence(
-                    modelID: "amazon.nova-lite-v1:0", region: "us-east-1", effectiveMode: "none",
-                    allowedModes: ["none"], verifiedAt: Date()
-                )
-            }
-        )
+        return AdmissionGate(authorize: { proof in proof == "pilot" ? identity : nil })
     }
 
     private func body(crop: Data, neighborhood: Data) throws -> Data {

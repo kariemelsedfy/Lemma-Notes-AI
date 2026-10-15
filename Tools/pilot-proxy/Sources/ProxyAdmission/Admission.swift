@@ -4,19 +4,11 @@ import ImageIO
 import zlib
 
 enum AdmissionError: Error, Equatable {
-    case unauthorized, malformed, oversized, unsupported, retentionUnavailable, busy
+    case unauthorized, malformed, oversized, unsupported, busy
 }
 
 struct PilotIdentity: Sendable {
     let subjectID: String
-}
-
-struct RetentionEvidence: Sendable {
-    let modelID: String
-    let region: String
-    let effectiveMode: String
-    let allowedModes: Set<String>
-    let verifiedAt: Date
 }
 
 struct AdmittedRequest: Decodable, Sendable {
@@ -66,24 +58,16 @@ protocol ProxyTransport: Sendable {
 }
 
 actor AdmissionGate {
-    private let modelID: String
-    private let region: String
     private let authorize: @Sendable (String?) async -> PilotIdentity?
-    private let retention: @Sendable () async -> RetentionEvidence?
     private let maxInFlight: Int
     private var inFlight = 0
 
+    /// Retention is not checked per request: ADR-027 accepts Google's paid-tier abuse-monitoring logs.
     init(
-        modelID: String,
-        region: String,
         authorize: @escaping @Sendable (String?) async -> PilotIdentity? = { _ in nil },
-        retention: @escaping @Sendable () async -> RetentionEvidence? = { nil },
         maxInFlight: Int = 1
     ) {
-        self.modelID = modelID
-        self.region = region
         self.authorize = authorize
-        self.retention = retention
         self.maxInFlight = min(max(maxInFlight, 1), 2)
     }
 
@@ -102,12 +86,6 @@ actor AdmissionGate {
         let identity = await authorize(proof)
         try Task.checkCancellation()
         guard let identity, !identity.subjectID.isEmpty else { throw AdmissionError.unauthorized }
-        let evidence = await retention()
-        try Task.checkCancellation()
-        guard let evidence, evidence.modelID == modelID, evidence.region == region,
-            evidence.effectiveMode == "none", evidence.allowedModes.contains("none"),
-            (0...300).contains(Date().timeIntervalSince(evidence.verifiedAt))
-        else { throw AdmissionError.retentionUnavailable }
         let request: AdmittedRequest
         do {
             request = try JSONDecoder().decode(AdmittedRequest.self, from: body)
