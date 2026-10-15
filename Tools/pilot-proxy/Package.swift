@@ -5,7 +5,8 @@ let package = Package(
     name: "pilot-proxy",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "ProxyAdmission", targets: ["ProxyAdmission"])
+        .library(name: "ProxyAdmission", targets: ["ProxyAdmission"]),
+        .executable(name: "pilot-proxy-server", targets: ["pilot-proxy-server"]),
     ],
     targets: [
         .systemLibrary(name: "CZlib", path: "Sources/CZlib"),
@@ -14,6 +15,7 @@ let package = Package(
             dependencies: ["CZlib"],
             linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
         ),
+        .executableTarget(name: "pilot-proxy-server", dependencies: ["ProxyAdmission"]),
         .testTarget(name: "ProxyAdmissionTests", dependencies: ["ProxyAdmission"]),
     ]
 )
