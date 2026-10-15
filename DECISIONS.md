@@ -417,3 +417,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected for the Mac pilot.** An in-memory actor alone loses reservations on restart. A hosted database or new third-party SQLite wrapper adds cost/dependency before the single-device pilot has evidence. No decision is made here about the beta backend.
 
 **Revisit when.** A2b cannot prove the maximum cost per request, the Local Mac is no longer the pilot host, or a shared hosted beta ledger is chosen.
+
+---
+
+## ADR-024 — Use the official AWS Swift SDK only inside the Mac pilot tool
+
+**Status:** Accepted · 2026-10-08 · approved by: human for `Tools/bedrock-proxy` only · extends ADR-021, does not relax its live-call gates
+
+**Context.** Nova Lite on-demand list pricing and regional availability have been read via a limited AWS CLI browser-login profile, but the Mac proxy has only a fake transport. A real provider request will include a bounded selected handwriting image; putting that content in shell arguments or a temporary file for an AWS CLI subprocess would be a poor privacy boundary. Implementing SigV4 signing and binary request framing by hand is more error-prone. The official [AWS SDK for Swift](https://github.com/awslabs/aws-sdk-swift) supports the AWS CLI `aws login` cached temporary credentials and typed Bedrock Runtime requests. The owner explicitly approved adding this dependency to the **Mac-side tool**, not the iPad app.
+
+**Decision.** Add only the official SDK package to `Tools/bedrock-proxy`, pinned to **1.8.2** (released 2026-09-30, more than seven days before approval). Use a no-call/fail-closed Mac transport seam first; later bind that seam to the existing consent, retention, trusted price, stable server pilot identity, SQLite reservation/rate and strict response validator before allowing any paid SDK call. The iPad app and all `Packages/` modules retain **no AWS SDK, project credentials or direct Bedrock route**. CLI remains a user-controlled browser-login tool; never copy a token or secret into the repo. Commit `Tools/bedrock-proxy/Package.resolved` to lock transitive revisions for this pilot: the initial resolver selected five releases from 2026-10-05–07, which were replaced with compatible releases from September or earlier before committing. Leave only the exact SDK dependency in the manifest (explicit unused transitive overrides caused SwiftPM warnings), re-review the lockfile before any update and never weaken a package-security policy to make a build pass.
+
+**Consequences.** The tool will have third-party SwiftPM dependencies, longer builds and a new supply-chain surface. Its presence neither proves Nova Lite is allowed under Runtime retention `none` nor authorizes model invocation, an account policy change, user-handwriting upload or a paid charge. The pilot IAM user remains read-only until the complete hard cap and exact model/privacy gates are demonstrated and the owner separately approves scoped invocation permission and a bounded synthetic test. A later hosted beta may use a different credential/transport backend behind the same admitted-request boundary.
+
+**Alternatives rejected for this pilot.** Embedding credentials in the app violates ADR-021. An unreviewed CLI subprocess risks exposing binary user content through shell arguments, temporary files or logs; hand-written SigV4 increases signing and retry risk. No new cloud hosting or always-on server is needed for the one-device Mac pilot.
+
+**Revisit when.** The pinned SDK cannot use the scoped console login, its transitive dependencies cannot meet supply-chain age constraints, CI cannot build it within the Mac runner budget, or a hosted beta requires a different transport.

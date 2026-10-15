@@ -34,7 +34,8 @@ Sizes: **S** ≤ half a session · **M** ≈ one session · **L** ≈ 2–3 sess
 | M4-08B Client provider seam | Claude / main `bff7d34` | `feat/M4-08B-main-recovery` / `Packages/Intelligence` provider, tests, ADR-022 | Recovered on main via #141; fake transport only, no app route |
 | M4-08A2a Durable spend ledger | Claude / main `9b4c77f` | `feat/M4-08A2a-main-recovery` / proxy `SpendLedger`, tests, ADR-023 | Recovered on main via #142; offline, no AWS call |
 | M4-08A2b Price envelope and rate limits | Claude / main `bb91216` | `feat/M4-08A2b-main-recovery` / proxy price envelope, rate ledger, tests | Recovered on main via #143; offline, no AWS call |
-| M4-08A2b2b2 Admission composition | Claude / main `5e50f68` | `feat/M4-08A2b2b2-main-recovery` / proxy `PilotAdmission`, `AdmissionGate.validate`, tests | Recover reviewed #123 (merged off-main); fake transport only |
+| M4-08A2b2b2 Admission composition | Claude / main `5e50f68` | `feat/M4-08A2b2b2-main-recovery` / proxy `PilotAdmission`, `AdmissionGate.validate`, tests | Recovered on main via #144; fake transport only |
+| M4-08A3a SDK seam | Claude / main `8619f75` | `feat/M4-08A3a-main-recovery` / proxy `Package.swift`, seam, ADR-024 | Recovered on main via #145; disabled transport, no AWS call |
 | M4-08A Bedrock proxy bounds | Unclaimed / after M4-13 | Branch TBD / server-side transport and tests only | Verify AWS access, `none` model eligibility and combined $10 bound before live use; no app files |
 
 ---
@@ -48,6 +49,10 @@ _(empty)_
 _(empty)_
 
 ## Done
+
+### M4-08A3a — Pin the AWS SDK behind a disabled transport seam
+status: Done (mock-only; mainline recovery) · implemented: Devin (#124) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3a-main-recovery · depends: M4-08A2b2b2, ADR-021, ADR-024 · refs: BUSINESS.md §3.3, AGENTS.md §7 · estimate: S
+Note: reapplied from the off-main #124. `Tools/bedrock-proxy` now depends on exact `aws-sdk-swift` 1.8.2 (`AWSBedrockRuntime` only; 26 pins in `Package.resolved`, all apple, awslabs, smithy-lang or swift-server) under ADR-024, already human-approved for this tool only. `DisabledBedrockTransport` always throws `.disabled`; `SyntheticNovaProbe` only builds a request object. **No AWS call is possible**: no credentials, endpoint or invocation path. $0 of $10.
 
 ### M4-08A2b2b2 — Compose server admission, price and ledger before fake transport
 status: Done (mock-only; mainline recovery) · implemented: Devin (#123) · recovered: Claude · 2026-10-14 · branch: feat/M4-08A2b2b2-main-recovery · depends: M4-08A1, M4-08A2a, M4-08A2b, ADR-021 · refs: BUSINESS.md §3.3, AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
