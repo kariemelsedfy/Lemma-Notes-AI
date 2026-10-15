@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · ADR-028 — Cloud Run
+Owner asked for a server "how it will be in the app" instead of a Mac listener, so the PSK/NWConnection plan (and the frame codec just merged in #159) is dead weight; I left it in place until the HTTP handler lands. Biggest risks to check first: the proxy code has only ever built on macOS (needs a Linux Docker build) and the ledger must become transactional Firestore. `docker` and `gcloud` are installed locally; auth is the owner's job.
+
 ## 2026-10-15 · Claude · M4-16C2 — wire frames
 Chose a tiny length-prefixed protocol over TLS-PSK rather than HTTP: no HTTP parser to get wrong, no certificates for a home LAN, and the PSK handshake doubles as authentication. Cost: URLSession cannot use PSK, so the iPad client must use `NWConnection`. The frame length is validated before any buffering so a peer cannot make the Mac allocate 4 GB. Next: the listener (M4-16C3).
 
