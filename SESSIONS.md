@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E2a — ledger behind a protocol
+Gating `SpendLedger.swift` in `#if canImport(SQLite3)` made swift-format re-indent the whole file, which pushed one signature over 120 columns; renamed a parameter to fix it. The in-memory test store mimics Firestore's conditional writes and can force conflicts, but that is a model of Firestore, not Firestore: E2b must check real `updateTime` preconditions and `exists=false` creates. Note that holds are never released (sum of holds is the budget), so $10 admits at most 200 requests at 50,000 micro-dollars each; fine for the 20-30 request pilot, revisit before wider use.
+
 ## 2026-10-15 · Claude · M4-16E1 — Linux build, first pass
 First Docker build failed on CoreGraphics (PNG re-encode), then zlib and SQLite3. The first two are fixed here; SQLite3 is what E2 removes. Docker Desktop was not running and the `swift:6.2` pull took several minutes; run `docker run --rm -v $PWD/Tools/pilot-proxy:/src:ro swift:6.2 bash -c 'cp -r /src /work && cd /work && swift build'` to re-check. The Apple and portable PNG paths now differ in behavior for RGBA input (flattened vs rejected), so the client must flatten first.
 

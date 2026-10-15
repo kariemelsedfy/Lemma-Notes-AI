@@ -16,10 +16,10 @@ struct PilotAnswer: Sendable {
 
 actor PilotAdmission {
     private let admission: AdmissionGate
-    private let ledger: SpendLedger
+    private let ledger: any PilotLedger
     private var inFlight = false
 
-    init(admission: AdmissionGate, ledger: SpendLedger) {
+    init(admission: AdmissionGate, ledger: any PilotLedger) {
         self.admission = admission
         self.ledger = ledger
     }
