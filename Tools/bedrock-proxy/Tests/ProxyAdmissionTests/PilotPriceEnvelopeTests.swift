@@ -81,3 +81,131 @@ final class PilotPriceEnvelopeTests: XCTestCase {
         }
     }
 }
+
+final class CatalogTokenRatesTests: XCTestCase {
+    func testGroundedInputAndOutputRowsYieldOnlyTokenRateObservation() throws {
+        let checkedAt = try date()
+        let input = try row(kind: "Input tokens", usd: "0.0000600000")
+        let output = try row(kind: "Output tokens", usd: "0.0002400000")
+        let rates = try XCTUnwrap(parse([input, output], at: checkedAt))
+        XCTAssertEqual(rates.modelLabel, "Nova Lite")
+        XCTAssertEqual(rates.regionCode, "us-east-1")
+        XCTAssertEqual(rates.inputMicrosPerMillion, 60_000)
+        XCTAssertEqual(rates.outputMicrosPerMillion, 240_000)
+        XCTAssertThrowsError(try PilotPriceEnvelope.quote(maxOutputTokens: 512)) { error in
+            XCTAssertEqual(error as? PilotPriceError, .unavailable)
+        }
+    }
+
+    func testMissingDuplicateAndExtraChargeRowsFailClosed() throws {
+        let checkedAt = try date()
+        let input = try row(kind: "Input tokens", usd: "0.0000600000")
+        let output = try row(kind: "Output tokens", usd: "0.0002400000")
+        XCTAssertNil(parse([input], at: checkedAt))
+        XCTAssertNil(parse([input, input, output], at: checkedAt))
+        let extraCharge = try row(kind: "Image tokens", usd: "0.01")
+        XCTAssertNil(parse([input, output, extraCharge], at: checkedAt))
+        let extraDimension = try row(kind: "Output tokens", usd: "0.0002400000", extraDimension: true)
+        XCTAssertNil(parse([input, extraDimension], at: checkedAt))
+    }
+
+    func testWrongProductScopeUnitCurrencyAndAmountsFailClosed() throws {
+        let checkedAt = try date()
+        let input = try row(kind: "Input tokens", usd: "0.0000600000")
+        let output = try row(kind: "Output tokens", usd: "0.0002400000")
+        for attributes in [
+            ["model": "Nova 2 Lite"], ["regionCode": "eu-west-3"],
+            ["feature": "Batch Inference"], ["service_tier": "priority"],
+            ["usagetype": "USE1-NovaLite-input-tokens-batch"],
+        ] {
+            let wrong = try row(kind: "Input tokens", usd: "0.0000600000", attributes: attributes)
+            XCTAssertNil(parse([wrong, output], at: checkedAt))
+        }
+        for wrong in [
+            try row(kind: "Input tokens", usd: "0.0000600000", unit: "tokens"),
+            try row(kind: "Input tokens", usd: "0.0000600000", currency: "EUR"),
+            try row(kind: "Input tokens", usd: "0"),
+            try row(kind: "Input tokens", usd: "bogus"),
+            try row(kind: "Input tokens", usd: "9223372036854775808"),
+            try row(kind: "Input tokens", usd: String(repeating: "9", count: 100)),
+            try row(kind: "Input tokens", usd: "0.0000600000", termSKU: "other"),
+        ] {
+            XCTAssertNil(parse([wrong, output], at: checkedAt))
+        }
+        XCTAssertNil(parse(["{", output], at: checkedAt))
+        XCTAssertNil(parse([input.replacingOccurrences(of: "20261010182242", with: "future"), output], at: checkedAt))
+        let futurePublication = input.replacingOccurrences(of: "2026-10-10T18:22:42Z", with: "2026-10-12T18:22:42Z")
+        XCTAssertNil(parse([futurePublication, output], at: checkedAt))
+        XCTAssertNil(parse([input, output], at: checkedAt, formatVersion: "aws_v2"))
+    }
+
+    func testSourceAgeAndTinyFractionalPriceAreConservative() throws {
+        let checkedAt = try date()
+        let output = try row(kind: "Output tokens", usd: "0.0002400000")
+        let tiny = try row(kind: "Input tokens", usd: "0.0000000001")
+        let rates = try XCTUnwrap(parse([tiny, output], at: checkedAt))
+        XCTAssertEqual(rates.inputMicrosPerMillion, 1)
+        XCTAssertNil(parse([tiny, output], at: checkedAt.addingTimeInterval(-301), now: checkedAt))
+        XCTAssertNil(parse([tiny, output], at: checkedAt.addingTimeInterval(1), now: checkedAt))
+    }
+
+    private func date() throws -> Date {
+        try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-11T12:00:00Z"))
+    }
+
+    private func parse(
+        _ rows: [String], at fetchedAt: Date, now: Date? = nil, formatVersion: String = "aws_v1"
+    ) -> CatalogTokenRates? {
+        CatalogTokenRates.parse(rows, formatVersion: formatVersion, fetchedAt: fetchedAt, now: now ?? fetchedAt)
+    }
+
+    private func row(
+        kind: String, usd: String, attributes overrides: [String: String] = [:],
+        unit: String = "1K tokens", currency: String = "USD", termSKU: String? = nil,
+        extraDimension: Bool = false
+    ) throws -> String {
+        let sku: String
+        let usage: String
+        switch kind {
+        case "Input tokens":
+            sku = "QRGWJ3P8FT28EYX2"
+            usage = "USE1-NovaLite-input-tokens"
+        case "Output tokens":
+            sku = "CBZ6A6U7XK8WJ3KA"
+            usage = "USE1-NovaLite-output-tokens"
+        default:
+            sku = "OTHER"
+            usage = "USE1-NovaLite-image-tokens"
+        }
+        var attributes = [
+            "model": "Nova Lite", "regionCode": "us-east-1", "servicecode": "AmazonBedrock",
+            "feature": "On-demand Inference", "inferenceType": kind, "usagetype": usage,
+            "location": "US East (N. Virginia)", "locationType": "AWS Region",
+            "servicename": "Amazon Bedrock", "operation": "",
+        ]
+        for (key, value) in overrides { attributes[key] = value }
+        let termCode = "JRTCKXETXF"
+        let termKey = "\(sku).\(termCode)"
+        let rateKey = "\(termKey).6YS6EN2CT7"
+        let dimension: [String: Any] = [
+            "unit": unit, "beginRange": "0", "endRange": "Inf", "rateCode": rateKey,
+            "description": "Nova Lite on-demand tokens", "appliesTo": [], "pricePerUnit": [currency: usd],
+        ]
+        var dimensions: [String: Any] = [rateKey: dimension]
+        if extraDimension { dimensions["\(termKey).OTHER"] = dimension }
+        let product: [String: Any] = [
+            "sku": sku, "productFamily": "Amazon Bedrock", "attributes": attributes,
+        ]
+        let term: [String: Any] = [
+            "sku": termSKU ?? sku, "offerTermCode": termCode,
+            "effectiveDate": "2026-10-01T00:00:00Z", "termAttributes": [:],
+            "priceDimensions": dimensions,
+        ]
+        let catalog: [String: Any] = [
+            "serviceCode": "AmazonBedrock", "version": "20261010182242",
+            "publicationDate": "2026-10-10T18:22:42Z", "product": product,
+            "terms": ["OnDemand": [termKey: term]],
+        ]
+        return try XCTUnwrap(String(data: JSONSerialization.data(withJSONObject: catalog), encoding: .utf8))
+    }
+}

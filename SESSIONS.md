@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-08A3b2b1 recovery — Parse Nova Lite token SKUs without enabling paid traffic
+
+Recovered #128 by taking the PR's tree for `Tools/` rather than replaying its reconcile/claim commits. The Ask-test change in that tree is skipped because main already has the newer fix. Executed in CI only (cold SDK build ~20 min); owner approved merging the recovery chain.
+
 ## 2026-10-15 · Claude · M4-08A3b2a recovery — Type-check read-only Bedrock observation
 
 Recovered #127 by taking the PR's tree for `Tools/` rather than replaying its reconcile/claim commits. The Ask-test change in that tree is skipped because main already has the newer fix. Executed in CI only (cold SDK build ~20 min); owner approved merging the recovery chain.
