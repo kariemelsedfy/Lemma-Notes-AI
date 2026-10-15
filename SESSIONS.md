@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16B — Gemini core, and what the first live checks showed
+
+Real numbers that the code and fakes cannot show: a synthetic text-only call used 40 prompt tokens; a synthetic two-image call (a 420x140 crop and a 700x220 neighborhood, rendered by me, not user ink) used 2,477 prompt tokens, 2,145 of them image tokens, and cost about $0.0008, roughly 3x my earlier guess, so the 20,000-token worst case in `GeminiPilot` is still conservative but image size is the real cost driver for M4-15. `generationConfig.responseJsonSchema` is accepted by `gemini-3.1-flash-lite`; the older `responseSchema` field rejects an integer `enum`. The transcribe-then-answer prompt returned a spec with `read` "12 \times 7 =" and an `inline` block "84". Owner approved everything while away; nothing here sends user ink.
+
 ## 2026-10-15 · Claude · M4-16B1 — dropping the AWS SDK
 
 The `git mv` of `Tools/bedrock-proxy` nested itself into a leftover untracked `Tools/pilot-proxy/.build` directory the first time, silently producing `Tools/pilot-proxy/bedrock-proxy/...`; check `ls Tools` after a rename in a worktree that has built before. The 45 to 43 test count is exactly the two deleted seam tests. Expected CI effect: no SwiftPM dependency fetch, so the proxy step should drop from minutes to seconds.

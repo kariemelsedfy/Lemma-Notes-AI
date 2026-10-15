@@ -13,7 +13,7 @@ final class AdmissionTests: XCTestCase {
 
     func testUnverifiedPilotAndExtraPageOrBankFieldsNeverReachTransport() async throws {
         let transport = CountingTransport()
-        let defaultDeny = AdmissionGate(modelID: "amazon.nova-lite-v1:0", region: "us-east-1")
+        let defaultDeny = AdmissionGate()
         await expect(.unauthorized, defaultDeny, try body(), transport: transport)
         let admission = gate()
         await expect(.unauthorized, admission, try body(), proof: nil, transport: transport)
@@ -65,35 +65,12 @@ final class AdmissionTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
-    func testUnverifiedOrWrongModelRetentionNeverReachesTransport() async throws {
-        let transport = CountingTransport()
-        let input = try body()
-        await expect(.retentionUnavailable, gate(evidence: nil), input, transport: transport)
-        await expect(.retentionUnavailable, gate(mode: "default"), input, transport: transport)
-        await expect(.retentionUnavailable, gate(allowed: ["default"]), input, transport: transport)
-        await expect(.retentionUnavailable, gate(region: "eu-west-1"), input, transport: transport)
-        await expect(.retentionUnavailable, gate(model: "unknown-model"), input, transport: transport)
-        await expect(.retentionUnavailable, gate(verifiedAt: .distantPast), input, transport: transport)
-        await expect(.retentionUnavailable, gate(verifiedAt: .distantFuture), input, transport: transport)
-        let calls = await transport.calls
-        XCTAssertEqual(calls, 0)
-    }
-
     func testCancellationBeforeAuthorizationReturnsCannotInvokeTransport() async throws {
         let transport = CountingTransport()
-        let admission = AdmissionGate(
-            modelID: "amazon.nova-lite-v1:0", region: "us-east-1",
-            authorize: { _ in
-                try? await Task.sleep(for: .milliseconds(100))
-                return PilotIdentity(subjectID: "test-pilot")
-            },
-            retention: {
-                RetentionEvidence(
-                    modelID: "amazon.nova-lite-v1:0", region: "us-east-1", effectiveMode: "none",
-                    allowedModes: ["none"], verifiedAt: Date()
-                )
-            }
-        )
+        let admission = AdmissionGate(authorize: { _ in
+            try? await Task.sleep(for: .milliseconds(100))
+            return PilotIdentity(subjectID: "test-pilot")
+        })
         let input = try body()
         let request = Task { try await admission.invoke(input, proof: "pilot", transport: transport) }
         try await Task.sleep(for: .milliseconds(10))
@@ -131,28 +108,9 @@ final class AdmissionTests: XCTestCase {
         XCTAssertEqual(calls, 1)
     }
 
-    private func gate(
-        evidence: Bool? = true,
-        mode: String = "none",
-        allowed: Set<String> = ["none"],
-        region: String = "us-east-1",
-        model: String = "amazon.nova-lite-v1:0",
-        verifiedAt: Date = Date()
-    ) -> AdmissionGate {
-        let attestation: RetentionEvidence?
-        if evidence == nil {
-            attestation = nil
-        } else {
-            attestation = RetentionEvidence(
-                modelID: model, region: region, effectiveMode: mode,
-                allowedModes: allowed, verifiedAt: verifiedAt
-            )
-        }
-        return AdmissionGate(
-            modelID: "amazon.nova-lite-v1:0",
-            region: "us-east-1",
+    private func gate() -> AdmissionGate {
+        AdmissionGate(
             authorize: { proof in proof == "pilot" ? PilotIdentity(subjectID: "test-pilot") : nil },
-            retention: { attestation },
             maxInFlight: 1
         )
     }
