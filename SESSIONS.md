@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08C2 — wiring cloud Ask into the app
+Two locks on purpose: the hosted provider is wrapped in `ConsentGatedProvider` (invariant 8) and the route only escalates when `PilotCloudConfiguration.isReady`. The second lock exists for UX, not safety: without it a user who never opted in would lose the specific local failure copy and see a generic consent error instead. Unsigned simulator builds have no Keychain entitlement (errSecMissingEntitlement), so the Keychain round-trip test skips there; the first real check is on the signed iPad build. `HTTPSProxyTransport` is built per request from settings, so changing the address or removing the token applies to the next Ask without a restart. The token reaches the iPad by paste (copy it on the Mac with `security find-generic-password -a margin-pilot -s pilot-proxy-token -w | pbcopy`, then paste into Universal Clipboard); I never see it.
+
 ## 2026-10-16 · Claude · M4-08C1 — fallback provider
 Design point worth keeping: gate the fallback, not the composite. `ConsentGatedProvider` decides by `tier`, and the composite reports the local tier so the free path is never blocked by a missing consent; the hosted path is wrapped separately and stays fail-closed. When consent is missing the primary's error is rethrown so the Ask bar still shows the local "unsupported/unclear" message instead of a generic one.
 
