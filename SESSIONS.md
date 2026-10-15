@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · Fast-merge policy
+Owner removed the mandatory independent review (AGENTS §1 step 14) and allowed merging without waiting for CI when they say so. In practice the CI wait (about 13-20 minutes) and repeated PROGRESS/SESSIONS conflicts were what slowed merges, not the review. Local tests and lint still run before every merge.
+
 ## 2026-10-15 · Claude · M4-16D — prompt and schema
 Surprise: Gemini's `responseSchema` field rejects an integer enum; `responseJsonSchema` accepts the same shape. Both were probed live with synthetic images only (about $0.001 total). Doc-only merge conflicts in PROGRESS/SESSIONS kept re-breaking the open docs PR; owner now wants no CI on doc-only conflict fixes. Next: M4-16C HTTP transport, which must also record usage on billed failures and use checked token arithmetic (review findings on #155).
 
