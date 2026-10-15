@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08C1 — fallback provider
+Design point worth keeping: gate the fallback, not the composite. `ConsentGatedProvider` decides by `tier`, and the composite reports the local tier so the free path is never blocked by a missing consent; the hosted path is wrapped separately and stays fail-closed. When consent is missing the primary's error is rethrown so the Ask bar still shows the local "unsupported/unclear" message instead of a generic one.
+
 ## 2026-10-16 · Claude · First live end-to-end run, and `/healthz` is reserved
 The owner's deploy succeeded (`https://pilot-proxy-185495186917.us-central1.run.app`, project `gen-lang-client-0168471595`). One synthetic request (a font-rendered "12 × 7 =", not real ink) returned HTTP 200 in 2.9 s with answer 84, and the Firestore ledger read back `reserved 50000, observed 797, halted false`, so the REST preconditions, hold documents, Gemini call and observed-cost write all work against the real services. Cloud Run's front end answers `/healthz` itself with a 404 page, so the health route is now `/status`. The ledger sums holds (50,000 micro-dollars each), so $10 admits at most 200 requests regardless of real cost. Running total of real spend: about $0.0018 of $10.
 
