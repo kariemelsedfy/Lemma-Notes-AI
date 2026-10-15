@@ -5,7 +5,8 @@ let package = Package(
     name: "bedrock-proxy",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "ProxyAdmission", targets: ["ProxyAdmission"])
+        .library(name: "ProxyAdmission", targets: ["ProxyAdmission"]),
+        .executable(name: "pricing-observe", targets: ["PricingObserve"]),
     ],
     dependencies: [
         .package(url: "https://github.com/awslabs/aws-sdk-swift.git", exact: "1.8.2")
@@ -17,15 +18,19 @@ let package = Package(
                 .product(name: "AWSBedrock", package: "aws-sdk-swift"),
                 .product(name: "AWSBedrockRuntime", package: "aws-sdk-swift"),
                 .product(name: "AWSPricing", package: "aws-sdk-swift"),
+                .product(name: "AWSSTS", package: "aws-sdk-swift"),
+                .product(name: "AWSSDKIdentity", package: "aws-sdk-swift"),
             ],
             linkerSettings: [.linkedLibrary("sqlite3"), .linkedLibrary("z")]
         ),
+        .executableTarget(name: "PricingObserve", dependencies: ["ProxyAdmission"]),
         .testTarget(
             name: "ProxyAdmissionTests",
             dependencies: [
                 "ProxyAdmission",
                 .product(name: "AWSBedrock", package: "aws-sdk-swift"),
                 .product(name: "AWSPricing", package: "aws-sdk-swift"),
+                .product(name: "AWSSTS", package: "aws-sdk-swift"),
             ]
         ),
     ]

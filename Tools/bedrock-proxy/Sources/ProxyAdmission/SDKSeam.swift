@@ -1,6 +1,8 @@
 import AWSBedrock
 import AWSBedrockRuntime
 import AWSPricing
+import AWSSDKIdentity
+import AWSSTS
 import Foundation
 
 enum SDKTransportError: Error, Equatable {
@@ -86,11 +88,13 @@ struct ReadOnlyBedrockObserver: Sendable {
 
 protocol PricingCatalogReader: Sendable {
     var configuredRegion: String? { get }
+    var configuredEndpoint: String? { get }
     func getProducts(input: GetProductsInput) async throws -> GetProductsOutput
 }
 
 extension PricingClient: PricingCatalogReader {
     var configuredRegion: String? { config.region }
+    var configuredEndpoint: String? { config.endpoint }
 }
 
 struct ReadOnlyPricingCatalog: Sendable {
@@ -142,6 +146,115 @@ struct ReadOnlyPricingCatalog: Sendable {
             }
             let fetchedAt = now()
             return CatalogTokenRates.parse(rows, formatVersion: "aws_v1", fetchedAt: fetchedAt, now: fetchedAt)
+        } catch {
+            return nil
+        }
+    }
+}
+
+protocol PilotCallerReader: Sendable {
+    var configuredRegion: String? { get }
+    var configuredEndpoint: String? { get }
+    func getCallerIdentity(input: GetCallerIdentityInput) async throws -> GetCallerIdentityOutput
+}
+
+extension STSClient: PilotCallerReader {
+    var configuredRegion: String? { config.region }
+    var configuredEndpoint: String? { config.endpoint }
+}
+
+struct ScopedPricingSession: Sendable {
+    private let caller: any PilotCallerReader
+    private let client: any PricingCatalogReader
+    private let expectedAccount: String
+
+    init(caller: any PilotCallerReader, client: any PricingCatalogReader, expectedAccount: String) {
+        self.caller = caller
+        self.client = client
+        self.expectedAccount = expectedAccount
+    }
+
+    static func isTemporary(
+        accountID: String?, sessionToken: String?, expiration: Date?, expectedAccount: String, now: Date
+    ) -> Bool {
+        accountID == expectedAccount && sessionToken?.isEmpty == false
+            && (expiration.map { $0.timeIntervalSince(now) > 300 } ?? false)
+    }
+
+    func observe() async -> CatalogTokenRates? {
+        do {
+            try Task.checkCancellation()
+            guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) }),
+                caller.configuredRegion == "us-east-1",
+                caller.configuredEndpoint == "https://sts.us-east-1.amazonaws.com",
+                client.configuredRegion == "us-east-1",
+                client.configuredEndpoint == "https://api.pricing.us-east-1.amazonaws.com"
+            else { return nil }
+            let identity = try await caller.getCallerIdentity(input: GetCallerIdentityInput())
+            try Task.checkCancellation()
+            guard identity.account == expectedAccount,
+                identity.arn == "arn:aws:iam::\(expectedAccount):user/MarginPilot",
+                identity.userId?.isEmpty == false
+            else { return nil }
+            return await ReadOnlyPricingCatalog(client: client).observe()
+        } catch {
+            return nil
+        }
+    }
+}
+
+public struct PilotCatalogSnapshot: Sendable {
+    public let modelLabel: String
+    public let inputMicrosPerMillion: Int64
+    public let outputMicrosPerMillion: Int64
+    public let fetchedAt: Date
+}
+
+public enum PilotPricingObservation {
+    public static func observe(expectedAccount: String) async -> PilotCatalogSnapshot? {
+        do {
+            try Task.checkCancellation()
+            guard expectedAccount.count == 12, expectedAccount.utf8.allSatisfy({ (48...57).contains($0) })
+            else { return nil }
+            let awsDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".aws")
+            let resolver = try LoginAWSCredentialIdentityResolver(
+                profileName: "margin-pilot",
+                configFilePath: awsDirectory.appendingPathComponent("config").path,
+                credentialsFilePath: awsDirectory.appendingPathComponent("credentials").path
+            )
+            let credential = try await resolver.getIdentity(identityProperties: nil)
+            try Task.checkCancellation()
+            guard
+                ScopedPricingSession.isTemporary(
+                    accountID: credential.accountID, sessionToken: credential.sessionToken,
+                    expiration: credential.expiration, expectedAccount: expectedAccount, now: Date()
+                )
+            else { return nil }
+            let fixedResolver = StaticAWSCredentialIdentityResolver(credential)
+            let stsConfig = try await STSClient.STSClientConfig(
+                awsCredentialIdentityResolver: fixedResolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
+                region: "us-east-1", signingRegion: "us-east-1",
+                endpoint: "https://sts.us-east-1.amazonaws.com"
+            )
+            let pricingConfig = try await PricingClient.PricingClientConfig(
+                awsCredentialIdentityResolver: fixedResolver, maxAttempts: 1, ignoreConfiguredEndpointURLs: true,
+                region: "us-east-1", signingRegion: "us-east-1",
+                endpoint: "https://api.pricing.us-east-1.amazonaws.com"
+            )
+            guard
+                let rates = await ScopedPricingSession(
+                    caller: STSClient(config: stsConfig), client: PricingClient(config: pricingConfig),
+                    expectedAccount: expectedAccount
+                ).observe(),
+                ScopedPricingSession.isTemporary(
+                    accountID: credential.accountID, sessionToken: credential.sessionToken,
+                    expiration: credential.expiration, expectedAccount: expectedAccount, now: Date()
+                )
+            else { return nil }
+            return PilotCatalogSnapshot(
+                modelLabel: rates.modelLabel, inputMicrosPerMillion: rates.inputMicrosPerMillion,
+                outputMicrosPerMillion: rates.outputMicrosPerMillion, fetchedAt: rates.fetchedAt
+            )
         } catch {
             return nil
         }
