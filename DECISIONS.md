@@ -438,7 +438,7 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 ## ADR-025 — Expose only non-authorizing token snapshots from a scoped Mac pricing read
 
-**Status:** Proposed · 2026-10-12 · by: Devin · implementation of ADR-021/024; no paid-route approval
+**Status:** Accepted · 2026-10-15 · approved by: human (owner, in chat) · proposed 2026-10-12 by Devin · implementation of ADR-021/024; no paid-route approval
 
 **Context.** The pinned SDK supports the CLI browser login through `LoginAWSCredentialIdentityResolver`, while a default SDK client silently selects ambient credentials. The price-page parser is deliberately internal and cannot authorize a bound for image or other charges.
 
