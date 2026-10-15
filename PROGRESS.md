@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-16A2 — Skip CI for PRs that change only Markdown files
+status: Done · completed: Claude · 2026-10-15 · branch: chore/ci-skip-markdown-only · refs: AGENTS.md §1 step 15, .github/workflows/ci.yml · estimate: S
+Note: owner decision in chat ("change the rule to be if the PR only modifies .md files then totally skip CI"). `pull_request` and `push: main` both use `paths-ignore: ['**/*.md']`, so a Markdown-only PR gets no CI check (main has no branch protection, so a missing check cannot block a merge). AGENTS §1 step 15 now says so. Review and owner confirmation are unchanged. A PR with any non-`.md` file still runs the full 20-minute CI. This PR changes `ci.yml`, so it runs CI itself.
+
 ### M4-08A3b1 — Decode and strip selected PNGs before dispatch
 status: Done (mock-only; mainline recovery) · implemented: Devin (#125, #126) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b1-main-recovery · depends: M4-08A3a, ADR-021 · refs: AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
 Note: reapplies the net code of #125 and #126 (the cold-SDK CI limit already landed via #145). `AdmissionGate` now decodes each selected-crop PNG, strips ancillary chunks (including text and EXIF metadata, allowing only a dimensions-only EXIF), checks the inflated size and chunk layout against the pixel and byte bounds, and forwards only the normalized bytes. Adversarial tests cover metadata, oversize and malformed chunk cases. 45 proxy tests pass. Still fake transport only: no AWS call. $0 of $10.

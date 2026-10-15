@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16A2 — CI skipped for Markdown-only PRs
+
+`paths-ignore` is evaluated on the whole PR diff, so a PR that mixes one `.md` file with code still runs CI; docs-only PRs (ADRs, planning docs) no longer cost 20 minutes. The catch worth knowing: a workflow skipped by a path filter reports *no* check, not a passing one, which would deadlock a repo with required status checks. `main` has no branch protection today (checked via the API), so nothing blocks. If protection is ever turned on, add a lightweight always-run job instead of relying on this filter. Note that `.md` also matches files like `Packages/**/README.md`; none of those affect builds.
+
 ## 2026-10-15 · Claude · M4-08A3b1 recovery — PNG normalization on main, #125/#126 merged into one PR
 
 #125 and #126 were stacked on the SDK seam; their net diff on top of main was only `Admission.swift`, `Package.swift` (`-lz`), the test PNG fixtures and `PNGNormalizationTests.swift`, so I recovered both as one PR rather than replaying 11 reconcile/claim commits. Test fixtures in three files changed to a PNG without text chunks, because the gate now strips them.
