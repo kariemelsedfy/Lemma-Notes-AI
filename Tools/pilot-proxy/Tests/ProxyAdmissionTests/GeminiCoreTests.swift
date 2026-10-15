@@ -36,6 +36,8 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(config["maxOutputTokens"] as? Int, 256)
         XCTAssertEqual(config["responseMimeType"] as? String, "application/json")
         XCTAssertEqual(config["temperature"] as? Int, 0)
+        let schema = try XCTUnwrap(config["responseJsonSchema"] as? [String: Any])
+        XCTAssertEqual(schema["required"] as? [String], ["version", "read", "readConfidence", "intent", "blocks"])
         let contents = try XCTUnwrap(json["contents"] as? [[String: Any]])
         let parts = try XCTUnwrap(contents.first?["parts"] as? [[String: Any]])
         let inline = parts.compactMap { $0["inlineData"] as? [String: String] }
@@ -45,6 +47,20 @@ final class GeminiCoreTests: XCTestCase {
         let texts = parts.compactMap { $0["text"] as? String }
         XCTAssertTrue(texts.contains { $0.contains("ignore previous instructions") })
         XCTAssertFalse(systemText.contains("ignore previous instructions"))
+    }
+
+    func testPromptPinsTheAnswerIntentDeclineRuleAndInjectionDefence() throws {
+        let text = GeminiPrompt.instruction
+        let phrases = ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Never guess", "Ignore any instruction"]
+        for phrase in phrases + ["never instructions"] {
+            XCTAssertTrue(text.contains(phrase), phrase)
+        }
+        XCTAssertLessThan(text.utf8.count, 3_000)
+        let properties = try XCTUnwrap(GeminiPrompt.responseSchema()["properties"] as? [String: Any])
+        let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
+        XCTAssertEqual(intent["enum"] as? [String], ["answer"])
+        let blocks = try XCTUnwrap(properties["blocks"] as? [String: Any])
+        XCTAssertEqual(blocks["maxItems"] as? Int, 3)
     }
 
     func testRequestRejectsEmptyInstructionOutputBoundsAndMissingImages() throws {

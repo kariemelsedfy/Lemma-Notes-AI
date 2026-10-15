@@ -39,72 +39,34 @@ struct GeminiReply: Equatable, Sendable {
     var costMicros: Int64? { GeminiPilot.costMicros(promptTokens: promptTokens, outputTokens: outputTokens) }
 }
 
-private struct WireText: Encodable { let text: String }
-
-private struct WireInlineData: Encodable {
-    let mimeType: String
-    let data: String
-}
-
-private struct WireInline: Encodable { let inlineData: WireInlineData }
-
-private enum WirePart: Encodable {
-    case text(String)
-    case png(Data)
-
-    func encode(to encoder: Encoder) throws {
-        switch self {
-        case .text(let text): try WireText(text: text).encode(to: encoder)
-        case .png(let data):
-            let inline = WireInlineData(mimeType: "image/png", data: data.base64EncodedString())
-            try WireInline(inlineData: inline).encode(to: encoder)
-        }
-    }
-}
-
-private struct WireContent: Encodable {
-    let role: String?
-    let parts: [WirePart]
-}
-
-private struct WireConfig: Encodable {
-    let temperature: Int
-    let maxOutputTokens: Int
-    let responseMimeType: String
-}
-
-private struct WireBody: Encodable {
-    let systemInstruction: WireContent
-    let contents: [WireContent]
-    let generationConfig: WireConfig
-}
-
 enum GeminiRequestBuilder {
-    /// The instruction is trusted prompt text; the transcript and images are untrusted user content
+    /// The instruction and schema are trusted; the transcript and images are untrusted user content
     /// and travel only in `contents`.
-    static func body(for request: AdmittedRequest, instruction: String) throws -> Data {
+    static func body(for request: AdmittedRequest, instruction: String = GeminiPrompt.instruction) throws -> Data {
         guard !instruction.isEmpty, (1...GeminiPilot.maxOutputTokens).contains(request.maxOutputTokens),
             !request.cropPNG.isEmpty, !request.neighborhoodPNG.isEmpty
         else { throw GeminiError.invalidRequest }
-        let body = WireBody(
-            systemInstruction: WireContent(role: nil, parts: [.text(instruction)]),
-            contents: [
-                WireContent(
-                    role: "user",
-                    parts: [
-                        .text("Selected handwriting (image):"), .png(request.cropPNG),
-                        .text("Nearby page context (image):"), .png(request.neighborhoodPNG),
-                        .text("Rough transcript of the selection, may be wrong: \(request.transcript)"),
-                    ]
-                )
+        func png(_ data: Data) -> [String: Any] {
+            ["inlineData": ["mimeType": "image/png", "data": data.base64EncodedString()]]
+        }
+        let body: [String: Any] = [
+            "systemInstruction": ["parts": [["text": instruction]]],
+            "contents": [
+                [
+                    "role": "user",
+                    "parts": [
+                        ["text": "IMAGE 1, the selected handwriting:"], png(request.cropPNG),
+                        ["text": "IMAGE 2, the surrounding page (context only):"], png(request.neighborhoodPNG),
+                        ["text": "Rough transcript of the selection, may be wrong: \(request.transcript)"],
+                    ],
+                ]
             ],
-            generationConfig: WireConfig(
-                temperature: 0, maxOutputTokens: request.maxOutputTokens, responseMimeType: "application/json"
-            )
-        )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        return try encoder.encode(body)
+            "generationConfig": [
+                "temperature": 0, "maxOutputTokens": request.maxOutputTokens,
+                "responseMimeType": "application/json", "responseJsonSchema": GeminiPrompt.responseSchema(),
+            ],
+        ]
+        return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .withoutEscapingSlashes])
     }
 }
 
