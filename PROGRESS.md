@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-08A3b2a — Type-check read-only Bedrock observation
+status: Done (read-only; mainline recovery) · implemented: Devin (#127) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b2a-main-recovery · depends: M4-08A3a, ADR-021, ADR-024 · refs: AGENTS.md §7 · estimate: S
+Note: reapplies the net code of #127 (merged off-main). Adds the AWSBedrock product and a typed read-only Bedrock observation in the Mac tool. No model invocation, paid call or app change. $0 of $10.
+
 ### M4-08A3b1 — Decode and strip selected PNGs before dispatch
 status: Done (mock-only; mainline recovery) · implemented: Devin (#125, #126) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b1-main-recovery · depends: M4-08A3a, ADR-021 · refs: AI_PIPELINE.md §3, AGENTS.md §7 · estimate: S
 Note: reapplies the net code of #125 and #126 (the cold-SDK CI limit already landed via #145). `AdmissionGate` now decodes each selected-crop PNG, strips ancillary chunks (including text and EXIF metadata, allowing only a dimensions-only EXIF), checks the inflated size and chunk layout against the pixel and byte bounds, and forwards only the normalized bytes. Adversarial tests cover metadata, oversize and malformed chunk cases. 45 proxy tests pass. Still fake transport only: no AWS call. $0 of $10.
