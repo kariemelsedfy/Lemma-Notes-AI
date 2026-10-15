@@ -93,10 +93,10 @@ struct HTTPReply: Equatable, Sendable {
     }
 }
 
-/// Routes one request. `GET /healthz` is open; `POST /v1/answer` needs the pilot bearer token.
+/// Routes one request. `GET /status` is open; `POST /v1/answer` needs the pilot bearer token.
 struct PilotRouter: Sendable {
     static let answerPath = "/v1/answer"
-    static let healthPath = "/healthz"
+    static let healthPath = "/status"
 
     let service: PilotService
     func route(_ head: HTTPHead, body: Data) async -> HTTPReply {

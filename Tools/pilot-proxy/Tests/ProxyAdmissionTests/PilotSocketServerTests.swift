@@ -12,7 +12,7 @@ final class PilotSocketServerTests: XCTestCase {
     func testLoopbackHealthAnswerAndRefusals() async throws {
         let (server, port) = try await startServer()
         defer { server.stop() }
-        let health = try await send("GET /healthz HTTP/1.1\r\nHost: t\r\n\r\n", port: port)
+        let health = try await send("GET /status HTTP/1.1\r\nHost: t\r\n\r\n", port: port)
         XCTAssertTrue(health.hasPrefix("HTTP/1.1 200 OK"))
         let body = try requestBody()
         let answered = try await send(post(body, token: Self.token), port: port)

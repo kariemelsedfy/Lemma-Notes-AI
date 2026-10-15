@@ -37,7 +37,7 @@ final class PilotServiceTests: XCTestCase {
         let refused = await router.route(head(token: Self.token, length: junk.count), body: junk)
         XCTAssertEqual(refused.status, 422)
         let health = await router.route(
-            HTTPHead(method: "GET", path: "/healthz", headers: [:], contentLength: 0), body: Data())
+            HTTPHead(method: "GET", path: "/status", headers: [:], contentLength: 0), body: Data())
         XCTAssertEqual(health.status, 200)
         let wrongMethod = await router.route(
             HTTPHead(method: "GET", path: "/v1/answer", headers: [:], contentLength: 0), body: Data())
