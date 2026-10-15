@@ -54,6 +54,9 @@ _(empty)_
 ### M4-16A2 — Skip CI for PRs that change only Markdown files
 status: Done · completed: Claude · 2026-10-15 · branch: chore/ci-skip-markdown-only · refs: AGENTS.md §1 step 15, .github/workflows/ci.yml · estimate: S
 Note: owner decision in chat ("change the rule to be if the PR only modifies .md files then totally skip CI"). `pull_request` and `push: main` both use `paths-ignore: ['**/*.md']`, so a Markdown-only PR gets no CI check (main has no branch protection, so a missing check cannot block a merge). AGENTS §1 step 15 now says so. Review and owner confirmation are unchanged. A PR with any non-`.md` file still runs the full 20-minute CI. This PR changes `ci.yml`, so it runs CI itself.
+### M4-16B1 — Remove the AWS SDK from the proxy tool and rename it `Tools/pilot-proxy`
+status: Done · completed: Claude · 2026-10-15 · branch: chore/M4-16B1-drop-aws-sdk · depends: ADR-027 · refs: DECISIONS.md ADR-024/027, scripts/lint.sh, scripts/test.sh · estimate: S
+Note: with AWS dropped, `aws-sdk-swift` 1.8.2 (26 pins) had no job but a ~20 minute cold CI build. Deleted `SDKSeam.swift`, its tests and `Package.resolved`; the package is now Foundation plus system `sqlite3`/`z`. Renamed `Tools/bedrock-proxy` to `Tools/pilot-proxy` (git renames; lint and test script paths updated). 43 proxy tests pass (45 minus the 2 seam tests). ADR-024 is marked superseded. No behavior change to admission, ledger, price envelope or PNG normalization.
 
 ### M4-16A — Record the switch from AWS Bedrock to the Gemini API (ADR-027)
 status: Done (docs only) · completed: Claude · 2026-10-15 · branch: docs/M4-16A-gemini-adr · depends: ADR-021 · refs: DECISIONS.md ADR-027, AI_PIPELINE.md §3 · estimate: S

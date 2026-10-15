@@ -14,6 +14,9 @@ unless you check.
 ## 2026-10-15 · Claude · M4-16A2 — CI skipped for Markdown-only PRs
 
 `paths-ignore` is evaluated on the whole PR diff, so a PR that mixes one `.md` file with code still runs CI; docs-only PRs (ADRs, planning docs) no longer cost 20 minutes. The catch worth knowing: a workflow skipped by a path filter reports *no* check, not a passing one, which would deadlock a repo with required status checks. `main` has no branch protection today (checked via the API), so nothing blocks. If protection is ever turned on, add a lightweight always-run job instead of relying on this filter. Note that `.md` also matches files like `Packages/**/README.md`; none of those affect builds.
+## 2026-10-15 · Claude · M4-16B1 — dropping the AWS SDK
+
+The `git mv` of `Tools/bedrock-proxy` nested itself into a leftover untracked `Tools/pilot-proxy/.build` directory the first time, silently producing `Tools/pilot-proxy/bedrock-proxy/...`; check `ls Tools` after a rename in a worktree that has built before. The 45 to 43 test count is exactly the two deleted seam tests. Expected CI effect: no SwiftPM dependency fetch, so the proxy step should drop from minutes to seconds.
 
 ## 2026-10-15 · Claude · M4-16A — AWS dropped for Gemini; what surprised me
 

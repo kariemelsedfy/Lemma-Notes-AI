@@ -422,7 +422,7 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 ## ADR-024 — Use the official AWS Swift SDK only inside the Mac pilot tool
 
-**Status:** Accepted · 2026-10-08 · approved by: human for `Tools/bedrock-proxy` only · extends ADR-021, does not relax its live-call gates
+**Status:** Superseded by ADR-027 (2026-10-15; the SDK dependency and `Package.resolved` were removed in M4-16B1; originally Accepted 2026-10-08, approved by: human for `Tools/bedrock-proxy` only) · extends ADR-021, does not relax its live-call gates
 
 **Context.** Nova Lite on-demand list pricing and regional availability have been read via a limited AWS CLI browser-login profile, but the Mac proxy has only a fake transport. A real provider request will include a bounded selected handwriting image; putting that content in shell arguments or a temporary file for an AWS CLI subprocess would be a poor privacy boundary. Implementing SigV4 signing and binary request framing by hand is more error-prone. The official [AWS SDK for Swift](https://github.com/awslabs/aws-sdk-swift) supports the AWS CLI `aws login` cached temporary credentials and typed Bedrock Runtime requests. The owner explicitly approved adding this dependency to the **Mac-side tool**, not the iPad app.
 
