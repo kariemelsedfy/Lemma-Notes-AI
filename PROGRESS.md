@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-08A3b2b2a — Bound read-only Pricing SDK pagination
+status: Done (read-only; mainline recovery) · implemented: Devin (#129) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b2b2a-main-recovery · depends: M4-08A3a, ADR-021, ADR-024 · refs: AGENTS.md §7 · estimate: S
+Note: reapplies the net code of #129 (merged off-main). Bounds the Pricing SDK pages before quote parsing. No model invocation, paid call or app change. $0 of $10.
+
 ### M4-08A3b2b1 — Parse Nova Lite token SKUs without enabling paid traffic
 status: Done (read-only; mainline recovery) · implemented: Devin (#128) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b2b1-main-recovery · depends: M4-08A3a, ADR-021, ADR-024 · refs: AGENTS.md §7 · estimate: S
 Note: reapplies the net code of #128 (merged off-main). Adds PilotPriceEnvelope token-SKU catalog validation (internal; does not authorize cost). No model invocation, paid call or app change. $0 of $10.
