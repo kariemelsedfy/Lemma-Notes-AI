@@ -40,7 +40,16 @@ actor PilotAdmission {
         )
         try Task.checkCancellation()
         // A failure after this point keeps the hold: the request may have been billed.
-        let reply = try await transport.complete(validated.request)
+        let reply: GeminiReply
+        do {
+            reply = try await transport.complete(validated.request)
+        } catch let billed as GeminiBilledFailure {
+            // Google billed a reply we refuse to use: record the real charge, then fail with the reason.
+            if let cost = billed.costMicros {
+                try await ledger.recordObservedCost(requestID: validated.request.requestID, observedMicros: cost)
+            }
+            throw billed.reason
+        }
         guard let observed = reply.costMicros else { throw LedgerError.invalidCost }
         try await ledger.recordObservedCost(requestID: validated.request.requestID, observedMicros: observed)
         return PilotAnswer(
