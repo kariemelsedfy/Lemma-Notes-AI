@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-16B — Gemini request/reply core and admission rewire (ADR-027)
+status: Done (no network; offline fakes) · completed: Claude · 2026-10-15 · branch: feat/M4-16B-gemini-core · depends: M4-16B1, ADR-027 · refs: AI_PIPELINE.md §3, DECISIONS.md ADR-027 · estimate: M
+Note: pure units for the Gemini route. `GeminiRequestBuilder` keeps the trusted instruction in `systemInstruction` and the untrusted transcript and two PNGs in `contents`; `GeminiResponseParser` accepts only `STOP`, requires `usageMetadata`, bills thought tokens as output and rejects blocked, truncated, non-object or over-64 KB replies; `GeminiPilot.costMicros` rounds up (the 2026-10-15 synthetic call, 7 in / 1 out, prices at 4 micro-dollars). `AdmissionGate` no longer asks for Nova `none` retention evidence (ADR-027 accepts paid-tier abuse logging); `PilotPriceEnvelope` quotes from the published rates (worst case 5,768 micro-dollars at 512 output tokens under the 50,000 hold); `PilotAdmission.invoke` now takes a `PilotModelTransport`, returns the reply and records the observed cost, and a charge above the hold halts the ledger. 46 proxy tests. Still no HTTP client, server or key use in code. Spend about $0.001 of $10 (manual synthetic checks only).
+
 ### M4-16B1 — Remove the AWS SDK from the proxy tool and rename it `Tools/pilot-proxy`
 status: Done · completed: Claude · 2026-10-15 · branch: chore/M4-16B1-drop-aws-sdk · depends: ADR-027 · refs: DECISIONS.md ADR-024/027, scripts/lint.sh, scripts/test.sh · estimate: S
 Note: with AWS dropped, `aws-sdk-swift` 1.8.2 (26 pins) had no job but a ~20 minute cold CI build. Deleted `SDKSeam.swift`, its tests and `Package.resolved`; the package is now Foundation plus system `sqlite3`/`z`. Renamed `Tools/bedrock-proxy` to `Tools/pilot-proxy` (git renames; lint and test script paths updated). 43 proxy tests pass (45 minus the 2 seam tests). ADR-024 is marked superseded. No behavior change to admission, ledger, price envelope or PNG normalization.
