@@ -449,3 +449,19 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected.** Default SDK constructors, `ProfileAWSCredentialIdentityResolver` (which can fall through to other credential types), and printing or copying temporary credentials weaken provenance. Reusing a catalog-only observation as a price envelope would fabricate the unverified model binding and non-token charges.
 
 **Revisit when.** A non-login scoped service identity is selected for hosting or authoritative image/non-model price evidence changes the quote boundary.
+
+---
+
+## ADR-026 — Keep requested and returned Bedrock model IDs separate in Mac metadata
+
+**Status:** Proposed · 2026-10-12 · by: Devin · extends ADR-021/024/025; no model invocation approval
+
+**Context.** The read-only Bedrock control plane returned `modelId: amazon.nova-lite-v1` for `GetFoundationModelAvailability(modelId: amazon.nova-lite-v1:0)` in the scoped us-east-1 pilot session. AWS's API reference defines a returned model ID but does not say these two identifiers are interchangeable. Account retention `none` and model availability do not prove eligibility under that mode.
+
+**Proposal.** Share the Mac pilot's explicit login-only temporary credential and exact IAM-user STS check across the Pricing and Bedrock metadata commands. Require the fixed Bedrock control-plane endpoint and sign in us-east-1 before either read; allow only the two observed Nova Lite version/base strings in the non-authorizing availability observation. Expose requested and returned IDs as **distinct fields**, never substitute one for the other or derive `RetentionEvidence.allowedModes`. Keep Runtime absent from the new command and maintain the existing default-deny price and consent gates.
+
+**Consequences.** The public `PilotBedrockSnapshot` reports a factual account mode and returned availability ID but cannot be used as model-specific permission, paid admission, or a price quote. A later authoritative binding needs independent evidence for `amazon.nova-lite-v1:0` under `none`; token rates still do not bound images or other charges. No account setting, IAM grant, provider invocation or SDK version changes here.
+
+**Alternatives rejected.** Silently treating the versionless ID as `:0` could grant false eligibility. Refusing every read discards useful scoped account evidence without improving the paid-call gate.
+
+**Revisit when.** AWS documents or exposes model-specific eligibility under effective retention `none`, or a supported exact-ID mapping changes the observation contract.

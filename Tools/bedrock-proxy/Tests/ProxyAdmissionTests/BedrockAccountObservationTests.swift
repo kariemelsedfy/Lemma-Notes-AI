@@ -1,4 +1,5 @@
 import AWSBedrock
+import AWSSTS
 import Foundation
 import XCTest
 
@@ -14,6 +15,7 @@ final class BedrockAccountObservationTests: XCTestCase {
         let result = await observer.observe()
         let observation = try XCTUnwrap(result)
         XCTAssertEqual(observation.modelID, "amazon.nova-lite-v1:0")
+        XCTAssertEqual(observation.requestedModelID, "amazon.nova-lite-v1:0")
         XCTAssertEqual(observation.requestedRegion, "us-east-1")
         XCTAssertEqual(observation.accountMode, .none)
         XCTAssertTrue(observation.isFresh(at: checkedAt.addingTimeInterval(300)))
@@ -43,6 +45,20 @@ final class BedrockAccountObservationTests: XCTestCase {
         }
         let sends = await transport.sends
         XCTAssertEqual(sends, 0)
+    }
+
+    func testVersionlessAvailabilityResponseStaysDistinctFromRequestedRuntimeModel() async throws {
+        var availability = Self.available()
+        availability.modelId = "amazon.nova-lite-v1"
+        let reader = StubBedrockMetadataReader(
+            mode: BedrockClientTypes.DataRetentionMode.none, availability: availability
+        )
+        let observed = await ReadOnlyBedrockObserver(client: reader).observe()
+        let result = try XCTUnwrap(observed)
+        XCTAssertEqual(result.requestedModelID, "amazon.nova-lite-v1:0")
+        XCTAssertEqual(result.modelID, "amazon.nova-lite-v1")
+        let calls = await reader.calls
+        XCTAssertEqual(calls, ["retention", "amazon.nova-lite-v1:0"])
     }
 
     func testMissingOrNonzeroRetentionStopsBeforeAvailabilityLookup() async {
@@ -124,6 +140,84 @@ final class BedrockAccountObservationTests: XCTestCase {
         }
     }
 
+    func testScopedPilotIdentityIsCheckedBeforeMetadataObservation() async throws {
+        let account = "123456789012"
+        let caller = StubBedrockPilotCaller(
+            identity: GetCallerIdentityOutput(
+                account: account, arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot"
+            )
+        )
+        let reader = StubBedrockMetadataReader(
+            mode: BedrockClientTypes.DataRetentionMode.none, availability: Self.available()
+        )
+        let observation = await ScopedBedrockSession(caller: caller, client: reader, expectedAccount: account).observe()
+        XCTAssertEqual(try XCTUnwrap(observation).accountMode, BedrockClientTypes.DataRetentionMode.none)
+        let callerCalls = await caller.calls
+        let metadataCalls = await reader.calls
+        XCTAssertEqual(callerCalls, 1)
+        XCTAssertEqual(metadataCalls, ["retention", "amazon.nova-lite-v1:0"])
+    }
+
+    func testScopedBedrockRejectsRootRoleWrongAccountAndEndpointBeforeMetadata() async {
+        let account = "123456789012"
+        let identities = [
+            GetCallerIdentityOutput(account: account, arn: "arn:aws:iam::\(account):root", userId: "root"),
+            GetCallerIdentityOutput(
+                account: account, arn: "arn:aws:sts::\(account):assumed-role/Admin/pilot", userId: "role"
+            ),
+            GetCallerIdentityOutput(
+                account: "999999999999", arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot"
+            ),
+        ]
+        for identity in identities {
+            let caller = StubBedrockPilotCaller(identity: identity)
+            let reader = StubBedrockMetadataReader(
+                mode: BedrockClientTypes.DataRetentionMode.none, availability: Self.available()
+            )
+            let result = await ScopedBedrockSession(caller: caller, client: reader, expectedAccount: account).observe()
+            XCTAssertNil(result)
+            let metadataCalls = await reader.calls
+            XCTAssertTrue(metadataCalls.isEmpty)
+        }
+        let good = GetCallerIdentityOutput(
+            account: account, arn: "arn:aws:iam::\(account):user/MarginPilot", userId: "pilot"
+        )
+        for (stsEndpoint, bedrockEndpoint) in [
+            ("https://sts.eu-west-1.amazonaws.com", "https://bedrock.us-east-1.amazonaws.com"),
+            ("https://sts.us-east-1.amazonaws.com", "https://example.invalid"),
+        ] {
+            let caller = StubBedrockPilotCaller(endpoint: stsEndpoint, identity: good)
+            let reader = StubBedrockMetadataReader(
+                mode: BedrockClientTypes.DataRetentionMode.none,
+                availability: Self.available(), endpoint: bedrockEndpoint
+            )
+            let result = await ScopedBedrockSession(caller: caller, client: reader, expectedAccount: account).observe()
+            XCTAssertNil(result)
+            let metadataCalls = await reader.calls
+            XCTAssertTrue(metadataCalls.isEmpty)
+        }
+    }
+
+    func testScopedBedrockCancellationAndSTSFailureMakeZeroMetadataReads() async {
+        let account = "123456789012"
+        let caller = StubBedrockPilotCaller(identity: GetCallerIdentityOutput(), fails: true)
+        let reader = StubBedrockMetadataReader(
+            mode: BedrockClientTypes.DataRetentionMode.none, availability: Self.available()
+        )
+        let session = ScopedBedrockSession(caller: caller, client: reader, expectedAccount: account)
+        let cancelled = await Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return await session.observe()
+        }.value
+        XCTAssertNil(cancelled)
+        let failed = await session.observe()
+        XCTAssertNil(failed)
+        let metadataCalls = await reader.calls
+        let callerCalls = await caller.calls
+        XCTAssertTrue(metadataCalls.isEmpty)
+        XCTAssertEqual(callerCalls, 1)
+    }
+
     private static func available() -> GetFoundationModelAvailabilityOutput {
         GetFoundationModelAvailabilityOutput(
             agreementAvailability: BedrockClientTypes.AgreementAvailability(status: .available),
@@ -133,8 +227,32 @@ final class BedrockAccountObservationTests: XCTestCase {
     }
 }
 
+private actor StubBedrockPilotCaller: PilotCallerReader {
+    nonisolated let configuredRegion: String? = "us-east-1"
+    nonisolated let configuredEndpoint: String?
+    let identity: GetCallerIdentityOutput
+    let fails: Bool
+    private(set) var calls = 0
+
+    init(
+        endpoint: String = "https://sts.us-east-1.amazonaws.com",
+        identity: GetCallerIdentityOutput, fails: Bool = false
+    ) {
+        configuredEndpoint = endpoint
+        self.identity = identity
+        self.fails = fails
+    }
+
+    func getCallerIdentity(input: GetCallerIdentityInput) async throws -> GetCallerIdentityOutput {
+        calls += 1
+        if fails { throw TestReadFailure.unavailable }
+        return identity
+    }
+}
+
 private actor StubBedrockMetadataReader: BedrockMetadataReader {
     nonisolated let configuredRegion: String?
+    nonisolated let configuredEndpoint: String?
     private let retention: GetAccountDataRetentionOutput
     private let availability: GetFoundationModelAvailabilityOutput
     private(set) var calls: [String] = []
@@ -142,11 +260,13 @@ private actor StubBedrockMetadataReader: BedrockMetadataReader {
     init(
         mode: BedrockClientTypes.DataRetentionMode?,
         availability: GetFoundationModelAvailabilityOutput,
-        configuredRegion: String? = "us-east-1"
+        configuredRegion: String? = "us-east-1",
+        endpoint: String? = "https://bedrock.us-east-1.amazonaws.com"
     ) {
         retention = GetAccountDataRetentionOutput(mode: mode)
         self.availability = availability
         self.configuredRegion = configuredRegion
+        configuredEndpoint = endpoint
     }
 
     func getAccountDataRetention(input: GetAccountDataRetentionInput) async throws -> GetAccountDataRetentionOutput {
@@ -168,6 +288,7 @@ private enum TestReadFailure: Error {
 
 private actor FailingBedrockMetadataReader: BedrockMetadataReader {
     nonisolated let configuredRegion: String? = "us-east-1"
+    nonisolated let configuredEndpoint: String? = "https://bedrock.us-east-1.amazonaws.com"
     private let error: any Error
     private(set) var calls = 0
 

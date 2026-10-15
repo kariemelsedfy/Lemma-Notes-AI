@@ -51,6 +51,10 @@ _(empty)_
 
 ## Done
 
+### M4-08A3b2a2 — Bind read-only Bedrock metadata to scoped pilot identity
+status: Done (read-only; mainline recovery) · implemented: Devin (#132) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b2a2-main-recovery · depends: M4-08A3a, ADR-021, ADR-024 · refs: AGENTS.md §7 · estimate: S
+Note: reapplies the net code of #132 (merged off-main). Adds the bedrock-observe command and requested vs returned model-ID separation (ADR-026, still Proposed). No model invocation, paid call or app change. $0 of $10.
+
 ### M4-08A3b2b2b — Verify scoped Pricing identity before public rates
 status: Done (read-only; mainline recovery) · implemented: Devin (#130) · recovered: Claude · 2026-10-15 · branch: feat/M4-08A3b2b2b-main-recovery · depends: M4-08A3a, ADR-021, ADR-024 · refs: AGENTS.md §7 · estimate: S
 Note: reapplies the net code of #130 (merged off-main). Adds the pricing-observe command; requires the scoped MarginPilot login identity (ADR-025, Accepted 2026-10-15). No model invocation, paid call or app change. $0 of $10.

@@ -11,6 +11,10 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-08A3b2a2 recovery — Bind read-only Bedrock metadata to scoped pilot identity
+
+Recovered #132 by taking the PR's tree for `Tools/` rather than replaying its reconcile/claim commits. The Ask-test change in that tree is skipped because main already has the newer fix. Executed in CI only (cold SDK build ~20 min); owner approved merging the recovery chain.
+
 ## 2026-10-15 · Claude · M4-08A3b2b2b recovery — Verify scoped Pricing identity before public rates
 
 Recovered #130 by taking the PR's tree for `Tools/` rather than replaying its reconcile/claim commits. The Ask-test change in that tree is skipped because main already has the newer fix. Executed in CI only (cold SDK build ~20 min); owner approved merging the recovery chain.
