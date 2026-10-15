@@ -93,8 +93,34 @@ private struct ReplyEnvelope: Decodable {
     let usageMetadata: ReplyUsage?
 }
 
+/// A refused reply that Google still billed: the usage it reported, so the ledger records the real charge.
+struct GeminiBilledFailure: Error, Equatable {
+    let reason: GeminiError
+    let promptTokens: Int
+    let outputTokens: Int
+
+    var costMicros: Int64? { GeminiPilot.costMicros(promptTokens: promptTokens, outputTokens: outputTokens) }
+}
+
 enum GeminiResponseParser {
     private static let maxReplyBytes = 65_536
+
+    /// Reported usage, if the envelope has a sane one. Used to bill refused replies.
+    static func usage(_ data: Data) -> (promptTokens: Int, outputTokens: Int)? {
+        guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(ReplyEnvelope.self, from: data),
+            let usage = reply.usageMetadata, let prompt = usage.promptTokenCount, prompt >= 0,
+            let output = outputTokens(usage)
+        else { return nil }
+        return (prompt, output)
+    }
+
+    private static func outputTokens(_ usage: ReplyUsage) -> Int? {
+        let candidates = usage.candidatesTokenCount ?? 0
+        let thoughts = usage.thoughtsTokenCount ?? 0
+        let (sum, overflow) = candidates.addingReportingOverflow(thoughts)
+        guard candidates >= 0, thoughts >= 0, !overflow else { return nil }
+        return sum
+    }
 
     static func parse(_ data: Data) throws -> GeminiReply {
         guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(ReplyEnvelope.self, from: data)
@@ -103,8 +129,9 @@ enum GeminiResponseParser {
         guard let usage = reply.usageMetadata, let prompt = usage.promptTokenCount, prompt >= 0 else {
             throw GeminiError.usageMissing
         }
-        let output = (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0)
-        guard output >= 0, let candidate = reply.candidates?.first else { throw GeminiError.malformed }
+        guard let output = outputTokens(usage), let candidate = reply.candidates?.first else {
+            throw GeminiError.malformed
+        }
         switch candidate.finishReason {
         case "STOP": break
         case "MAX_TOKENS": throw GeminiError.truncated
