@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-15 · Claude · M4-16E2b — Firestore over REST
+Wrote the store from the documented REST shape without a live project, so the risky parts are exactly what only a real call can confirm: the error `status` strings on a failed precondition, the `updateTime` round-trip format, and that a combined commit reports `ALREADY_EXISTS` for the create-only document. If the first deploy shows `reserve` always failing, look there first. Firestore needs the project's database created in Native mode before the first call.
+
 ## 2026-10-15 · Claude · M4-16E2a — ledger behind a protocol
 Gating `SpendLedger.swift` in `#if canImport(SQLite3)` made swift-format re-indent the whole file, which pushed one signature over 120 columns; renamed a parameter to fix it. The in-memory test store mimics Firestore's conditional writes and can force conflicts, but that is a model of Firestore, not Firestore: E2b must check real `updateTime` preconditions and `exists=false` creates. Note that holds are never released (sum of holds is the budget), so $10 admits at most 200 requests at 50,000 micro-dollars each; fine for the 20-30 request pilot, revisit before wider use.
 
