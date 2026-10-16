@@ -39,6 +39,17 @@ final class PageDrawingStore: ObservableObject {
         }
     }
 
+    /// Whether the page has any ink on it, which is what decides that the notebook needs another blank page.
+    func hasInk(on pageID: UUID) -> Bool {
+        !(drawings[pageID]?.strokes.isEmpty ?? true)
+    }
+
+    /// Registers a page created after the notebook was opened (the spare blank page).
+    func add(_ page: StoredPage) {
+        metadataByPageID[page.metadata.pageID] = page.metadata
+        drawings[page.metadata.pageID] = (try? PKDrawing(data: page.inkData)) ?? PKDrawing()
+    }
+
     func drawing(for pageID: UUID) -> PKDrawing {
         drawings[pageID] ?? PKDrawing()
     }

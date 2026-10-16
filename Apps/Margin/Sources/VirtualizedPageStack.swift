@@ -6,8 +6,13 @@ import PencilKit
 import SwiftUI
 
 struct VirtualizedPageStack: View {
-    private let pageIDs: [UUID]
-    let pageSizes: [UUID: CGSize]
+    /// State rather than `let`: the notebook grows a blank page whenever its last page first gets ink
+    /// (`VirtualizedPageStack+Pages.swift`). The parent re-keys this view per notebook, so the initial
+    /// value is only ever read once per open notebook.
+    @State var pageIDs: [UUID]
+    @State var pageSizes: [UUID: CGSize]
+    /// True while a page is being appended, so a burst of strokes cannot add several.
+    @State var appendingPage = false
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
@@ -49,11 +54,12 @@ struct VirtualizedPageStack: View {
         self.inkRenderer = inkRenderer
         self.handwritingStatus = handwritingStatus
         let pages = document?.pages ?? []
-        pageIDs = pages.map(\.metadata.pageID)
-        pageSizes = Dictionary(
-            uniqueKeysWithValues: pages.map {
-                ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
-            })
+        _pageIDs = State(initialValue: pages.map(\.metadata.pageID))
+        _pageSizes = State(
+            initialValue: Dictionary(
+                uniqueKeysWithValues: pages.map {
+                    ($0.metadata.pageID, CGSize(width: $0.metadata.size.width, height: $0.metadata.size.height))
+                }))
         let inkData = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.inkData) })
         let metadata = Dictionary(uniqueKeysWithValues: pages.map { ($0.metadata.pageID, $0.metadata) })
         _drawingStore = StateObject(wrappedValue: PageDrawingStore(inkData: inkData, metadata: metadata))
@@ -148,6 +154,7 @@ struct VirtualizedPageStack: View {
         .onAppear {
             visiblePageID = pageIDs.first
             undoController.configure(store: drawingStore)
+            ensureTrailingBlankPage()
         }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
@@ -206,6 +213,7 @@ struct VirtualizedPageStack: View {
         for page in dirty {
             Task { await autosave.record(page, inNotebook: notebookID) }
         }
+        ensureTrailingBlankPage()
     }
 
 }
