@@ -101,8 +101,7 @@ struct VirtualizedPageStack: View {
             // A drag that starts on the answer's outline moves the answer, not the page.
             .scrollDisabled(ghostDragging)
             .scrollPosition(id: $visiblePageID)
-            // Free scrolling while an answer is being placed, so the page seam can be left where it is.
-            .scrollTargetBehavior(PageSnapBehavior(isEnabled: askModel.phase != .awaitingDecision))
+            // No snapping: the notebook stays wherever it is left, so a page seam can sit mid-screen.
             .scrollIndicators(.hidden)
 
             VStack(spacing: 8) {

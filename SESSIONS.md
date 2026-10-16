@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-21 — snapping removed outright
+I had made snapping conditional and flagged it as the owner's call; the owner chose none, so the conditional is gone. `scrollPosition(id:)` still reports the page nearest the top without a target behavior, but it can now report any page while two are half visible, so anything that assumed "the visible page is the one aligned to the top" (the Ask-cancel rule, the live-page window) is working from a looser signal. If a page flickers between live and cached near a seam, look there first.
+
 ## 2026-10-16 · Claude · M4-20 — the "pivot" was the scroll view, not the ghost
 The ghost's own drag has no snapping at all, so the owner's "it tries to pivot to one of the pages" could only come from something else moving: `.scrollTargetBehavior(.viewAligned)` re-settling the scroll position on release. Reading the owner's symptom against what the ghost code could not do found it faster than touching the ghost code. I made snapping conditional rather than removing it, because it is a product choice for normal reading and writing; ask the owner whether it should go everywhere. Undo/redo are snapshot-based, so redo is a second stack plus capturing the current state of the same pages before each restore; the only subtlety is that a *new* edit must clear it (done in `push`), and that `redo` must not go through `push`.
 
