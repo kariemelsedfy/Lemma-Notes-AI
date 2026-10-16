@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-19 — cross-page ghost
+Two design calls worth knowing. (1) The ghost moved up a level: it was drawn inside the question's page, which cannot show ink over a neighbouring page, so it is now an overlay on the `LazyVStack` in a shared coordinate space whose x stays page-local (so screen width never enters the ink maths; the overlay only adds the centring offset when drawing). The `LazyVStack`'s reported height is an estimate, so a ghost far down a very long notebook is the first place to look if the overlay misbehaves. (2) Splitting is by line, with each page's lines nudged as a group onto the page, rather than clipping or splitting glyphs: splitting a word across pages is the bad result, and a few points of vertical nudge is invisible. A line whose midpoint falls in the 24 pt gap goes to the nearer page. Also: scrolling used to cancel an Ask whenever the visible page differed from the question's page; with a placeable answer that had to be waived. Related earlier finding still true: the owner's `Photosynthesis is` failure was intermittent model output (a reply that sometimes broke the one-line rule), and passed after the prompt hardening was deployed.
+
 ## 2026-10-16 · Claude · M4-08Q — the debug line paid for itself
 One screenshot (`invalidResponse · continue`) did what three rounds of guessing had not: it ruled out the network and the proxy and pointed at the app's own validator. It still did not name the rule, because `invalidResponse` was a catch-all for decode errors, size, intent mismatch and every `SpecValidationError`; the first version of the diagnostic was not specific enough. I split out `rejectedSpec(name)` and did not guess at the rule: I hardened the prompt against the two likeliest (newline, LaTeX) and made the next failure say which rule it is. If the next screenshot says something else (for example `contentTooLong`), fix that rule, not the prompt again.
 

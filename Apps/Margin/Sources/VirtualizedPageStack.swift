@@ -93,6 +93,8 @@ struct VirtualizedPageStack: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                // The pending answer floats over the whole column so it can be dragged across a page boundary.
+                .overlay(alignment: .topLeading) { ghostOverlay }
                 .scrollTargetLayout()
                 .padding(.vertical, 24)
             }
@@ -173,7 +175,10 @@ struct VirtualizedPageStack: View {
         }
         .onChange(of: visiblePageID) { _, newValue in
             guard let newValue else { return }
-            if Self.shouldCancelAsk(selectedPage: askSelection.questionSelection?.pageID, visiblePage: newValue) {
+            // While an answer is waiting to be placed the writer may scroll to another page to drop it there.
+            let pageChanged = Self.shouldCancelAsk(
+                selectedPage: askSelection.questionSelection?.pageID, visiblePage: newValue)
+            if pageChanged, askModel.phase != .awaitingDecision {
                 askPipeline?.cancel(.superseded)
                 cancelSelection()
             }
@@ -193,9 +198,6 @@ struct VirtualizedPageStack: View {
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
                 askSelection: askSelection,
-                suggestionInk: suggestionInk(for: pageID),
-                ghostOffset: $ghostOffset,
-                ghostDragging: $ghostDragging,
                 captureStage: captureStage(for: pageID),
                 onAskLasso: { loop in
                     capture(loop, on: pageID)
@@ -240,9 +242,6 @@ private struct LivePageView: View {
     let selectedPen: MarginPen
     let selection: PageSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
-    let suggestionInk: [InkStroke]
-    @Binding var ghostOffset: CGSize
-    @Binding var ghostDragging: Bool
     let captureStage: AskCaptureStage?
     let onAskLasso: ([CGPoint]) -> Void
 
@@ -266,15 +265,6 @@ private struct LivePageView: View {
             .id(drawingStore.externalGeneration)
             if let selection {
                 PageSelectionOverlay(selection: selection)
-            }
-            if !suggestionInk.isEmpty {
-                GhostAnswerView(
-                    strokes: suggestionInk,
-                    pageSize: pageSize,
-                    pen: selectedPen,
-                    offset: $ghostOffset,
-                    isDragging: $ghostDragging
-                )
             }
             if let captureStage {
                 AskLassoCapture(
