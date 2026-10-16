@@ -1,16 +1,30 @@
 import InkCore
 import Vision
 
+/// One recognised character with its box in normalised image coordinates (origin bottom-left, as Vision gives it).
+public struct RecognizedCharacter: Equatable, Sendable {
+    public let character: Character
+    public let box: CGRect
+
+    public init(character: Character, box: CGRect) {
+        self.character = character
+        self.box = box
+    }
+}
+
 /// A recognized handwritten text region in normalized image coordinates.
 public struct HandwritingRecognition: Equatable {
     public let text: String
     public let confidence: Float
     public let boundingBox: CGRect
+    /// A box per character of `text`, when the caller asked for them (`includeCharacterBoxes`).
+    public let characters: [RecognizedCharacter]
 
-    public init(text: String, confidence: Float, boundingBox: CGRect) {
+    public init(text: String, confidence: Float, boundingBox: CGRect, characters: [RecognizedCharacter] = []) {
         self.text = text
         self.confidence = confidence
         self.boundingBox = boundingBox
+        self.characters = characters
     }
 
     public static func == (lhs: HandwritingRecognition, rhs: HandwritingRecognition) -> Bool {
@@ -87,7 +101,8 @@ public enum OnDeviceHandwritingRecognizer {
     public static func recognize(
         image: CGImage,
         recognitionLanguages: [String] = ["en-US"],
-        usesLanguageCorrection: Bool = true
+        usesLanguageCorrection: Bool = true,
+        includeCharacterBoxes: Bool = false
     ) throws -> [HandwritingRecognition] {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
@@ -104,8 +119,21 @@ public enum OnDeviceHandwritingRecognizer {
             return HandwritingRecognition(
                 text: candidate.string,
                 confidence: candidate.confidence,
-                boundingBox: observation.boundingBox
+                boundingBox: observation.boundingBox,
+                characters: includeCharacterBoxes ? characterBoxes(of: candidate) : []
             )
+        }
+    }
+
+    /// Vision's box for each character, skipping any it cannot place.
+    private static func characterBoxes(of candidate: VNRecognizedText) -> [RecognizedCharacter] {
+        let text = candidate.string
+        return text.indices.compactMap { index in
+            let character = text[index]
+            guard !character.isWhitespace,
+                let box = try? candidate.boundingBox(for: index..<text.index(after: index))?.boundingBox
+            else { return nil }
+            return RecognizedCharacter(character: character, box: box)
         }
     }
 }

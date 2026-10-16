@@ -101,6 +101,8 @@ Derived at calibration, stored with the bank, and re-estimated continuously from
 
 `glyphbank.json` in the app container (not in documents, unless the user overrides per-document), also mirrored to iCloud Key-Value or the ubiquity container so a new iPad inherits it. Each glyph: normalized stroke polylines with per-point pressure/tilt/timestamp, advance width, bounding box, entry and exit points, and a connection class (for cursive).
 
+**Learning from ordinary writing (M5-learn, owner decision).** The bank keeps growing after calibration: each Ask's lasso already yields Vision's box per character, and `GlyphHarvester` turns clean ones into extra samples so answers vary the way real writing does. It is always on, with no setting. A character stops learning at 20 samples, one selection adds at most two of a character, and only characters the bank already holds are learned (the scale reference, and "Add characters" covers the rest). A sample is kept only when its strokes belong unambiguously to one box, its size fits the writer's own samples at the x-height measured from the same selection, and it is closer in shape to its claimed character than to any other (so a misread letter is dropped without a tuned threshold). Generated ink is never learned from (provenance metadata excludes it). Everything stays on the device.
+
 **Privacy:** the glyph bank is biometric-adjacent. Never upload it to our servers. State that plainly in the privacy policy and in the calibration UI.
 
 ---

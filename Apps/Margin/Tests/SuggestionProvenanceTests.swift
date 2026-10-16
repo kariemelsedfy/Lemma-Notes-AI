@@ -22,6 +22,17 @@ final class SuggestionProvenanceTests: XCTestCase {
         XCTAssertEqual(element.strokeReferences.map(\.index), [1, 2])
     }
 
+    func testGeneratedStrokeIndicesNameOnlyTheAcceptedInk() {
+        let page = Self.page()
+        let updated = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+
+        XCTAssertEqual(
+            SuggestionProvenance.generatedStrokeIndices(metadata: updated, pageStrokes: page.strokes), [1, 2])
+        XCTAssertTrue(
+            SuggestionProvenance.generatedStrokeIndices(metadata: nil, pageStrokes: page.strokes).isEmpty)
+    }
+
     func testTheHandwrittenElementIsLeftAlone() {
         let page = Self.page()
 

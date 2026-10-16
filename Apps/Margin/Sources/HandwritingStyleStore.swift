@@ -15,6 +15,9 @@ final class HandwritingStyleStore: ObservableObject {
 
     private let store = GlyphBankStore()
     private let url: URL
+    /// Every write goes through one serial queue, so a learned sample saved in the background can never land
+    /// after (and overwrite) a calibration saved later.
+    private let writeQueue = DispatchQueue(label: "margin.glyphbank.write", qos: .utility)
 
     init(url: URL? = nil) {
         self.url = url ?? Self.defaultURL()
@@ -33,7 +36,8 @@ final class HandwritingStyleStore: ObservableObject {
     @discardableResult
     func save(_ bank: GlyphBank) -> Bool {
         do {
-            try store.write(bank, to: url)
+            let target = url
+            try writeQueue.sync { try GlyphBankStore().write(bank, to: target) }
             self.bank = bank
             lastError = nil
             return true
@@ -45,11 +49,32 @@ final class HandwritingStyleStore: ObservableObject {
         }
     }
 
+    /// Waits for background writes, so a test can read the file back.
+    func flushWrites() { writeQueue.sync {} }
+
     /// Discards the bank. The user's handwriting is personal data, and deleting it has to
     /// be one tap away (`BUSINESS.md` consent).
     func delete() {
-        try? store.delete(at: url)
+        let target = url
+        writeQueue.sync { try? GlyphBankStore().delete(at: target) }
         bank = nil
+    }
+
+    /// Adds samples of characters the writer just wrote, until each character has plenty (`GlyphHarvester`).
+    ///
+    /// Always on, with no setting (owner decision): it learns only from the writer's own ink, only characters
+    /// they have already calibrated, and nothing leaves the device. Saved in the background; the new samples
+    /// are used by the next answer.
+    func learn(from selection: LearnableSelection) {
+        guard let current = bank, !selection.strokes.isEmpty else { return }
+        let outcome = GlyphHarvester.harvest(
+            strokes: selection.strokes, regions: selection.regions, bank: current)
+        guard !outcome.glyphs.isEmpty else { return }
+        var updated = current
+        for glyph in outcome.glyphs { updated.add(glyph) }
+        bank = updated
+        let target = url
+        writeQueue.async { try? GlyphBankStore().write(updated, to: target) }
     }
 
     private func load() {

@@ -117,6 +117,7 @@ extension VirtualizedPageStack {
         // Picked up per Ask rather than at construction: the user can change style between
         // two questions, and the pipeline is cached across both.
         pipeline.renderer = inkRenderer
+        pipeline.onSelectionRead = onLearnWriting
         askPipeline = pipeline
         askSelection.commit()
 
@@ -129,7 +130,9 @@ extension VirtualizedPageStack {
             AskPipeline.PageInput(
                 engine: pageEngine,
                 loop: selection.loop,
-                pageSize: pageSizes[selection.pageID] ?? pageSize
+                pageSize: pageSizes[selection.pageID] ?? pageSize,
+                generatedStrokeIndices: SuggestionProvenance.generatedStrokeIndices(
+                    metadata: drawingStore.metadata(for: selection.pageID), pageStrokes: pageEngine.strokes)
             ),
             verb: verb
         )

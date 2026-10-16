@@ -88,7 +88,8 @@ struct NotebookLibraryView: View {
                     document: document,
                     autosave: library.autosave,
                     inkRenderer: stylePreference.renderer(bank: handwriting.bank),
-                    handwritingStatus: stylePreference.status(bank: handwriting.bank)
+                    handwritingStatus: stylePreference.status(bank: handwriting.bank),
+                    onLearnWriting: { handwriting.learn(from: $0) }
                 )
                 .onDisappear { flushEdits() }
                 .id(selectedNotebookID)

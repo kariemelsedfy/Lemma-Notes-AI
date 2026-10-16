@@ -59,6 +59,16 @@ enum SuggestionProvenance {
         return "el_\(hasher.value)"
     }
 
+    /// Indices into `pageStrokes` of ink the app generated, so nothing that is not the writer's own hand is ever
+    /// learned from (a kept answer is drawn from their glyphs; learning from it would only feed it back).
+    static func generatedStrokeIndices(metadata: PageMetadata?, pageStrokes: [InkStroke]) -> Set<Int> {
+        guard let metadata else { return [] }
+        let repaired = metadata.repairingStrokeIndices(using: pageStrokes.map(stored))
+        return Set(
+            repaired.elements.filter { $0.kind == .generated }.flatMap(\.strokeReferences).map(\.index)
+                .filter { pageStrokes.indices.contains($0) })
+    }
+
     private static func stored(_ stroke: InkStroke) -> StoredStroke {
         StoredStroke(
             points: stroke.points.map {
