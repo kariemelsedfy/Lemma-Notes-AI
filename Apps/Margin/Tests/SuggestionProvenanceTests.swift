@@ -114,7 +114,8 @@ final class SuggestionProvenanceTests: XCTestCase {
         XCTAssertEqual(element.requestID, "req_2plus2")
     }
 
-    func testGeneratedEraserRemovesTheRestOfATouchedAnswer() {
+    /// Erasing one character of an answer removes that character only; the rest stays attributed.
+    func testGeneratedEraserRemovesOnlyTheTouchedCharacter() throws {
         let page = Self.page()
         let metadata = SuggestionProvenance.recording(
             Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
@@ -125,7 +126,44 @@ final class SuggestionProvenanceTests: XCTestCase {
             current: afterPencilKit.map(Self.stored),
             metadata: metadata)
 
-        XCTAssertEqual(result.strokeIndicesToRemove, [1])
+        XCTAssertTrue(result.strokeIndicesToRemove.isEmpty)
+        let generated = try XCTUnwrap(result.metadata.elements.last)
+        XCTAssertEqual(generated.kind, .generated)
+        XCTAssertEqual(generated.strokeReferences.map(\.index), [1])
+    }
+
+    /// The two bars of an `=` share a column: erasing one takes the other, and the neighbours stay.
+    func testErasingOneStrokeOfACharacterRemovesTheWholeCharacterOnly() throws {
+        let page = Self.page()
+        let equalsTop = Self.stroke(from: 400, to: 440, row: 110)
+        let equalsBottom = Self.stroke(from: 402, to: 438, row: 125)
+        let previous = page.strokes + [equalsTop, equalsBottom, Self.stroke(from: 460, to: 480)]
+        var metadata = page.metadata
+        metadata.elements.append(Self.generatedElement(id: "el_answer", strokeIndices: [1, 2, 3, 4, 5], in: previous))
+        // PencilKit removed only the top bar.
+        let afterPencilKit = previous.enumerated().filter { $0.offset != 3 }.map(\.element)
+
+        let result = GeneratedInkEraser.resolve(
+            previous: previous.map(Self.stored),
+            current: afterPencilKit.map(Self.stored),
+            metadata: metadata)
+
+        // The bottom bar (index 3 once the top is gone) is taken too; both neighbours survive.
+        XCTAssertEqual(result.strokeIndicesToRemove, [3])
+        let generated = try XCTUnwrap(result.metadata.elements.last)
+        XCTAssertEqual(generated.strokeReferences.count, 3)
+    }
+
+    func testAnAnswerWithNothingLeftIsForgotten() {
+        let page = Self.page()
+        let metadata = SuggestionProvenance.recording(
+            Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
+
+        let result = GeneratedInkEraser.resolve(
+            previous: page.strokes.map(Self.stored),
+            current: [page.strokes[0]].map(Self.stored),
+            metadata: metadata)
+
         XCTAssertEqual(result.metadata.elements.map(\.id), ["el_hand"])
     }
 
@@ -145,9 +183,8 @@ final class SuggestionProvenanceTests: XCTestCase {
         XCTAssertEqual(generated.strokeReferences.map(\.index), [0, 1])
     }
 
-    /// One eraser stroke can cross two answers. This is the only cover for `resolve` handling
-    /// more than one removed element, so a regression that stopped at the first would show here.
-    func testOneGestureRemovesTwoGeneratedAnswersWithoutTouchingHandwriting() {
+    /// One eraser stroke can cross two answers. Each keeps what the eraser did not touch.
+    func testOneGestureCanTouchTwoGeneratedAnswersWithoutTouchingHandwriting() {
         let page = Self.page()
         let secondAnswer = [Self.stroke(from: 420, to: 440), Self.stroke(from: 450, to: 470)]
         let previous = page.strokes + secondAnswer
@@ -155,7 +192,7 @@ final class SuggestionProvenanceTests: XCTestCase {
             Self.accepted(page.generatedIDs), into: page.metadata, pageStrokes: page.strokes)
         metadata.elements.append(
             Self.generatedElement(id: "el_second", strokeIndices: [3, 4], in: previous))
-        // PencilKit's vector eraser takes one hatch stroke out of each answer.
+        // PencilKit's vector eraser takes one stroke out of each answer.
         let afterPencilKit = [previous[0], previous[2], previous[4]]
 
         let result = GeneratedInkEraser.resolve(
@@ -163,8 +200,9 @@ final class SuggestionProvenanceTests: XCTestCase {
             current: afterPencilKit.map(Self.stored),
             metadata: metadata)
 
-        XCTAssertEqual(result.strokeIndicesToRemove, [1, 2])
-        XCTAssertEqual(result.metadata.elements.map(\.id), ["el_hand"])
+        XCTAssertTrue(result.strokeIndicesToRemove.isEmpty)
+        XCTAssertEqual(result.metadata.elements.map(\.id).count, 3)
+        XCTAssertEqual(result.metadata.elements[0].strokeReferences.map(\.index), [0])
     }
 
     func testGeneratedEraserNeverDeletesAnAmbiguousFingerprint() {
@@ -293,9 +331,9 @@ extension SuggestionProvenanceTests {
         )
     }
 
-    private static func stroke(from start: CGFloat, to end: CGFloat) -> InkStroke {
+    private static func stroke(from start: CGFloat, to end: CGFloat, row: CGFloat = 100) -> InkStroke {
         InkStroke(points: [
-            InkPoint(location: CGPoint(x: start, y: 100), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
+            InkPoint(location: CGPoint(x: start, y: row), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
             InkPoint(location: CGPoint(x: end, y: 130), timeOffset: 0.2, force: 0.5, altitude: 1, azimuth: 0),
         ])
     }

@@ -18,6 +18,10 @@ public enum GlyphNormalizer {
     /// Below this height in points a sample is treated as noise rather than a letter.
     public static let minimumCaptureHeight: CGFloat = 4
 
+    /// Characters that are a dot or a tick by nature. A tap of the Pencil is a legitimate capture of these, so
+    /// they are exempt from the minimum extent and from the guide-box size test.
+    public static let tinyMarks: Set<Character> = [".", ",", ":", ";", "'", "\"", "°"]
+
     /// Letters whose body fills the x-height band and whose tail falls **below** the
     /// baseline. Their baseline is therefore a measured quantity: the top of the ink is the
     /// top of the x-height band, so the baseline is one x-height below it and everything
@@ -64,7 +68,10 @@ public enum GlyphNormalizer {
         guard !drawn.isEmpty else { throw Error.noInk }
 
         let box = InkLineGrouping.bounds(of: drawn)
-        guard !box.isNull, box.height >= minimumCaptureHeight || box.width >= minimumCaptureHeight else {
+        guard !box.isNull,
+            box.height >= minimumCaptureHeight || box.width >= minimumCaptureHeight
+                || Self.tinyMarks.contains(character)
+        else {
             throw Error.degenerate
         }
         let scale = xHeight > 0 ? xHeight : box.height

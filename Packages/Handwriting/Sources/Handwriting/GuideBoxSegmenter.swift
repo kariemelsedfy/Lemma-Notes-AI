@@ -76,7 +76,7 @@ public enum GuideBoxSegmenter {
             return Capture(
                 character: box.character,
                 strokes: owned,
-                confidence: confidence(of: owned, in: box.frame)
+                confidence: confidence(of: owned, in: box.frame, character: box.character)
             )
         }
     }
@@ -177,23 +177,29 @@ public enum GuideBoxSegmenter {
     /// Combines how much of the ink is inside with whether it fills a plausible share of
     /// the box — a single dot scores badly even though all of it is inside, which is what
     /// stops a stray tap becoming a letter.
-    private static func confidence(of strokes: [InkStroke], in frame: CGRect) -> Double {
+    private static func confidence(of strokes: [InkStroke], in frame: CGRect, character: Character? = nil) -> Double {
         let contained = strokes.map { occupancy(of: $0, in: frame) }
         guard !contained.isEmpty, frame.width > 0, frame.height > 0 else { return 0 }
         let meanContainment = contained.reduce(0, +) / Double(contained.count)
 
         let ink = InkLineGrouping.bounds(of: strokes)
         guard !ink.isNull else { return 0 }
-        // Height relative to the box, capped: a letter should occupy a real fraction of
-        // the space it was asked to fill.
-        let fill = min(Double(ink.height / frame.height) / expectedFill, 1)
+        // Extent relative to the box, capped: a letter should occupy a real fraction of the space it was asked
+        // to fill. **Along its longer axis**, because a `−`, `=` or `>` is wide and short and a height-only
+        // test rejected every flat symbol the writer drew perfectly well (device report 2026-10-16). Marks
+        // that are small by nature (a dot, comma, quote) are accepted at any size, since being inside their
+        // own box is the evidence that they were written on purpose.
+        let tiny = character.map { GlyphNormalizer.tinyMarks.contains($0) } ?? false
+        let extent = max(ink.height / frame.height, ink.width / frame.width)
+        let fill = tiny ? 1 : min(Double(extent) / expectedFill, 1)
 
         return meanContainment * fill
     }
 
-    /// The share of a guide box's height a lowercase letter is expected to reach.
+    /// The share of a guide box a letter is expected to reach along its longer axis.
     ///
-    /// Boxes are sized for ascenders, so an `e` fills roughly half. Anything much smaller
-    /// is a stray mark rather than a letter.
-    private static let expectedFill = 0.45
+    /// Boxes are sized for ascenders, so an `e` fills roughly half and a modest `c` less. This was 0.45, which
+    /// at the 0.65 confidence floor rejected any letter written below 29% of the box: `c`, `m` and `w` on the
+    /// owner's iPad. Anything much smaller is still a stray mark rather than a letter.
+    private static let expectedFill = 0.3
 }
