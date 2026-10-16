@@ -60,18 +60,21 @@ final class GlyphBankContentMeasurerTests: XCTestCase {
 
     // MARK: - Falling back
 
-    /// A block the bank cannot draw is rendered typeset **per block** (`HANDWRITING.md` §8),
-    /// so it has to be measured that way too, or the frame describes ink nobody draws.
-    func testARunTheWriterNeverWroteIsMeasuredAsTypeset() throws {
+    /// A character the writer never wrote is drawn from a typeset stand-in inside the same
+    /// layout, so the block is measured through the bank with that stand-in included.
+    /// Measuring it nominally would describe a rendering that no longer happens.
+    func testACharacterTheWriterNeverWroteIsMeasuredThroughATypesetStandIn() throws {
         let measurer = GlyphBankContentMeasurer(bank: try Self.bank(characters: "abcdefghijklmnopqrstuvwxyz "))
         let nominal = NominalContentMeasurer()
         let content = SpecBlockContent.inline(Self.run("answer 42"))
 
-        XCTAssertEqual(
-            measurer.size(of: content, xHeight: xHeight, lineSpacing: lineSpacing).width,
+        let measured = measurer.size(of: content, xHeight: xHeight, lineSpacing: lineSpacing).width
+
+        XCTAssertGreaterThan(measured, 0)
+        XCTAssertNotEqual(
+            measured,
             nominal.size(of: content, xHeight: xHeight, lineSpacing: lineSpacing).width,
-            accuracy: 0.001,
-            "Digits are missing from this bank, so the whole block falls back."
+            accuracy: 0.001
         )
     }
 

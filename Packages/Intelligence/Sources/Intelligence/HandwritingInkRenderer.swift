@@ -11,7 +11,7 @@ import InkCore
 public struct HandwritingInkRenderer: SuggestionInkRendering {
     private let bank: GlyphBank
     private let variation: Synthesizer.Variation
-    /// Used for characters the bank has no sample of.
+    /// Used for plots and marks, and for text the typeface cannot draw either.
     private let fallback: TypesetInkRenderer
 
     public init(bank: GlyphBank, variation: Synthesizer.Variation = .natural) {
@@ -20,10 +20,11 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         fallback = TypesetInkRenderer()
     }
 
-    /// Whether the user's hand can draw this text, or the typeset style has to.
-    ///
-    /// Asked per block rather than per character: half a sentence in someone's handwriting
-    /// and half in a typeface is more obviously wrong than either style used consistently.
+    /// Characters the writer has no sample of are drawn from a typeset stand-in
+    /// (`GlyphBank.filling(missingIn:)`) **inside the same layout**, so every letter they did
+    /// write stays in their hand and only the absent ones look typeset. This replaced
+    /// whole-block fallback after a device run where a single missing `=` made a whole answer
+    /// typeset. The app tells the user which characters were substituted.
     /// Measured through the bank this renderer draws from, so the reserved frame describes
     /// the writer's own proportional letters rather than a flat per-character estimate.
     public var measurer: any ContentMeasuring { GlyphBankContentMeasurer(bank: bank) }
@@ -46,30 +47,47 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
     }
 
     public func canRender(_ text: String) -> Bool {
-        bank.canRender(text)
+        bank.filling(missingIn: text).canRender(text)
     }
 
-    /// Whether this placed text must use the typeset fallback because its glyphs are absent.
+    /// The characters of this placed text the writer has no sample of, which are drawn typeset.
     ///
-    /// The app asks before presenting the result so it can explain a visible style change;
-    /// the missing characters themselves stay out of diagnostics and logs.
-    public func requiresMissingGlyphFallback(for placement: BlockPlacement) -> Bool {
-        switch placement.block.content {
-        case .inline(let run): !bank.canRender(run.value)
-        case .lines(let lines): !lines.allSatisfy { bank.canRender($0.run.value) }
-        case .note(let note): !bank.canRender(note.text)
-        case .plot, .marks: false
+    /// The app asks before presenting the result so it can say which characters changed style.
+    /// These are characters of the *answer*, not of the writer's ink, but they still stay out of
+    /// logs and diagnostics; they are shown on screen only.
+    public func substitutedCharacters(for placement: BlockPlacement) -> [Character] {
+        Array(bank.missingCharacters(in: Self.text(of: placement.block.content))).sorted()
+    }
+
+    private static func text(of content: SpecBlockContent) -> String {
+        switch content {
+        case .inline(let run): run.value
+        case .lines(let lines): lines.map(\.run.value).joined()
+        case .note(let note): note.text
+        case .plot, .marks: ""
         }
     }
 
     public func strokes(for placement: BlockPlacement, style: StyleStats, seed: UInt64 = 0) throws -> [InkStroke] {
+        // Rendered by a copy whose bank carries the typeset stand-ins, so the layout, measuring
+        // and sample-selection code below needs no idea that any glyph is borrowed.
+        let drawer = HandwritingInkRenderer(
+            bank: bank.filling(missingIn: Self.text(of: placement.block.content)),
+            variation: variation
+        )
+        return try drawer.draw(placement, style: style, seed: seed)
+    }
+
+    private func draw(_ placement: BlockPlacement, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
         switch placement.block.content {
         case .inline(let run):
-            return try render(run.value, in: placement.frame, style: style, seed: seed, placement: placement)
+            return try render(
+                run.value, in: placement.frame, style: style, seed: seed, placement: placement)
         case .lines(let lines):
             return try render(lines, in: placement.frame, style: style, seed: seed, placement: placement)
         case .note(let note):
-            return try render(note.text, in: placement.frame, style: style, seed: seed, placement: placement)
+            return try render(
+                note.text, in: placement.frame, style: style, seed: seed, placement: placement)
         case .plot, .marks:
             // Plots and correction marks are drawn geometry, not letterforms. Handing them
             // to the synthesizer would produce a row of characters where a curve belongs.
@@ -138,8 +156,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         placement: BlockPlacement
     ) throws -> [InkStroke] {
         guard !lines.isEmpty else { return [] }
-        // One missing glyph anywhere sends the whole block to the fallback, for the same
-        // reason as above: a mixed block is worse than a consistent one.
+        // Only a character the typeface cannot draw either sends the block to the fallback.
         guard lines.allSatisfy({ bank.canRender($0.run.value) }) else {
             return try fallback.strokes(for: placement, style: style, seed: seed)
         }

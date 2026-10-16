@@ -134,7 +134,11 @@ final class AskPipelineTests: XCTestCase {
         try await harness.runToDecision()
 
         XCTAssertEqual(harness.model.phase, .awaitingDecision)
-        XCTAssertEqual(harness.model.renderingNotice, .missingHandwritingCharacters)
+        guard case .substitutedCharacters(let characters) = harness.model.renderingNotice else {
+            return XCTFail("expected a substitution notice")
+        }
+        XCTAssertFalse(characters.isEmpty)
+        XCTAssertFalse(characters.contains("x"))
     }
 
     func testKnownCalibratedDigitIsDrawnAsHandwriting() async throws {
