@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08K — presence of ink, not a score
+After three rounds of tuning the confidence test (height, then longer axis, then a tiny-mark list) the owner's rule is simpler and better: ink in the box means the character was written. Worth recording why the score kept failing: it guessed intent from size and shape, which varies by character and by person, while the box already encodes intent. The cost is real: a stray tap in a letter's box is now a sample, and with several samples per letter it only appears sometimes, so a bad sample would look like an occasional glitch. If that shows up, prefer an in-app "redo this character" over bringing a score back. §3.2's "drop low-confidence alignments" is deliberately reversed here.
+
 ## 2026-10-16 · Claude · M4-08J — I picked the wrong x-height
 Last entry's warning ("verify the new `=` is the same size") was right and I should have checked the number's meaning instead of trusting its name. `StoredStyleStats.xHeight` and the calibration's normalization height are both "x-height" and measure different ink (freeform lines vs the median of x-height letters in boxes). The symptom was an unrelated-looking "no room" failure, because the placement engine reserves a frame from glyph advances and oversized glyphs do not fit it. When a failure appears right after touching the glyph bank, suspect glyph scale first. The new field is `normalizationXHeight`; any future work that adds glyphs must use it.
 

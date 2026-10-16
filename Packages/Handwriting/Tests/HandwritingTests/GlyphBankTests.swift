@@ -70,19 +70,9 @@ final class GlyphBankTests: XCTestCase {
         XCTAssertEqual(glyph.strokes.count, 2)
     }
 
-    func testEmptyAndDegenerateCapturesAreRefused() {
+    func testACaptureWithNoInkIsRefused() {
         XCTAssertThrowsError(try GlyphNormalizer.glyph(for: "a", from: [], xHeight: 40)) { error in
             XCTAssertEqual(error as? GlyphNormalizer.Error, .noInk)
-        }
-        // A stray dot must not become a letter that shows up in every word.
-        XCTAssertThrowsError(
-            try GlyphNormalizer.glyph(
-                for: "a",
-                from: [Self.stroke(in: CGRect(x: 0, y: 0, width: 1, height: 1))],
-                xHeight: 40
-            )
-        ) { error in
-            XCTAssertEqual(error as? GlyphNormalizer.Error, .degenerate)
         }
     }
 

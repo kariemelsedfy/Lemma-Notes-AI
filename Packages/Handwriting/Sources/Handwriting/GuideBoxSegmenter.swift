@@ -99,10 +99,9 @@ public enum GuideBoxSegmenter {
         let depth = descenderDepth(from: captures, xHeight: xHeight)
 
         for capture in captures {
-            guard capture.confidence >= minimumConfidence else {
-                rejected.append(capture.character)
-                continue
-            }
+            // Any ink in the character's box is taken as that character (owner decision, 2026-10-16). The
+            // confidence score stays on the capture for diagnostics but no longer rejects: size and shape
+            // tests kept discarding things the writer really wrote (flat symbols, dots, small letters).
             guard
                 let glyph = try? GlyphNormalizer.glyph(
                     for: capture.character,
