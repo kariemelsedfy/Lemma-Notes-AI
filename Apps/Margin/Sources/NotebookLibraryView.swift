@@ -17,6 +17,7 @@ struct NotebookLibraryView: View {
     @State private var shareFileURL: URL?
     @State private var exportErrorPresented = false
     @State private var calibrationPresented = false
+    @State private var addCharactersPresented = false
     @State private var cloudSettingsPresented = false
     @StateObject private var handwriting = HandwritingStyleStore()
     #if DEBUG
@@ -74,6 +75,8 @@ struct NotebookLibraryView: View {
                                 .disabled(handwriting.bank == nil)
                         #endif
                         Button("calibration.start") { calibrationPresented = true }
+                        Button("calibration.add") { addCharactersPresented = true }
+                            .disabled(handwriting.bank == nil)
                         Divider()
                         Button("cloud.title", systemImage: "cloud") { cloudSettingsPresented = true }
                         if handwriting.bank != nil {
@@ -135,6 +138,9 @@ struct NotebookLibraryView: View {
         }
         .sheet(isPresented: $calibrationPresented) {
             CalibrationView(store: handwriting)
+        }
+        .sheet(isPresented: $addCharactersPresented) {
+            AddCharactersView(store: handwriting)
         }
         .sheet(isPresented: $cloudSettingsPresented) {
             PilotCloudSettingsView()

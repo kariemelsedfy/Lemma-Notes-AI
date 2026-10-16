@@ -141,6 +141,15 @@ public struct GlyphBank: Codable, Equatable, Sendable {
         samples[glyph.character, default: []].append(glyph)
     }
 
+    /// Adds `other`'s characters to this bank, **replacing** this bank's samples of those same characters
+    /// and leaving every other character untouched. For "teach it just these characters": the writer's new
+    /// attempt wins for what they rewrote, and nothing they did not rewrite is lost.
+    public mutating func replaceSamples(from other: GlyphBank) {
+        for (character, glyphs) in other.samples where !glyphs.isEmpty {
+            samples[character] = glyphs
+        }
+    }
+
     /// Drops every sample of a character, for the "retap any glyph to rewrite it" flow
     /// in `HANDWRITING.md` §3.2.
     public mutating func removeSamples(for character: Character) {

@@ -131,10 +131,13 @@ public struct CalibrationSession: Equatable, Sendable {
 
     /// Builds the bank from everything recorded so far.
     ///
+    /// - Parameter knownXHeight: the writer's x-height from an existing bank, when this session only repairs
+    ///   some characters and so cannot measure it.
+    ///
     /// Callable before the last sheet, because abandoning halfway should still leave a
     /// usable partial bank rather than nothing — a bank with the lowercase alphabet in it
     /// beats the typeset style for most of what people write.
-    public func outcome(capturedAt: Date) -> Outcome {
+    public func outcome(capturedAt: Date, xHeight knownXHeight: CGFloat? = nil) -> Outcome {
         let freeform = sheets.filter { if case .ruledLines = $0.kind { true } else { false } }
             .flatMap { strokes[$0.id] ?? [] }
 
@@ -145,7 +148,9 @@ public struct CalibrationSession: Equatable, Sendable {
         var rejected: [Character] = []
         var missing: [Character] = []
 
-        let height = xHeight(fallback: stats.xHeight)
+        // A run of a few repaired characters cannot measure the writer's x-height (it holds none of the
+        // letters that define it), so the caller passes the one the existing bank already knows.
+        let height = (knownXHeight ?? 0) > 0 ? knownXHeight ?? 0 : xHeight(fallback: stats.xHeight)
         guard height > 0 else {
             return Outcome(bank: bank, rejected: [], missing: expectedCharacters)
         }
