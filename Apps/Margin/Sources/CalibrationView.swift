@@ -104,6 +104,12 @@ struct CalibrationView: View {
             .font(MarginTypography.body)
         }
         .padding(MarginSpacing.xLarge)
+        // One view identity per sheet. Without it SwiftUI reuses the same views for every sheet, so
+        // `.onAppear` (which computes the segmentation boxes) fires only for the first one: every later
+        // sheet was segmented against the *lowercase* boxes, filing capitals, digits and symbols under
+        // lowercase letters and reporting the real characters as never written (device report 2026-10-16:
+        // "Captured 26 characters", everything else missing).
+        .id(sheet.id)
     }
 
     // MARK: - Flow
