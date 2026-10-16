@@ -3,6 +3,14 @@ import XCTest
 @testable import Intelligence
 
 final class SpecDecodingTests: XCTestCase {
+    /// The hosted proxy accepts exactly `answer` and `continue`. The Swift case is `.continuation`, so the wire
+    /// spelling is easy to get wrong in either direction; the first proxy attempt used the Swift name and every
+    /// continuation request was refused.
+    func testTheIntentWireNamesMatchWhatTheProxyAccepts() {
+        XCTAssertEqual(SpecIntent.answer.rawValue, "answer")
+        XCTAssertEqual(SpecIntent.continuation.rawValue, "continue")
+    }
+
     func testDecodesInlineAnswerSpec() throws {
         let spec = try SpecDecoder.decode(Data(Self.inlineAnswerJSON.utf8))
 

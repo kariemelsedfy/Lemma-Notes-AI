@@ -318,7 +318,11 @@ struct LiveInkCanvas: UIViewRepresentable {
         // there, and the user writes in white on a white page (M1-12B).
         InkAppearance.applyPaperAppearance(to: canvasView)
         context.coordinator.applyExternally(drawingStore.drawing(for: pageID), to: canvasView)
-        canvasView.drawingPolicy = .anyInput
+        // The Pencil writes; a finger scrolls the page. `.pencilOnly` stops touches inking, and the canvas's own
+        // scrolling is off so a one-finger drag reaches the page stack's `ScrollView` instead of being
+        // swallowed by the canvas (which is itself a scroll view).
+        canvasView.drawingPolicy = .pencilOnly
+        canvasView.isScrollEnabled = false
         apply(selectedTool, to: canvasView)
         canvasView.delegate = context.coordinator
         return canvasView

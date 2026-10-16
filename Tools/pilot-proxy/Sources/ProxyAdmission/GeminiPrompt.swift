@@ -25,12 +25,14 @@ enum GeminiPrompt {
         """
 
     /// The intents the pilot serves. Anything else is refused at admission rather than guessed at.
-    static let supportedIntents: Set<String> = ["answer", "continuation"]
+    static let supportedIntents: Set<String> = ["answer", "continue"]
 
-    /// The instruction for one intent. `answer` is the base text; `continuation` swaps rule 2 for "continue the
+    /// The instruction for one intent. `answer` is the base text; `continue` swaps rule 2 for "continue the
     /// writing" and keeps every safety rule (reply shape, untrusted images and transcript) unchanged.
+    /// **The wire name is `continue`, not `continuation`** (`SpecIntent.continuation` is spelled `continue` on the
+    /// wire because `continue` is a Swift keyword); the first attempt used the Swift name and was refused.
     static func instruction(for intent: String) -> String {
-        guard intent == "continuation" else { return instruction }
+        guard intent == "continue" else { return instruction }
         return
             instruction
             .replacingOccurrences(
@@ -47,7 +49,7 @@ enum GeminiPrompt {
                     unless it is clearly a list or a derivation. Match the density of their existing work.
                     """
             )
-            .replacingOccurrences(of: "\"intent\" must be \"answer\".", with: "\"intent\" must be \"continuation\".")
+            .replacingOccurrences(of: "\"intent\" must be \"answer\".", with: "\"intent\" must be \"continue\".")
     }
 
     static func responseSchema(intent: String = "answer") -> [String: Any] {
