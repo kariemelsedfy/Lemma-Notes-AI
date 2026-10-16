@@ -72,10 +72,17 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         // Rendered by a copy whose bank carries the typeset stand-ins, so the layout, measuring
         // and sample-selection code below needs no idea that any glyph is borrowed.
         let drawer = HandwritingInkRenderer(
-            bank: bank.filling(missingIn: Self.text(of: placement.block.content)),
+            bank: bank.filling(missingIn: Self.text(of: placement.block.content), penRatio: penRatio(for: style)),
             variation: variation
         )
         return try drawer.draw(placement, style: style, seed: seed)
+    }
+
+    /// The writer's pen as a fraction of the x-height this answer is drawn at. The caller's `xHeight` is the
+    /// visible height of the ink being answered, which is about 1.4 x-heights for text with digits.
+    private func penRatio(for style: StyleStats) -> CGFloat {
+        let pen = bank.style.strokeWidth > 0 ? bank.style.strokeWidth : InkPoint.defaultSize.width
+        return pen / max(style.xHeight / 1.4, 1)
     }
 
     private func draw(_ placement: BlockPlacement, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
