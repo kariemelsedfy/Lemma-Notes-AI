@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08Q — the debug line paid for itself
+One screenshot (`invalidResponse · continue`) did what three rounds of guessing had not: it ruled out the network and the proxy and pointed at the app's own validator. It still did not name the rule, because `invalidResponse` was a catch-all for decode errors, size, intent mismatch and every `SpecValidationError`; the first version of the diagnostic was not specific enough. I split out `rejectedSpec(name)` and did not guess at the rule: I hardened the prompt against the two likeliest (newline, LaTeX) and made the next failure say which rule it is. If the next screenshot says something else (for example `contentTooLong`), fix that rule, not the prompt again.
+
 ## 2026-10-16 · Claude · M4-08P — guessing at a generic error
 Third round on the same prompt. What I knew: the proxy accepts `answer` and `continue` (verified live with a fresh request ID), the real reply validates in the app, and the log showed two 200s then three fast 422s. What I did not know: which verb the owner pressed and what the bar said. Rather than guess a fourth time I made the failure self-describing (debug builds only). Habit worth keeping: when one generic message covers many causes, add the cause to the UI for debug builds before touching more logic.
 

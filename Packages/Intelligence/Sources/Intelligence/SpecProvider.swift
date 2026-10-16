@@ -104,6 +104,9 @@ public enum ProxyTransportFailure: Error, Equatable, Sendable, CaseIterable {
 
 public enum ProxyProviderFailure: Error, Equatable, Sendable {
     case invalidRequest, invalidResponse, offline, refused, unauthorized, budgetExceeded
+    /// The reply decoded but broke a spec rule. Carries `SpecValidationError.name` only (never its payload,
+    /// which can hold page-derived text), so a debug build can say which rule without leaking content.
+    case rejectedSpec(String)
 }
 
 public struct ProxyClientRequest: Encodable, Sendable {
@@ -188,6 +191,8 @@ public struct ProxySpecProvider: SpecProvider {
         let spec: ValidatedSpec
         do {
             spec = try SpecValidator.validate(response)
+        } catch let error as SpecValidationError {
+            throw ProxyProviderFailure.rejectedSpec(error.name)
         } catch {
             throw ProxyProviderFailure.invalidResponse
         }

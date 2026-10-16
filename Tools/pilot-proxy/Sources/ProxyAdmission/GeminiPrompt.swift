@@ -46,7 +46,10 @@ enum GeminiPrompt {
                     Return only the new words (for "Photosynthesis is" something like \
                     "the process by which plants turn light into chemical energy"), \
                     never repeating what is already written. One or two short sentences \
-                    unless it is clearly a list or a derivation. Match the density of their existing work.
+                    unless it is clearly a list or a derivation. Match the density of their existing work. \
+                    Each item is ONE line of plain text: no line breaks, no bullet characters, no markdown, \
+                    and no LaTeX unless the selection itself is mathematics. \
+                    Write formulas in plain characters (for example CO2, not LaTeX).
                     """
             )
             .replacingOccurrences(of: "\"intent\" must be \"answer\".", with: "\"intent\" must be \"continue\".")
