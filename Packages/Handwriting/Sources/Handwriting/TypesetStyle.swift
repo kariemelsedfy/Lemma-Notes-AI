@@ -67,13 +67,16 @@ public enum TypesetStyle {
 
     /// Lays `text` out inside `frame`, sitting on its baseline.
     ///
+    /// `hatchInset` (font units at the 100pt reference) overrides how far the fill is pulled inside the contour.
+    ///
     /// Deterministic by construction: unlike the synthesizer there is no jitter, no
     /// sample choice, and no seed. Typeset output is *supposed* to look mechanical.
     public static func strokes(
         for text: String,
         in frame: CGRect,
         style: StyleStats = .unmeasured,
-        nibRatio: CGFloat = TypesetStyle.nibToHeightRatio
+        nibRatio: CGFloat = TypesetStyle.nibToHeightRatio,
+        hatchInset: CGFloat? = nil
     ) throws -> [InkStroke] {
         guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
         guard !text.isEmpty else { return [] }
@@ -112,7 +115,8 @@ public enum TypesetStyle {
             // nib fatter than their letterform: a pen centred on the contour leaves half of
             // itself outside. The inset fill reaches the same edge from the inside, so the
             // boundary lands where the letterform actually is (M2-13B).
-            let inset = nib / metrics.scale * insetToNibRatio
+            // A caller that will stroke this with its own pen (the glyph stand-ins) says how far to erode.
+            let inset = hatchInset ?? nib / metrics.scale * insetToNibRatio
             for polyline in hatchFill(of: contours, spacing: nib / metrics.scale * 0.8, inset: inset) {
                 let placed = polyline.map { point in
                     CGPoint(

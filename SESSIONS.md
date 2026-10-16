@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08F — stand-in weight, and an unexplained missing 5
+Stand-ins were bold because I filled the letter to its outline and then added the writer's pen on top; the fix is to erode the fill by half the pen. The pen-to-x-height ratio is an estimate (caller ink height / 1.4), so check weight on the iPad before trusting it. Open question: after the owner re-ran calibration, `5` and `=` were absent from the bank although `2+3=5` had been handwritten before (so `5` existed). A fresh calibration replaces the stored bank, so the likeliest causes are that those two were rejected as unclear, or the digits/punctuation sheets were skipped or left empty on the second pass. The calibration summary names outstanding characters; ask the owner what it showed rather than guessing.
+
 ## 2026-10-16 · Claude · M4-08E — bundled pilot token
 The owner asked to skip token setup because every user shares one server. I split it: a bundled token is fine for their own iPad and wrong for anyone else (extractable; one leak lets a stranger burn the $10 ceiling), so this PR is explicitly pilot-only and the real fix is per-install attestation. The token goes Mac Keychain → gitignored resource → bundle, never printed, never committed. Tuist globs `Resources/**` at generate time, so the provision script must run before `generate.sh` or the file is missing from the build.
 
