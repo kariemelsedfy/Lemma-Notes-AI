@@ -76,7 +76,7 @@ extension VirtualizedPageStack {
                 },
                 layout: layout,
                 homePage: home,
-                pen: selectedPen,
+                pen: selectedInk,
                 offset: $ghostOffset,
                 isDragging: $ghostDragging
             )
@@ -166,7 +166,7 @@ extension VirtualizedPageStack {
         // passes through a canvas gesture, which is why it needs recording explicitly (M2-09).
         undoController.recordChange(pages: slices.map { ($0.pageID, pageSizes[$0.pageID] ?? pageSize) })
         for slice in slices {
-            let pencilStrokes = slice.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
+            let pencilStrokes = slice.strokes.compactMap { PKStroke($0, color: selectedInk.uiColor) }
             let committed = PKDrawing(strokes: drawingStore.drawing(for: slice.pageID).strokes + pencilStrokes)
             let record = AcceptedSuggestion(
                 requestID: accepted.requestID,

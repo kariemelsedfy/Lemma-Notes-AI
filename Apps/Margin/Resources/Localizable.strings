@@ -52,10 +52,6 @@
 "ask.failure.local-unsupported" = "Only short arithmetic using +, -, * or / is available right now. Try a simpler expression.";
 
 
-"pen.black" = "Black pen";
-"pen.blue" = "Blue pen";
-"pen.red" = "Red pen";
-"pen.green" = "Green pen";
 "ask.lasso.question.capture" = "Draw around the work you want help with";
 "ask.question.selected" = "Question area selected";
 
@@ -100,3 +96,23 @@
 
 /* Pilot cloud Ask (ADR-027/028). Interim copy until the M6 consent flow. */
 "ask.ghost.hint" = "Drag the outline to move the answer, then tap Keep.";
+"ink.colors" = "Colors";
+"ink.custom" = "Custom color";
+"ink.more" = "More colors";
+"ink.name.custom" = "Custom color";
+"ink.name.D98E04" = "Amber";
+"ink.name.E8832A" = "Orange";
+"ink.name.E0484A" = "Red";
+"ink.name.E02BB5" = "Pink";
+"ink.name.6B9E1F" = "Lime";
+"ink.name.3E8E3E" = "Green";
+"ink.name.9B1FC1" = "Purple";
+"ink.name.5A2D82" = "Deep purple";
+"ink.name.0B5227" = "Dark green";
+"ink.name.2C63E0" = "Blue";
+"ink.name.2548A8" = "Royal blue";
+"ink.name.120A6E" = "Navy";
+"ink.name.7A7A80" = "Grey";
+"ink.name.000000" = "Black";
+"ink.name.8B5E34" = "Brown";
+"ink.name.138A96" = "Teal";

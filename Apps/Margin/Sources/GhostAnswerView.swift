@@ -17,7 +17,7 @@ struct GhostAnswerView: View {
     let layout: PageStackLayout
     /// The page the question is on: pages share a width, so it fixes where page-local x sits on screen.
     let homePage: Int
-    let pen: MarginPen
+    let pen: InkColor
     @Binding var offset: CGSize
     @Binding var isDragging: Bool
 

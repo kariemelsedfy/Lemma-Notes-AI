@@ -46,9 +46,8 @@ public enum MarginColor {
 /// resolved colour into every stroke, so a colour that moved with the system appearance
 /// would change the meaning of ink already on the page.
 ///
-/// Deliberately few. A note app with thirty pens is a colour picker with a page attached,
-/// and `AI_PIPELINE.md` §6 only needs one of them to be a recognisable "red pen" for
-/// correction marks.
+/// These four are the original pens and the correction pen (`AI_PIPELINE.md` §6 needs a recognisable "red
+/// pen"). What the writer can pick from is `InkColor.palette`, a wider palette (owner decision, M5-UI-1).
 ///
 /// **The four are staggered in lightness, not just hue.** Vivid blue, red and green at
 /// their natural saturation have nearly identical luminance, so someone with red-green
