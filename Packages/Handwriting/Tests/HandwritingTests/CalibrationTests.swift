@@ -117,6 +117,8 @@ final class CalibrationTests: XCTestCase {
         XCTAssertEqual(Set(outcome.bank.samples.keys), Set(["a", "b", "c", "d", "e", "f"]))
         XCTAssertTrue(outcome.rejected.isEmpty)
         XCTAssertTrue(outcome.missing.isEmpty)
+        // Recorded so characters added later can be scaled the same way.
+        XCTAssertGreaterThan(try XCTUnwrap(outcome.bank.normalizationXHeight), 0)
     }
 
     func testEmptyBoxesAreReportedMissingRatherThanSilentlyOmitted() {

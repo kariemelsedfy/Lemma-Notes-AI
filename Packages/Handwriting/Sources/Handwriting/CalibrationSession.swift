@@ -155,6 +155,8 @@ public struct CalibrationSession: Equatable, Sendable {
             return Outcome(bank: bank, rejected: [], missing: expectedCharacters)
         }
 
+        bank.normalizationXHeight = height
+
         for sheet in sheets {
             let expected = sheet.capturedCharacters
             guard !expected.isEmpty else { continue }

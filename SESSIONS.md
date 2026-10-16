@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08J — I picked the wrong x-height
+Last entry's warning ("verify the new `=` is the same size") was right and I should have checked the number's meaning instead of trusting its name. `StoredStyleStats.xHeight` and the calibration's normalization height are both "x-height" and measure different ink (freeform lines vs the median of x-height letters in boxes). The symptom was an unrelated-looking "no room" failure, because the placement engine reserves a frame from glyph advances and oversized glyphs do not fit it. When a failure appears right after touching the glyph bank, suspect glyph scale first. The new field is `normalizationXHeight`; any future work that adds glyphs must use it.
+
 ## 2026-10-16 · Claude · M4-08I — add characters without redoing everything
 The session/repair machinery already existed; the missing piece was using it *after* the fact, merged into a saved bank. The trap was scale: a repair-only session has no lowercase letters to measure x-height from, and the fallback (median of everything captured) would scale a lone `.` or `=` wrongly, so the existing bank's x-height is passed in. The calibration style stats (slant, spacing) deliberately stay the existing bank's. Verify on the iPad that a newly added `=` is about the same size as the writer's other symbols.
 

@@ -174,9 +174,9 @@ struct CalibrationView: View {
             summary = session.outcome(capturedAt: Date())
             return
         }
-        // Adding characters: scale them by the x-height the existing bank already measured, and let only the
-        // rewritten characters replace their old samples.
-        let outcome = session.outcome(capturedAt: Date(), xHeight: merged.style.xHeight)
+        // Adding characters: scale them by the size the existing bank's glyphs were normalized by (not its
+        // `style.xHeight`, a different measurement), and let only the rewritten characters replace theirs.
+        let outcome = session.outcome(capturedAt: Date(), xHeight: merged.normalizationXHeight)
         merged.replaceSamples(from: outcome.bank)
         summary = CalibrationSession.Outcome(bank: merged, rejected: outcome.rejected, missing: outcome.missing)
     }
