@@ -13,6 +13,9 @@ struct VirtualizedPageStack: View {
     @State var pageSizes: [UUID: CGSize]
     /// True while a page is being appended, so a burst of strokes cannot add several.
     @State var appendingPage = false
+    /// Where the writer has dragged the pending answer to, in page points, relative to where it first appeared.
+    @State var ghostOffset: CGSize = .zero
+    @State var ghostDragging = false
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
@@ -93,6 +96,8 @@ struct VirtualizedPageStack: View {
                 .scrollTargetLayout()
                 .padding(.vertical, 24)
             }
+            // A drag that starts on the answer's outline moves the answer, not the page.
+            .scrollDisabled(ghostDragging)
             .scrollPosition(id: $visiblePageID)
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
@@ -109,7 +114,6 @@ struct VirtualizedPageStack: View {
                         onAccept: { acceptSuggestion() },
                         onReject: { rejectSuggestion() },
                         onRetry: { retryAsk() },
-                        onChooseArea: { chooseAnotherAnswerArea() },
                         onDismiss: { askModel.dismissFailure() }
                     )
                 }
@@ -156,6 +160,13 @@ struct VirtualizedPageStack: View {
             undoController.configure(store: drawingStore)
             ensureTrailingBlankPage()
         }
+        .onChange(of: askModel.phase) { _, phase in
+            // The offset belongs to one pending answer; a new answer starts below its question again.
+            if phase != .awaitingDecision {
+                ghostOffset = .zero
+                ghostDragging = false
+            }
+        }
         .onChange(of: drawingStore.revision) { _, _ in
             persistEditedPages()
         }
@@ -180,9 +191,10 @@ struct VirtualizedPageStack: View {
                 selectedTool: selectedTool,
                 selectedPen: selectedPen,
                 selection: selectionStore.selection(for: pageID),
-                answerArea: askSelection.answerArea?.onPage(pageID),
                 askSelection: askSelection,
                 suggestionInk: suggestionInk(for: pageID),
+                ghostOffset: $ghostOffset,
+                ghostDragging: $ghostDragging,
                 captureStage: captureStage(for: pageID),
                 onAskLasso: { loop in
                     capture(loop, on: pageID)
@@ -226,9 +238,10 @@ private struct LivePageView: View {
     let selectedTool: CanvasTool
     let selectedPen: MarginPen
     let selection: PageSelection?
-    let answerArea: AnswerAreaSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
     let suggestionInk: [InkStroke]
+    @Binding var ghostOffset: CGSize
+    @Binding var ghostDragging: Bool
     let captureStage: AskCaptureStage?
     let onAskLasso: ([CGPoint]) -> Void
 
@@ -253,11 +266,14 @@ private struct LivePageView: View {
             if let selection {
                 PageSelectionOverlay(selection: selection)
             }
-            if let answerArea {
-                AnswerAreaOverlay(selection: answerArea)
-            }
             if !suggestionInk.isEmpty {
-                SuggestionOverlay(strokes: suggestionInk, pen: selectedPen)
+                GhostAnswerView(
+                    strokes: suggestionInk,
+                    pageSize: pageSize,
+                    pen: selectedPen,
+                    offset: $ghostOffset,
+                    isDragging: $ghostDragging
+                )
             }
             if let captureStage {
                 AskLassoCapture(
@@ -365,30 +381,8 @@ extension PageSelectionStore {
     }
 }
 
-extension AnswerAreaSelection {
-    fileprivate func onPage(_ pageID: UUID) -> Self? {
-        self.pageID == pageID ? self : nil
-    }
-}
-
 extension AskCaptureStage {
-    fileprivate var hintKey: LocalizedStringKey {
-        switch self {
-        case .question: "ask.hint.question"
-        case .answerArea: "ask.hint.answer-area"
-        case .idle: "ask.hint.question"
-        }
-    }
-
-    fileprivate var captureLabel: LocalizedStringKey {
-        switch self {
-        case .question: "ask.lasso.question.capture"
-        case .answerArea: "ask.lasso.answer-area.capture"
-        case .idle: "ask.lasso.question.capture"
-        }
-    }
-
-    fileprivate var captureTint: Color {
-        self == .answerArea ? MarginPen.green.color : MarginColor.accent
-    }
+    fileprivate var hintKey: LocalizedStringKey { "ask.hint.question" }
+    fileprivate var captureLabel: LocalizedStringKey { "ask.lasso.question.capture" }
+    fileprivate var captureTint: Color { MarginColor.accent }
 }

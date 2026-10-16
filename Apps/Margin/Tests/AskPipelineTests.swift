@@ -58,14 +58,19 @@ final class AskPipelineTests: XCTestCase {
         XCTAssertTrue(placed.insetBy(dx: -3, dy: -3).contains(drawn), "\(drawn) is outside \(placed)")
     }
 
-    func testQuestionBoundsCannotReplaceThePipelineAnswerArea() async throws {
+    func testTheAnswerStartsDirectlyBelowTheQuestion() async throws {
         let harness = try Harness()
 
         try await harness.runToDecision()
 
         let placed = try XCTUnwrap(harness.model.pendingFrames.first)
-        XCTAssertTrue(harness.input.allowedAnswerArea.contains(placed))
-        XCTAssertFalse(harness.input.allowedAnswerArea.intersects(CGRect(x: 80, y: 80, width: 260, height: 70)))
+        let question = try XCTUnwrap(
+            SelectionContextBuilder.build(
+                strokes: harness.input.strokes, loop: harness.input.loop, pageSize: harness.input.pageSize)
+        ).selectionBounds
+        XCTAssertGreaterThanOrEqual(placed.minY, question.maxY)
+        XCTAssertLessThan(placed.minY, question.maxY + 80)
+        XCTAssertEqual(placed.minX, question.minX, accuracy: 20)
     }
 
     func testAcceptCommitsTheInkInOneUndoGroup() async throws {
@@ -308,7 +313,6 @@ private struct AskPageSetup {
                 CGPoint(x: 340, y: 150),
                 CGPoint(x: 80, y: 150),
             ],
-            allowedAnswerArea: CGRect(x: 700, y: 500, width: 300, height: 240),
             pageSize: pageSize
         )
         context = try XCTUnwrap(

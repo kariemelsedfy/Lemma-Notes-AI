@@ -14,59 +14,21 @@ import XCTest
 final class AskLassoTests: XCTestCase {
     private let pageID = UUID()
 
-    func testTheFirstLassoStoresOnlyTheQuestion() throws {
+    func testALassoStoresTheQuestion() throws {
         let coordinator = AskSelectionCoordinator()
 
         coordinator.selectQuestion(loop: Self.square, onPage: pageID)
 
         XCTAssertEqual(try XCTUnwrap(coordinator.questionSelection).pageID, pageID)
-        XCTAssertNil(coordinator.answerArea)
-    }
-
-    func testTheSecondLassoStoresADistinctAnswerAreaOnTheSamePage() throws {
-        let coordinator = AskSelectionCoordinator()
-        coordinator.selectQuestion(loop: Self.square, onPage: pageID)
-        let answerLoop = Self.square.map { CGPoint(x: $0.x + 300, y: $0.y + 400) }
-
-        coordinator.selectAnswerArea(loop: answerLoop, onPage: pageID)
-
-        XCTAssertEqual(
-            try XCTUnwrap(coordinator.questionSelection).bounds,
-            CGRect(x: 10, y: 10, width: 110, height: 110)
-        )
-        XCTAssertEqual(try XCTUnwrap(coordinator.answerArea).bounds, CGRect(x: 310, y: 410, width: 110, height: 110))
-    }
-
-    func testAnAnswerAreaOnAnotherPageIsIgnored() {
-        let coordinator = AskSelectionCoordinator()
-        coordinator.selectQuestion(loop: Self.square, onPage: pageID)
-
-        coordinator.selectAnswerArea(loop: Self.square, onPage: UUID())
-
-        XCTAssertNil(coordinator.answerArea)
-    }
-
-    func testADegenerateAnswerAreaIsIgnored() {
-        let coordinator = AskSelectionCoordinator()
-        coordinator.selectQuestion(loop: Self.square, onPage: pageID)
-
-        coordinator.selectAnswerArea(
-            loop: [CGPoint(x: 10, y: 10), CGPoint(x: 20, y: 10), CGPoint(x: 30, y: 10)],
-            onPage: pageID
-        )
-
-        XCTAssertNil(coordinator.answerArea)
     }
 
     func testClearingDropsTheSelection() {
         let coordinator = AskSelectionCoordinator()
         coordinator.selectQuestion(loop: Self.square, onPage: pageID)
-        coordinator.selectAnswerArea(loop: Self.square, onPage: pageID)
 
         coordinator.clearSelections()
 
         XCTAssertNil(coordinator.questionSelection)
-        XCTAssertNil(coordinator.answerArea)
     }
 
     func testAManuallyDrawnLassoProducesASelection() throws {

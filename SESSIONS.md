@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-18 — ghost box
+Replaced a whole interaction rather than adding one, so most of the diff is deletion (the answer-area stage and its tests). Two design choices to know. First, the ghost's start position deliberately ignores existing ink (owner: "always right below, even if there's text there"), which is why placement no longer uses the occupancy grid and why `noRoom` is unreachable from placement now; the old search code is still in `PlacementEngine.place` for the tests and any future auto-placement. Second, the drag runs inside a `ScrollView`: I used `highPriorityGesture` and `scrollDisabled(ghostDragging)`, which is the standard recipe but cannot be proven in a unit test; if a drag on the outline scrolls the page instead, the fix is to claim the touch earlier (a `UIGestureRecognizer` on a `UIViewRepresentable`) rather than adding more SwiftUI modifiers. The Ask also now reads one step shorter (no "Step 1 of 2").
+
 ## 2026-10-16 · Claude · M4-08N — I tested my fix with my own wrong assumption
 The previous fix passed my live test because the test and the fix shared the same misspelling; the app sent the real wire name, `continue`. Lesson: a live check of a protocol change must send what the *client* sends (generate the request through the client's own encoder, or at least read the client's raw values), not what I believe it sends. The Cloud Run log was what exposed it again: 422 in 2 ms right after the redeploy. For the finger-scroll change the trap to know is that `PKCanvasView` is a `UIScrollView`; `.pencilOnly` alone would leave the canvas eating the finger pan, so scrolling must be disabled on the canvas too.
 

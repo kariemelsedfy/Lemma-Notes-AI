@@ -67,6 +67,25 @@ public struct InkStroke: Equatable, Sendable {
     }
 }
 
+extension InkStroke {
+    /// The same stroke moved by `delta`, keeping its identity and every other measurement.
+    public func translated(by delta: CGSize) -> InkStroke {
+        InkStroke(
+            id: id,
+            points: points.map { point in
+                InkPoint(
+                    location: CGPoint(x: point.location.x + delta.width, y: point.location.y + delta.height),
+                    timeOffset: point.timeOffset,
+                    force: point.force,
+                    altitude: point.altitude,
+                    azimuth: point.azimuth,
+                    size: point.size
+                )
+            }
+        )
+    }
+}
+
 /// The stroke identifiers currently selected by the user.
 public struct InkSelection: Equatable, Sendable {
     public let strokeIDs: Set<InkStrokeID>

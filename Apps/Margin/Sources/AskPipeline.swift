@@ -22,7 +22,6 @@ final class AskPipeline {
     struct PageInput {
         let engine: any InkEngine
         let loop: [CGPoint]
-        let allowedAnswerArea: CGRect
         let pageSize: CGSize
 
         var strokes: [InkStroke] { engine.strokes }
@@ -149,11 +148,11 @@ final class AskPipeline {
         // room through the writer's own glyph advances, a typeset one through its estimate.
         let result = PlacementEngine(
             page: page,
-            allowedArea: input.allowedAnswerArea,
+            allowedArea: page,
             occupancy: grid,
             measurer: renderer.measurer
         )
-        .place(spec, context: context, pageStrokes: pageStrokes)
+        .placeBelowSelection(spec, context: context, pageStrokes: pageStrokes)
         Self.logBlocks(result.placements)
 
         // Placement may prefer the last line's anchor measurement over the selection-wide

@@ -119,6 +119,65 @@ public struct PlacementEngine: Sendable {
         return PlacementResult(placements: placements, unplaced: unplaced)
     }
 
+    /// Where the ghost box starts: **directly below the question, whatever is already there.**
+    ///
+    /// Replaces the old "pick an answer area, then search it for free space" flow (owner decision,
+    /// 2026-10-16). The answer is no longer fitted around existing ink: its first position is simply the line
+    /// under the question, the writer sees an outline of the exact size it will take, and drags it wherever
+    /// they like. So there is no occupancy test here and nothing is ever "unplaced". Blocks stack downward in
+    /// order. The frame is kept inside the page's left and right margins and above the bottom margin; a block
+    /// wider than the page wraps through the measurer's width ceiling.
+    public func placeBelowSelection(
+        _ spec: ValidatedSpec,
+        context: SelectionContext,
+        pageStrokes: [InkStroke] = []
+    ) -> PlacementResult {
+        let xHeight = Self.usableXHeight(for: context)
+        let margin = max(xHeight, 16)
+        let page = allowedArea
+        let gap = xHeight * 0.5
+        var nextY = context.selectionBounds.maxY + gap
+        var placements: [BlockPlacement] = []
+        var unplaced: [SpecBlock] = []
+
+        for block in spec.blocks {
+            if case .marks(let marks) = block.content {
+                let frame = markFrame(for: marks, pageStrokes: pageStrokes, context: context)
+                placements.append(
+                    BlockPlacement(block: block, frame: frame, requested: block.placement, usedFallback: false)
+                )
+                continue
+            }
+            guard !page.isNull, page.width > 2 * margin else {
+                unplaced.append(block)
+                continue
+            }
+            let size = measurer.size(
+                of: block.content,
+                xHeight: xHeight,
+                lineSpacing: context.style.lineSpacing,
+                maxWidth: page.width - 2 * margin
+            )
+            guard size.width > 0, size.height > 0 else {
+                unplaced.append(block)
+                continue
+            }
+            let width = min(size.width, page.width - 2 * margin)
+            let left = min(max(context.selectionBounds.minX, page.minX + margin), page.maxX - margin - width)
+            let top = min(nextY, max(page.maxY - margin - size.height, page.minY))
+            placements.append(
+                BlockPlacement(
+                    block: block,
+                    frame: CGRect(x: left, y: top, width: width, height: size.height),
+                    requested: block.placement,
+                    usedFallback: false
+                )
+            )
+            nextY = top + size.height + gap
+        }
+        return PlacementResult(placements: placements, unplaced: unplaced)
+    }
+
     private func resolve(
         _ block: SpecBlock,
         size: CGSize,
