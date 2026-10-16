@@ -15,14 +15,55 @@ struct LocalArithmeticSpecProvider: SpecProvider {
     }
 }
 
+/// Plots a function the writer wrote, entirely on the device: no model, no network, no entitlement needed.
+///
+/// It reads the function from Vision's transcript of the lasso (`PlotRequest`), asks for a plot block placed
+/// below the question, and `HandPlotRenderer` draws it. Nothing about the selection leaves the iPad.
+struct LocalPlotSpecProvider: SpecProvider {
+    let tier = ModelTier.onDevice
+
+    func spec(for request: SpecRequest) async throws -> ValidatedSpec {
+        guard let reading = request.selectedAreaReading, reading.confidence >= 0.5 else {
+            throw LocalArithmeticFailure.unclear
+        }
+        guard let functions = PlotRequest.functions(from: reading.transcript) else {
+            throw LocalArithmeticFailure.noFunction
+        }
+        let plot = SpecPlot(functions: functions.map { SpecPlotFunction(expression: $0.text) })
+        let spec = Spec(
+            read: reading.transcript,
+            readConfidence: Double(reading.confidence),
+            intent: .plot,
+            blocks: [SpecBlock(placement: .belowSelection, content: .plot(plot))]
+        )
+        return try SpecValidator.validate(spec)
+    }
+}
+
+/// Sends a plot request to the local plotter and everything else to `other`, so a plot can never reach the
+/// hosted proxy (which refuses it anyway) and the other choices keep their own routing.
+struct PlotRoutingProvider: SpecProvider {
+    let plot: any SpecProvider
+    let other: any SpecProvider
+
+    var tier: ModelTier { other.tier }
+
+    func spec(for request: SpecRequest) async throws -> ValidatedSpec {
+        request.intent == .plot ? try await plot.spec(for: request) : try await other.spec(for: request)
+    }
+}
+
 enum LocalArithmeticFailure: Error, Equatable, Sendable {
     case unclear
     case unsupported
+    /// A plot was asked for but no function could be read from the selection.
+    case noFunction
 
     var messageKey: String {
         switch self {
         case .unclear: "ask.failure.local-unclear"
         case .unsupported: "ask.failure.local-unsupported"
+        case .noFunction: "ask.failure.local-plot-none"
         }
     }
 }

@@ -61,7 +61,7 @@ public struct NominalContentMeasurer: ContentMeasuring {
         // visible answer at the selected size while still reserving the descender room.
         inkHeightRatio: CGFloat = 1.52,
         lineHeightRatio: CGFloat = 1.8,
-        plotSideRatio: CGFloat = 10,
+        plotSideRatio: CGFloat = 16,
         noteScale: CGFloat = 0.75
     ) {
         self.advanceRatio = advanceRatio

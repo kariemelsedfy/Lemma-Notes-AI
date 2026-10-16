@@ -185,6 +185,8 @@ Two consequences are ours to carry either way:
 
 **Plots.** The model gives an expression and a domain; the app evaluates it. Sample the function, map to page coordinates, then run the polyline through the same jitter/pressure filter used for handwriting so the curve looks drawn rather than plotted. Axes are drawn as strokes with the user's typical stroke width; tick labels come from the glyph bank. Never let the model produce sample points — it will get them subtly wrong and you'll ship a wrong-looking parabola.
 
+**Pilot reality (M5-plot, owner decision):** the Plot choice involves no model at all. The function is read from Vision's transcript of the lasso (`PlotRequest`), the window and samples come from `PlotSampler`, and `HandPlotRenderer` draws axes, arrowheads, ticks, generic print-hand numbers and the curve with deterministic wobble and varying pressure. Tick numbers use a built-in generic hand (`HandStrokeFont`), **not** the writer's glyph bank: a plot looks the same for everyone, by choice. A plot request never reaches the hosted proxy.
+
 **Marks.** Strike-through, circling, carets, checks and crosses, drawn as ink in a distinct correction color (default: the user's chosen "red pen"). These target existing strokes, so they need the stroke-index revalidation described in `ARCHITECTURE.md` §3.1.
 
 **Notes.** Rendered at 0.75× x-height in the margin, with a thin leader line to the referenced region.

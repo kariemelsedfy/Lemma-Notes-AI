@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M5-plot — look at the picture
+Unit tests said the plotter was fine long before it looked right; rendering five previews to PNG and reading them found what tests could not (tick step 5 left a sine with two labels, so I changed the target to about eight marks; curves ran past the arrowheads, so the clip rectangle shrank). Worth repeating for any drawn output. Two things to know: the existing `testPlotsAndNotesIgnoreTheCeiling` pins a plot as a fixed square regardless of page width, so I did not "fix" narrow pages by shrinking it; and adding an `identifier_name:` block to `.swiftlint.yml` silently drops SwiftLint's default `id` exclusion, which produced 40 violations unrelated to this work. The riskiest unknown is recognition: the writer's `x` with a raised 2 may come back as `x2`, `x 2`, `x^2` or `x²`; the parser accepts all four, but it is a guess until the iPad shows what Vision actually returns.
+
 ## 2026-10-16 · Claude · M5-UI-2 — merging two intents without touching the contract
 The owner asked for Explain to replace Continue and Ask. Adding a `SpecIntent` would have meant a spec-contract change, a validator change and a proxy change, so Explain reuses the `continue` wire intent and only the proxy prompt grew ("answer or define a question, else continue"). That prompt change is invisible to the app until the owner redeploys. I knowingly shipped a Plot button that still declines, because the owner's order puts the bar before the plot renderer; PR for plots removes that. A perl one-liner with an embedded newline silently mangled a doc comment (lint caught it): use Edit for multi-line changes.
 

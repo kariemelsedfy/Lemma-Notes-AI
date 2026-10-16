@@ -60,14 +60,16 @@ final class LocalArithmeticAskTests: XCTestCase {
         )
     }
 
-    func testUnsupportedVerbCannotTurnReadableArithmeticIntoInk() async throws {
+    func testPlotOfSomethingThatIsNotAFunctionLeavesNoInkAndSaysSo() async throws {
         let harness = Harness(reading: SelectionReading(transcript: "2+3=", confidence: 0.95))
         harness.pipeline.run(harness.input, verb: .plot)
         try await harness.settle()
 
         XCTAssertEqual(harness.model.phase, .failed(.unreadable))
-        XCTAssertEqual(harness.model.localFailure, .unsupported)
+        XCTAssertEqual(harness.model.localFailure, .noFunction)
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)
+        XCTAssertNotEqual(
+            NSLocalizedString("ask.failure.local-plot-none", comment: ""), "ask.failure.local-plot-none")
     }
 
     func testCancellationBeforeReadingReturnsCannotPresentLateInk() async throws {
