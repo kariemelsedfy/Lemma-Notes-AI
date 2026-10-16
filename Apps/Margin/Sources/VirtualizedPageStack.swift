@@ -42,7 +42,8 @@ struct VirtualizedPageStack: View {
     @State var suggestions = SuggestionLayer()
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
-    @State var selectedPen: MarginPen = .black
+    @State var selectedInk: InkColor = InkColorPreferences.load().selected
+    @State private var recentInks = InkColorPreferences.load().recents
     @State var askPath = AskPathState()
 
     /// The app opens a modest document; performance tooling supplies the 100-page fixture explicitly.
@@ -134,28 +135,16 @@ struct VirtualizedPageStack: View {
                     .background(.regularMaterial, in: Capsule())
                 }
 
-                HStack(spacing: 12) {
-                    ToolPalette(selectedTool: $selectedTool, selectedPen: $selectedPen)
-                    Button {
-                        undoController.undo()
-                    } label: {
-                        Label("canvas.undo", systemImage: "arrow.uturn.backward")
-                            .labelStyle(.iconOnly)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .keyboardShortcut("z", modifiers: .command)
-                    .disabled(!undoController.canUndo)
-                    .accessibilityLabel("canvas.undo")
-                    Button {
-                        undoController.redo()
-                    } label: {
-                        Label("canvas.redo", systemImage: "arrow.uturn.forward")
-                            .labelStyle(.iconOnly)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(!undoController.canRedo)
-                    .accessibilityLabel("canvas.redo")
+                HStack(alignment: .bottom, spacing: 12) {
+                    ToolPalette(
+                        selectedTool: $selectedTool,
+                        selectedInk: $selectedInk,
+                        recents: $recentInks,
+                        canUndo: undoController.canUndo,
+                        canRedo: undoController.canRedo,
+                        onUndo: { undoController.undo() },
+                        onRedo: { undoController.redo() }
+                    )
                     Button(action: invokeAsk) {
                         Label("ask.action", systemImage: "sparkles")
                             .frame(minHeight: 44)
@@ -172,6 +161,12 @@ struct VirtualizedPageStack: View {
             visiblePageID = pageIDs.first
             undoController.configure(store: drawingStore)
             ensureTrailingBlankPage()
+        }
+        .onChange(of: selectedInk) { _, ink in
+            InkColorPreferences.save(selected: ink, recents: recentInks)
+        }
+        .onChange(of: recentInks) { _, recents in
+            InkColorPreferences.save(selected: selectedInk, recents: recents)
         }
         .onChange(of: askModel.phase) { _, phase in
             // The offset belongs to one pending answer; a new answer starts below its question again.
@@ -205,7 +200,7 @@ struct VirtualizedPageStack: View {
                 drawingStore: drawingStore,
                 undoController: undoController,
                 selectedTool: selectedTool,
-                selectedPen: selectedPen,
+                selectedInk: selectedInk,
                 selection: selectionStore.selection(for: pageID),
                 askSelection: askSelection,
                 captureStage: captureStage(for: pageID),
@@ -249,7 +244,7 @@ private struct LivePageView: View {
     @ObservedObject var drawingStore: PageDrawingStore
     @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
-    let selectedPen: MarginPen
+    let selectedInk: InkColor
     let selection: PageSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
     let captureStage: AskCaptureStage?
@@ -264,7 +259,7 @@ private struct LivePageView: View {
                 drawingStore: drawingStore,
                 undoController: undoController,
                 selectedTool: selectedTool,
-                selectedPen: selectedPen,
+                selectedInk: selectedInk,
                 askSelection: askSelection
             )
             // Rebuilt on an undo. A `PKCanvasView` restores its own internal drawing when real
@@ -315,7 +310,7 @@ struct LiveInkCanvas: UIViewRepresentable {
     @ObservedObject var drawingStore: PageDrawingStore
     @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
-    let selectedPen: MarginPen
+    let selectedInk: InkColor
     @ObservedObject var askSelection: AskSelectionCoordinator
 
     func makeCoordinator() -> LiveInkCanvasCoordinator {
@@ -362,7 +357,7 @@ struct LiveInkCanvas: UIViewRepresentable {
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
         switch tool {
         case .pen:
-            canvasView.tool = PKInkingTool(.pen, color: selectedPen.uiColor, width: 5)
+            canvasView.tool = PKInkingTool(.pen, color: selectedInk.uiColor, width: 5)
         case .eraser:
             canvasView.tool = PKEraserTool(.vector)
         case .lasso:

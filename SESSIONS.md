@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M5-UI-1 — one board, wider palette
+The disabled undo/redo "disappeared" because a disabled plain button on a material background is nearly invisible; the fix is an explicit 30% opacity and a guarded action, not `.disabled`. Colour is now `InkColor` (a hex), not the four-case `MarginPen`, which survives only for the correction pen and its tests. I left white out on purpose (paper is fixed light) and made the palette tests assert contrast so a later "more colours" request cannot add an invisible one. The owner reported M4-15 as "all perfect" without the table, so I recorded it as unquantified rather than inventing numbers. Next in the owner's order: Ask choices (Arithmetic / Explain / Plot), then local hand-drawn plots, then learning characters from writing (capped at about 20 variants per character, always on, no toggle).
+
 ## 2026-10-16 · Claude · M4-21 — snapping removed outright
 I had made snapping conditional and flagged it as the owner's call; the owner chose none, so the conditional is gone. `scrollPosition(id:)` still reports the page nearest the top without a target behavior, but it can now report any page while two are half visible, so anything that assumed "the visible page is the one aligned to the top" (the Ask-cancel rule, the live-page window) is working from a looser signal. If a page flickers between live and cached near a seam, look there first.
 
