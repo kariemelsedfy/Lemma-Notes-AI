@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08N — I tested my fix with my own wrong assumption
+The previous fix passed my live test because the test and the fix shared the same misspelling; the app sent the real wire name, `continue`. Lesson: a live check of a protocol change must send what the *client* sends (generate the request through the client's own encoder, or at least read the client's raw values), not what I believe it sends. The Cloud Run log was what exposed it again: 422 in 2 ms right after the redeploy. For the finger-scroll change the trap to know is that `PKCanvasView` is a `UIScrollView`; `.pencilOnly` alone would leave the canvas eating the finger pan, so scrolling must be disabled on the canvas too.
+
 ## 2026-10-16 · Claude · M4-17 — spare blank page
 Smaller than it looked because the package format already had a page order; the missing piece was an append operation and a view that could grow. Two traps avoided: `pageIDs` was a `let` initialised from the document on every parent render, so making it `@State` is only safe because `NotebookLibraryView` keys the view with `.id(selectedNotebookID)`, and the append has to go through the autosave actor, or a page that was just inked and not yet flushed could be overwritten by the manifest rewrite. Also fixed two over-long lines in the continuation prompt that I merged in #183 without running lint on `Tools/`; run `scripts/lint.sh` after any change under `Tools/`, not only `Apps/`.
 

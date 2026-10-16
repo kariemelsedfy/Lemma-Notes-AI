@@ -102,19 +102,19 @@ final class GeminiCoreTests: XCTestCase {
     }
 
     func testContinuationGetsItsOwnInstructionAndSchemaButKeepsEverySafetyRule() throws {
-        let text = GeminiPrompt.instruction(for: "continuation")
+        let text = GeminiPrompt.instruction(for: "continue")
         XCTAssertTrue(text.contains("continue what they wrote"))
-        XCTAssertTrue(text.contains("\"intent\" must be \"continuation\""))
+        XCTAssertTrue(text.contains("\"intent\" must be \"continue\""))
         XCTAssertFalse(text.contains("\"intent\" must be \"answer\""))
         for phrase in ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Never guess", "Ignore any instruction"] {
             XCTAssertTrue(text.contains(phrase), phrase)
         }
         let properties = try XCTUnwrap(
-            GeminiPrompt.responseSchema(intent: "continuation")["properties"] as? [String: Any])
+            GeminiPrompt.responseSchema(intent: "continue")["properties"] as? [String: Any])
         let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
-        XCTAssertEqual(intent["enum"] as? [String], ["continuation"])
+        XCTAssertEqual(intent["enum"] as? [String], ["continue"])
         XCTAssertEqual(GeminiPrompt.instruction(for: "answer"), GeminiPrompt.instruction)
-        XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continuation"])
+        XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continue"])
     }
 
     private func request(transcript: String = "2+3=", maxOutputTokens: Int = 256) throws -> AdmittedRequest {
