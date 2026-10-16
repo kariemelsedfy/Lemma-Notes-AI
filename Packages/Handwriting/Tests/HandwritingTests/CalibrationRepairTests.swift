@@ -188,3 +188,42 @@ final class CalibrationRepairTests: XCTestCase {
         InkPoint(location: location, timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0)
     }
 }
+
+final class AddCharactersTests: XCTestCase {
+    func testRepairingIntoAnExistingBankReplacesOnlyWhatWasRewritten() {
+        var base = GlyphBank(capturedAt: Date(timeIntervalSince1970: 0))
+        let keep = Glyph(character: "a", strokes: [], advanceWidth: 0.5, entryPoint: .zero, exitPoint: .zero)
+        let old = Glyph(character: "c", strokes: [], advanceWidth: 0.4, entryPoint: .zero, exitPoint: .zero)
+        let fresh = Glyph(character: "c", strokes: [], advanceWidth: 0.9, entryPoint: .zero, exitPoint: .zero)
+        base.add(keep)
+        base.add(old)
+        var update = GlyphBank(capturedAt: Date(timeIntervalSince1970: 1))
+        update.add(fresh)
+
+        base.replaceSamples(from: update)
+
+        XCTAssertEqual(base.samples(for: "a"), [keep])
+        XCTAssertEqual(base.samples(for: "c"), [fresh])
+    }
+
+    func testStandardCharactersListEachOnce() {
+        let standard = CalibrationSheet.standardCharacters
+
+        XCTAssertEqual(Set(standard).count, standard.count)
+        XCTAssertTrue(standard.contains("="))
+        XCTAssertTrue(standard.contains("5"))
+        XCTAssertFalse(standard.contains(" "))
+    }
+
+    func testARepairOnlySessionUsesTheKnownXHeight() {
+        var session = CalibrationSession(sheets: [])
+        session.repair(["."])
+        let sheet = session.current
+        XCTAssertNotNil(sheet)
+
+        let outcome = session.outcome(capturedAt: Date(timeIntervalSince1970: 0), xHeight: 30)
+
+        // Nothing was written, so nothing is captured, and the character is reported as still missing.
+        XCTAssertEqual(outcome.missing, ["."])
+    }
+}

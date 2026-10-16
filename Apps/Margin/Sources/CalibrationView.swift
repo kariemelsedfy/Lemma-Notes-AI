@@ -11,13 +11,30 @@ struct CalibrationView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: HandwritingStyleStore
 
-    @State private var session = CalibrationSession()
+    @State private var session: CalibrationSession
+    /// Set when only some characters are being taught: the existing bank the new ones are merged into.
+    private let baseBank: GlyphBank?
     @State private var strokes: [InkStroke] = []
     @State private var boxes: [GuideBoxSegmenter.Box] = []
     /// Bumped to clear the canvas; the writing surface owns its own ink otherwise.
     @State private var generation = 0
     @State private var summary: CalibrationSession.Outcome?
     @State private var saveErrorPresented = false
+
+    /// - Parameter characters: empty teaches the whole alphabet from the start. Otherwise only these are
+    ///   written, and they are merged into the writer's existing bank rather than replacing it.
+    init(store: HandwritingStyleStore, characters: [Character] = []) {
+        self.store = store
+        var session = CalibrationSession()
+        if characters.isEmpty {
+            baseBank = nil
+        } else {
+            session = CalibrationSession(sheets: [])
+            session.repair(characters)
+            baseBank = store.bank
+        }
+        _session = State(initialValue: session)
+    }
 
     var body: some View {
         NavigationStack {
@@ -153,7 +170,15 @@ struct CalibrationView: View {
     }
 
     private func finish() {
-        summary = session.outcome(capturedAt: Date())
+        guard var merged = baseBank else {
+            summary = session.outcome(capturedAt: Date())
+            return
+        }
+        // Adding characters: scale them by the x-height the existing bank already measured, and let only the
+        // rewritten characters replace their old samples.
+        let outcome = session.outcome(capturedAt: Date(), xHeight: merged.style.xHeight)
+        merged.replaceSamples(from: outcome.bank)
+        summary = CalibrationSession.Outcome(bank: merged, rejected: outcome.rejected, missing: outcome.missing)
     }
 }
 

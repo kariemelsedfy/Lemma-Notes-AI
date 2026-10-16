@@ -56,6 +56,12 @@ public enum CalibrationSheet {
     /// Largest repair prompt that still leaves room for practical Pencil-sized boxes.
     public static let maximumRepairCharacters = 26
 
+    /// Every character the guided sheets ask for, in sheet order and without repeats.
+    public static var standardCharacters: [Character] {
+        var seen: Set<Character> = []
+        return sheets.flatMap(\.capturedCharacters).filter { $0 != " " && seen.insert($0).inserted }
+    }
+
     public static let sheets: [Sheet] = [
         Sheet(
             id: 0,

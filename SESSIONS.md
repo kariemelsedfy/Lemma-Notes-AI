@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08I — add characters without redoing everything
+The session/repair machinery already existed; the missing piece was using it *after* the fact, merged into a saved bank. The trap was scale: a repair-only session has no lowercase letters to measure x-height from, and the fallback (median of everything captured) would scale a lone `.` or `=` wrongly, so the existing bank's x-height is passed in. The calibration style stats (slant, spacing) deliberately stay the existing bank's. Verify on the iPad that a newly added `=` is about the same size as the writer's other symbols.
+
 ## 2026-10-16 · Claude · M4-08H — flat marks rejected by height, and whole-answer erase
 Two tuning mistakes, both old. The segmenter's "fill" test used height only, so a minus, an equals, a dot or a comma (all legitimately short) could never reach 0.65; the owner's list of rejects was exactly the short and flat characters plus a few small letters, which is how I found it. Do not lower the floor to fix this kind of thing; change what is measured. The eraser was deliberately whole-answer (see the old doc comment) because PencilKit's per-stroke erase leaves half a letter; the replacement keeps that protection by erasing a whole *character* using x-overlap grouping, which needs no stored glyph index. If characters ever overlap in x for real (tightly slanted words), the fallback is erasing both, never a fragment; recording a glyph index per stroke in `PageElement` would be the exact fix but changes the format (ADR needed). Not verified on the iPad: the hatch strokes of a typeset stand-in should group into one character per glyph; a stand-in whose bars barely overlap (a typeset `i`) may split into two.
 

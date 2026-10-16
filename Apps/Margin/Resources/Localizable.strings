@@ -63,7 +63,15 @@
 "ask.answer-area.selected" = "Allowed answer area selected";
 
 "calibration.title" = "Your handwriting";
-"calibration.start" = "Teach it your handwriting";
+"calibration.start" = "Start over from the beginning";
+"calibration.add" = "Add or redo just some characters";
+"calibration.add.nav" = "Add characters";
+"calibration.add.title" = "Characters to write";
+"calibration.add.placeholder" = "Type or paste characters";
+"calibration.add.footer" = "Only these are asked for, and everything else you’ve already taught stays as it is. Characters you rewrite replace your old ones.";
+"calibration.add.missing" = "Missing from your handwriting right now";
+"calibration.add.use-missing %lld" = "Use all %lld missing characters";
+"calibration.add.start" = "Start writing";
 "calibration.leave" = "Done for now";
 "calibration.clear" = "Clear";
 "calibration.skip" = "Skip this";
