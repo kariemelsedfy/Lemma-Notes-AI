@@ -47,37 +47,36 @@ enum AskRenderingNotice: Equatable {
     }
 }
 
-/// The verbs offered for a selection, in the order they are shown.
+/// The choices offered for a selection, in the order they are shown.
+///
+/// Three, each a different kind of help: `answer` solves arithmetic and equations, `explain` answers a
+/// question, defines a term or carries a thought on (it is the old "continue" and "ask" merged; on the wire
+/// it is still the `continue` intent), and `plot` draws a function locally, with no model at all.
 enum AskVerb: String, CaseIterable, Identifiable {
     case answer
-    case continuation
+    case explain
     case plot
-    case check
-    case ask
 
     var id: Self { self }
 
     var intent: SpecIntent {
         switch self {
         case .answer: .answer
-        case .continuation: .continuation
+        case .explain: .continuation
         case .plot: .plot
-        case .check: .check
-        case .ask: .ask
         }
     }
 
     var symbolName: String {
         switch self {
         case .answer: "equal.square"
-        case .continuation: "arrow.turn.down.right"
+        case .explain: "text.bubble"
         case .plot: "chart.xyaxis.line"
-        case .check: "checkmark.circle"
-        case .ask: "questionmark.circle"
         }
     }
 
     var titleKey: LocalizedStringKey { LocalizedStringKey("ask.verb.\(rawValue)") }
+    var subtitleKey: LocalizedStringKey { LocalizedStringKey("ask.verb.\(rawValue).subtitle") }
 }
 
 /// The recovery copy for each designed failure (`AI_PIPELINE.md` §8).
@@ -126,23 +125,43 @@ struct AskBar: View {
             }
         }
         .padding(10)
-        .background(.regularMaterial, in: Capsule())
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("ask.bar")
     }
 
     private var verbs: some View {
-        HStack(spacing: 8) {
-            ForEach(AskVerb.allCases) { verb in
-                Button {
-                    onVerb(verb)
-                } label: {
-                    Label(verb.titleKey, systemImage: verb.symbolName)
-                        .labelStyle(.iconOnly)
-                        .frame(width: 44, height: 44)
+        VStack(spacing: 8) {
+            Text("ask.verbs.prompt")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(MarginColor.secondaryText)
+            HStack(spacing: 8) {
+                ForEach(AskVerb.allCases) { verb in
+                    Button {
+                        onVerb(verb)
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: verb.symbolName)
+                                .font(.system(size: 22, weight: .regular))
+                            Text(verb.titleKey)
+                                .font(.subheadline.weight(.semibold))
+                            Text(verb.subtitleKey)
+                                .font(.caption2)
+                                .foregroundStyle(MarginColor.secondaryText)
+                        }
+                        .foregroundStyle(MarginColor.accent)
+                        .frame(width: 112, height: 78)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(MarginColor.accent.opacity(0.12))
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(verb.titleKey)
+                    .accessibilityHint(verb.subtitleKey)
                 }
-                .accessibilityLabel(verb.titleKey)
-                .buttonStyle(.bordered)
             }
         }
     }

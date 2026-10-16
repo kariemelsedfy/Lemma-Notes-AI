@@ -157,7 +157,8 @@ final class AskBarTests: XCTestCase {
 
     func testEveryVerbMapsToASpecIntent() {
         XCTAssertEqual(Set(AskVerb.allCases.map(\.intent)).count, AskVerb.allCases.count)
-        XCTAssertEqual(AskVerb.continuation.intent, .continuation)
+        XCTAssertEqual(AskVerb.explain.intent, .continuation)
+        XCTAssertEqual(AskVerb.allCases, [.answer, .explain, .plot], "Three choices, in this order")
     }
 
     // MARK: - Fixtures

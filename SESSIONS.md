@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M5-UI-2 — merging two intents without touching the contract
+The owner asked for Explain to replace Continue and Ask. Adding a `SpecIntent` would have meant a spec-contract change, a validator change and a proxy change, so Explain reuses the `continue` wire intent and only the proxy prompt grew ("answer or define a question, else continue"). That prompt change is invisible to the app until the owner redeploys. I knowingly shipped a Plot button that still declines, because the owner's order puts the bar before the plot renderer; PR for plots removes that. A perl one-liner with an embedded newline silently mangled a doc comment (lint caught it): use Edit for multi-line changes.
+
 ## 2026-10-16 · Claude · M5-UI-1 — one board, wider palette
 The disabled undo/redo "disappeared" because a disabled plain button on a material background is nearly invisible; the fix is an explicit 30% opacity and a guarded action, not `.disabled`. Colour is now `InkColor` (a hex), not the four-case `MarginPen`, which survives only for the correction pen and its tests. I left white out on purpose (paper is fixed light) and made the palette tests assert contrast so a later "more colours" request cannot add an invisible one. The owner reported M4-15 as "all perfect" without the table, so I recorded it as unquantified rather than inventing numbers. Next in the owner's order: Ask choices (Arithmetic / Explain / Plot), then local hand-drawn plots, then learning characters from writing (capped at about 20 variants per character, always on, no toggle).
 

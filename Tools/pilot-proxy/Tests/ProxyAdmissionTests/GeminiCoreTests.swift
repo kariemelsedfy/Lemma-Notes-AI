@@ -103,7 +103,8 @@ final class GeminiCoreTests: XCTestCase {
 
     func testContinuationGetsItsOwnInstructionAndSchemaButKeepsEverySafetyRule() throws {
         let text = GeminiPrompt.instruction(for: "continue")
-        XCTAssertTrue(text.contains("continue what they wrote"))
+        XCTAssertTrue(text.contains("continue it from exactly where it stops"))
+        XCTAssertTrue(text.contains("answer or define it"))
         XCTAssertTrue(text.contains("ONE line of plain text"))
         XCTAssertTrue(text.contains("\"intent\" must be \"continue\""))
         XCTAssertFalse(text.contains("\"intent\" must be \"answer\""))

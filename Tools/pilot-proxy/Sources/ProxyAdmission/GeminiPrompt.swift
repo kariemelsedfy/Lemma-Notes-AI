@@ -27,8 +27,9 @@ enum GeminiPrompt {
     /// The intents the pilot serves. Anything else is refused at admission rather than guessed at.
     static let supportedIntents: Set<String> = ["answer", "continue"]
 
-    /// The instruction for one intent. `answer` is the base text; `continue` swaps rule 2 for "continue the
-    /// writing" and keeps every safety rule (reply shape, untrusted images and transcript) unchanged.
+    /// The instruction for one intent. `answer` is the base text; `continue` (the app's "Explain") swaps rule 2
+    /// for "answer or define a question, else continue the writing" and keeps every safety rule (reply shape,
+    /// untrusted images and transcript) unchanged.
     /// **The wire name is `continue`, not `continuation`** (`SpecIntent.continuation` is spelled `continue` on the
     /// wire because `continue` is a Swift keyword); the first attempt used the Swift name and was refused.
     static func instruction(for intent: String) -> String {
@@ -42,11 +43,11 @@ enum GeminiPrompt {
                     not the whole equation. Be brief and match the density of their existing work.
                     """,
                 with: """
-                    2. Then continue what they wrote, in their own voice and notation, from exactly where it stops. \
-                    Return only the new words (for "Photosynthesis is" something like \
-                    "the process by which plants turn light into chemical energy"), \
-                    never repeating what is already written. One or two short sentences \
-                    unless it is clearly a list or a derivation. Match the density of their existing work. \
+                    2. Then respond to what they wrote, in their own voice and notation. If it is a question or a \
+                    term to define, answer or define it in one or two short sentences. If it is an unfinished sentence \
+                    or list, continue it from exactly where it stops and return only the new words (for \
+                    "Photosynthesis is" something like "the process by which plants turn light into chemical energy"), \
+                    never repeating what is already written. Match the density of their existing work. \
                     Each item is ONE line of plain text: no line breaks, no bullet characters, no markdown, \
                     and no LaTeX unless the selection itself is mathematics. \
                     Write formulas in plain characters (for example CO2, not LaTeX).
