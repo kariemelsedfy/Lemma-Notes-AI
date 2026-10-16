@@ -75,13 +75,18 @@ enum AskVerb: String, CaseIterable, Identifiable {
         }
     }
 
-    var titleKey: LocalizedStringKey { LocalizedStringKey("ask.verb.\(rawValue)") }
-    var subtitleKey: LocalizedStringKey { LocalizedStringKey("ask.verb.\(rawValue).subtitle") }
+    /// The strings-table keys. Built as `String`s and then wrapped: `LocalizedStringKey("a.\(x)")` is an
+    /// interpolation, looked up as the format `a.%@`, which is never found and shows the raw key on screen.
+    var titleName: String { "ask.verb.\(rawValue)" }
+    var subtitleName: String { "ask.verb.\(rawValue).subtitle" }
+    var titleKey: LocalizedStringKey { LocalizedStringKey(titleName) }
+    var subtitleKey: LocalizedStringKey { LocalizedStringKey(subtitleName) }
 }
 
 /// The recovery copy for each designed failure (`AI_PIPELINE.md` §8).
 extension AskFailure {
-    var messageKey: LocalizedStringKey { LocalizedStringKey("ask.failure.\(rawValue)") }
+    var messageName: String { "ask.failure.\(rawValue)" }
+    var messageKey: LocalizedStringKey { LocalizedStringKey(messageName) }
 
     /// Whether retrying the same request could plausibly work.
     var isRetryable: Bool {

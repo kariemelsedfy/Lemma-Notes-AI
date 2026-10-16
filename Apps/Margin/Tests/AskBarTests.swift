@@ -155,6 +155,19 @@ final class AskBarTests: XCTestCase {
         XCTAssertFalse(AskFailure.noRoom.isRetryable)
     }
 
+    func testEveryChoiceAndFailureHasRealCopyNotARawKey() {
+        for verb in AskVerb.allCases {
+            for name in [verb.titleName, verb.subtitleName] {
+                XCTAssertNotEqual(NSLocalizedString(name, comment: ""), name, "missing copy for \(name)")
+            }
+        }
+        for failure in AskFailure.allCases {
+            XCTAssertNotEqual(
+                NSLocalizedString(failure.messageName, comment: ""), failure.messageName,
+                "missing copy for \(failure.messageName)")
+        }
+    }
+
     func testEveryVerbMapsToASpecIntent() {
         XCTAssertEqual(Set(AskVerb.allCases.map(\.intent)).count, AskVerb.allCases.count)
         XCTAssertEqual(AskVerb.explain.intent, .continuation)
