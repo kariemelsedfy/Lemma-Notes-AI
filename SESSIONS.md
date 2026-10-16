@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08C — acceptance, and what this session taught
+Cloud Ask works end to end on the owner's iPad and the handwriting rendering is good. Almost every problem found on the device was in the *handwriting* path, not the cloud path: whole-block typeset fallback, calibration reusing the first sheet's boxes (SwiftUI view identity), a height-based confidence score, whole-answer erase, and a wrong x-height for added characters. None of those was reachable from tests alone; each came from the owner's screenshot. Spend after twelve Asks was about $0.0098. Still unverified: airplane-mode copy, consent-off, iPadOS version.
+
 ## 2026-10-16 · Claude · M4-08K — presence of ink, not a score
 After three rounds of tuning the confidence test (height, then longer axis, then a tiny-mark list) the owner's rule is simpler and better: ink in the box means the character was written. Worth recording why the score kept failing: it guessed intent from size and shape, which varies by character and by person, while the box already encodes intent. The cost is real: a stray tap in a letter's box is now a sample, and with several samples per letter it only appears sometimes, so a bad sample would look like an occasional glitch. If that shows up, prefer an in-app "redo this character" over bringing a score back. §3.2's "drop low-confidence alignments" is deliberately reversed here.
 
