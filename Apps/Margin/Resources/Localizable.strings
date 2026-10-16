@@ -29,11 +29,13 @@
 "library.export.failed.message" = "Try again. Your notebook has not been changed.";
 
 "ask.bar" = "Ask";
-"ask.verb.answer" = "Answer";
-"ask.verb.continuation" = "Continue";
+"ask.verbs.prompt" = "What should Margin do with this?";
+"ask.verb.answer" = "Solve";
+"ask.verb.answer.subtitle" = "Math and equations";
+"ask.verb.explain" = "Explain";
+"ask.verb.explain.subtitle" = "Answer, define, continue";
 "ask.verb.plot" = "Plot";
-"ask.verb.check" = "Check";
-"ask.verb.ask" = "Ask a question";
+"ask.verb.plot.subtitle" = "Graph a function";
 "ask.state.working" = "Working…";
 "ask.notice.substituted-characters %@" = "Typeset for the characters missing from your handwriting sample: %@";
 "ask.cancel" = "Cancel";
