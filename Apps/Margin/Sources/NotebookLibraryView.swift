@@ -18,7 +18,6 @@ struct NotebookLibraryView: View {
     @State private var exportErrorPresented = false
     @State private var calibrationPresented = false
     @State private var addCharactersPresented = false
-    @State private var cloudSettingsPresented = false
     @StateObject private var handwriting = HandwritingStyleStore()
     #if DEBUG
         @State private var samplePresented = false
@@ -77,8 +76,6 @@ struct NotebookLibraryView: View {
                         Button("calibration.start") { calibrationPresented = true }
                         Button("calibration.add") { addCharactersPresented = true }
                             .disabled(handwriting.bank == nil)
-                        Divider()
-                        Button("cloud.title", systemImage: "cloud") { cloudSettingsPresented = true }
                         if handwriting.bank != nil {
                             Button("calibration.delete", role: .destructive) { handwriting.delete() }
                         }
@@ -141,9 +138,6 @@ struct NotebookLibraryView: View {
         }
         .sheet(isPresented: $addCharactersPresented) {
             AddCharactersView(store: handwriting)
-        }
-        .sheet(isPresented: $cloudSettingsPresented) {
-            PilotCloudSettingsView()
         }
         #if DEBUG
             // Debug-only (M3-24): produces the material the M3-10 panel needs, and is the only

@@ -24,20 +24,16 @@ final class PilotCloudAskTests: XCTestCase {
         }
     }
 
-    func testReadyNeedsConsentAddressAndToken() {
+    func testReadyNeedsEntitlementAndAValidAddress() {
         let (configuration, secrets) = makeConfiguration()
-        XCTAssertFalse(configuration.isReady)
-        configuration.consentGranted = true
-        XCTAssertFalse(configuration.isReady, "No token yet")
+        XCTAssertFalse(configuration.isReady, "Free tier: no token, no cloud")
         configuration.setToken("  a-token  ")
         XCTAssertEqual(secrets.token(), "a-token")
+        XCTAssertTrue(configuration.isEntitled)
         XCTAssertTrue(configuration.isReady)
         configuration.serverText = "http://insecure.example.test"
         XCTAssertFalse(configuration.isReady)
         configuration.serverText = PilotCloudConfiguration.defaultServerText
-        configuration.consentGranted = false
-        XCTAssertFalse(configuration.isReady)
-        configuration.consentGranted = true
         configuration.setToken(nil)
         XCTAssertFalse(configuration.isReady)
     }
@@ -48,7 +44,6 @@ final class PilotCloudAskTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
         let configuration = PilotCloudConfiguration(defaults: defaults, secrets: MemorySecrets())
         configuration.setToken("super-secret-token-value")
-        configuration.consentGranted = true
         let stored = defaults.dictionaryRepresentation().values.map { "\($0)" }.joined()
         XCTAssertFalse(stored.contains("super-secret-token-value"))
     }
@@ -69,31 +64,23 @@ final class PilotCloudAskTests: XCTestCase {
         XCTAssertEqual(unsupported.model.phase, .failed(.unreadable))
         XCTAssertEqual(unsupported.model.localFailure, .unsupported)
         let calls = await transport.requests.count
-        XCTAssertEqual(calls, 0, "Nothing may leave the iPad without consent and a token")
+        XCTAssertEqual(calls, 0, "Nothing may leave the iPad without the premium entitlement")
     }
 
-    func testConsentWithoutATokenOrTokenWithoutConsentSendsNothing() async throws {
+    func testTheFreeTierWithNoTokenNeverSendsAnything() async throws {
         let transport = Recording(reply: Self.reply)
         let (configuration, _) = makeConfiguration()
-        configuration.consentGranted = true
-        let noToken = Harness(reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
-        noToken.pipeline.run(noToken.input, verb: .answer)
-        try await noToken.settle()
-        configuration.consentGranted = false
-        configuration.setToken("tok")
-        let noConsent = Harness(
-            reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
-        noConsent.pipeline.run(noConsent.input, verb: .answer)
-        try await noConsent.settle()
+        let harness = Harness(reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
+        harness.pipeline.run(harness.input, verb: .answer)
+        try await harness.settle()
         let calls = await transport.requests.count
         XCTAssertEqual(calls, 0)
-        XCTAssertEqual(noConsent.model.localFailure, .unsupported)
+        XCTAssertEqual(harness.model.localFailure, .unsupported)
     }
 
-    func testConsentedAndConfiguredEscalatesOnlyWhatLocalCannotAnswer() async throws {
+    func testAnEntitledBuildEscalatesOnlyWhatLocalCannotAnswer() async throws {
         let transport = Recording(reply: Self.reply)
         let (configuration, _) = makeConfiguration()
-        configuration.consentGranted = true
         configuration.setToken("tok")
         let harness = Harness(reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
         harness.pipeline.run(harness.input, verb: .answer)
@@ -114,7 +101,6 @@ final class PilotCloudAskTests: XCTestCase {
     func testCloudFailureIsAnHonestTransportFailureWithNoInk() async throws {
         let transport = Recording(reply: nil, failure: .offline)
         let (configuration, _) = makeConfiguration()
-        configuration.consentGranted = true
         configuration.setToken("tok")
         let harness = Harness(reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
         harness.pipeline.run(harness.input, verb: .answer)

@@ -55,7 +55,9 @@ struct BundledFallbackSecretStore: PilotSecretStore {
     let primary: any PilotSecretStore
     /// Where the provisioned file is, if it was bundled. Injectable so tests need no real bundle.
     var location: @Sendable () -> URL? = {
-        Bundle.main.url(forResource: BundledFallbackSecretStore.resourceName, withExtension: resourceExtension)
+        // Never under XCTest: a provisioned token in the test host would make unit tests call the paid cloud.
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return nil }
+        return Bundle.main.url(forResource: BundledFallbackSecretStore.resourceName, withExtension: resourceExtension)
     }
 
     func token() -> String? {
@@ -71,10 +73,9 @@ struct BundledFallbackSecretStore: PilotSecretStore {
     func setToken(_ value: String?) -> Bool { primary.setToken(value) }
 }
 
-/// The owner's pilot settings (ADR-027/028): a consent flag, the proxy address and the bearer token. Read at
-/// request time, so turning consent off or removing the token takes effect on the very next Ask.
+/// The pilot's cloud settings (ADR-027/028/029): the proxy address and the bearer token. Read at
+/// request time, so removing the token takes effect on the very next Ask.
 struct PilotCloudConfiguration: Sendable {
-    static let consentKey = "pilot.cloud.consent"
     static let urlKey = "pilot.cloud.url"
     /// The owner's deployed pilot proxy. Not a secret: every request still needs the bearer token.
     static let defaultServerText = "https://pilot-proxy-185495186917.us-central1.run.app"
@@ -92,10 +93,12 @@ struct PilotCloudConfiguration: Sendable {
 
     static var standard: PilotCloudConfiguration { PilotCloudConfiguration() }
 
-    var consentGranted: Bool {
-        get { defaults.bool(forKey: Self.consentKey) }
-        nonmutating set { defaults.set(newValue, forKey: Self.consentKey) }
-    }
+    /// Whether this install may use the hosted model. **Entitlement, not a toggle** (ADR-029): hosted answers
+    /// are part of the premium plan, so there is no consent switch in the app. Until StoreKit entitlements
+    /// exist (M6) the stand-in is "this build was provisioned with an access token"; a build without one is
+    /// the free tier and never makes a cloud call. The provider layer still gates on this (invariant 8), and
+    /// the purchase flow must carry the third-party AI disclosure and acceptance (BUSINESS.md 5.1.2(i)).
+    var isEntitled: Bool { hasToken }
 
     var serverText: String {
         get { defaults.string(forKey: Self.urlKey) ?? Self.defaultServerText }
@@ -108,7 +111,7 @@ struct PilotCloudConfiguration: Sendable {
     var hasToken: Bool { token != nil }
 
     /// Everything needed to send a question. Missing any piece means the Ask never leaves the iPad.
-    var isReady: Bool { consentGranted && serverURL != nil && hasToken }
+    var isReady: Bool { isEntitled && serverURL != nil }
 
     @discardableResult
     func setToken(_ value: String?) -> Bool { secrets.setToken(value) }
@@ -146,7 +149,7 @@ extension VirtualizedPageStack {
     ) -> any SpecProvider {
         let cloud = ProxySpecProvider.consentGated(
             transport: transport ?? ConfiguredProxyTransport(configuration: configuration),
-            isConsentGranted: { configuration.consentGranted }
+            isConsentGranted: { configuration.isEntitled }
         )
         return FallbackSpecProvider(
             primary: LocalArithmeticSpecProvider(),
