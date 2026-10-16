@@ -35,13 +35,15 @@ enum GeminiPrompt {
             instruction
             .replacingOccurrences(
                 of: """
-                    2. Then answer in the person's own notation. Give only what is missing: for "2+3=" the answer is "5", \
+                    2. Then answer in the person's own notation. Give only what is missing: \
+                    for "2+3=" the answer is "5", \
                     not the whole equation. Be brief and match the density of their existing work.
                     """,
                 with: """
                     2. Then continue what they wrote, in their own voice and notation, from exactly where it stops. \
-                    Return only the new words (for "Photosynthesis is" something like "the process by which plants turn \
-                    light into chemical energy"), never repeating what is already written. One or two short sentences \
+                    Return only the new words (for "Photosynthesis is" something like \
+                    "the process by which plants turn light into chemical energy"), \
+                    never repeating what is already written. One or two short sentences \
                     unless it is clearly a list or a derivation. Match the density of their existing work.
                     """
             )

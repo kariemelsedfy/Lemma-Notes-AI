@@ -223,6 +223,38 @@ final class DocumentStoreTests: XCTestCase {
         XCTAssertEqual(try library.notebooks(), [])
     }
 
+    func testAppendBlankPageAddsOneEmptyPageAtTheEndAndKeepsTheRest() throws {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let library = NotebookPackageLibrary(rootURL: rootURL)
+        let notebook = try library.create(title: "Pages")
+        let first = try XCTUnwrap(try library.document(id: notebook.id).pages.first)
+        let later = Date(timeIntervalSinceReferenceDate: 9_000)
+
+        let added = try library.appendBlankPage(inNotebook: notebook.id, now: later)
+
+        let reloaded = try library.document(id: notebook.id)
+        XCTAssertEqual(reloaded.manifest.pageOrder, [first.metadata.pageID, added.metadata.pageID])
+        XCTAssertEqual(reloaded.pages.map(\.metadata.pageID), reloaded.manifest.pageOrder)
+        XCTAssertEqual(reloaded.pages.first, first)
+        XCTAssertTrue(added.inkData.isEmpty)
+        XCTAssertEqual(added.metadata.size, first.metadata.size)
+        XCTAssertEqual(added.metadata.paper, first.metadata.paper)
+        XCTAssertEqual(reloaded.manifest.modifiedAt, later)
+        XCTAssertEqual(try library.notebooks().first?.pageCount, 2)
+
+        let third = try library.appendBlankPage(inNotebook: notebook.id)
+        XCTAssertEqual(try library.document(id: notebook.id).manifest.pageOrder.last, third.metadata.pageID)
+    }
+
+    func testAppendBlankPageToAnUnknownNotebookThrows() {
+        let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let library = NotebookPackageLibrary(rootURL: rootURL)
+
+        XCTAssertThrowsError(try library.appendBlankPage(inNotebook: UUID()))
+    }
+
     private func sampleStroke(at offset: Double) -> StoredStroke {
         StoredStroke(
             points: [

@@ -32,6 +32,37 @@ final class PageAutosaveTests: XCTestCase {
         XCTAssertFalse(try XCTUnwrap(reloaded.pages.first).inkData.isEmpty, "The ink must be on disk.")
     }
 
+    func testAppendingTheSparePageKeepsTheInkJustWritten() async throws {
+        let library = NotebookPackageLibrary(rootURL: root)
+        let notebook = try library.create(title: "Calculus")
+        let autosave = PageAutosave(library: library, quietPeriod: .seconds(60))
+        let page = try Self.page(of: notebook.id, in: library, ink: Self.drawing())
+        await autosave.record(page, inNotebook: notebook.id)
+
+        let spare = try await autosave.appendBlankPage(inNotebook: notebook.id)
+
+        let reloaded = try library.document(id: notebook.id)
+        XCTAssertEqual(reloaded.pages.count, 2)
+        XCTAssertFalse(try XCTUnwrap(reloaded.pages.first).inkData.isEmpty, "the pending ink must be flushed first")
+        XCTAssertEqual(reloaded.pages.last?.metadata.pageID, spare.metadata.pageID)
+    }
+
+    @MainActor
+    func testTheDrawingStoreKnowsWhichPagesHaveInkAndTakesANewPage() async throws {
+        let library = NotebookPackageLibrary(rootURL: root)
+        let notebook = try library.create(title: "Calculus")
+        let first = try Self.page(of: notebook.id, in: library, ink: Self.drawing())
+        let store = PageDrawingStore(
+            inkData: [first.metadata.pageID: first.inkData], metadata: [first.metadata.pageID: first.metadata])
+        XCTAssertTrue(store.hasInk(on: first.metadata.pageID))
+
+        let spare = try library.appendBlankPage(inNotebook: notebook.id)
+        store.add(spare)
+
+        XCTAssertFalse(store.hasInk(on: spare.metadata.pageID))
+        XCTAssertEqual(store.metadata(for: spare.metadata.pageID), spare.metadata)
+    }
+
     func testTheInkComesBackByteForByte() async throws {
         let library = NotebookPackageLibrary(rootURL: root)
         let notebook = try library.create(title: "Calculus")

@@ -64,6 +64,13 @@ actor PageAutosave {
         }
     }
 
+    /// Appends the notebook's spare blank page. Pending writes go first, so the new page is appended to the
+    /// notebook as it is on disk rather than racing a write of the page that just filled up.
+    func appendBlankPage(inNotebook notebookID: UUID) async throws -> StoredPage {
+        await flush()
+        return try library.appendBlankPage(inNotebook: notebookID)
+    }
+
     /// Flushes for an operation that cannot safely continue with stale disk state.
     ///
     /// Ordinary background autosave retains failed work for a later retry. Export must

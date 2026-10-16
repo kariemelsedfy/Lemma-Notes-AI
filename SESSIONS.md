@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-17 — spare blank page
+Smaller than it looked because the package format already had a page order; the missing piece was an append operation and a view that could grow. Two traps avoided: `pageIDs` was a `let` initialised from the document on every parent render, so making it `@State` is only safe because `NotebookLibraryView` keys the view with `.id(selectedNotebookID)`, and the append has to go through the autosave actor, or a page that was just inked and not yet flushed could be overwritten by the manifest rewrite. Also fixed two over-long lines in the continuation prompt that I merged in #183 without running lint on `Tools/`; run `scripts/lint.sh` after any change under `Tools/`, not only `Apps/`.
+
 ## 2026-10-16 · Claude · M4-08M — a 422 that looked like a network error
 The owner's one failing run-sheet row was not a network problem: Cloud Run's request log showed 422 in 2 ms, so the proxy refused before calling Gemini. The client folds every refusal into "transport", which made it look like connectivity. Reading request status/latency from the proxy logs (content-free) is the fastest diagnosis for any Ask failure; do that before reading client code. The proxy needs a redeploy to take effect; the iPad build does not change.
 

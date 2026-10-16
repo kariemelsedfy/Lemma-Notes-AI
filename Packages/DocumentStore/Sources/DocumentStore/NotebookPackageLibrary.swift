@@ -94,6 +94,40 @@ public struct NotebookPackageLibrary {
         return NotebookPackageSummary(packageURL: summary.packageURL, manifest: manifest)
     }
 
+    /// Appends one empty page after the last, sized and ruled like it, and returns it.
+    ///
+    /// The app keeps a blank page at the end of every notebook so the writer never runs out of room: it
+    /// calls this when the last page first receives ink. Existing pages and their order are untouched, and
+    /// the manifest is rewritten with the new page in the same write so the two cannot disagree.
+    @discardableResult
+    public func appendBlankPage(inNotebook id: UUID, now: Date = .now) throws -> StoredPage {
+        let summary = try packageSummary(id: id)
+        let document = try packageStore.read(from: summary.packageURL)
+        let template = document.pages.last?.metadata
+        let page = StoredPage(
+            metadata: PageMetadata(
+                pageID: UUID(),
+                size: template?.size ?? PageSize(width: 768, height: 1_024),
+                paper: template?.paper ?? document.manifest.settings.defaultPaper,
+                elements: []
+            ),
+            inkData: Data()
+        )
+        var manifest = document.manifest
+        manifest.pageOrder.append(page.metadata.pageID)
+        manifest.modifiedAt = now
+
+        let updated = StoredDocument(
+            manifest: manifest,
+            pages: document.pages + [page],
+            assets: document.assets,
+            glyphBankData: document.glyphBankData,
+            thumbnails: document.thumbnails
+        )
+        try packageStore.write(updated, to: summary.packageURL)
+        return page
+    }
+
     public func rename(id: UUID, to title: String, now: Date = .now) throws -> NotebookPackageSummary {
         let summary = try packageSummary(id: id)
         let document = try packageStore.read(from: summary.packageURL)
