@@ -37,8 +37,8 @@ public enum SuggestionRenderError: Error, Equatable, Sendable {
 ///
 /// The honest fallback from `HANDWRITING.md` §8: clean letterforms that nobody will
 /// mistake for their own hand. Used until a glyph bank exists, and permanently in Exam
-/// Mode. Fails closed on plots and marks — a plot rendered as a row of characters would be
-/// worse than an honest error.
+/// Mode. Plots are drawn by `HandPlotRenderer`; marks still fail closed — a mark rendered as a row of characters
+/// would be worse than an honest error.
 public struct TypesetInkRenderer: SuggestionInkRendering {
     public init() {}
 
@@ -50,8 +50,10 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
             return try render(lines, in: placement.frame, style: style, seed: seed)
         case .note(let note):
             return try render(note.text, in: placement.frame, style: style, seed: seed)
-        case .plot:
-            throw SuggestionRenderError.unsupportedBlock(.plot)
+        case .plot(let plot):
+            // Generic, local and the same for everyone: a plot never uses the writer's glyph bank.
+            return try HandPlotRenderer().strokes(
+                for: plot, in: placement.frame, penWidth: style.strokeWidth > 0 ? style.strokeWidth : 4, seed: seed)
         case .marks:
             throw SuggestionRenderError.unsupportedBlock(.marks)
         }

@@ -91,17 +91,17 @@ final class TypesetInkRendererTests: XCTestCase {
         )
     }
 
-    func testPlotsAndMarksFailClosedRatherThanDrawingCharacters() {
+    func testMarksFailClosedAndPlotsAreDrawnAsGeometryNotCharacters() throws {
         let renderer = TypesetInkRenderer()
-        let plot = Self.placement(.plot(SpecPlot(functions: [SpecPlotFunction(expression: "x^2")])), frame: frame)
+        let plot = Self.placement(
+            .plot(SpecPlot(functions: [SpecPlotFunction(expression: "x^2")])),
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400))
         let mark = Self.placement(
             .marks([SpecMark(kind: .check, target: .strokeIndices([0]))]),
             frame: frame
         )
 
-        XCTAssertThrowsError(try renderer.strokes(for: plot, style: .unmeasured, seed: 0)) { error in
-            XCTAssertEqual(error as? SuggestionRenderError, .unsupportedBlock(.plot))
-        }
+        XCTAssertFalse(try renderer.strokes(for: plot, style: .unmeasured, seed: 0).isEmpty)
         XCTAssertThrowsError(try renderer.strokes(for: mark, style: .unmeasured, seed: 0)) { error in
             XCTAssertEqual(error as? SuggestionRenderError, .unsupportedBlock(.marks))
         }

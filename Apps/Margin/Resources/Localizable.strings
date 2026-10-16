@@ -51,6 +51,7 @@
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t reach the model — try again.";
 "ask.failure.local-unclear" = "Couldn’t read that clearly. Try a smaller, clearer selection.";
+"ask.failure.local-plot-none" = "I couldn't find a function to plot. Write it like y = x², lasso it, then tap Plot.";
 "ask.failure.local-unsupported" = "Only short arithmetic using +, -, * or / is available right now. Try a simpler expression.";
 
 

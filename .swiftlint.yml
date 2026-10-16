@@ -12,3 +12,8 @@ line_length:
 type_name:
   min_length: 2
   max_length: 50
+
+# Coordinates and parameters in geometry and plotting code (`x`, `y`, `t`, `dx`) are the conventional names;
+# longer ones read worse there. Everything else keeps the 3-character minimum.
+identifier_name:
+  excluded: [id, x, y, z, t, dx, dy, t0, t1]

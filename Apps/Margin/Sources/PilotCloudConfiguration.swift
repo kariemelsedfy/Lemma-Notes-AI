@@ -151,10 +151,13 @@ extension VirtualizedPageStack {
             transport: transport ?? ConfiguredProxyTransport(configuration: configuration),
             isConsentGranted: { configuration.isEntitled }
         )
-        return FallbackSpecProvider(
-            primary: LocalArithmeticSpecProvider(),
-            fallback: cloud,
-            shouldEscalate: { $0 is LocalArithmeticFailure && configuration.isReady }
+        return PlotRoutingProvider(
+            plot: LocalPlotSpecProvider(),
+            other: FallbackSpecProvider(
+                primary: LocalArithmeticSpecProvider(),
+                fallback: cloud,
+                shouldEscalate: { $0 is LocalArithmeticFailure && configuration.isReady }
+            )
         )
     }
 }
