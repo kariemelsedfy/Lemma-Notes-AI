@@ -42,7 +42,10 @@ final class CanvasUndoController: ObservableObject {
     private static let limit = 25
 
     @Published private(set) var canUndo = false
+    /// True after an undo until the next edit, which starts a new history and discards what was undone.
+    @Published private(set) var canRedo = false
     private var stack: [Snapshot] = []
+    private var redoStack: [Snapshot] = []
     private var pending: Snapshot?
     private weak var drawingStore: PageDrawingStore?
     private var isRestoring = false
@@ -102,6 +105,34 @@ final class CanvasUndoController: ObservableObject {
             canUndo = false
             return
         }
+        // What is on the pages now is what a redo brings back.
+        redoStack.append(current(matching: snapshot, in: drawingStore))
+        restore(snapshot, into: drawingStore)
+        canUndo = !stack.isEmpty
+        canRedo = true
+    }
+
+    /// Reapplies the last undone change.
+    func redo() {
+        guard let snapshot = redoStack.popLast(), let drawingStore else {
+            canRedo = false
+            return
+        }
+        stack.append(current(matching: snapshot, in: drawingStore))
+        restore(snapshot, into: drawingStore)
+        canUndo = true
+        canRedo = !redoStack.isEmpty
+    }
+
+    /// The pages a snapshot covers, as they stand now.
+    private func current(matching snapshot: Snapshot, in store: PageDrawingStore) -> Snapshot {
+        Snapshot(
+            pages: snapshot.pages.map { state(of: $0.pageID, size: $0.pageSize, in: store) },
+            revision: store.revision
+        )
+    }
+
+    private func restore(_ snapshot: Snapshot, into drawingStore: PageDrawingStore) {
         isRestoring = true
         defer { isRestoring = false }
 
@@ -119,10 +150,12 @@ final class CanvasUndoController: ObservableObject {
         // Rebuild the canvas rather than assign into it: PencilKit restores its own internal
         // drawing on the next Pencil input, which resurrected everything just undone.
         drawingStore.markExternalChange()
-        canUndo = !stack.isEmpty
     }
 
     private func push(_ snapshot: Snapshot) {
+        // A new edit starts a new history: what was undone can no longer be redone.
+        redoStack.removeAll()
+        canRedo = false
         stack.append(snapshot)
         if stack.count > Self.limit {
             stack.removeFirst(stack.count - Self.limit)
