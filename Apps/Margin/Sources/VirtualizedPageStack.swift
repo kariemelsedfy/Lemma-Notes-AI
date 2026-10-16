@@ -109,6 +109,7 @@ struct VirtualizedPageStack: View {
                         explanation: askModel.explanation,
                         renderingNotice: askModel.renderingNotice,
                         failureOverride: askModel.failureMessageKey,
+                        failureDetail: askModel.failureDetail,
                         onVerb: { ask($0) },
                         onCancel: { cancelAsk() },
                         onAccept: { acceptSuggestion() },
