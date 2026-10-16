@@ -78,8 +78,32 @@ final class ProxySpecProviderTests: XCTestCase {
                 _ = try await provider.spec(for: Self.request("2+3="))
                 XCTFail("Invalid response became ink")
             } catch {
-                XCTAssertEqual(error as? ProxyProviderFailure, .invalidResponse)
+                // Undecodable or wrong-intent replies are `invalidResponse`; replies that decode but break a spec
+                // rule say which rule (by name only) so a debug build can show it.
+                switch error as? ProxyProviderFailure {
+                case .invalidResponse, .rejectedSpec: break
+                default: XCTFail("Unexpected failure \(error)")
+                }
             }
+        }
+    }
+
+    func testARuleViolationNamesTheRuleAndNothingElse() async throws {
+        let tooLong = Spec(
+            read: "x", readConfidence: 0.95, intent: .answer,
+            blocks: [
+                SpecBlock(
+                    placement: .atAnchor,
+                    content: .inline(SpecRun(kind: .text, value: String(repeating: "secret ", count: 100))))
+            ])
+        let transport = FakeTransport(responses: ["2+3=": try SpecDecoder.encode(tooLong)])
+        let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
+
+        do {
+            _ = try await provider.spec(for: Self.request("2+3="))
+            XCTFail("An over-long run became ink")
+        } catch {
+            XCTAssertEqual(error as? ProxyProviderFailure, .rejectedSpec("contentTooLong"))
         }
     }
 
