@@ -194,6 +194,35 @@ final class SegmentationTests: XCTestCase {
         XCTAssertEqual(SpacingAnalyzer.spacing(of: []), .unmeasured)
     }
 
+    // MARK: - Flat, tiny and small marks (device report 2026-10-16)
+
+    private static func accepted(_ character: Character, ink rect: CGRect) -> Bool {
+        let box = GuideBoxSegmenter.Box(character: character, frame: CGRect(x: 0, y: 0, width: 80, height: 100))
+        let captures = GuideBoxSegmenter.segment(strokes: [stroke(in: rect)], boxes: [box])
+        return GuideBoxSegmenter.glyphs(from: captures, xHeight: 30).rejected.isEmpty && !captures.isEmpty
+    }
+
+    func testAWideFlatSymbolIsAcceptedAlthoughItIsShort() {
+        XCTAssertTrue(Self.accepted("−", ink: CGRect(x: 15, y: 48, width: 50, height: 4)))
+        XCTAssertTrue(Self.accepted("=", ink: CGRect(x: 15, y: 40, width: 50, height: 20)))
+        XCTAssertTrue(Self.accepted(">", ink: CGRect(x: 20, y: 35, width: 40, height: 30)))
+    }
+
+    func testADotOrTickIsAcceptedAtAnySize() {
+        XCTAssertTrue(Self.accepted(".", ink: CGRect(x: 38, y: 70, width: 2, height: 2)))
+        XCTAssertTrue(Self.accepted(",", ink: CGRect(x: 38, y: 65, width: 3, height: 9)))
+        XCTAssertTrue(Self.accepted("'", ink: CGRect(x: 38, y: 20, width: 2, height: 12)))
+    }
+
+    func testAModestlyWrittenLetterIsAccepted() {
+        XCTAssertTrue(Self.accepted("c", ink: CGRect(x: 25, y: 35, width: 25, height: 31)))
+        XCTAssertTrue(Self.accepted("m", ink: CGRect(x: 10, y: 38, width: 60, height: 25)))
+    }
+
+    func testATapInsideALetterBoxIsStillAStrayMark() {
+        XCTAssertFalse(Self.accepted("a", ink: CGRect(x: 38, y: 50, width: 2, height: 2)))
+    }
+
     // MARK: - Fixtures
 
     /// A row of 80×100 guide boxes, as the calibration sheet lays them out.
