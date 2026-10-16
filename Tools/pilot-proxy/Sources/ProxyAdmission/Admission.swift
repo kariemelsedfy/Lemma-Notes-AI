@@ -95,7 +95,7 @@ actor AdmissionGate {
         } catch {
             throw AdmissionError.malformed
         }
-        guard request.intent == "answer" else { throw AdmissionError.unsupported }
+        guard GeminiPrompt.supportedIntents.contains(request.intent) else { throw AdmissionError.unsupported }
         guard (1...512).contains(request.maxOutputTokens), request.transcript.utf8.count <= 256 else {
             throw AdmissionError.oversized
         }

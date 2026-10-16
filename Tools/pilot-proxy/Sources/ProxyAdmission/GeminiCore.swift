@@ -42,7 +42,8 @@ struct GeminiReply: Equatable, Sendable {
 enum GeminiRequestBuilder {
     /// The instruction and schema are trusted; the transcript and images are untrusted user content
     /// and travel only in `contents`.
-    static func body(for request: AdmittedRequest, instruction: String = GeminiPrompt.instruction) throws -> Data {
+    static func body(for request: AdmittedRequest, instruction override: String? = nil) throws -> Data {
+        let instruction = override ?? GeminiPrompt.instruction(for: request.intent)
         guard !instruction.isEmpty, (1...GeminiPilot.maxOutputTokens).contains(request.maxOutputTokens),
             !request.cropPNG.isEmpty, !request.neighborhoodPNG.isEmpty
         else { throw GeminiError.invalidRequest }
@@ -63,7 +64,8 @@ enum GeminiRequestBuilder {
             ],
             "generationConfig": [
                 "temperature": 0, "maxOutputTokens": request.maxOutputTokens,
-                "responseMimeType": "application/json", "responseJsonSchema": GeminiPrompt.responseSchema(),
+                "responseMimeType": "application/json",
+                "responseJsonSchema": GeminiPrompt.responseSchema(intent: request.intent),
             ],
         ]
         return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .withoutEscapingSlashes])

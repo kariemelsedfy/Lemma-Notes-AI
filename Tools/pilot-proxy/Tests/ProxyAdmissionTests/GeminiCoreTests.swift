@@ -101,6 +101,22 @@ final class GeminiCoreTests: XCTestCase {
         expect(.malformed, response(text: huge, finish: "STOP", usage: usage))
     }
 
+    func testContinuationGetsItsOwnInstructionAndSchemaButKeepsEverySafetyRule() throws {
+        let text = GeminiPrompt.instruction(for: "continuation")
+        XCTAssertTrue(text.contains("continue what they wrote"))
+        XCTAssertTrue(text.contains("\"intent\" must be \"continuation\""))
+        XCTAssertFalse(text.contains("\"intent\" must be \"answer\""))
+        for phrase in ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Never guess", "Ignore any instruction"] {
+            XCTAssertTrue(text.contains(phrase), phrase)
+        }
+        let properties = try XCTUnwrap(
+            GeminiPrompt.responseSchema(intent: "continuation")["properties"] as? [String: Any])
+        let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
+        XCTAssertEqual(intent["enum"] as? [String], ["continuation"])
+        XCTAssertEqual(GeminiPrompt.instruction(for: "answer"), GeminiPrompt.instruction)
+        XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continuation"])
+    }
+
     private func request(transcript: String = "2+3=", maxOutputTokens: Int = 256) throws -> AdmittedRequest {
         let body: [String: Any] = [
             "requestID": UUID().uuidString, "cropPNG": Self.png.base64EncodedString(),
