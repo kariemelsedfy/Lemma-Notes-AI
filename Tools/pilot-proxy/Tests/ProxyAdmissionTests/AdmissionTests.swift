@@ -23,6 +23,17 @@ final class AdmissionTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
+    func testContinuationIsAdmittedButPlotAndCheckStillAreNot() async throws {
+        let admission = gate()
+        let transport = CountingTransport()
+        await expect(.unsupported, admission, try body(intent: "check"), transport: transport)
+        await expect(.unsupported, admission, try body(intent: "ask"), transport: transport)
+        let calls = await transport.calls
+        XCTAssertEqual(calls, 0)
+        let admitted = try await admission.validate(try body(intent: "continuation"), proof: "pilot")
+        XCTAssertEqual(admitted.request.intent, "continuation")
+    }
+
     func testUnsupportedIntentAndMalformedOrOversizedImagesNeverReachTransport() async throws {
         let transport = CountingTransport()
         let admission = gate()

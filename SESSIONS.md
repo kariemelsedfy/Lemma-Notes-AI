@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08M — a 422 that looked like a network error
+The owner's one failing run-sheet row was not a network problem: Cloud Run's request log showed 422 in 2 ms, so the proxy refused before calling Gemini. The client folds every refusal into "transport", which made it look like connectivity. Reading request status/latency from the proxy logs (content-free) is the fastest diagnosis for any Ask failure; do that before reading client code. The proxy needs a redeploy to take effect; the iPad build does not change.
+
 ## 2026-10-16 · Claude · M4-15A — run sheet
 Wrote the measurement protocol rather than any code. Known gap to decide before trusting "read accuracy": the app never shows what the model read, so reading is judged indirectly from the answer. If the owner wants a real read-accuracy number, add a debug-only line in the Ask bar showing the model's transcript (on screen only, never logged); I did not add it unasked. Latency is server-side only, which understates what the user feels (render time on top).
 
