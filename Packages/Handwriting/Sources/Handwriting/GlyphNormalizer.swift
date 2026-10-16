@@ -68,12 +68,7 @@ public enum GlyphNormalizer {
         guard !drawn.isEmpty else { throw Error.noInk }
 
         let box = InkLineGrouping.bounds(of: drawn)
-        guard !box.isNull,
-            box.height >= minimumCaptureHeight || box.width >= minimumCaptureHeight
-                || Self.tinyMarks.contains(character)
-        else {
-            throw Error.degenerate
-        }
+        guard !box.isNull else { throw Error.degenerate }
         let scale = xHeight > 0 ? xHeight : box.height
         guard scale > 0 else { throw Error.degenerate }
 

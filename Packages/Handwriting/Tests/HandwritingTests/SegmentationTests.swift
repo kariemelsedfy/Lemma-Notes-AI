@@ -88,31 +88,26 @@ final class SegmentationTests: XCTestCase {
         XCTAssertGreaterThan(try XCTUnwrap(captures.first).confidence, GuideBoxSegmenter.minimumConfidence)
     }
 
-    func testATinyMarkInTheBoxScoresLowAndIsRejected() {
-        let boxes = Self.boxes("i")
+    func testAnyInkInTheBoxIsTakenForThatCharacter() {
+        let boxes = Self.boxes("ib")
         let dot = CGRect(x: boxes[0].frame.midX, y: boxes[0].frame.midY, width: 2, height: 2)
 
         let captures = GuideBoxSegmenter.segment(strokes: [Self.stroke(in: dot)], boxes: boxes)
         let (glyphs, rejected) = GuideBoxSegmenter.glyphs(from: captures, xHeight: 40)
 
-        // §3.2: drop a low-confidence capture rather than store a bad glyph. One bad glyph
-        // appears in every word containing that letter.
-        XCTAssertTrue(glyphs.isEmpty)
-        XCTAssertEqual(rejected, ["i"])
+        // Owner decision (2026-10-16): presence of ink decides, not its size or shape.
+        XCTAssertEqual(glyphs.map(\.character), ["i"])
+        XCTAssertTrue(rejected.isEmpty)
     }
 
-    func testRejectedCharactersAreReportedSoTheyCanBeAskedForAgain() {
+    func testABoxWithNoInkProducesNoCapture() {
         let boxes = Self.boxes("ab")
         let good = Self.stroke(in: boxes[0].frame.insetBy(dx: 10, dy: 6))
-        let tiny = Self.stroke(in: CGRect(x: boxes[1].frame.midX, y: boxes[1].frame.midY, width: 2, height: 2))
 
-        let captures = GuideBoxSegmenter.segment(strokes: [good, tiny], boxes: boxes)
-        let (glyphs, rejected) = GuideBoxSegmenter.glyphs(from: captures, xHeight: 40)
+        let captures = GuideBoxSegmenter.segment(strokes: [good], boxes: boxes)
 
-        // Silently producing a bank with holes would surface much later as missing glyphs
-        // mid-answer.
-        XCTAssertEqual(glyphs.map(\.character), ["a"])
-        XCTAssertEqual(rejected, ["b"])
+        // The empty box is simply absent, so calibration reports it missing and offers to redo it.
+        XCTAssertEqual(captures.map(\.character), ["a"])
     }
 
     func testOccupancyIsLengthWeightedNotPointCounted() {
@@ -219,8 +214,8 @@ final class SegmentationTests: XCTestCase {
         XCTAssertTrue(Self.accepted("m", ink: CGRect(x: 10, y: 38, width: 60, height: 25)))
     }
 
-    func testATapInsideALetterBoxIsStillAStrayMark() {
-        XCTAssertFalse(Self.accepted("a", ink: CGRect(x: 38, y: 50, width: 2, height: 2)))
+    func testATapInsideALetterBoxCountsToo() {
+        XCTAssertTrue(Self.accepted("a", ink: CGRect(x: 38, y: 50, width: 2, height: 2)))
     }
 
     // MARK: - Fixtures

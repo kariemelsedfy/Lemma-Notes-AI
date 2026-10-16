@@ -121,10 +121,10 @@ final class CalibrationRepairTests: XCTestCase {
             id: 0, target: "abc", instruction: "", kind: .guideBoxes("abc"))
         var session = CalibrationSession(sheets: [partial])
 
-        // Only 'a' and 'c' get a real letter; 'b' is a stray dot and is rejected.
+        // Only 'a' and 'c' get ink; the 'b' box is left empty, so it is reported missing.
         let boxes = CalibrationSheet.layout(["a", "b", "c"], in: Self.area)
         session.record(
-            [Self.letter(in: boxes[0]), Self.tap(in: boxes[1].frame), Self.letter(in: boxes[2])],
+            [Self.letter(in: boxes[0]), Self.letter(in: boxes[2])],
             boxes: boxes,
             for: partial.id
         )

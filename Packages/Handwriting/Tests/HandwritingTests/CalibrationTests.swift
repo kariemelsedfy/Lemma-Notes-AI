@@ -192,14 +192,13 @@ final class CalibrationTests: XCTestCase {
         XCTAssertFalse(outcome.missing.isEmpty)
     }
 
-    func testASecondSampleRescuesALetterRejectedTheFirstTime() {
+    func testASecondSampleRescuesALetterLeftEmptyTheFirstTime() {
         let repeatSheet = CalibrationSheet.Sheet(
             id: 1, target: "a", instruction: "", kind: .guideBoxes("a"), isOptional: true)
         var session = CalibrationSession(sheets: [Self.alphabetSheet, repeatSheet])
 
         let boxes = CalibrationSheet.layout(Array("abcdef"), in: Self.area)
-        var ink = boxes.dropFirst().map(Self.letter(in:))
-        ink.append(Self.tap(in: boxes[0].frame))
+        let ink = boxes.dropFirst().map(Self.letter(in:))
         session.record(ink, boxes: boxes, for: 0)
 
         let retry = CalibrationSheet.layout(Array("a"), in: Self.area)
