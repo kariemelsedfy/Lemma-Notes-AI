@@ -35,11 +35,14 @@ enum AskBarPhase: Equatable {
 }
 
 enum AskRenderingNotice: Equatable {
-    case missingHandwritingCharacters
+    /// These characters of the answer have no sample in the writer's hand and are drawn typeset;
+    /// everything else in the answer is their own writing.
+    case substitutedCharacters(String)
 
-    var messageKey: LocalizedStringKey {
+    var message: Text {
         switch self {
-        case .missingHandwritingCharacters: "ask.notice.missing-handwriting-characters"
+        case .substitutedCharacters(let characters):
+            Text("ask.notice.substituted-characters \(characters)")
         }
     }
 }
@@ -165,7 +168,7 @@ struct AskBar: View {
                             .accessibilityLabel(explanation)
                     }
                     if let renderingNotice {
-                        Text(renderingNotice.messageKey)
+                        renderingNotice.message
                             .font(.caption)
                             .foregroundStyle(MarginColor.secondaryText)
                             .lineLimit(2)

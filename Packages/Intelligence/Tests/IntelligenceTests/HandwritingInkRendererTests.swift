@@ -69,25 +69,34 @@ final class HandwritingInkRendererTests: XCTestCase {
         XCTAssertEqual(Self.geometry(first), Self.geometry(second))
     }
 
-    func testAWordWithAnUnknownCharacterFallsBackForTheWholeBlock() throws {
-        // Half a sentence in someone's handwriting and half in a typeface is more
-        // obviously wrong than either style used consistently.
+    func testOnlyTheMissingCharacterIsTypesetAndTheRestStaysInTheUsersHand() throws {
         let renderer = HandwritingInkRenderer(bank: try Self.bank(letters: "sum"))
+        let placement = Self.placement(text: "sum x")
 
-        let strokes = try renderer.strokes(for: Self.placement(text: "sum x"), style: Self.style, seed: 1)
-        let typeset = try TypesetInkRenderer().strokes(for: Self.placement(text: "sum x"), style: Self.style, seed: 1)
+        let strokes = try renderer.strokes(for: placement, style: Self.style, seed: 1)
+        let typeset = try TypesetInkRenderer().strokes(for: placement, style: Self.style, seed: 1)
 
-        XCTAssertEqual(Self.geometry(strokes), Self.geometry(typeset))
+        XCTAssertFalse(strokes.isEmpty)
+        XCTAssertNotEqual(Self.geometry(strokes), Self.geometry(typeset))
+        XCTAssertEqual(renderer.substitutedCharacters(for: placement), ["x"])
+        XCTAssertTrue(placement.frame.insetBy(dx: -4, dy: -4).contains(InkLineGrouping.bounds(of: strokes)))
     }
 
-    func testOneMissingGlyphOnOneLineSendsEveryLineToTheFallback() throws {
+    func testAMissingCharacterOnOneLineLeavesTheOtherLinesHandwritten() throws {
         let renderer = HandwritingInkRenderer(bank: try Self.bank(letters: "sum"))
         let placement = Self.placement(lines: ["sum", "sum x"])
 
         let strokes = try renderer.strokes(for: placement, style: Self.style, seed: 1)
         let typeset = try TypesetInkRenderer().strokes(for: placement, style: Self.style, seed: 1)
 
-        XCTAssertEqual(Self.geometry(strokes), Self.geometry(typeset))
+        XCTAssertNotEqual(Self.geometry(strokes), Self.geometry(typeset))
+        XCTAssertEqual(renderer.substitutedCharacters(for: placement), ["x"])
+    }
+
+    func testNothingIsSubstitutedWhenTheBankKnowsEverything() throws {
+        let renderer = HandwritingInkRenderer(bank: try Self.bank())
+
+        XCTAssertTrue(renderer.substitutedCharacters(for: Self.placement(text: "sum")).isEmpty)
     }
 
     func testEachLineOfAMultiLineBlockGetsItsOwnJitter() throws {
@@ -114,7 +123,10 @@ final class HandwritingInkRendererTests: XCTestCase {
         let renderer = HandwritingInkRenderer(bank: try Self.bank(letters: "sum"))
 
         XCTAssertTrue(renderer.canRender("sums"))
-        XCTAssertFalse(renderer.canRender("sum x"))
+        // Typeset stands in for a character the writer never wrote...
+        XCTAssertTrue(renderer.canRender("sum x"))
+        // ...unless the typeface cannot draw it either.
+        XCTAssertFalse(renderer.canRender("sum \u{1F700}"))
     }
 
     // MARK: - Fixtures

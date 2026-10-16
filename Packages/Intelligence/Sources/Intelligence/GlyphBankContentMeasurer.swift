@@ -88,7 +88,9 @@ public struct GlyphBankContentMeasurer: ContentMeasuring {
         // `\tfrac{1}{3}` is three glyphs and a rule. The nominal measurer already models that,
         // and M5's box model will own it properly.
         guard run.kind != .math else { return nil }
-        guard let advance = Synthesizer.advance(of: run.value, bank: bank) else { return nil }
+        guard let advance = Synthesizer.advance(of: run.value, bank: bank.filling(missingIn: run.value)) else {
+            return nil
+        }
         return advance * xHeight
     }
 

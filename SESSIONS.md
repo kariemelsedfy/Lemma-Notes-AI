@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08D — per-character typeset fallback
+The device run showed the cloud path working and the answer entirely typeset. I could not see why: calibration has boxes for every character in "x = 5" and the owner said all were filled, and I must not read their bank. So the change is two-sided: make one absent character cost one typeset character (not the whole answer), and make the banner name the characters so the next device run is the diagnosis. Design choice worth knowing: the stand-in is a real `Glyph` in a transient copy of the bank, so layout, wrapping, measuring and sample selection are untouched, and the typeset hatch strokes are drawn with the writer's own nib. What I did not verify: how a typeset `=` looks beside real handwriting (needs the iPad), and why a filled calibration reported a gap. Suspects: the model returned a character calibration doesn't key (for example ASCII `-` versus `−`, a curly apostrophe), or the segmenter dropped a box. Do not trust that until the banner names it.
+
 ## 2026-10-16 · Claude · M4-08C2 — wiring cloud Ask into the app
 Two locks on purpose: the hosted provider is wrapped in `ConsentGatedProvider` (invariant 8) and the route only escalates when `PilotCloudConfiguration.isReady`. The second lock exists for UX, not safety: without it a user who never opted in would lose the specific local failure copy and see a generic consent error instead. Unsigned simulator builds have no Keychain entitlement (errSecMissingEntitlement), so the Keychain round-trip test skips there; the first real check is on the signed iPad build. `HTTPSProxyTransport` is built per request from settings, so changing the address or removing the token applies to the next Ask without a restart. The token reaches the iPad by paste (copy it on the Mac with `security find-generic-password -a margin-pilot -s pilot-proxy-token -w | pbcopy`, then paste into Universal Clipboard); I never see it.
 

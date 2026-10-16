@@ -35,7 +35,7 @@
 "ask.verb.check" = "Check";
 "ask.verb.ask" = "Ask a question";
 "ask.state.working" = "Working…";
-"ask.notice.missing-handwriting-characters" = "Typeset was used because your handwriting sample is missing a character in this answer.";
+"ask.notice.substituted-characters %@" = "Typeset for the characters missing from your handwriting sample: %@";
 "ask.cancel" = "Cancel";
 "ask.keep" = "Keep";
 "ask.discard" = "Discard";

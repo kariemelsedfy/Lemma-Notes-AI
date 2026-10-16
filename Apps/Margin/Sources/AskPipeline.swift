@@ -183,14 +183,12 @@ final class AskPipeline {
             "Ask ink renderedWidth=\(renderedBounds.width) renderedHeight=\(renderedBounds.height)"
         answerPlacementLogger.info("\(inkDiagnostic, privacy: .public)")
 
-        let usedMissingGlyphFallback =
+        let substituted = Set(
             (renderer as? HandwritingInkRenderer).map { handwritingRenderer in
-                result.placements.contains {
-                    handwritingRenderer.requiresMissingGlyphFallback(for: $0)
-                }
-            } ?? false
+                result.placements.flatMap { handwritingRenderer.substitutedCharacters(for: $0) }
+            } ?? [])
         model.renderedWithNotice(
-            usedMissingGlyphFallback ? .missingHandwritingCharacters : nil
+            substituted.isEmpty ? nil : .substitutedCharacters(String(substituted.sorted()))
         )
         suggestions.present(ink, requestID: requestID)
         model.apply(.placed(result))
