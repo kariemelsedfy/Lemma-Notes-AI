@@ -123,6 +123,24 @@ final class PilotCloudAskTests: XCTestCase {
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)
     }
 
+    func testBundledTokenIsUsedOnlyWhenTheKeychainHasNone() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("PilotToken.local")
+        let location: @Sendable () -> URL? = { FileManager.default.fileExists(atPath: file.path) ? file : nil }
+        let empty = BundledFallbackSecretStore(primary: MemorySecrets(), location: location)
+        XCTAssertNil(empty.token(), "no file, no token")
+
+        try " bundled-token\n".write(
+            to: file, atomically: true, encoding: .utf8)
+        XCTAssertEqual(empty.token(), "bundled-token")
+
+        let primary = MemorySecrets()
+        primary.setToken("keychain-token")
+        XCTAssertEqual(BundledFallbackSecretStore(primary: primary, location: location).token(), "keychain-token")
+    }
+
     func testKeychainStoreRoundTripsReplacesAndRemovesTheToken() throws {
         let store = KeychainPilotSecretStore()
         let original = store.token()

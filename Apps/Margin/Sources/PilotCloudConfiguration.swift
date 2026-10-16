@@ -43,6 +43,34 @@ struct KeychainPilotSecretStore: PilotSecretStore {
     }
 }
 
+/// Pilot builds: a token the owner's Mac put in the app bundle at build time (`scripts/provision-pilot-token.sh`),
+/// used when the Keychain has none. The file is gitignored and absent from a clean checkout, so a build made
+/// without it simply has Cloud Ask off. **A bundled token is extractable from the app**, which is why this is for
+/// builds installed on the owner's own iPad only; per-install attestation (App Attest) replaces it before anyone
+/// else gets a build.
+struct BundledFallbackSecretStore: PilotSecretStore {
+    static let resourceName = "PilotToken"
+    static let resourceExtension = "local"
+
+    let primary: any PilotSecretStore
+    /// Where the provisioned file is, if it was bundled. Injectable so tests need no real bundle.
+    var location: @Sendable () -> URL? = {
+        Bundle.main.url(forResource: BundledFallbackSecretStore.resourceName, withExtension: resourceExtension)
+    }
+
+    func token() -> String? {
+        if let stored = primary.token() { return stored }
+        guard let url = location(),
+            let text = try? String(contentsOf: url, encoding: .utf8)
+        else { return nil }
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+    }
+
+    @discardableResult
+    func setToken(_ value: String?) -> Bool { primary.setToken(value) }
+}
+
 /// The owner's pilot settings (ADR-027/028): a consent flag, the proxy address and the bearer token. Read at
 /// request time, so turning consent off or removing the token takes effect on the very next Ask.
 struct PilotCloudConfiguration: Sendable {
@@ -54,7 +82,10 @@ struct PilotCloudConfiguration: Sendable {
     private let defaults: UserDefaults
     private let secrets: any PilotSecretStore
 
-    init(defaults: UserDefaults = .standard, secrets: any PilotSecretStore = KeychainPilotSecretStore()) {
+    init(
+        defaults: UserDefaults = .standard,
+        secrets: any PilotSecretStore = BundledFallbackSecretStore(primary: KeychainPilotSecretStore())
+    ) {
         self.defaults = defaults
         self.secrets = secrets
     }

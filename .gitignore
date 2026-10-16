@@ -17,3 +17,6 @@ Derived/
 
 # macOS
 .DS_Store
+
+# Pilot bearer token bundled into owner-installed builds (scripts/provision-pilot-token.sh)
+Apps/Margin/Resources/PilotToken.local
