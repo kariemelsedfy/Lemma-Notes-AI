@@ -465,3 +465,18 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected.** A Mac LAN listener (throwaway, needs PSK client code). Cloudflare Workers or AWS Lambda (would mean rewriting the Swift proxy in another language, or a new account). Firebase Functions (JavaScript rewrite). Embedding the key in the app (ADR-021).
 
 **Revisit when.** The Linux build is not feasible, Firestore cannot give transactional reserves at the needed rate, hosting would exceed the $10 ceiling, the pilot grows past one device, or the owner moves to App Attest and a multi-user backend.
+
+## ADR-029 — Hosted answers are a premium entitlement, not a consent toggle
+
+**Status:** Accepted · 2026-10-16 · decided by: human (chat: "I want to remove the option with consent. If users signed for premium then they signed up for this feature anyways. The free tier won't include cloud calls. For premium it activates automatically.") · amends the UI half of CONTEXT invariant 8 and BUSINESS.md 5.1.2(i); keeps the provider-layer gate of ADR-022
+
+**Context.** M4-08C2 shipped an in-app "Cloud Ask (pilot)" switch, off by default, as the consent. The owner does not want a separate switch: cloud answers are part of the paid plan, and the free tier has none.
+
+**Decision.** Remove the switch and its settings sheet. `PilotCloudConfiguration.isEntitled` replaces the consent flag and feeds the provider-layer consent closure, so `ConsentGatedProvider` still refuses to transmit unless it is true. Until StoreKit entitlements exist (M6) the stand-in is "this build was provisioned with an access token"; a build without one is the free tier and makes no cloud call. Invariant 8 is unchanged where it matters: it is asserted in the provider layer, not the UI.
+
+**Consequences.** Apple guideline 5.1.2(i) still requires clear disclosure and **explicit permission** before personal data goes to third-party AI, and a purchase on its own is unlikely to count. The paywall or purchase flow therefore must name the provider (Google Gemini), say what is sent (an image of the selected handwriting and nearby context, plus its text reading), disclose Google's limited abuse-monitoring retention, and require a separate acknowledgement before purchase completes; the acceptance and its version are logged. That is an M6 requirement, and shipping premium without it risks App Review rejection. Until then the only build with a token is the owner's own iPad, installed by the owner.
+
+**Alternatives rejected.** Keeping the switch (the owner's call). Treating the purchase alone as consent (likely non-compliant). A one-time first-use prompt (acceptable fallback if the paywall cannot carry it).
+
+**Revisit when.** M6 builds the paywall, App Review feedback arrives, or the provider changes (re-consent).
+

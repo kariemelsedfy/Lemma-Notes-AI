@@ -6,8 +6,14 @@ import XCTest
 
 @MainActor
 final class LocalArithmeticAskTests: XCTestCase {
+    /// No token, so the free tier: these tests are about the local answer and must never reach the paid cloud.
+    static var freeTier: PilotCloudConfiguration {
+        PilotCloudConfiguration(
+            defaults: UserDefaults(suiteName: "local-arithmetic-tests") ?? .standard, secrets: NoSecrets())
+    }
+
     func testShippingAskAnswersTwoDifferentReadingsRatherThanReturningCannedFour() async throws {
-        XCTAssertEqual(VirtualizedPageStack.makeAskProvider().tier, .onDevice)
+        XCTAssertEqual(VirtualizedPageStack.makeAskProvider(configuration: Self.freeTier).tier, .onDevice)
         for (reading, expected) in [("2+3=", "5"), ("7-2=", "5"), ("3*3=", "9")] {
             let harness = Harness(reading: SelectionReading(transcript: reading, confidence: 0.95))
             harness.pipeline.run(harness.input, verb: .answer)
@@ -107,7 +113,7 @@ final class LocalArithmeticAskTests: XCTestCase {
                 pageSize: CGSize(width: 1_668, height: 2_388)
             )
             pipeline = AskPipeline(
-                provider: VirtualizedPageStack.makeAskProvider(),
+                provider: VirtualizedPageStack.makeAskProvider(configuration: LocalArithmeticAskTests.freeTier),
                 model: model,
                 suggestions: suggestions,
                 recognizeSelection: { _ in
@@ -126,4 +132,9 @@ final class LocalArithmeticAskTests: XCTestCase {
             XCTAssertNotEqual(model.phase, .working, "Ask must leave working state before assertions")
         }
     }
+}
+
+private struct NoSecrets: PilotSecretStore {
+    func token() -> String? { nil }
+    func setToken(_ value: String?) -> Bool { false }
 }

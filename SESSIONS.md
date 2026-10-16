@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08L — the consent switch is gone
+Did what the owner asked, and wrote ADR-029 so the reasoning is not lost: removing the switch is fine for the pilot (one iPad, owner-installed, a token is the entitlement) but Apple 5.1.2(i) wants explicit permission naming the third-party AI, so the *purchase flow* has to carry that, not the settings. I told the owner this; they accepted the pilot change. The gate was not weakened, only re-sourced: `ConsentGatedProvider` still refuses unless `isEntitled`. Airplane mode result recorded: local arithmetic fine, cloud shows the raw `ask.failure.transport` string (UI polish deferred by the owner).
+
 ## 2026-10-16 · Claude · M4-08C — acceptance, and what this session taught
 Cloud Ask works end to end on the owner's iPad and the handwriting rendering is good. Almost every problem found on the device was in the *handwriting* path, not the cloud path: whole-block typeset fallback, calibration reusing the first sheet's boxes (SwiftUI view identity), a height-based confidence score, whole-answer erase, and a wrong x-height for added characters. None of those was reachable from tests alone; each came from the owner's screenshot. Spend after twelve Asks was about $0.0098. Still unverified: airplane-mode copy, consent-off, iPadOS version.
 

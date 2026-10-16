@@ -102,9 +102,3 @@
 "sample.open" = "Handwriting sample";
 
 /* Pilot cloud Ask (ADR-027/028). Interim copy until the M6 consent flow. */
-"cloud.title" = "Cloud Ask (pilot)";
-"cloud.consent.toggle" = "Send questions I can’t solve on this iPad to the cloud";
-"cloud.consent.disclosure" = "When this is on and the on-device answer can’t handle a question, the selected handwriting (an image of the selection and the area around it) and its text reading are sent to a private server and on to Google’s Gemini service, which writes the answer. Google may keep requests briefly for abuse monitoring and does not use them to train models. Nothing is sent when this is off, when this build has no access key, or for questions the iPad can answer itself. Turn it off any time.";
-"cloud.status.ready" = "Cloud Ask is on.";
-"cloud.status.unavailable" = "Cloud Ask isn’t available in this build. Everything stays on this iPad.";
-"cloud.status.off" = "Cloud Ask is off. Everything stays on this iPad.";
