@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08P — guessing at a generic error
+Third round on the same prompt. What I knew: the proxy accepts `answer` and `continue` (verified live with a fresh request ID), the real reply validates in the app, and the log showed two 200s then three fast 422s. What I did not know: which verb the owner pressed and what the bar said. Rather than guess a fourth time I made the failure self-describing (debug builds only). Habit worth keeping: when one generic message covers many causes, add the cause to the UI for debug builds before touching more logic.
+
 ## 2026-10-16 · Claude · M4-18 — ghost box
 Replaced a whole interaction rather than adding one, so most of the diff is deletion (the answer-area stage and its tests). Two design choices to know. First, the ghost's start position deliberately ignores existing ink (owner: "always right below, even if there's text there"), which is why placement no longer uses the occupancy grid and why `noRoom` is unreachable from placement now; the old search code is still in `PlacementEngine.place` for the tests and any future auto-placement. Second, the drag runs inside a `ScrollView`: I used `highPriorityGesture` and `scrollDisabled(ghostDragging)`, which is the standard recipe but cannot be proven in a unit test; if a drag on the outline scrolls the page instead, the fix is to claim the touch earlier (a `UIGestureRecognizer` on a `UIViewRepresentable`) rather than adding more SwiftUI modifiers. The Ask also now reads one step shorter (no "Step 1 of 2").
 

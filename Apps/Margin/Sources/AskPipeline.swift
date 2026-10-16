@@ -117,7 +117,7 @@ final class AskPipeline {
             model.apply(.fail(.unreadable))
             return
         } catch {
-            model.apply(.fail(Self.failure(for: error)))
+            fail(with: error, intent: verb.intent)
             return
         }
         guard !Task.isCancelled, model.apply(.specValidated(spec)) else { return }
@@ -211,6 +211,22 @@ final class AskPipeline {
                 + "frameY=\(placement.frame.minY) usedFallback=\(placement.usedFallback)"
             answerPlacementLogger.info("\(diagnostic, privacy: .public)")
         }
+    }
+
+    private func fail(with error: any Error, intent: SpecIntent) {
+        model.noteFailureDetail(Self.detail(for: error, intent: intent))
+        model.apply(.fail(Self.failure(for: error)))
+    }
+
+    /// A name safe to show and log: the failure case and the intent, never a payload.
+    private static func detail(for error: any Error, intent: SpecIntent) -> String {
+        let name: String
+        switch error {
+        case let failure as ProxyProviderFailure: name = "\(failure)"
+        case let failure as ProviderError: name = "\(failure)"
+        default: name = String(describing: type(of: error))
+        }
+        return "\(name) · \(intent.rawValue)"
     }
 
     /// Maps a provider error onto the designed failure states in `AI_PIPELINE.md` §8.

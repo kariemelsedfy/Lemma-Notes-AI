@@ -12,6 +12,9 @@ final class AskBarModel: ObservableObject {
     @Published private(set) var hasSelection = false
     @Published private(set) var renderingNotice: AskRenderingNotice?
     @Published private(set) var localFailure: LocalArithmeticFailure?
+    /// A content-free name for why the last Ask failed (an error's case name, never its payload), shown in
+    /// debug builds only so one screenshot says which step broke instead of the generic copy.
+    @Published private(set) var failureDetail: String?
 
     var failureMessageKey: LocalizedStringKey? {
         localFailure.map { LocalizedStringKey($0.messageKey) }
@@ -43,6 +46,7 @@ final class AskBarModel: ObservableObject {
         self.hasSelection = hasSelection
         renderingNotice = nil
         localFailure = nil
+        failureDetail = nil
         // A new selection abandons whatever the last one was doing; a stale answer
         // pointing at ink the user is no longer looking at is worse than no answer.
         if !hasSelection || state.isCancellable {
@@ -56,12 +60,17 @@ final class AskBarModel: ObservableObject {
         guard hasSelection else { return false }
         renderingNotice = nil
         localFailure = nil
+        failureDetail = nil
         lastVerb = verb
         return apply(.begin)
     }
 
     func renderedWithNotice(_ notice: AskRenderingNotice?) {
         renderingNotice = notice
+    }
+
+    func noteFailureDetail(_ detail: String) {
+        failureDetail = detail
     }
 
     func failedLocally(_ failure: LocalArithmeticFailure) {

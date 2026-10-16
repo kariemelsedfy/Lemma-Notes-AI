@@ -106,6 +106,8 @@ final class PilotCloudAskTests: XCTestCase {
         harness.pipeline.run(harness.input, verb: .answer)
         try await harness.settle()
         XCTAssertEqual(harness.model.phase, .failed(.transport))
+        // A content-free reason for debug builds: the failure case and the intent, nothing else.
+        XCTAssertEqual(harness.model.failureDetail, "offline · answer")
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)
     }
 

@@ -102,6 +102,7 @@ struct AskBar: View {
     let explanation: String?
     var renderingNotice: AskRenderingNotice?
     var failureOverride: LocalizedStringKey?
+    var failureDetail: String?
     var onVerb: (AskVerb) -> Void = { _ in }
     var onCancel: () -> Void = {}
     var onAccept: () -> Void = {}
@@ -184,8 +185,17 @@ struct AskBar: View {
 
     private func failure(_ failure: AskFailure) -> some View {
         HStack(spacing: 12) {
-            Text(failureOverride ?? failure.messageKey)
-                .lineLimit(2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(failureOverride ?? failure.messageKey)
+                    .lineLimit(2)
+                #if DEBUG
+                    if let failureDetail {
+                        Text(verbatim: failureDetail)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(MarginColor.secondaryText)
+                    }
+                #endif
+            }
             if failure.isRetryable {
                 Button("ask.retry", action: onRetry)
                     .buttonStyle(.borderedProminent)
