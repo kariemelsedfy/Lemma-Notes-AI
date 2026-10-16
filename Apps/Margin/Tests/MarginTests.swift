@@ -71,28 +71,26 @@ final class MarginTests: XCTestCase {
         XCTAssertEqual(path.invocationCount, 2)
     }
 
-    func testAskPathMovesFromQuestionToAnswerAreaBeforeDisarming() {
+    func testAskPathDisarmsOnceTheQuestionIsCircled() {
         var path = AskPathState()
         path.invoke()
+        XCTAssertEqual(path.stage, .question)
 
         path.questionDidComplete()
 
-        XCTAssertEqual(path.stage, .answerArea)
-        XCTAssertTrue(path.isArmed)
-
-        path.answerAreaDidComplete()
+        // No answer-area step: the answer appears as a ghost box below the question.
+        XCTAssertEqual(path.stage, .idle)
         XCTAssertFalse(path.isArmed)
     }
 
-    func testAskPathCanCancelOrRetryTheAnswerArea() {
+    func testAskPathCanBeCancelledAndIgnoresAStrayCompletion() {
         var path = AskPathState()
-        path.invoke()
         path.questionDidComplete()
-        path.cancel()
         XCTAssertEqual(path.stage, .idle)
 
-        path.retryAnswerArea()
-        XCTAssertEqual(path.stage, .answerArea)
+        path.invoke()
+        path.cancel()
+        XCTAssertEqual(path.stage, .idle)
     }
 
     func testPageSelectionComputesBoundsForItsLoop() {

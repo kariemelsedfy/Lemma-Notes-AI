@@ -39,10 +39,6 @@ extension VirtualizedPageStack {
             guard let question = askSelection.questionSelection else { return }
             selectionStore.select(question)
             askPath.questionDidComplete()
-        case .answerArea:
-            askSelection.selectAnswerArea(loop: loop, onPage: pageID)
-            guard askSelection.answerArea != nil else { return }
-            askPath.answerAreaDidComplete()
             askModel.selectionChanged(hasSelection: true)
         case .idle:
             break
@@ -54,13 +50,6 @@ extension VirtualizedPageStack {
         askSelection.clearSelections()
         selectionStore.clear()
         askModel.selectionChanged(hasSelection: false)
-    }
-
-    func chooseAnotherAnswerArea() {
-        askSelection.clearAnswerArea()
-        askModel.dismissFailure()
-        askModel.selectionChanged(hasSelection: false)
-        askPath.retryAnswerArea()
     }
 
     /// The generated ink awaiting a decision on this page, if any.
@@ -78,7 +67,7 @@ extension VirtualizedPageStack {
 
     /// Runs one Ask against the supported local arithmetic subset.
     func ask(_ verb: AskVerb) {
-        guard let selection = askSelection.questionSelection, let answerArea = askSelection.answerArea else { return }
+        guard let selection = askSelection.questionSelection else { return }
         // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
         // an unsaved bank, missing `4`, a pinned preference, and a stale renderer in one run.
         let rendererName = String(describing: type(of: inkRenderer))
@@ -115,7 +104,6 @@ extension VirtualizedPageStack {
             AskPipeline.PageInput(
                 engine: pageEngine,
                 loop: selection.loop,
-                allowedAnswerArea: answerArea.bounds,
                 pageSize: pageSizes[selection.pageID] ?? pageSize
             ),
             verb: verb
@@ -137,7 +125,11 @@ extension VirtualizedPageStack {
     /// Commits the suggestion to the page in one undo group and records its provenance.
     func acceptSuggestion() {
         guard let pageID = askSelection.questionSelection?.pageID else { return }
-        let pencilStrokes = suggestions.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
+        // Kept where the writer dragged it to.
+        let delta = ghostOffset
+        let pencilStrokes = suggestions.strokes.compactMap {
+            PKStroke($0.translated(by: delta), color: selectedPen.uiColor)
+        }
         guard !pencilStrokes.isEmpty else {
             askModel.accept()
             return
@@ -149,7 +141,11 @@ extension VirtualizedPageStack {
         // nothing here ever registered it, and undo could not reach an accepted answer at all.
         undoController.recordChange(pageID: pageID, pageSize: pageSizes[pageID] ?? pageSize)
         let committed = PKDrawing(strokes: drawingStore.drawing(for: pageID).strokes + pencilStrokes)
-        let accepted = suggestions.acceptWithoutInserting()
+        let accepted = suggestions.acceptWithoutInserting().map {
+            AcceptedSuggestion(
+                requestID: $0.requestID, strokeIDs: $0.strokeIDs,
+                bounds: $0.bounds.offsetBy(dx: delta.width, dy: delta.height), acceptedAt: $0.acceptedAt)
+        }
         recordProvenance(accepted, on: pageID, in: committed)
         askModel.accept()
         clearCompletedAskSelections()

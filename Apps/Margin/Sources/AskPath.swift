@@ -3,11 +3,12 @@
 enum AskCaptureStage: Equatable {
     case idle
     case question
-    case answerArea
 }
 
-/// One explicit path owns the two selection gestures so toolbar, keyboard, and Pencil
-/// entry points cannot skip the answer-area step.
+/// One explicit path owns the selection gesture so toolbar, keyboard, and Pencil entry points behave alike.
+///
+/// There is no answer-area step any more: once the question is circled, the answer appears as a ghost box
+/// directly below it and the writer drags it where they want it.
 struct AskPathState: Equatable {
     private(set) var stage: AskCaptureStage = .idle
     private(set) var invocationCount = 0
@@ -21,16 +22,7 @@ struct AskPathState: Equatable {
 
     mutating func questionDidComplete() {
         guard stage == .question else { return }
-        stage = .answerArea
-    }
-
-    mutating func answerAreaDidComplete() {
-        guard stage == .answerArea else { return }
         stage = .idle
-    }
-
-    mutating func retryAnswerArea() {
-        stage = .answerArea
     }
 
     mutating func cancel() {

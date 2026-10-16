@@ -173,7 +173,6 @@ final class PilotCloudAskTests: XCTestCase {
                     CGPoint(x: 80, y: 80), CGPoint(x: 340, y: 80),
                     CGPoint(x: 340, y: 150), CGPoint(x: 80, y: 150),
                 ],
-                allowedAnswerArea: CGRect(x: 700, y: 500, width: 300, height: 240),
                 pageSize: CGSize(width: 1_668, height: 2_388)
             )
             pipeline = AskPipeline(
