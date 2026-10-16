@@ -66,11 +66,8 @@
 "calibration.start" = "Start over from the beginning";
 "calibration.add" = "Add or redo just some characters";
 "calibration.add.nav" = "Add characters";
-"calibration.add.title" = "Characters to write";
-"calibration.add.placeholder" = "Type or paste characters";
-"calibration.add.footer" = "Only these are asked for, and everything else you’ve already taught stays as it is. Characters you rewrite replace your old ones.";
-"calibration.add.missing" = "Missing from your handwriting right now";
-"calibration.add.use-missing %lld" = "Use all %lld missing characters";
+"calibration.add.pick" = "Everything you’ve taught is already captured. Tap the characters you’d like to redo.";
+"calibration.add.legacy" = "To add single characters at the right size, your handwriting needs one fresh pass from the beginning first. After that you can add or redo just some characters any time.";
 "calibration.add.start" = "Start writing";
 "calibration.leave" = "Done for now";
 "calibration.clear" = "Clear";

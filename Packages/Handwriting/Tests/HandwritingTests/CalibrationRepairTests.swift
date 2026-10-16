@@ -215,6 +215,27 @@ final class AddCharactersTests: XCTestCase {
         XCTAssertFalse(standard.contains(" "))
     }
 
+    func testABankSavedBeforeTheNormalizationSizeWasRecordedStillLoads() throws {
+        let bank = GlyphBank(capturedAt: Date(timeIntervalSince1970: 0), normalizationXHeight: 31)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(bank)) as? [String: Any])
+        XCTAssertNotNil(object["normalizationXHeight"])
+        object["normalizationXHeight"] = nil
+
+        let decoded = try JSONDecoder().decode(
+            GlyphBank.self, from: JSONSerialization.data(withJSONObject: object))
+
+        XCTAssertNil(decoded.normalizationXHeight)
+    }
+
+    func testTheNormalizationSizeSurvivesAnEncodeAndDecode() throws {
+        let bank = GlyphBank(capturedAt: Date(timeIntervalSince1970: 0), normalizationXHeight: 31)
+
+        let decoded = try JSONDecoder().decode(GlyphBank.self, from: JSONEncoder().encode(bank))
+
+        XCTAssertEqual(decoded.normalizationXHeight, 31)
+    }
+
     func testARepairOnlySessionUsesTheKnownXHeight() {
         var session = CalibrationSession(sheets: [])
         session.repair(["."])

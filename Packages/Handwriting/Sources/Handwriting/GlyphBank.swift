@@ -107,13 +107,20 @@ public struct GlyphBank: Codable, Equatable, Sendable {
     public private(set) var samples: [String: [Glyph]]
     public var style: StoredStyleStats
     public let capturedAt: Date
+    /// The writer's x-height **in the points their glyphs were normalized by** at calibration. Not the same
+    /// number as `style.xHeight`, which is estimated from freeform lines and is typically smaller. Adding
+    /// characters later has to scale them by this one or they come out the wrong size (and an answer using
+    /// them stops fitting its frame). `nil` for a bank saved before this was recorded.
+    public var normalizationXHeight: CGFloat?
 
     public init(
         version: Int = GlyphBank.currentVersion,
         samples: [String: [Glyph]] = [:],
         style: StoredStyleStats = StoredStyleStats(StyleStats.unmeasured),
-        capturedAt: Date
+        capturedAt: Date,
+        normalizationXHeight: CGFloat? = nil
     ) {
+        self.normalizationXHeight = normalizationXHeight
         self.version = version
         self.samples = samples
         self.style = style
