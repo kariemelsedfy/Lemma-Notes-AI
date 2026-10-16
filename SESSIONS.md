@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08G — calibration reused the first sheet's boxes
+Resolved the "unexplained missing 5": it was not rejection. The calibration sheet view had no identity per sheet, so the lowercase box layout was applied to every sheet (only `.onAppear` computed it). Evidence: exactly 26 captured and exactly the other 82 characters missing, which is what lowercase-only boxes would produce. The earlier digit handwriting on the iPad came from a bank made before this regressed, and a recalibration with the broken view overwrote it. Lesson: the per-sheet ink was right and the session logic was right; the owner's symptom ("I filled everything") was the strongest clue, so believe it before theorizing about rejection. A test would need a view-level harness; none exists for calibration yet.
+
 ## 2026-10-16 · Claude · M4-08F — stand-in weight, and an unexplained missing 5
 Stand-ins were bold because I filled the letter to its outline and then added the writer's pen on top; the fix is to erode the fill by half the pen. The pen-to-x-height ratio is an estimate (caller ink height / 1.4), so check weight on the iPad before trusting it. Open question: after the owner re-ran calibration, `5` and `=` were absent from the bank although `2+3=5` had been handwritten before (so `5` existed). A fresh calibration replaces the stored bank, so the likeliest causes are that those two were rejected as unclear, or the digits/punctuation sheets were skipped or left empty on the second pass. The calibration summary names outstanding characters; ask the owner what it showed rather than guessing.
 
