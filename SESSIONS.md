@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-15A — run sheet
+Wrote the measurement protocol rather than any code. Known gap to decide before trusting "read accuracy": the app never shows what the model read, so reading is judged indirectly from the answer. If the owner wants a real read-accuracy number, add a debug-only line in the Ask bar showing the model's transcript (on screen only, never logged); I did not add it unasked. Latency is server-side only, which understates what the user feels (render time on top).
+
 ## 2026-10-16 · Claude · M4-08L — the consent switch is gone
 Did what the owner asked, and wrote ADR-029 so the reasoning is not lost: removing the switch is fine for the pilot (one iPad, owner-installed, a token is the entitlement) but Apple 5.1.2(i) wants explicit permission naming the third-party AI, so the *purchase flow* has to carry that, not the settings. I told the owner this; they accepted the pilot change. The gate was not weakened, only re-sourced: `ConsentGatedProvider` still refuses unless `isEntitled`. Airplane mode result recorded: local arithmetic fine, cloud shows the raw `ask.failure.transport` string (UI polish deferred by the owner).
 
