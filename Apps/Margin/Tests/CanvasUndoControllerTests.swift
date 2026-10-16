@@ -160,6 +160,65 @@ final class CanvasUndoControllerTests: XCTestCase {
         XCTAssertFalse(controller.canUndo, "a single entry covered both pages")
     }
 
+    func testRedoBringsBackWhatUndoRemoved() {
+        let subject = Self.subject()
+        subject.controller.beginChange(pageID: Self.pageID, pageSize: Self.pageSize)
+        subject.store.save(Self.drawing(strokes: 2), for: Self.pageID, pageSize: Self.pageSize)
+        subject.controller.commitChange()
+        XCTAssertFalse(subject.controller.canRedo)
+
+        subject.controller.undo()
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
+        XCTAssertTrue(subject.controller.canRedo)
+
+        subject.controller.redo()
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 2)
+        XCTAssertFalse(subject.controller.canRedo)
+        XCTAssertTrue(subject.controller.canUndo, "the redone change can be undone again")
+    }
+
+    func testANewEditAfterAnUndoDiscardsTheRedo() {
+        let subject = Self.subject()
+        subject.controller.beginChange(pageID: Self.pageID, pageSize: Self.pageSize)
+        subject.store.save(Self.drawing(strokes: 1), for: Self.pageID, pageSize: Self.pageSize)
+        subject.controller.commitChange()
+        subject.controller.undo()
+        XCTAssertTrue(subject.controller.canRedo)
+
+        subject.controller.beginChange(pageID: Self.pageID, pageSize: Self.pageSize)
+        subject.store.save(Self.drawing(strokes: 3), for: Self.pageID, pageSize: Self.pageSize)
+        subject.controller.commitChange()
+
+        XCTAssertFalse(subject.controller.canRedo)
+        subject.controller.redo()
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 3, "redo with nothing to redo is a no-op")
+    }
+
+    func testRedoRestoresEveryPageOfAMultiPageCommit() {
+        let secondPage = UUID()
+        let store = PageDrawingStore(metadata: [Self.pageID: Self.metadata()])
+        let controller = CanvasUndoController()
+        controller.configure(store: store)
+        controller.recordChange(pages: [(Self.pageID, Self.pageSize), (secondPage, Self.pageSize)])
+        store.save(Self.drawing(strokes: 2), for: Self.pageID, pageSize: Self.pageSize)
+        store.save(Self.drawing(strokes: 3), for: secondPage, pageSize: Self.pageSize)
+
+        controller.undo()
+        controller.redo()
+
+        XCTAssertEqual(store.drawing(for: Self.pageID).strokes.count, 2)
+        XCTAssertEqual(store.drawing(for: secondPage).strokes.count, 3)
+    }
+
+    func testRedoWithNothingUndoneIsANoOp() {
+        let subject = Self.subject()
+
+        subject.controller.redo()
+
+        XCTAssertFalse(subject.controller.canRedo)
+        XCTAssertEqual(subject.store.drawing(for: Self.pageID).strokes.count, 0)
+    }
+
     private static let pageID = UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!
     private static let pageSize = CGSize(width: 768, height: 1_024)
 

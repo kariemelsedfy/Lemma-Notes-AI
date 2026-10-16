@@ -3,6 +3,7 @@
 "tool.eraser" = "Eraser";
 "tool.lasso" = "Selection lasso";
 "canvas.undo" = "Undo";
+"canvas.redo" = "Redo";
 
 "ask.action" = "Ask";
 "ask.hint.question" = "Draw around the work you want help with.";

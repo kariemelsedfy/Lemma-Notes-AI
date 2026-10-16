@@ -101,7 +101,8 @@ struct VirtualizedPageStack: View {
             // A drag that starts on the answer's outline moves the answer, not the page.
             .scrollDisabled(ghostDragging)
             .scrollPosition(id: $visiblePageID)
-            .scrollTargetBehavior(.viewAligned)
+            // Free scrolling while an answer is being placed, so the page seam can be left where it is.
+            .scrollTargetBehavior(PageSnapBehavior(isEnabled: askModel.phase != .awaitingDecision))
             .scrollIndicators(.hidden)
 
             VStack(spacing: 8) {
@@ -146,6 +147,16 @@ struct VirtualizedPageStack: View {
                     .keyboardShortcut("z", modifiers: .command)
                     .disabled(!undoController.canUndo)
                     .accessibilityLabel("canvas.undo")
+                    Button {
+                        undoController.redo()
+                    } label: {
+                        Label("canvas.redo", systemImage: "arrow.uturn.forward")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(!undoController.canRedo)
+                    .accessibilityLabel("canvas.redo")
                     Button(action: invokeAsk) {
                         Label("ask.action", systemImage: "sparkles")
                             .frame(minHeight: 44)
