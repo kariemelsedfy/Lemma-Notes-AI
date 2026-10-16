@@ -12,10 +12,14 @@ public struct SelectionReading: Equatable, Sendable {
 
     public let transcript: String
     public let confidence: Float
+    /// Vision's box for each character, in the crop's normalised coordinates (origin bottom-left). Used only on
+    /// the device, to learn the writer's characters (`GlyphHarvester`); never part of a request.
+    public let characters: [RecognizedCharacter]
 
-    public init(transcript: String, confidence: Float) {
+    public init(transcript: String, confidence: Float, characters: [RecognizedCharacter] = []) {
         self.transcript = transcript
         self.confidence = confidence.isFinite ? min(max(confidence, 0), 1) : 0
+        self.characters = characters
     }
 }
 
@@ -36,7 +40,8 @@ public enum OnDeviceSelectionReader {
                     let recognitions = try OnDeviceHandwritingRecognizer.recognize(
                         image: image,
                         // Preserve literal math instead of correcting it into prose.
-                        usesLanguageCorrection: false
+                        usesLanguageCorrection: false,
+                        includeCharacterBoxes: true
                     )
                     guard !Task.isCancelled else { return .unreadable }
                     return reading(from: recognitions)
@@ -55,7 +60,8 @@ public enum OnDeviceSelectionReader {
         return SelectionReading(
             transcript: HandwritingTranscript.text(from: recognitions),
             // Conservative across lines: one weak line makes the aggregate reading weak.
-            confidence: recognitions.map(\.confidence).min() ?? 0
+            confidence: recognitions.map(\.confidence).min() ?? 0,
+            characters: recognitions.flatMap(\.characters)
         )
     }
 }

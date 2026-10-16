@@ -23,6 +23,8 @@ struct VirtualizedPageStack: View {
     /// so a switch takes effect on the next Ask without rebuilding the pipeline.
     let inkRenderer: any SuggestionInkRendering
     let handwritingStatus: HandwritingStyleStatus
+    /// Where what the writer writes in a lasso goes to teach the glyph bank their characters.
+    let onLearnWriting: @MainActor (LearnableSelection) -> Void
 
     @State var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
@@ -51,12 +53,14 @@ struct VirtualizedPageStack: View {
         document: StoredDocument? = nil,
         autosave: PageAutosave? = nil,
         inkRenderer: any SuggestionInkRendering = TypesetInkRenderer(),
-        handwritingStatus: HandwritingStyleStatus = .defaultTypeset
+        handwritingStatus: HandwritingStyleStatus = .defaultTypeset,
+        onLearnWriting: @escaping @MainActor (LearnableSelection) -> Void = { _ in }
     ) {
         notebookID = document?.manifest.id
         self.autosave = autosave
         self.inkRenderer = inkRenderer
         self.handwritingStatus = handwritingStatus
+        self.onLearnWriting = onLearnWriting
         let pages = document?.pages ?? []
         _pageIDs = State(initialValue: pages.map(\.metadata.pageID))
         _pageSizes = State(

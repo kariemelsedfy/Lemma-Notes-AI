@@ -23,6 +23,8 @@ final class AskPipeline {
         let engine: any InkEngine
         let loop: [CGPoint]
         let pageSize: CGSize
+        /// Indices (into `strokes`) of ink the app generated, which must never be learned from.
+        var generatedStrokeIndices: Set<Int> = []
 
         var strokes: [InkStroke] { engine.strokes }
     }
@@ -31,6 +33,8 @@ final class AskPipeline {
     /// Settable, because `HANDWRITING.md` §8 lets the user switch style at any time and the
     /// pipeline outlives that choice.
     var renderer: any SuggestionInkRendering
+    /// Told what the writer wrote in each lasso, so the glyph bank can learn from it. Set per Ask.
+    var onSelectionRead: (@MainActor (LearnableSelection) -> Void)?
     private let model: AskBarModel
     /// Readable so a caller can check it is still writing into the layer the view reads.
     /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
@@ -85,16 +89,11 @@ final class AskPipeline {
             model.apply(.fail(.unreadable))
             return
         }
-        let rasterized: RasterizedSelection
-        do {
-            rasterized = try SelectionRasterizer.rasterize(context, using: input.engine)
-        } catch {
-            model.apply(.fail(.unreadable))
-            return
-        }
+        guard let rasterized = rasterize(context, using: input.engine) else { return }
         let reading = await recognizeSelection(rasterized.crop)
         guard !Task.isCancelled else { return }
         guard model.apply(.contextExtracted(context)) else { return }
+        shareWithLearning(context: context, reading: reading, pageStrokes: pageStrokes, input: input)
 
         let request = SpecRequest(
             context: context,
@@ -129,6 +128,27 @@ final class AskPipeline {
             input: input,
             requestID: request.cacheKey
         )
+    }
+
+    /// The crop and neighbourhood images, or a failed Ask when they cannot be drawn.
+    private func rasterize(_ context: SelectionContext, using engine: any InkEngine) -> RasterizedSelection? {
+        do {
+            return try SelectionRasterizer.rasterize(context, using: engine)
+        } catch {
+            model.apply(.fail(.unreadable))
+            return nil
+        }
+    }
+
+    /// Hands the glyph bank the writer's own ink from this lasso, never the app's generated ink.
+    private func shareWithLearning(
+        context: SelectionContext, reading: SelectionReading, pageStrokes: [InkStroke], input: PageInput
+    ) {
+        let writersOwnInk = pageStrokes.enumerated().filter { index, stroke in
+            context.strokeIDs.contains(stroke.id) && !input.generatedStrokeIndices.contains(index)
+        }.map(\.element)
+        onSelectionRead?(
+            LearnableSelection(strokes: writersOwnInk, reading: reading, cropBounds: context.crop.bounds))
     }
 
     private func place(
