@@ -52,10 +52,35 @@ extension VirtualizedPageStack {
         askModel.selectionChanged(hasSelection: false)
     }
 
-    /// The generated ink awaiting a decision on this page, if any.
-    func suggestionInk(for pageID: UUID) -> [InkStroke] {
-        guard askModel.phase == .awaitingDecision, askSelection.questionSelection?.pageID == pageID else { return [] }
-        return suggestions.strokes
+    /// Every page's size and position in the one column the notebook scrolls through.
+    var pageLayout: PageStackLayout {
+        PageStackLayout(pages: pageIDs.map { .init(id: $0, size: pageSizes[$0] ?? pageSize) })
+    }
+
+    /// The index of the question's page while an answer is waiting to be placed.
+    private func ghostHomePage(in layout: PageStackLayout) -> Int? {
+        guard askModel.phase == .awaitingDecision, suggestions.isPresenting,
+            let questionPage = askSelection.questionSelection?.pageID
+        else { return nil }
+        return layout.index(of: questionPage)
+    }
+
+    /// The pending answer, above the whole column of pages so it can be dragged across a page boundary.
+    @ViewBuilder
+    var ghostOverlay: some View {
+        let layout = pageLayout
+        if let home = ghostHomePage(in: layout) {
+            GhostAnswerView(
+                strokes: suggestions.strokes.map {
+                    $0.translated(by: CGSize(width: 0, height: layout.originY(ofPage: home)))
+                },
+                layout: layout,
+                homePage: home,
+                pen: selectedPen,
+                offset: $ghostOffset,
+                isDragging: $ghostDragging
+            )
+        }
     }
 
     static func makeAskProvider() -> any SpecProvider { makeAskProvider(configuration: .standard) }
@@ -122,31 +147,35 @@ extension VirtualizedPageStack {
         ask(verb)
     }
 
-    /// Commits the suggestion to the page in one undo group and records its provenance.
+    /// Commits the suggestion where the writer dragged it, in one undo group, and records its provenance.
+    ///
+    /// An answer that sits across a page boundary is divided between lines (`AnswerSplitter`): each page gets
+    /// the lines that fall on it, and one undo takes the whole answer back off every page it reached.
     func acceptSuggestion() {
-        guard let pageID = askSelection.questionSelection?.pageID else { return }
-        // Kept where the writer dragged it to.
-        let delta = ghostOffset
-        let pencilStrokes = suggestions.strokes.compactMap {
-            PKStroke($0.translated(by: delta), color: selectedPen.uiColor)
-        }
-        guard !pencilStrokes.isEmpty else {
+        let layout = pageLayout
+        guard let questionPage = askSelection.questionSelection?.pageID, let home = layout.index(of: questionPage)
+        else { return }
+        let shift = CGSize(width: ghostOffset.width, height: ghostOffset.height + layout.originY(ofPage: home))
+        let slices = AnswerSplitter.split(suggestions.strokes.map { $0.translated(by: shift) }, layout: layout)
+        guard !slices.isEmpty, let accepted = suggestions.acceptWithoutInserting() else {
             askModel.accept()
             return
         }
 
-        // Before the ink lands, so one undo takes the whole answer back off the page. This
-        // commit never passes through a canvas gesture, which is why it needs recording
-        // explicitly — M2-09 recorded "one undo removes the whole generation" as done, but
-        // nothing here ever registered it, and undo could not reach an accepted answer at all.
-        undoController.recordChange(pageID: pageID, pageSize: pageSizes[pageID] ?? pageSize)
-        let committed = PKDrawing(strokes: drawingStore.drawing(for: pageID).strokes + pencilStrokes)
-        let accepted = suggestions.acceptWithoutInserting().map {
-            AcceptedSuggestion(
-                requestID: $0.requestID, strokeIDs: $0.strokeIDs,
-                bounds: $0.bounds.offsetBy(dx: delta.width, dy: delta.height), acceptedAt: $0.acceptedAt)
+        // Before the ink lands, so one undo takes the whole answer back off the page(s). This commit never
+        // passes through a canvas gesture, which is why it needs recording explicitly (M2-09).
+        undoController.recordChange(pages: slices.map { ($0.pageID, pageSizes[$0.pageID] ?? pageSize) })
+        for slice in slices {
+            let pencilStrokes = slice.strokes.compactMap { PKStroke($0, color: selectedPen.uiColor) }
+            let committed = PKDrawing(strokes: drawingStore.drawing(for: slice.pageID).strokes + pencilStrokes)
+            let record = AcceptedSuggestion(
+                requestID: accepted.requestID,
+                strokeIDs: slice.strokes.map(\.id),
+                bounds: InkLineGrouping.bounds(of: slice.strokes),
+                acceptedAt: accepted.acceptedAt
+            )
+            recordProvenance(record, on: slice.pageID, in: committed)
         }
-        recordProvenance(accepted, on: pageID, in: committed)
         askModel.accept()
         clearCompletedAskSelections()
     }

@@ -17,11 +17,17 @@ import SwiftUI
 /// single undo (M2-18): the entry spans the whole eraser stroke, not each hatch line it ate.
 @MainActor
 final class CanvasUndoController: ObservableObject {
-    private struct Snapshot {
+    private struct PageState {
         let pageID: UUID
         let inkData: Data
         let metadata: PageMetadata?
         let pageSize: CGSize
+    }
+
+    /// One undo entry. Usually a single page; an answer dragged across a page boundary spans two, and one undo
+    /// must take it off both.
+    private struct Snapshot {
+        let pages: [PageState]
         /// `PageDrawingStore.revision` when the snapshot was taken. **Not** a byte comparison
         /// of the ink: `PKDrawing.dataRepresentation()` is only stable for the same instance —
         /// measured, two freshly constructed empty drawings encode to 42 *different* bytes,
@@ -49,11 +55,15 @@ final class CanvasUndoController: ObservableObject {
     func beginChange(pageID: UUID, pageSize: CGSize) {
         guard !isRestoring, let drawingStore else { return }
         pending = Snapshot(
+            pages: [state(of: pageID, size: pageSize, in: drawingStore)], revision: drawingStore.revision)
+    }
+
+    private func state(of pageID: UUID, size: CGSize, in store: PageDrawingStore) -> PageState {
+        PageState(
             pageID: pageID,
-            inkData: drawingStore.drawing(for: pageID).dataRepresentation(),
-            metadata: drawingStore.metadata(for: pageID),
-            pageSize: pageSize,
-            revision: drawingStore.revision
+            inkData: store.drawing(for: pageID).dataRepresentation(),
+            metadata: store.metadata(for: pageID),
+            pageSize: size
         )
     }
 
@@ -74,13 +84,15 @@ final class CanvasUndoController: ObservableObject {
 
     /// For a commit that never passes through a gesture — an accepted AI answer.
     func recordChange(pageID: UUID, pageSize: CGSize) {
-        guard !isRestoring, let drawingStore else { return }
+        recordChange(pages: [(pageID, pageSize)])
+    }
+
+    /// The same, for a commit that touches several pages as one action.
+    func recordChange(pages: [(pageID: UUID, size: CGSize)]) {
+        guard !isRestoring, let drawingStore, !pages.isEmpty else { return }
         push(
             Snapshot(
-                pageID: pageID,
-                inkData: drawingStore.drawing(for: pageID).dataRepresentation(),
-                metadata: drawingStore.metadata(for: pageID),
-                pageSize: pageSize,
+                pages: pages.map { state(of: $0.pageID, size: $0.size, in: drawingStore) },
                 revision: drawingStore.revision
             ))
     }
@@ -97,12 +109,13 @@ final class CanvasUndoController: ObservableObject {
         // own revision bump would later commit that stale snapshot, and pressing undo again
         // would jump the page back to whenever it was taken rather than one step.
         pending = nil
-        let drawing = (try? PKDrawing(data: snapshot.inkData)) ?? PKDrawing()
         // Only the store is written. The live canvas pulls the change through `updateUIView`,
         // which compares the page's revision — assigning the canvas here as well raced that
         // path, and the two could disagree about which drawing was current.
-        drawingStore.save(
-            drawing, metadata: snapshot.metadata, for: snapshot.pageID, pageSize: snapshot.pageSize)
+        for page in snapshot.pages {
+            let drawing = (try? PKDrawing(data: page.inkData)) ?? PKDrawing()
+            drawingStore.save(drawing, metadata: page.metadata, for: page.pageID, pageSize: page.pageSize)
+        }
         // Rebuild the canvas rather than assign into it: PencilKit restores its own internal
         // drawing on the next Pencil input, which resurrected everything just undone.
         drawingStore.markExternalChange()
