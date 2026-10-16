@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-16 · Claude · M4-08E — bundled pilot token
+The owner asked to skip token setup because every user shares one server. I split it: a bundled token is fine for their own iPad and wrong for anyone else (extractable; one leak lets a stranger burn the $10 ceiling), so this PR is explicitly pilot-only and the real fix is per-install attestation. The token goes Mac Keychain → gitignored resource → bundle, never printed, never committed. Tuist globs `Resources/**` at generate time, so the provision script must run before `generate.sh` or the file is missing from the build.
+
 ## 2026-10-16 · Claude · M4-08D — per-character typeset fallback
 The device run showed the cloud path working and the answer entirely typeset. I could not see why: calibration has boxes for every character in "x = 5" and the owner said all were filled, and I must not read their bank. So the change is two-sided: make one absent character cost one typeset character (not the whole answer), and make the banner name the characters so the next device run is the diagnosis. Design choice worth knowing: the stand-in is a real `Glyph` in a transient copy of the bank, so layout, wrapping, measuring and sample selection are untouched, and the typeset hatch strokes are drawn with the writer's own nib. What I did not verify: how a typeset `=` looks beside real handwriting (needs the iPad), and why a filled calibration reported a gap. Suspects: the model returned a character calibration doesn't key (for example ASCII `-` versus `−`, a curly apostrophe), or the segmenter dropped a box. Do not trust that until the banner names it.
 
