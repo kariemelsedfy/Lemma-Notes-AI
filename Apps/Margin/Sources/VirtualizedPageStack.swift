@@ -147,15 +147,9 @@ struct VirtualizedPageStack: View {
                         canUndo: undoController.canUndo,
                         canRedo: undoController.canRedo,
                         onUndo: { undoController.undo() },
-                        onRedo: { undoController.redo() }
+                        onRedo: { undoController.redo() },
+                        onAsk: invokeAsk
                     )
-                    Button(action: invokeAsk) {
-                        Label("ask.action", systemImage: "sparkles")
-                            .frame(minHeight: 44)
-                    }
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .accessibilityHint("ask.hint.question")
-                    .buttonStyle(.borderedProminent)
                 }
             }
             .padding(.bottom, 20)

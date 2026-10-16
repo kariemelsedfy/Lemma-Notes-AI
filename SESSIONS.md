@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-3 — an interpolated LocalizedStringKey is a different key
+`LocalizedStringKey("x.\(y)")` is not the string "x.<y>": it is a format key with a placeholder, so lookups silently fail and the raw text ships. The earlier "raw failure copy, UI polish deferred" was this bug, not missing strings. It was invisible because the choices were icon-only and the failure copy only shows when offline. I added a test over every verb and failure key against `NSLocalizedString`; it cannot catch the interpolation form itself, so grep for `LocalizedStringKey("` with `\(` when touching copy.
+
 ## 2026-10-17 · Claude · M5-learn — a classifier without thresholds
 The tempting design was a handful of tuned thresholds (size, aspect, similarity), which I could not tune without the writer's real ink. Instead the acceptance test is relative to the bank itself: a candidate must be closer in shape to its claimed character's existing samples than to any other character's, and its height must agree with the writer's own samples at a scale measured from the same selection. That is self-calibrating per writer, and it fails safe (it learns slowly, not wrongly). My first synthetic variants were too similar to the calibration sample and were correctly rejected as duplicates; the test fixtures needed more shear and stretch than I assumed, which says the 0.04 x-height duplicate threshold is not generous. Not verifiable here: Vision's character boxes on real handwriting. Also worth knowing: generated ink is excluded via page-metadata fingerprints, which means ink whose points were edited after acceptance would no longer be recognised as generated.
 

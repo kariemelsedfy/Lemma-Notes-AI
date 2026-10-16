@@ -58,6 +58,7 @@ struct ToolPalette: View {
     let canRedo: Bool
     var onUndo: () -> Void = {}
     var onRedo: () -> Void = {}
+    var onAsk: () -> Void = {}
 
     @State private var showsPalette = false
 
@@ -78,6 +79,8 @@ struct ToolPalette: View {
                     "arrow.uturn.forward", label: "canvas.redo", enabled: canRedo, action: onRedo
                 )
                 .keyboardShortcut("z", modifiers: [.command, .shift])
+                Divider().frame(height: 26).padding(.horizontal, 6)
+                askButton
             }
             // Only while the pen is selected: a colour has no meaning for the eraser or the lasso.
             if selectedTool == .pen {
@@ -88,11 +91,39 @@ struct ToolPalette: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+        // The horizontal divider is flexible; without this the board takes all the width it is offered and
+        // pushes the Ask button off the screen.
+        .fixedSize(horizontal: true, vertical: false)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         .animation(.easeInOut(duration: 0.15), value: selectedTool)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("tool.palette")
+    }
+
+    /// Ask lives in the board with the other controls: the same height and weight, tinted so it reads as the
+    /// one that does something to the selection.
+    private var askButton: some View {
+        Button(action: onAsk) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 18, weight: .regular))
+                Text("ask.action")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundStyle(MarginColor.accent)
+            .padding(.horizontal, 14)
+            .frame(height: Self.hit)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(MarginColor.accent.opacity(0.16))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(.return, modifiers: .command)
+        .accessibilityLabel("ask.action")
+        .accessibilityHint("ask.hint.question")
     }
 
     private func toolButton(_ tool: CanvasTool) -> some View {
