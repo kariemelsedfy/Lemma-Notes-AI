@@ -480,3 +480,17 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 **Revisit when.** M6 builds the paywall, App Review feedback arrives, or the provider changes (re-consent).
 
+
+## ADR-030 — Flat folders: the list in `folders.json`, the filing in each notebook's manifest
+
+**Status:** Accepted · 2026-10-17 · decided by: human (chat: "flat folders are enough for now"; Favorites tab and unfiled view approved with the home-screen plan)
+
+**Context.** The home screen needs folders, favourites and "unfiled". Notebooks are `.margin` packages in one directory; their manifests are read cheaply to build the library. A folder structure is expensive to change once real notebooks are filed in it.
+
+**Decision.** Folders are flat (no nesting). The folder list (id, name, colour, creation time) lives in a single `folders.json` beside the packages. Which folder a notebook is in is `folderID` in **that notebook's own manifest**, and `isFavorite` sits beside it; both are optional on disk, so existing manifests decode as unfiled and not favourite with no migration and no schema bump (still version 1). Filing or favouriting rewrites the manifest without touching `modifiedAt`, so it does not reorder Recents. Deleting a folder first unfiles its notebooks and deletes none of them. A missing or unreadable `folders.json` is an empty list, never an error: notebooks then show as unfiled, nothing is lost.
+
+**Consequences.** A notebook carries its filing with it (copying or syncing one package keeps it filed), and the folder list is tiny enough to sync as one file. A folder whose id has no entry in `folders.json` (the file was lost or not yet synced) shows its notebooks as unfiled. Two devices editing the folder list at once is last-write-wins; acceptable until iCloud sync is designed, and that design must revisit this file.
+
+**Alternatives rejected.** One index file mapping every notebook to a folder (a second source of truth that drifts when a package is moved or deleted outside the app). Nested folders (owner: not now; a parent id can be added to `NotebookFolder` later without touching notebooks). Folders as directories on disk (breaks the one-directory package discovery and iCloud package semantics).
+
+**Revisit when.** Nested folders are wanted, iCloud sync lands, or folder counts reach the hundreds.

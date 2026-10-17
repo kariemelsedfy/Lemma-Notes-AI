@@ -14,6 +14,9 @@ public struct MarginManifest: Codable, Equatable, Sendable {
     public var modifiedAt: Date
     public var pageOrder: [UUID]
     public var settings: DocumentSettings
+    /// The folder this notebook is filed in, or nil when it is unfiled. Folders are flat (ADR-030).
+    public var folderID: UUID?
+    public var isFavorite: Bool
 
     public init(
         schemaVersion: Int = DocumentSchema.currentVersion,
@@ -22,7 +25,9 @@ public struct MarginManifest: Codable, Equatable, Sendable {
         createdAt: Date,
         modifiedAt: Date,
         pageOrder: [UUID],
-        settings: DocumentSettings
+        settings: DocumentSettings,
+        folderID: UUID? = nil,
+        isFavorite: Bool = false
     ) {
         self.schemaVersion = schemaVersion
         self.id = id
@@ -31,6 +36,23 @@ public struct MarginManifest: Codable, Equatable, Sendable {
         self.modifiedAt = modifiedAt
         self.pageOrder = pageOrder
         self.settings = settings
+        self.folderID = folderID
+        self.isFavorite = isFavorite
+    }
+
+    /// `folderID` and `isFavorite` arrived after the first manifests were written; their absence means
+    /// "unfiled" and "not a favourite", so no migration is needed (ADR-030).
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
+        pageOrder = try container.decode([UUID].self, forKey: .pageOrder)
+        settings = try container.decode(DocumentSettings.self, forKey: .settings)
+        folderID = try container.decodeIfPresent(UUID.self, forKey: .folderID)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
     }
 }
 

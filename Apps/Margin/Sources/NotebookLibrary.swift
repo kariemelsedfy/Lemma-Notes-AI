@@ -8,13 +8,17 @@ struct NotebookSummary: Identifiable, Equatable {
     var modifiedAt: Date
     var pageCount: Int
     let packageURL: URL
+    var folderID: UUID?
+    var isFavorite: Bool
 }
 
 @MainActor
 final class NotebookLibrary: ObservableObject {
     @Published private(set) var notebooks: [NotebookSummary]
+    @Published private(set) var folders: [NotebookFolder]
     @Published private(set) var lastError: Error?
     private let packageLibrary: NotebookPackageLibrary
+    private let folderStore: NotebookFolderStore
 
     convenience init() {
         self.init(rootURL: Self.defaultRootURL())
@@ -22,6 +26,8 @@ final class NotebookLibrary: ObservableObject {
 
     init(rootURL: URL) {
         packageLibrary = NotebookPackageLibrary(rootURL: rootURL)
+        folderStore = NotebookFolderStore(rootURL: rootURL)
+        folders = folderStore.folders()
         do {
             notebooks = try packageLibrary.notebooks().map(Self.summary)
         } catch {
@@ -30,10 +36,19 @@ final class NotebookLibrary: ObservableObject {
         }
     }
 
+    /// Makes a notebook. With no `title` it is named for the day ("Saturday, Oct 17", then "(2)" and so on).
     @discardableResult
-    func create(title: String, now: Date = .now) -> NotebookSummary? {
+    func create(
+        title: String? = nil,
+        paper: PaperStyle = .ruled,
+        size: PageSize = PageSizePreset.default.size,
+        folderID: UUID? = nil,
+        now: Date = .now
+    ) -> NotebookSummary? {
+        let name = title ?? NoteNaming.defaultTitle(now: now, existingTitles: notebooks.map(\.title))
         do {
-            let notebook = Self.summary(try packageLibrary.create(title: title, now: now))
+            let notebook = Self.summary(
+                try packageLibrary.create(title: name, paper: paper, size: size, folderID: folderID, now: now))
             notebooks.insert(notebook, at: 0)
             return notebook
         } catch {
@@ -50,6 +65,63 @@ final class NotebookLibrary: ObservableObject {
         } catch {
             lastError = error
         }
+    }
+
+    // MARK: - Folders and favourites
+
+    @discardableResult
+    func createFolder(name: String, colorHex: UInt32) -> NotebookFolder? {
+        do {
+            let folder = try folderStore.create(name: name, colorHex: colorHex)
+            folders = folderStore.folders()
+            return folder
+        } catch {
+            lastError = error
+            return nil
+        }
+    }
+
+    func updateFolder(id: UUID, name: String? = nil, colorHex: UInt32? = nil) {
+        do {
+            _ = try folderStore.update(id: id, name: name, colorHex: colorHex)
+            folders = folderStore.folders()
+        } catch {
+            lastError = error
+        }
+    }
+
+    /// Deletes a folder; its notebooks are kept and become unfiled.
+    func deleteFolder(id: UUID) {
+        do {
+            try packageLibrary.unfileNotebooks(inFolder: id)
+            try folderStore.delete(id: id)
+            folders = folderStore.folders()
+            for index in notebooks.indices where notebooks[index].folderID == id { notebooks[index].folderID = nil }
+        } catch {
+            lastError = error
+        }
+    }
+
+    func move(notebook id: UUID, toFolder folderID: UUID?) {
+        do {
+            let updated = Self.summary(try packageLibrary.setFolder(folderID, forNotebook: id))
+            replace(updated)
+        } catch {
+            lastError = error
+        }
+    }
+
+    func setFavorite(_ isFavorite: Bool, notebook id: UUID) {
+        do {
+            replace(Self.summary(try packageLibrary.setFavorite(isFavorite, forNotebook: id)))
+        } catch {
+            lastError = error
+        }
+    }
+
+    private func replace(_ notebook: NotebookSummary) {
+        guard let index = notebooks.firstIndex(where: { $0.id == notebook.id }) else { return }
+        notebooks[index] = notebook
     }
 
     func delete(id: UUID) {
@@ -86,10 +158,12 @@ final class NotebookLibrary: ObservableObject {
         NotebookSummary(
             id: package.id,
             title: package.title,
-            createdAt: package.modifiedAt,
+            createdAt: package.createdAt,
             modifiedAt: package.modifiedAt,
             pageCount: package.pageCount,
-            packageURL: package.packageURL
+            packageURL: package.packageURL,
+            folderID: package.folderID,
+            isFavorite: package.isFavorite
         )
     }
 
