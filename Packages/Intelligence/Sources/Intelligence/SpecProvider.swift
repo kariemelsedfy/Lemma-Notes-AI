@@ -107,6 +107,36 @@ public enum ProxyProviderFailure: Error, Equatable, Sendable {
     /// The reply decoded but broke a spec rule. Carries `SpecValidationError.name` only (never its payload,
     /// which can hold page-derived text), so a debug build can say which rule without leaking content.
     case rejectedSpec(String)
+    /// The reply was larger than a spec can be.
+    case responseTooLarge
+    /// The reply was not a decodable spec. Carries the kind of failure and the *path* of the offending key
+    /// (`ProxyProviderFailure.path`), never any value, so it is content-free.
+    case undecodable(String)
+    /// The reply decoded but answered a different intent than was asked. Carries the intent name returned.
+    case wrongIntent(String)
+}
+
+extension ProxyProviderFailure {
+    /// "keyNotFound blocks[0].content.text": what kind of decoding failure and where, with no values.
+    static func describe(_ error: DecodingError) -> String {
+        let kind: String
+        let context: DecodingError.Context
+        switch error {
+        case .keyNotFound(let key, let inner):
+            kind = "keyNotFound"
+            context = DecodingError.Context(codingPath: inner.codingPath + [key], debugDescription: "")
+        case .typeMismatch(_, let inner): (kind, context) = ("typeMismatch", inner)
+        case .valueNotFound(_, let inner): (kind, context) = ("valueNotFound", inner)
+        case .dataCorrupted(let inner): (kind, context) = ("dataCorrupted", inner)
+        @unknown default: return "decoding"
+        }
+        return kind + " " + path(context.codingPath)
+    }
+
+    static func path(_ codingPath: [any CodingKey]) -> String {
+        let text = codingPath.map { key in key.intValue.map { "[\($0)]" } ?? ".\(key.stringValue)" }.joined()
+        return text.isEmpty ? "(root)" : String(text.drop(while: { $0 == "." }))
+    }
 }
 
 public struct ProxyClientRequest: Encodable, Sendable {
@@ -187,16 +217,18 @@ public struct ProxySpecProvider: SpecProvider {
     }
 
     private static func validate(_ response: Data, intent: SpecIntent) throws -> ValidatedSpec {
-        guard response.count <= 65_536 else { throw ProxyProviderFailure.invalidResponse }
+        guard response.count <= 65_536 else { throw ProxyProviderFailure.responseTooLarge }
         let spec: ValidatedSpec
         do {
             spec = try SpecValidator.validate(response)
         } catch let error as SpecValidationError {
             throw ProxyProviderFailure.rejectedSpec(error.name)
+        } catch let error as DecodingError {
+            throw ProxyProviderFailure.undecodable(ProxyProviderFailure.describe(error))
         } catch {
-            throw ProxyProviderFailure.invalidResponse
+            throw ProxyProviderFailure.undecodable("other \(type(of: error))")
         }
-        guard spec.intent == intent else { throw ProxyProviderFailure.invalidResponse }
+        guard spec.intent == intent else { throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue) }
         return spec
     }
 }
