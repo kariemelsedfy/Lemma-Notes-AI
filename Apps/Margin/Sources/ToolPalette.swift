@@ -65,6 +65,20 @@ enum InkWidthPreferences {
     }
 }
 
+/// Saves the writer's colour, recent colours and pen thickness whenever they change.
+struct InkPreferenceSaver: ViewModifier {
+    let ink: InkColor
+    let recents: RecentInkColors
+    let width: InkWidth
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: width) { _, width in InkWidthPreferences.save(width) }
+            .onChange(of: ink) { _, ink in InkColorPreferences.save(selected: ink, recents: recents) }
+            .onChange(of: recents) { _, recents in InkColorPreferences.save(selected: ink, recents: recents) }
+    }
+}
+
 /// The bottom board: tools and undo/redo on the first row, ink colours on the second (pen only).
 struct ToolPalette: View {
     @Binding var selectedTool: CanvasTool

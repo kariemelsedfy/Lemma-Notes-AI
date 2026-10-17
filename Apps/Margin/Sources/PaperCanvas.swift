@@ -1,12 +1,6 @@
 import DesignSystem
+import DocumentStore
 import SwiftUI
-
-enum PaperStyle: CaseIterable {
-    case blank
-    case ruled
-    case grid
-    case dotted
-}
 
 struct PaperCanvas: View {
     let style: PaperStyle
@@ -22,7 +16,7 @@ struct PaperCanvas: View {
                 break
             case .ruled:
                 drawRuledPaper(in: bounds, context: context)
-            case .grid:
+            case .grid5Millimeters:
                 drawGridPaper(in: bounds, context: context)
             case .dotted:
                 drawDottedPaper(in: bounds, context: context)

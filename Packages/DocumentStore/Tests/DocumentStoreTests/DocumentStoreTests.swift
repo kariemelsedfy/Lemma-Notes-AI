@@ -272,3 +272,41 @@ final class DocumentStoreTests: XCTestCase {
         PageMetadata(pageID: id, size: PageSize(width: 100, height: 100), paper: .ruled, elements: [])
     }
 }
+
+final class PageTemplateTests: XCTestCase {
+    func testEveryPresetIs768WideAndTheDefaultIsTheOriginalPage() {
+        XCTAssertTrue(PageSizePreset.allCases.allSatisfy { $0.size.width == 768 })
+        XCTAssertEqual(PageSizePreset.default.size, PageSize(width: 768, height: 1_024))
+        XCTAssertEqual(PageSizePreset.letter.size.height, 994)
+        XCTAssertEqual(PageSizePreset.isoA4.size.height, 1_086)
+        XCTAssertEqual(PageSizePreset.square.size.height, 768)
+        XCTAssertEqual(Set(PageSizePreset.allCases.map(\.size.height)).count, PageSizePreset.allCases.count)
+    }
+
+    func testAPresetIsRecognisedFromItsSizeAndUnknownSizesAreNot() {
+        for preset in PageSizePreset.allCases { XCTAssertEqual(PageSizePreset.matching(preset.size), preset) }
+        XCTAssertNil(PageSizePreset.matching(PageSize(width: 768, height: 1_500)))
+    }
+
+    func testASmallerPageIsNotOfferedWhenItWouldHideInk() {
+        XCTAssertTrue(PageSizePreset.tablet.fits(inkBottom: 900))
+        XCTAssertFalse(PageSizePreset.square.fits(inkBottom: 900))
+        XCTAssertTrue(PageSizePreset.square.fits(inkBottom: 768))
+    }
+
+    func testANotebookStartsWithTheChosenPaperAndSizeAndNewPagesFollowIt() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let library = NotebookPackageLibrary(rootURL: root)
+
+        let created = try library.create(title: "Maths", paper: .grid5Millimeters, size: PageSizePreset.isoA4.size)
+        let first = try library.document(id: created.id)
+        XCTAssertEqual(first.manifest.settings.defaultPaper, .grid5Millimeters)
+        XCTAssertEqual(first.pages[0].metadata.paper, .grid5Millimeters)
+        XCTAssertEqual(first.pages[0].metadata.size, PageSizePreset.isoA4.size)
+
+        let appended = try library.appendBlankPage(inNotebook: created.id)
+        XCTAssertEqual(appended.metadata.paper, .grid5Millimeters)
+        XCTAssertEqual(appended.metadata.size, PageSizePreset.isoA4.size)
+    }
+}

@@ -62,6 +62,43 @@ public struct PageSize: Codable, Equatable, Sendable {
     }
 }
 
+/// The paper sizes a page can have. Every size is 768 points wide, so changing a page's size only moves its
+/// bottom edge: ink never shifts sideways and a notebook of mixed sizes still lines up in one column.
+public enum PageSizePreset: String, CaseIterable, Codable, Sendable, Identifiable {
+    /// The original page, 3:4 like the iPad's screen.
+    case tablet
+    /// US Letter, 8.5 x 11 in.
+    case letter
+    /// ISO A4, 210 x 297 mm.
+    case isoA4
+    case square
+
+    public var id: String { rawValue }
+
+    public static let width = 768.0
+    public static let `default` = PageSizePreset.tablet
+
+    public var size: PageSize {
+        switch self {
+        case .tablet: PageSize(width: Self.width, height: 1_024)
+        case .letter: PageSize(width: Self.width, height: (Self.width * 11 / 8.5).rounded())
+        case .isoA4: PageSize(width: Self.width, height: (Self.width * 297 / 210).rounded())
+        case .square: PageSize(width: Self.width, height: Self.width)
+        }
+    }
+
+    /// The preset a page has, or nil for a size none of them produce (an older or imported page).
+    public static func matching(_ size: PageSize) -> PageSizePreset? {
+        allCases.first { abs($0.size.width - size.width) < 1 && abs($0.size.height - size.height) < 1 }
+    }
+
+    /// Whether a page of this size still shows all ink whose lowest point is `inkBottom`. A smaller page is
+    /// never offered when it would hide what is already written.
+    public func fits(inkBottom: Double) -> Bool {
+        inkBottom <= size.height
+    }
+}
+
 /// A rectangular semantic element bound, expressed in document coordinates.
 public struct PageBounds: Codable, Equatable, Sendable {
     public let horizontal: Double

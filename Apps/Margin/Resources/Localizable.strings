@@ -123,3 +123,15 @@
 "ask.ghost.resize" = "Resize answer";
 "ask.selection.resize" = "Resize selection";
 "ink.width" = "Pen thickness";
+"page.menu" = "Page";
+"page.menu.thispage" = "This page";
+"page.menu.allpages" = "All pages";
+"page.menu.size" = "Paper size";
+"page.paper.blank" = "Blank";
+"page.paper.ruled" = "Lined";
+"page.paper.grid" = "Grid";
+"page.paper.dotted" = "Dots";
+"page.size.tablet" = "Tablet (3:4)";
+"page.size.letter" = "Letter";
+"page.size.isoA4" = "A4";
+"page.size.square" = "Square";
