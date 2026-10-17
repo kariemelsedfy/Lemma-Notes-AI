@@ -4,7 +4,23 @@
 
 This is the single place that answers "where are we right now?" Keep it short and current. Anything that becomes long-lived reference material belongs in the topic docs instead.
 
-**Last updated:** 2026-10-13 · by: Devin · Milestone: **The M4-14B main-target branch wires a bounded local arithmetic Ask path; no real model or cloud provider is wired. Earlier device results belong to their recorded SHAs, not this recovery build. M3-10 measures handwriting quality and does not gate AI (ADR-018).**
+**Last updated:** 2026-10-17 · by: Claude · Milestone: **M5/M6 work on the owner's iPad mini 6: Ask offers Solve, Explain and Plot; the home screen has folders, tabs and previews. The sections below dated before 2026-10-17 are history; this section and `PROGRESS.md` / `SESSIONS.md` are current.**
+
+## Now (2026-10-17): what exists and what to know
+
+**What the owner can do on the iPad (all device-confirmed unless noted in PROGRESS):** write with a colour palette and four pen thicknesses; lasso handwriting and choose **Solve** (maths, local first, then the hosted model), **Explain** (answer, define or continue, hosted) or **Plot** (a hand-drawn graph of a function, fully local); the answer appears as a draggable, resizable ghost in the writer's own handwriting (or a generic print hand for plot numbers), at the question's pen width and pressure, with a fresh random choice among their learned character variants each time; Keep or Discard; erase one character of an answer at a time; undo/redo; Apple Pencil double-tap switches pen and eraser and returns after erasing; spare blank page at the end of every notebook; page patterns (blank, lined, grid, dots) and sizes; notes named for the day, flat folders, favourites, a Notability-style home with previews (**the home screen and the page menu need the owner's first look on the device**).
+
+**How answers work:** `AskPipeline` runs lasso, Vision reading, a provider (`PlotRoutingProvider` over `LocalPlotSpecProvider` and `FallbackSpecProvider(LocalArithmetic, hosted proxy)`), placement below the question, rendering, the ghost. Hosted answers go to a Cloud Run service (`scripts/deploy-pilot-proxy.sh`, owner runs it) that calls Gemini with a server-side key; the app holds a bundled bearer token (pilot only; per-install App Attest tokens are required before anyone else gets a build). Spend ceiling is **$10 total** (ADR-021/027/028), about one cent used. Hosted answers are a premium entitlement (ADR-029), not a consent switch; the premium purchase flow must still carry the Gemini disclosure and an explicit acknowledgement (M6, not built).
+
+**Rules that changed recently (owner decisions, in chat):** a low read confidence no longer blocks an answer (only a scribble declines; AGENTS §7); plots are generic and never use the glyph bank or a model; the glyph bank learns from the writer's own ink every Ask, up to 20 variants per character, always on, never from generated ink, never uploaded; folders are flat and filed in each manifest (ADR-030); search is by title only; no page snapping while scrolling.
+
+**Where to look:** `PROGRESS.md` (newest entries first: what was built, what is unverified), `SESSIONS.md` (what surprised us), `DECISIONS.md` ADR-027 to ADR-030, `PILOT_RUN_SHEET.md` (the measurement protocol; the owner reported all prompts passed but sent no table). Secrets live only in macOS Keychain and Google Secret Manager; never in the repo, the chat or the app.
+
+**Environment gotchas that cost time:** re-run `./scripts/generate.sh` after adding any file or xcodebuild will not see it; `PilotToken.local` (gitignored) must exist before generating; the iPad must be unlocked and on a good cable to install or launch; app tests use the simulator by id (`345222E8-A40F-4294-BCF0-84E9D0E492EA`), not by name; `scripts/lint.sh` also covers `Tools/` and enforces 3-character identifiers (geometry names excepted in `.swiftlint.yml`), 400-line files and 120-column lines.
+
+**Next (owner-approved order):** device check of the home screen and page menu; then the premium plan and onboarding flow; App Attest per-install tokens; iCloud sync and backup (revisit ADR-030's folder list); PDF/image import; an accessibility pass; plot exponents from real Vision output (raised powers are not read yet, `^` works); the `check` and `ask` intents; pages that fill the whole screen and a dockable tool board (vertical on the sides).
+
+**Previous update:** 2026-10-13 · by: Devin · Milestone: **The M4-14B main-target branch wires a bounded local arithmetic Ask path; no real model or cloud provider is wired. Earlier device results belong to their recorded SHAs, not this recovery build. M3-10 measures handwriting quality and does not gate AI (ADR-018).**
 
 ## 0. Restart, 2026-10-07
 
