@@ -3028,3 +3028,6 @@ A decline (`blocks == []`) becomes `failed(.unreadable)`, not a success with not
 **Next:** M0-01 (repo scaffolding + Tuist). Human should resolve Q1 (paged vs. infinite canvas) and Q2 (PDF in 1.0?) before M1-02, and confirm M0-07 in parallel.
 
 **Verification:** n/a — docs only.
+
+## 2026-10-17 M6-ENT-1
+Small by design: the policy type answers what the UI shows (allowed / onboarding ask / subscribe / allowance used up) so the paywall and tour never re-derive it. Only display name changed for the rename; changing the bundle id would orphan the installed app and its data. The onboarding allowance is client-side until App Attest lands, so the hosted tour steps must not ship to anyone else before then.

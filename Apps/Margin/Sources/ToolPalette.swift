@@ -275,7 +275,7 @@ struct ToolPalette: View {
 private struct InkPalettePopover: View {
     let selected: InkColor
     let onPick: (InkColor) -> Void
-    @State private var custom = Color.black
+    @State private var custom = MarginColor.ink
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {

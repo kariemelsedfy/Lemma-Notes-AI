@@ -98,7 +98,8 @@ struct PilotCloudConfiguration: Sendable {
     /// exist (M6) the stand-in is "this build was provisioned with an access token"; a build without one is
     /// the free tier and never makes a cloud call. The provider layer still gates on this (invariant 8), and
     /// the purchase flow must carry the third-party AI disclosure and acceptance (BUSINESS.md 5.1.2(i)).
-    var isEntitled: Bool { hasToken }
+    var plan: Plan { hasToken ? .pilot : .free }
+    var isEntitled: Bool { plan.includesHostedAsk }
 
     var serverText: String {
         get { defaults.string(forKey: Self.urlKey) ?? Self.defaultServerText }

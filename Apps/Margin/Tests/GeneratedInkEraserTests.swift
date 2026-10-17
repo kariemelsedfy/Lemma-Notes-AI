@@ -47,9 +47,15 @@ final class GeneratedInkEraserTests: XCTestCase {
     }
 
     private static func answer(lines: Int, columns: Int) -> [InkStroke] {
-        (0..<lines).flatMap { line in
-            (0..<columns).map { column in stroke(x: CGFloat(100 + column * 30), y: CGFloat(300 + line * 60)) }
+        var strokes: [InkStroke] = []
+        for line in 0..<lines {
+            for column in 0..<columns {
+                let originX = CGFloat(100 + column * 30)
+                let originY = CGFloat(300 + line * 60)
+                strokes.append(stroke(x: originX, y: originY))
+            }
         }
+        return strokes
     }
 
     private static func stored(_ stroke: InkStroke) -> StoredStroke {

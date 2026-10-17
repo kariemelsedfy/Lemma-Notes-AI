@@ -44,7 +44,8 @@ let project = Project(
             bundleId: "\(bundleIDPrefix).margin",
             deploymentTargets: .iOS("26.0"),
             infoPlist: .extendingDefault(with: [
-                "UILaunchScreen": [:]
+                "UILaunchScreen": [:],
+                "CFBundleDisplayName": "Lemma Notes AI",
             ]),
             sources: ["Apps/Margin/Sources/**"],
             resources: ["Apps/Margin/Resources/**"],
