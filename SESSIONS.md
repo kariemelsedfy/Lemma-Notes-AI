@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M6-LIB-3 — `open(path, "w").write(open(path).read())` truncates first
+The one real scare of the session: appending strings with that idiom emptied Localizable.strings (the right-hand `open(path)` runs after the left-hand `open(path, "w")` has already truncated). The suite caught it because tests assert that copy exists rather than that it equals a key. If you script edits, read into a variable first. Also learned this session: `ImageRenderer` cannot render a `ScrollView`/`LazyVGrid` (blank output), a `UIWindow` created inside the test host draws blank, and macOS has no `timeout`; for UI I fell back to rendering individual views to PNG and looking at them. The full home screen is untested visually until the iPad.
+
 ## 2026-10-17 · Claude · M6-LIB-2 — put the filing where the data travels
 The choice was where "which folder" lives. A central index is one tidy file but a second source of truth that drifts the moment a package is copied, restored or deleted outside the app; a field in each manifest travels with the notebook. I took the manifest, kept the folder *list* central because it is tiny, and wrote ADR-030 with the sync caveat (two devices editing the folder list is last-write-wins) so the iCloud work starts from it. Reading the summary also showed `createdAt` had been silently populated from `modifiedAt`; fixed while there.
 
