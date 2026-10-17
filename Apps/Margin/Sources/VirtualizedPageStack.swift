@@ -160,6 +160,11 @@ struct VirtualizedPageStack: View {
             undoController.configure(store: drawingStore)
             ensureTrailingBlankPage()
         }
+        .onChange(of: selectedTool) { _, tool in
+            if Self.shouldDropSelection(whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed) {
+                cancelSelection()
+            }
+        }
         .onChange(of: selectedInk) { _, ink in
             InkColorPreferences.save(selected: ink, recents: recentInks)
         }
