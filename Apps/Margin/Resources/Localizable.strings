@@ -35,7 +35,7 @@
 "ask.verb.explain" = "Explain";
 "ask.verb.explain.subtitle" = "Answer, define, continue";
 "ask.verb.plot" = "Plot";
-"ask.verb.plot.subtitle" = "Graph a function";
+"ask.verb.plot.subtitle" = "Use ^ for powers: x^3";
 "ask.state.working" = "Working…";
 "ask.notice.substituted-characters %@" = "Typeset for the characters missing from your handwriting sample: %@";
 "ask.cancel" = "Cancel";
