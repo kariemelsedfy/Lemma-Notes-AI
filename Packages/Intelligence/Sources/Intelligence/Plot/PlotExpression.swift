@@ -44,10 +44,16 @@ public struct PlotExpression: Sendable {
         var text = raw.lowercased()
         let replacements: [(String, String)] = [
             ("²", "^2"), ("³", "^3"), ("−", "-"), ("–", "-"), ("×", "*"), ("·", "*"), ("÷", "/"),
-            ("√", "sqrt"), ("π", "pi"), ("**", "^"), ("[", "("), ("]", ")"), ("{", "("), ("}", ")"),
+            ("√", "sqrt"), ("π", "pi"), ("**", "^"), ("ˆ", "^"), ("∧", "^"), ("⌃", "^"),
+            ("[", "("), ("]", ")"), ("{", "("), ("}", ")"),
         ]
         for (symbol, plain) in replacements { text = text.replacingOccurrences(of: symbol, with: plain) }
         text = text.filter { !$0.isWhitespace }
+        // A hand-drawn caret is often read as a `1` (`x^3` comes back as `x13`, or `x^13`). A power of 11 to 19
+        // on a bare `x` is far rarer in a student's graph than that slip, so it reads as the last digit.
+        // `x^10` is left alone.
+        text = text.replacingOccurrences(
+            of: #"(?<![a-z])x\^?1([1-9])(?!\d)"#, with: "x^$1", options: .regularExpression)
         // `x2` is x squared; `2x2` is 2·x². Only a variable followed by digits that are not already an exponent.
         text = text.replacingOccurrences(
             of: #"(?<![a-z])x(?=\d)"#, with: "x^", options: .regularExpression)

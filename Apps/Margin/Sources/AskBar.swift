@@ -105,7 +105,7 @@ struct AskBar: View {
     let phase: AskBarPhase
     let explanation: String?
     var renderingNotice: AskRenderingNotice?
-    var failureOverride: LocalizedStringKey?
+    var failureOverride: String?
     var failureDetail: String?
     var onVerb: (AskVerb) -> Void = { _ in }
     var onCancel: () -> Void = {}
@@ -166,6 +166,7 @@ struct AskBar: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .tourTarget(.verb(verb))
                     .accessibilityLabel(verb.titleKey)
                     .accessibilityHint(verb.subtitleKey)
                 }
@@ -175,11 +176,13 @@ struct AskBar: View {
 
     private var working: some View {
         HStack(spacing: 12) {
-            ProgressView()
+            ProgressView().tint(MarginColor.accent)
             Text("ask.state.working")
-            Button("ask.cancel", role: .cancel, action: onCancel)
-                .frame(minWidth: 44, minHeight: 44)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(MarginColor.primaryText.opacity(0.85))
+            decisionButton("ask.cancel", tint: MarginColor.accent, action: onCancel)
         }
+        .padding(.leading, 6)
     }
 
     private var decision: some View {
@@ -200,6 +203,7 @@ struct AskBar: View {
             }
             decisionButton("ask.discard", tint: .red, action: onReject)
             decisionButton("ask.keep", tint: MarginColor.accent, action: onAccept)
+                .tourTarget(.keep)
         }
     }
 
@@ -226,9 +230,15 @@ struct AskBar: View {
 
     private func failure(_ failure: AskFailure) -> some View {
         HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 20))
+                .foregroundStyle(MarginColor.accent)
             VStack(alignment: .leading, spacing: 2) {
-                Text(failureOverride ?? failure.messageKey)
+                failureText(failure)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(MarginColor.primaryText.opacity(0.85))
                     .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
                     // The technical line is for whoever is debugging, so it stays hidden until the message is
                     // long-pressed, and exists only in debug builds.
                     .onLongPressGesture { showsDetail.toggle() }
@@ -241,12 +251,19 @@ struct AskBar: View {
                 #endif
             }
             if failure.isRetryable {
-                Button("ask.retry", action: onRetry)
-                    .buttonStyle(.borderedProminent)
-                    .frame(minWidth: 44, minHeight: 44)
+                decisionButton("ask.retry", tint: MarginColor.accent, action: onRetry)
             }
-            Button("ask.dismiss", action: onDismiss)
-                .frame(minWidth: 44, minHeight: 44)
+            decisionButton("ask.dismiss", tint: MarginColor.secondaryText, action: onDismiss)
+        }
+        .padding(.leading, 6)
+    }
+
+    @ViewBuilder
+    private func failureText(_ failure: AskFailure) -> some View {
+        if let failureOverride {
+            Text(verbatim: failureOverride)
+        } else {
+            Text(failure.messageKey)
         }
     }
 }

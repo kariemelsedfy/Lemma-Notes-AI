@@ -105,8 +105,10 @@ final class OnboardingCopyTests: XCTestCase {
             "onboarding.welcome.title", "onboarding.welcome.body", "onboarding.handwriting.title",
             "onboarding.handwriting.body", "onboarding.handwriting.teach", "onboarding.disclosure.title",
             "onboarding.disclosure.body", "onboarding.disclosure.accept", "onboarding.disclosure.decline",
-            "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.subscribe.trial",
-            "onboarding.subscribe.price", "onboarding.note.title", "onboarding.coach.plot.hint",
+            "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.cta", "onboarding.fine.annual",
+            "onboarding.fine.monthly", "onboarding.plan.annual", "onboarding.plan.monthly", "onboarding.benefit.solve",
+            "onboarding.note.title", "onboarding.coach.plot.hint", "onboarding.pointer.write",
+            "onboarding.pointer.ask", "onboarding.pointer.keep",
         ]
         for step in [OnboardingStep.explain, .solve, .plot] {
             keys.append(PracticeCoachBar.titleName(step))
@@ -128,5 +130,29 @@ final class OnboardingCopyTests: XCTestCase {
         let text = PracticeCoachBar.instruction(step: .plot, progress: PracticeProgress(expected: .plot))
         XCTAssertTrue(text.contains("y = x^3 + cos(x)"))
         XCTAssertTrue(text.contains("^"))
+    }
+}
+
+final class TourPointerTests: XCTestCase {
+    func testTheArrowFollowsTheStepsInOrder() {
+        var progress = PracticeProgress(expected: .plot)
+        XCTAssertEqual(progress.pointerTarget(hasInk: false, lassoArmed: false), .writeHere)
+        XCTAssertEqual(progress.pointerTarget(hasInk: true, lassoArmed: false), .ask)
+        XCTAssertNil(progress.pointerTarget(hasInk: true, lassoArmed: true))
+        progress.apply(.selected)
+        XCTAssertEqual(progress.pointerTarget(hasInk: true, lassoArmed: false), .verb(.plot))
+        progress.apply(.verbChosen(.plot))
+        XCTAssertNil(progress.pointerTarget(hasInk: true, lassoArmed: false))
+        progress.apply(.answerShown)
+        XCTAssertEqual(progress.pointerTarget(hasInk: true, lassoArmed: false), .keep)
+        progress.apply(.kept)
+        XCTAssertNil(progress.pointerTarget(hasInk: true, lassoArmed: false))
+    }
+
+    func testAWrongVerbStillPointsAtTheTaughtOne() {
+        var progress = PracticeProgress(expected: .explain)
+        progress.apply(.selected)
+        progress.apply(.verbChosen(.plot))
+        XCTAssertEqual(progress.pointerTarget(hasInk: true, lassoArmed: false), .verb(.explain))
     }
 }

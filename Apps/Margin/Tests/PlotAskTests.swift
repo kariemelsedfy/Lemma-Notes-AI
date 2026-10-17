@@ -53,7 +53,7 @@ final class PlotAskTests: XCTestCase {
         let harness = Harness(reading: SelectionReading(transcript: "hello there", confidence: 0.9), transport)
         harness.pipeline.run(harness.input, verb: .plot)
         try await harness.settle()
-        XCTAssertEqual(harness.model.localFailure, .noFunction)
+        XCTAssertEqual(harness.model.localFailure, .noFunction(read: "hello there"))
         let calls = await transport.count
         XCTAssertEqual(calls, 0)
     }

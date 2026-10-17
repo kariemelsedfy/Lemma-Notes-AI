@@ -51,6 +51,7 @@
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
 "ask.failure.transport" = "Couldn’t get an answer right now. Check your connection and try again.";
 "ask.failure.local-unclear" = "Couldn’t read that clearly. Try a smaller, clearer selection.";
+"ask.failure.local-plot-read" = "I read “%@” but couldn't find a function to plot. Write it like y = x², lasso it, then tap Plot.";
 "ask.failure.local-plot-none" = "I couldn't find a function to plot. Write it like y = x², lasso it, then tap Plot.";
 "ask.failure.local-unsupported" = "Only short arithmetic using +, -, * or / is available right now. Try a simpler expression.";
 
@@ -192,6 +193,20 @@
 "onboarding.coach.plot.hint" = "Use ^ for powers.";
 "onboarding.subscribe.title" = "Keep asking with Premium";
 "onboarding.subscribe.body" = "Your notebook, plots and handwriting are free forever. Premium adds AI answers that write back in your hand.";
-"onboarding.subscribe.trial" = "Try it free for 7 days";
-"onboarding.subscribe.price" = "Then $4.99 a month, or $39.99 a year.";
 "onboarding.note.title" = "Welcome";
+"onboarding.benefit.handwriting" = "Answers written back in your own handwriting";
+"onboarding.benefit.explain" = "Explain anything you circle, from a term to a question";
+"onboarding.benefit.solve" = "Solve the math you write, step by step";
+"onboarding.plan.annual" = "Yearly";
+"onboarding.plan.annual.price" = "$39.99";
+"onboarding.plan.annual.per" = "$3.33 a month";
+"onboarding.plan.annual.badge" = "SAVE 33%";
+"onboarding.plan.monthly" = "Monthly";
+"onboarding.plan.monthly.price" = "$4.99";
+"onboarding.plan.monthly.per" = "Cancel anytime";
+"onboarding.cta" = "Start 7-day free trial";
+"onboarding.fine.annual" = "7 days free, then $39.99 a year. Cancel anytime.";
+"onboarding.fine.monthly" = "7 days free, then $4.99 a month. Cancel anytime.";
+"onboarding.pointer.write" = "Write here";
+"onboarding.pointer.ask" = "Tap Ask";
+"onboarding.pointer.keep" = "Keep it";

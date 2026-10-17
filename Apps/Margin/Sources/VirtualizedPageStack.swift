@@ -29,6 +29,8 @@ struct VirtualizedPageStack: View {
     let onLearnWriting: @MainActor (LearnableSelection) -> Void
     /// What happened in the Ask, for the first-run tour. Nothing else listens to it.
     let onPracticeEvent: @MainActor (PracticeEvent) -> Void
+    /// Where the writer is in a practice step, so a bouncing arrow can point at what to do next.
+    let practice: PracticeProgress?
 
     @State var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
@@ -62,7 +64,8 @@ struct VirtualizedPageStack: View {
         inkRenderer: any SuggestionInkRendering = TypesetInkRenderer(),
         handwritingStatus: HandwritingStyleStatus = .defaultTypeset,
         onLearnWriting: @escaping @MainActor (LearnableSelection) -> Void = { _ in },
-        onPracticeEvent: @escaping @MainActor (PracticeEvent) -> Void = { _ in }
+        onPracticeEvent: @escaping @MainActor (PracticeEvent) -> Void = { _ in },
+        practice: PracticeProgress? = nil
     ) {
         notebookID = document?.manifest.id
         self.autosave = autosave
@@ -70,6 +73,7 @@ struct VirtualizedPageStack: View {
         self.handwritingStatus = handwritingStatus
         self.onLearnWriting = onLearnWriting
         self.onPracticeEvent = onPracticeEvent
+        self.practice = practice
         let pages = document?.pages ?? []
         _pageIDs = State(initialValue: pages.map(\.metadata.pageID))
         _pageSizes = State(
@@ -124,7 +128,7 @@ struct VirtualizedPageStack: View {
                         phase: askModel.phase,
                         explanation: askModel.explanation,
                         renderingNotice: askModel.renderingNotice,
-                        failureOverride: askModel.failureMessageKey,
+                        failureOverride: askModel.failureMessage,
                         failureDetail: askModel.failureDetail,
                         onVerb: { ask($0) },
                         onCancel: { cancelAsk() },
@@ -156,6 +160,7 @@ struct VirtualizedPageStack: View {
             .padding(.bottom, 20)
         }
         .background(.background)
+        .modifier(TourPointerOverlay(target: tourTarget))
         .toolbar { ToolbarItem(placement: .topBarTrailing) { pageOptionsMenu } }
         .background { PencilInteractionHost(tool: $selectedTool, switcher: $pencilSwitcher) }
         .onAppear {

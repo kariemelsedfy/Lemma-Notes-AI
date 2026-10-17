@@ -102,40 +102,129 @@ struct OnboardingCards: View {
     }
 }
 
-/// The last step: an invitation, never a gate. There is no purchase button until StoreKit lands (M6); the free
-/// notebook is complete without it.
+/// The last step: an invitation, never a gate. The subscribe button has nothing to buy until StoreKit lands (M6),
+/// so for now it ends the tour like "Maybe later" does; the free notebook is complete without it.
 struct OnboardingInvitation: View {
-    let onDone: () -> Void
+    enum Choice { case annual, monthly }
+
+    let onSubscribe: (Choice) -> Void
+    let onLater: () -> Void
+    @State private var choice = Choice.annual
 
     var body: some View {
-        VStack(spacing: MarginSpacing.large) {
+        ScrollView {
+            VStack(spacing: MarginSpacing.xLarge) {
+                header
+                benefits
+                HStack(spacing: MarginSpacing.medium) {
+                    planCard(
+                        .annual, title: "onboarding.plan.annual", price: "onboarding.plan.annual.price",
+                        note: "onboarding.plan.annual.per", badge: "onboarding.plan.annual.badge")
+                    planCard(
+                        .monthly, title: "onboarding.plan.monthly", price: "onboarding.plan.monthly.price",
+                        note: "onboarding.plan.monthly.per", badge: nil)
+                }
+                VStack(spacing: MarginSpacing.small) {
+                    Button {
+                        onSubscribe(choice)
+                    } label: {
+                        Text("onboarding.cta")
+                            .font(.system(size: 20, weight: .bold))
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(MarginColor.accent)
+                    .controlSize(.large)
+                    Text(choice == .annual ? "onboarding.fine.annual" : "onboarding.fine.monthly")
+                        .font(.system(size: 14))
+                        .foregroundStyle(MarginColor.secondaryText)
+                }
+                Button("onboarding.later", action: onLater)
+                    .font(.system(size: 15))
+                    .foregroundStyle(MarginColor.secondaryText)
+                    .frame(minHeight: 44)
+            }
+            .padding(.horizontal, MarginSpacing.xxLarge)
+            .padding(.vertical, 48)
+            .frame(maxWidth: 620)
+            .frame(maxWidth: .infinity)
+        }
+        .background(MarginColor.canvas)
+    }
+
+    private var header: some View {
+        VStack(spacing: MarginSpacing.medium) {
             Image(systemName: "sparkles")
-                .font(.system(size: 52))
+                .font(.system(size: 64))
                 .foregroundStyle(MarginColor.accent)
             Text("onboarding.subscribe.title")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
             Text("onboarding.subscribe.body")
                 .font(.system(size: 18))
                 .foregroundStyle(MarginColor.secondaryText)
                 .multilineTextAlignment(.center)
-            VStack(spacing: MarginSpacing.xSmall) {
-                Text("onboarding.subscribe.trial").font(.system(size: 20, weight: .semibold))
-                Text("onboarding.subscribe.price").foregroundStyle(MarginColor.secondaryText)
-            }
-            Button(action: onDone) {
-                Text("onboarding.later")
-                    .font(.system(size: 18, weight: .semibold))
-                    .frame(maxWidth: .infinity, minHeight: 28)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(MarginColor.accent)
-            .controlSize(.large)
         }
-        .padding(MarginSpacing.xxLarge)
-        .frame(maxWidth: 560)
-        .presentationDetents([.medium, .large])
-        .interactiveDismissDisabled()
+    }
+
+    private var benefits: some View {
+        VStack(alignment: .leading, spacing: MarginSpacing.medium) {
+            benefit("pencil.and.scribble", "onboarding.benefit.handwriting")
+            benefit("text.bubble", "onboarding.benefit.explain")
+            benefit("equal.square", "onboarding.benefit.solve")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MarginSpacing.large)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(MarginColor.surface))
+    }
+
+    private func benefit(_ symbol: String, _ text: LocalizedStringKey) -> some View {
+        HStack(spacing: MarginSpacing.medium) {
+            Image(systemName: symbol)
+                .font(.system(size: 20))
+                .foregroundStyle(MarginColor.accent)
+                .frame(width: 30)
+            Text(text).font(.system(size: 17, weight: .medium))
+        }
+    }
+
+    private func planCard(
+        _ plan: Choice, title: LocalizedStringKey, price: LocalizedStringKey, note: LocalizedStringKey,
+        badge: LocalizedStringKey?
+    ) -> some View {
+        let selected = choice == plan
+        return Button {
+            choice = plan
+        } label: {
+            VStack(spacing: MarginSpacing.xSmall) {
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(MarginColor.surface)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(MarginColor.accent))
+                } else {
+                    Spacer().frame(height: 22)
+                }
+                Text(title).font(.system(size: 17, weight: .semibold))
+                Text(price).font(.system(size: 22, weight: .bold, design: .rounded))
+                Text(note).font(.system(size: 14)).foregroundStyle(MarginColor.secondaryText)
+            }
+            .foregroundStyle(MarginColor.primaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, MarginSpacing.large)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(selected ? MarginColor.accent.opacity(0.14) : MarginColor.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(selected ? MarginColor.accent : MarginColor.divider, lineWidth: selected ? 2.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -153,8 +242,8 @@ struct OnboardingPresentation: ViewModifier {
             .fullScreenCover(isPresented: .constant(coordinator.showsCards)) {
                 OnboardingCards(coordinator: coordinator, handwriting: handwriting)
             }
-            .sheet(isPresented: .constant(coordinator.showsInvitation)) {
-                OnboardingInvitation { coordinator.finish() }
+            .fullScreenCover(isPresented: .constant(coordinator.showsInvitation)) {
+                OnboardingInvitation(onSubscribe: { _ in coordinator.finish() }, onLater: { coordinator.finish() })
             }
     }
 }

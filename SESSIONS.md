@@ -3034,3 +3034,6 @@ Small by design: the policy type answers what the UI shows (allowed / onboarding
 
 ## 2026-10-17 M6-ONB-1
 The coach needs no hooks into the pipeline: it reads the Ask bar's phase (selected, working with a verb, awaiting decision, failed, hidden) plus one explicit `.kept` event from `acceptSuggestion`. Kept the rules in pure types so the screen has none. A different verb than the step teaches still runs but does not advance the tour. Free installs skip the hosted steps and the disclosure until App Attest exists, so the tour never promises what it cannot deliver. Unverified on device: the practice flow with a real Pencil, the calibration card inside the full-screen cover, and the coach bar overlapping the toolbar.
+
+## 2026-10-17 M6-ONB-2
+The plot failure was almost certainly Vision reading a hand-drawn caret as a 1 (x^3 -> x13), which also explains the 1.5e10 axis: the window was right for the function it was given. Repaired at the parser with a narrow rule (11 to 19 on a bare x) and the failure now shows what was read so the next slip is visible. The arrows need no layout code in the stack: views publish their frames and one overlay draws the arrow. The CI type-checker is slower than a local build, so keep new modifiers in their own types.

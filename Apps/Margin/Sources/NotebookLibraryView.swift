@@ -174,7 +174,8 @@ struct NotebookLibraryView: View {
                 onLearnWriting: { handwriting.learn(from: $0) },
                 onPracticeEvent: { event in
                     if notebookID == onboarding.practiceNoteID { onboarding.handle(event) }
-                }
+                },
+                practice: notebookID == onboarding.practiceNoteID ? onboarding.progress : nil
             )
             .onDisappear { flushEdits() }
             .id(notebookID)

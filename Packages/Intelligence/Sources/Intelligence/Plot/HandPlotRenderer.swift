@@ -294,6 +294,8 @@ struct SplitMix64 {
 /// How tick values are written: no trailing zeros, no "-0".
 enum PlotFormat {
     static func label(_ value: Double, step: Double) -> String {
+        // Past five digits a tick label is wider than the plot's margin; scientific form keeps it on the page.
+        if abs(value) >= 100_000 { return compact(value) }
         let decimals = step >= 1 ? 0 : min(3, Int(ceil(-log10(step))))
         var text = String(format: "%.\(decimals)f", value)
         if text.contains(".") {
@@ -301,5 +303,14 @@ enum PlotFormat {
             if text.hasSuffix(".") { text.removeLast() }
         }
         return text == "-0" ? "0" : text
+    }
+
+    /// `1500000000` as `1.5e9`.
+    private static func compact(_ value: Double) -> String {
+        let exponent = Int(floor(log10(abs(value))))
+        var mantissa = String(format: "%.2f", value / pow(10, Double(exponent)))
+        while mantissa.hasSuffix("0") { mantissa.removeLast() }
+        if mantissa.hasSuffix(".") { mantissa.removeLast() }
+        return "\(mantissa)e\(exponent)"
     }
 }

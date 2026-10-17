@@ -153,6 +153,7 @@ struct ToolPalette: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .tourTarget(.ask)
         .keyboardShortcut(.return, modifiers: .command)
         .accessibilityLabel("ask.action")
         .accessibilityHint("ask.hint.question")
