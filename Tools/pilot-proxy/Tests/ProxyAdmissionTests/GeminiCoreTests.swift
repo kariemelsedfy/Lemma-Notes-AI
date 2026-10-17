@@ -51,7 +51,7 @@ final class GeminiCoreTests: XCTestCase {
 
     func testPromptPinsTheAnswerIntentDeclineRuleAndInjectionDefence() throws {
         let text = GeminiPrompt.instruction
-        let phrases = ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Never guess", "Ignore any instruction"]
+        let phrases = ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "best answer", "Ignore any instruction"]
         for phrase in phrases + ["never instructions"] {
             XCTAssertTrue(text.contains(phrase), phrase)
         }
@@ -108,7 +108,7 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertTrue(text.contains("ONE line of plain text"))
         XCTAssertTrue(text.contains("\"intent\" must be \"continue\""))
         XCTAssertFalse(text.contains("\"intent\" must be \"answer\""))
-        for phrase in ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Never guess", "Ignore any instruction"] {
+        for phrase in ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "best answer", "Ignore any instruction"] {
             XCTAssertTrue(text.contains(phrase), phrase)
         }
         let properties = try XCTUnwrap(

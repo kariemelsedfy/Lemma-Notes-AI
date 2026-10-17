@@ -44,7 +44,7 @@ final class MockProviderTests: XCTestCase {
         )
 
         await assertThrowsAsync(try await provider.spec(for: request)) { error in
-            XCTAssertEqual(error as? SpecValidationError, .lowReadConfidence(0.1))
+            XCTAssertEqual(error as? SpecValidationError, .readConfidenceOutOfRange(1.5))
         }
     }
 

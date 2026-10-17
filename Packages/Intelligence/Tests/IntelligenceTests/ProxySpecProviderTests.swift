@@ -62,9 +62,9 @@ final class ProxySpecProviderTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
-    func testMalformedSpecAndLowConfidenceWithBlocksFailClosed() async throws {
+    func testMalformedSpecFailsClosed() async throws {
         let invalid = Spec(
-            read: "2+3=", readConfidence: 0.2, intent: .answer,
+            read: "2+3=", readConfidence: 1.4, intent: .answer,
             blocks: [SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .math, value: "5")))]
         )
         let wrongIntent = Spec(read: "2+3=", readConfidence: 0.95, intent: .plot, blocks: [])

@@ -84,12 +84,13 @@ final class LocalArithmeticTests: XCTestCase {
         }
     }
 
-    func testUncertainReadOrOtherVerbCannotProduceInk() throws {
-        XCTAssertEqual(try outcome("2+3=", confidence: 0.74), .unsupported)
+    func testOnlyAnEmptyReadOrAnotherVerbCannotProduceInk() throws {
+        // Owner decision 2026-10-17: a shaky reading is still tried; only no reading at all is refused.
+        XCTAssertEqual(try outcome("2+3=", confidence: 0), .unsupported)
         XCTAssertEqual(try outcome("2+3=", confidence: .nan), .unsupported)
         XCTAssertEqual(try outcome("2+3=", intent: .plot), .unsupported)
-        guard case .answer = try outcome("2+3=", confidence: 0.75) else {
-            return XCTFail("A sufficiently confident reading should be supported.")
+        guard case .answer = try outcome("2+3=", confidence: 0.3) else {
+            return XCTFail("A shaky reading is still tried.")
         }
         XCTAssertEqual(try answer("2+3="), "5")
     }

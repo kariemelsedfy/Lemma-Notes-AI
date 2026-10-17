@@ -18,10 +18,23 @@ final class PlotAskTests: XCTestCase {
             case .plot(let plot) = try XCTUnwrap(spec.blocks.first).content
         else { return XCTFail("Expected a plot suggestion") }
         XCTAssertEqual(plot.functions.map(\.expression), ["x^2"])
+        XCTAssertEqual(spec.explanation, "Plotting y = x^2", "the writer sees what was read")
         XCTAssertFalse(harness.suggestions.strokes.isEmpty)
         XCTAssertEqual(harness.engine.strokes.count, 1, "The plot must not reach the page before Keep")
         let calls = await transport.count
         XCTAssertEqual(calls, 0, "Plotting is local; nothing may be sent")
+    }
+
+    func testTheAnswerIsDrawnWithTheQuestionsNibWidthAndPressure() async throws {
+        let harness = Harness(
+            reading: SelectionReading(transcript: "y = x^2", confidence: 0.9), CountingTransport())
+        // The question's pen: default nib 5 at pressure 0.5 (see Harness).
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+
+        let pen = try XCTUnwrap(PenMatching.pen(of: harness.suggestions.strokes))
+        XCTAssertEqual(pen.width, 5, accuracy: 0.05)
+        XCTAssertEqual(pen.force, 0.5, accuracy: 0.01)
     }
 
     func testAFlattenedSuperscriptStillPlots() async throws {
@@ -45,13 +58,18 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
-    func testALowConfidenceReadIsAskedAgainRatherThanGuessed() async throws {
-        let harness = Harness(
+    func testALowConfidenceReadStillPlotsAndOnlyNothingAtAllIsUnclear() async throws {
+        let shaky = Harness(
             reading: SelectionReading(transcript: "y = x^2", confidence: 0.2), CountingTransport())
-        harness.pipeline.run(harness.input, verb: .plot)
-        try await harness.settle()
-        XCTAssertEqual(harness.model.localFailure, .unclear)
-        XCTAssertTrue(harness.suggestions.strokes.isEmpty)
+        shaky.pipeline.run(shaky.input, verb: .plot)
+        try await shaky.settle()
+        XCTAssertFalse(shaky.suggestions.strokes.isEmpty, "the writer can delete a plot they did not want")
+
+        let scribble = Harness(reading: .unreadable, CountingTransport())
+        scribble.pipeline.run(scribble.input, verb: .plot)
+        try await scribble.settle()
+        XCTAssertEqual(scribble.model.localFailure, .unclear)
+        XCTAssertTrue(scribble.suggestions.strokes.isEmpty)
     }
 
     @MainActor private struct Harness {

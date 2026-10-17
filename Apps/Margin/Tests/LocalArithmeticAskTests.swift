@@ -37,7 +37,6 @@ final class LocalArithmeticAskTests: XCTestCase {
     func testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy() async throws {
         let cases: [(SelectionReading, LocalArithmeticFailure)] = [
             (SelectionReading(transcript: "x+2=", confidence: 0.95), .unsupported),
-            (SelectionReading(transcript: "2+3=", confidence: 0.4), .unclear),
             (.unreadable, .unclear),
         ]
         for (reading, expected) in cases {

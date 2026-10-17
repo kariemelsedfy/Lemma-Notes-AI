@@ -21,12 +21,18 @@ final class SpecValidationTests: XCTestCase {
         assertRejects(Self.spec(version: 2), with: .unsupportedVersion(2))
     }
 
-    func testRejectsLowReadConfidence() {
-        assertRejects(Self.spec(readConfidence: 0.59), with: .lowReadConfidence(0.59))
+    func testLowConfidenceAnswersAreNotBlockedByDefault() throws {
+        // Owner decision 2026-10-17: the writer can delete an answer they do not want.
+        XCTAssertNoThrow(try SpecValidator.validate(Self.spec(readConfidence: 0.1)))
+        XCTAssertNoThrow(try SpecValidator.validate(Self.spec(readConfidence: 0)))
     }
 
-    func testAcceptsExactlyTheConfidenceFloor() throws {
-        XCTAssertNoThrow(try SpecValidator.validate(Self.spec(readConfidence: 0.6)))
+    func testAStricterFloorStillWorksWhereAProductWantsOne() {
+        let strict = SpecLimits(minimumReadConfidence: 0.6)
+        XCTAssertThrowsError(try SpecValidator.validate(Self.spec(readConfidence: 0.59), limits: strict)) {
+            XCTAssertEqual($0 as? SpecValidationError, .lowReadConfidence(0.59))
+        }
+        XCTAssertNoThrow(try SpecValidator.validate(Self.spec(readConfidence: 0.6), limits: strict))
     }
 
     func testRejectsOutOfRangeConfidence() {

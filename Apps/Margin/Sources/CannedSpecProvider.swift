@@ -1,10 +1,11 @@
+import Foundation
 import Intelligence
 
 struct LocalArithmeticSpecProvider: SpecProvider {
     let tier = ModelTier.onDevice
 
     func spec(for request: SpecRequest) async throws -> ValidatedSpec {
-        guard let reading = request.selectedAreaReading, reading.confidence >= 0.75 else {
+        guard let reading = request.selectedAreaReading, reading.confidence > 0 else {
             throw LocalArithmeticFailure.unclear
         }
         guard let intent = request.intent else { throw LocalArithmeticFailure.unsupported }
@@ -23,7 +24,7 @@ struct LocalPlotSpecProvider: SpecProvider {
     let tier = ModelTier.onDevice
 
     func spec(for request: SpecRequest) async throws -> ValidatedSpec {
-        guard let reading = request.selectedAreaReading, reading.confidence >= 0.5 else {
+        guard let reading = request.selectedAreaReading, reading.confidence > 0 else {
             throw LocalArithmeticFailure.unclear
         }
         guard let functions = PlotRequest.functions(from: reading.transcript) else {
@@ -34,7 +35,12 @@ struct LocalPlotSpecProvider: SpecProvider {
             read: reading.transcript,
             readConfidence: Double(reading.confidence),
             intent: .plot,
-            blocks: [SpecBlock(placement: .belowSelection, content: .plot(plot))]
+            blocks: [SpecBlock(placement: .belowSelection, content: .plot(plot))],
+            // Shown with Keep and Discard, so the writer can see what was read (a flattened superscript is the
+            // likeliest slip) and discard a plot of the wrong function.
+            explanation: String(
+                format: NSLocalizedString("ask.plot.reading", comment: ""),
+                functions.map(\.text).joined(separator: ", "))
         )
         return try SpecValidator.validate(spec)
     }

@@ -12,8 +12,9 @@ enum GeminiPrompt {
         from 0 to 1.
         2. Then answer in the person's own notation. Give only what is missing: for "2+3=" the answer is "5", \
         not the whole equation. Be brief and match the density of their existing work.
-        3. If you cannot read the content with confidence, set a low "readConfidence" and return "blocks": []. \
-        Never guess.
+        3. Always give your best answer, even when the writing is messy or you are unsure: the person can delete it. \
+        Only when there is no recognisable writing at all (a scribble, a doodle, or a blank selection) set a low \
+        "readConfidence" and return "blocks": [].
 
         Output rules: reply with JSON matching the schema and nothing else. "intent" must be "answer". \
         Never output coordinates or stroke data. Use "inline" with "atAnchor" for a short completion, and \
