@@ -52,11 +52,25 @@ enum InkColorPreferences {
     }
 }
 
+/// Remembers the pen thickness between launches.
+enum InkWidthPreferences {
+    private static let key = "margin.ink.width"
+
+    static func load(from defaults: UserDefaults = .standard) -> InkWidth {
+        (defaults.object(forKey: key) as? Int).flatMap(InkWidth.init(rawValue:)) ?? .default
+    }
+
+    static func save(_ width: InkWidth, to defaults: UserDefaults = .standard) {
+        defaults.set(width.rawValue, forKey: key)
+    }
+}
+
 /// The bottom board: tools and undo/redo on the first row, ink colours on the second (pen only).
 struct ToolPalette: View {
     @Binding var selectedTool: CanvasTool
     @Binding var selectedInk: InkColor
     @Binding var recents: RecentInkColors
+    @Binding var selectedWidth: InkWidth
     let canUndo: Bool
     let canRedo: Bool
     var onUndo: () -> Void = {}
@@ -64,6 +78,7 @@ struct ToolPalette: View {
     var onAsk: () -> Void = {}
 
     @State private var showsPalette = false
+    @State private var showsWidths = false
 
     private static let hit: CGFloat = 44
 
@@ -188,6 +203,31 @@ struct ToolPalette: View {
                 InkPalettePopover(selected: selectedInk, onPick: choose)
                     .presentationCompactAdaptation(.popover)
             }
+            Divider().frame(height: 26).padding(.horizontal, 4)
+            widthButton
+        }
+    }
+
+    /// Shows the current thickness as a dot; opens the four thicknesses.
+    private var widthButton: some View {
+        Button {
+            showsWidths = true
+        } label: {
+            Circle()
+                .fill(MarginColor.primaryText.opacity(0.8))
+                .frame(width: selectedWidth.points + 6, height: selectedWidth.points + 6)
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(MarginColor.primaryText.opacity(0.08)))
+                .frame(width: Self.hit, height: Self.hit)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("ink.width")
+        .popover(isPresented: $showsWidths, arrowEdge: .bottom) {
+            InkWidthPopover(selected: selectedWidth, color: selectedInk.color) {
+                selectedWidth = $0
+                showsWidths = false
+            }
+            .presentationCompactAdaptation(.popover)
         }
     }
 
@@ -281,5 +321,47 @@ enum InkColorName {
         let key = "ink.name.\(String(format: "%06X", ink.hex))"
         let localized = NSLocalizedString(key, comment: "")
         return localized == key ? NSLocalizedString("ink.name.custom", comment: "") : localized
+    }
+}
+
+/// The four pen thicknesses, each drawn as a sample line in the current colour.
+private struct InkWidthPopover: View {
+    let selected: InkWidth
+    let color: Color
+    let onPick: (InkWidth) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("ink.width").font(.headline).padding(.bottom, 4)
+            ForEach(InkWidth.allCases) { width in
+                Button {
+                    onPick(width)
+                } label: {
+                    HStack(spacing: 14) {
+                        Capsule()
+                            .fill(color)
+                            .frame(width: 90, height: width.points)
+                            .frame(height: 20)
+                        Spacer(minLength: 0)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(MarginColor.accent)
+                            .opacity(selected == width ? 1 : 0)
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(selected == width ? MarginColor.accent.opacity(0.12) : .clear)
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(verbatim: "\(Int(width.points))"))
+                .accessibilityAddTraits(selected == width ? .isSelected : [])
+            }
+        }
+        .padding(16)
+        .frame(width: 220)
     }
 }

@@ -60,3 +60,12 @@ final class InkColorTests: XCTestCase {
         XCTAssertEqual(RecentInkColors(storage: [1, 1, 2]).colors.map(\.hex), [1, 2])
     }
 }
+
+final class InkWidthTests: XCTestCase {
+    func testWidthsGrowAndTheDefaultIsTheOriginalPen() {
+        let points = InkWidth.allCases.map(\.points)
+        XCTAssertEqual(points, points.sorted())
+        XCTAssertEqual(Set(points).count, points.count)
+        XCTAssertEqual(InkWidth.default.points, 5)
+    }
+}
