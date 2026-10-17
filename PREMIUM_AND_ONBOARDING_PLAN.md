@@ -11,7 +11,7 @@
 - **7-day free trial** on both plans; the trial runs under the same cost allowance.
 - **No action counter.** Each user has a hidden monthly *cost* allowance (start about $1.50 of inference). When it is used up, hosted answers stop with a clear message; plots and local arithmetic keep working. Alert when many users reach it.
 - **No student discount. Launch is Solve, Explain and Plot**; Check and Ask come later.
-- **Price (recommended, not yet confirmed):** $4.99 a month or $39.99 a year, annual shown first; founding-user first-year annual $29.99. Prices live in App Store Connect and can change without a build. Re-check against measured image-token cost.
+- **Price (confirmed by the owner 2026-10-17):** $4.99 a month or $39.99 a year, annual shown first; founding-user first-year annual $29.99. Prices live in App Store Connect and can change without a build. Re-check against measured image-token cost.
 
 ## 2. Structure
 
@@ -49,7 +49,6 @@ The tour watches the real pipeline (the user's lasso and Ask), so a failure or a
 
 ## 5. Still open
 
-1. Confirm the price: $4.99 / $39.99, founding $29.99.
-2. The number of onboarding asks (assumed 3).
-3. The monthly cost allowance (assumed $1.50, tune with measured image cost).
-4. ADR-029 and BUSINESS.md need amending: the free tier no longer lists "30 AI actions a month," and onboarding asks are a defined exception.
+1. The number of onboarding asks (assumed 3).
+2. The monthly cost allowance (assumed $1.50, tune with measured image cost).
+3. ADR-029 and BUSINESS.md need amending: the free tier no longer lists "30 AI actions a month," and onboarding asks are a defined exception.

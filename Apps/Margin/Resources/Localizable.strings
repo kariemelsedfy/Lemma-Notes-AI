@@ -29,7 +29,7 @@
 "library.export.failed.message" = "Try again. Your notebook has not been changed.";
 
 "ask.bar" = "Ask";
-"ask.verbs.prompt" = "What should Margin do with this?";
+"ask.verbs.prompt" = "What should Lemma Notes AI do with this?";
 "ask.verb.answer" = "Solve";
 "ask.verb.answer.subtitle" = "Math and equations";
 "ask.verb.explain" = "Explain";

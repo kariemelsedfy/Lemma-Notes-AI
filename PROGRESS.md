@@ -2435,3 +2435,5 @@ Acceptance:
 - [x] `.gitignore` excludes `*.xcodeproj`, `*.xcworkspace`, `.env*`, DerivedData
 - [x] `scripts/bootstrap.sh`, `generate.sh`, `test.sh`, `lint.sh` exist and work from a clean clone
 - [x] App launches to a blank white view on the iPad Pro 13-inch (M5) simulator
+
+- 2026-10-17 M6-ENT-1: product name Lemma Notes AI (display name only; bundle id unchanged); `Plan`, `HostedAskPolicy`, `EntitlementProviding` in Intelligence with tests; `PilotCloudConfiguration.isEntitled` reads the plan. No UI, no StoreKit. Pricing confirmed $4.99/mo, $39.99/yr.
