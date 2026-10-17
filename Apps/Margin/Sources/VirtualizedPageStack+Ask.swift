@@ -57,6 +57,22 @@ extension VirtualizedPageStack {
         }
     }
 
+    /// Rescales the ink inside the lasso (a drag of its corner handle), as one undoable step.
+    func resizeSelection(by factor: CGFloat) {
+        guard let selection = askSelection.questionSelection else { return }
+        let pageID = selection.pageID
+        let size = pageSizes[pageID] ?? pageSize
+        guard
+            let result = SelectionResizer.resize(
+                drawing: drawingStore.drawing(for: pageID), loop: selection.loop, factor: factor,
+                anchor: selection.bounds.origin, metadata: drawingStore.metadata(for: pageID))
+        else { return }
+        undoController.recordChange(pageID: pageID, pageSize: size)
+        drawingStore.save(result.drawing, metadata: result.metadata, for: pageID, pageSize: size)
+        askSelection.selectQuestion(loop: result.loop, onPage: pageID)
+        if let resized = askSelection.questionSelection { selectionStore.select(resized) }
+    }
+
     func cancelSelection() {
         askPath.cancel()
         askSelection.clearSelections()
@@ -90,6 +106,7 @@ extension VirtualizedPageStack {
                 homePage: home,
                 pen: selectedInk,
                 offset: $ghostOffset,
+                scale: $ghostScale,
                 isDragging: $ghostDragging
             )
         }
@@ -170,8 +187,13 @@ extension VirtualizedPageStack {
         let layout = pageLayout
         guard let questionPage = askSelection.questionSelection?.pageID, let home = layout.index(of: questionPage)
         else { return }
-        let shift = CGSize(width: ghostOffset.width, height: ghostOffset.height + layout.originY(ofPage: home))
-        let slices = AnswerSplitter.split(suggestions.strokes.map { $0.translated(by: shift) }, layout: layout)
+        // The answer exactly as the ghost shows it: into stack space, resized about its top-left, then dragged.
+        let inStack = suggestions.strokes.map {
+            $0.translated(by: CGSize(width: 0, height: layout.originY(ofPage: home)))
+        }
+        let anchor = InkLineGrouping.bounds(of: inStack).origin
+        let placed = inStack.map { $0.scaled(by: ghostScale, about: anchor).translated(by: ghostOffset) }
+        let slices = AnswerSplitter.split(placed, layout: layout)
         guard !slices.isEmpty, let accepted = suggestions.acceptWithoutInserting() else {
             askModel.accept()
             return

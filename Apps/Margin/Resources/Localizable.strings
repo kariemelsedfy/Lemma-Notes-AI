@@ -120,3 +120,5 @@
 "ink.name.8B5E34" = "Brown";
 "ink.name.138A96" = "Teal";
 "ask.plot.reading" = "Plotting y = %@";
+"ask.ghost.resize" = "Resize answer";
+"ask.selection.resize" = "Resize selection";

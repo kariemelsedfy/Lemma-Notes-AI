@@ -8,20 +8,25 @@ import XCTest
 /// decisions live.
 @MainActor
 final class PencilActionPolicyTests: XCTestCase {
-    func testDoubleTapDefersToTheSystemByDefault() {
+    func testDoubleTapSwitchesBetweenPenAndEraserWhateverTheSystemPreference() {
         let policy = PencilActionPolicy()
 
-        // Taking this over by default would override a choice the user made for every
-        // app on the device.
-        XCTAssertEqual(policy.actionForTap(systemPreference: .switchEraser), .deferToSystem)
-        XCTAssertEqual(policy.actionForTap(systemPreference: .showColorPalette), .deferToSystem)
-        XCTAssertEqual(policy.actionForTap(systemPreference: .ignore), .deferToSystem)
+        // Owner decision 2026-10-17: this app always switches, unlike the system default.
+        for preference in [
+            UIPencilPreferredAction.switchEraser, .showColorPalette, .switchPrevious, .runSystemShortcut,
+        ] {
+            XCTAssertEqual(policy.actionForTap(systemPreference: preference), .toggleEraser, "\(preference)")
+        }
     }
 
-    func testDoubleTapArmsAskOnlyWhenTheUserOptedIn() {
-        let policy = PencilActionPolicy(overridesDoubleTap: true)
+    func testAnExplicitIgnoreIsStillHonoured() {
+        XCTAssertEqual(PencilActionPolicy().actionForTap(systemPreference: .ignore), .none)
+    }
 
-        XCTAssertEqual(policy.actionForTap(systemPreference: .switchEraser), .armAsk)
+    func testTheToolAfterADoubleTapAlternatesBetweenPenAndEraser() {
+        XCTAssertEqual(CanvasTool.pen.afterPencilDoubleTap, .eraser)
+        XCTAssertEqual(CanvasTool.eraser.afterPencilDoubleTap, .pen)
+        XCTAssertEqual(CanvasTool.lasso.afterPencilDoubleTap, .eraser)
     }
 
     func testSqueezeArmsAsk() {
@@ -37,29 +42,6 @@ final class PencilActionPolicyTests: XCTestCase {
         // `.ignore` is the user saying "do nothing when I squeeze". Arming Ask anyway
         // would be the app deciding it knows better.
         XCTAssertEqual(policy.actionForSqueeze(systemPreference: .ignore), .none)
-    }
-
-    func testOptingIntoDoubleTapDoesNotChangeSqueeze() {
-        let opted = PencilActionPolicy(overridesDoubleTap: true)
-        let notOpted = PencilActionPolicy()
-
-        XCTAssertEqual(
-            opted.actionForSqueeze(systemPreference: .switchEraser),
-            notOpted.actionForSqueeze(systemPreference: .switchEraser)
-        )
-    }
-
-    func testEveryPreferredActionIsHandled() {
-        let policy = PencilActionPolicy()
-        let preferences: [UIPencilPreferredAction] = [
-            .ignore, .switchEraser, .switchPrevious, .showColorPalette,
-            .showInkAttributes, .showContextualPalette, .runSystemShortcut,
-        ]
-
-        // A new case in a future SDK should not silently become "arm Ask" for taps.
-        for preference in preferences {
-            XCTAssertEqual(policy.actionForTap(systemPreference: preference), .deferToSystem, "\(preference)")
-        }
     }
 
     func testAttachingToAViewAddsAnInteraction() {

@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 
 /// Bridges Apple Pencil hardware gestures to the Ask path.
@@ -13,10 +14,15 @@ import UIKit
 final class PencilInteractionCoordinator: NSObject, UIPencilInteractionDelegate {
     private let policy: PencilActionPolicy
     private let onArmAsk: () -> Void
+    private let onToggleEraser: () -> Void
 
-    init(policy: PencilActionPolicy = PencilActionPolicy(), onArmAsk: @escaping () -> Void) {
+    init(
+        policy: PencilActionPolicy = PencilActionPolicy(), onArmAsk: @escaping () -> Void = {},
+        onToggleEraser: @escaping () -> Void = {}
+    ) {
         self.policy = policy
         self.onArmAsk = onArmAsk
+        self.onToggleEraser = onToggleEraser
     }
 
     /// Attaches to a view. On a Pencil 1 or with no Pencil at all this simply never
@@ -42,7 +48,28 @@ final class PencilInteractionCoordinator: NSObject, UIPencilInteractionDelegate 
     private func perform(_ action: PencilAction) {
         switch action {
         case .armAsk: onArmAsk()
-        case .deferToSystem, .none: break
+        case .toggleEraser: onToggleEraser()
+        case .none: break
         }
     }
+}
+
+/// Puts the Pencil interaction on a view in the notebook so double-tap and squeeze reach the app.
+///
+/// Takes the tool binding rather than closures, so the coordinator (made once) always acts on the live value.
+struct PencilInteractionHost: UIViewRepresentable {
+    @Binding var tool: CanvasTool
+
+    func makeCoordinator() -> PencilInteractionCoordinator {
+        PencilInteractionCoordinator(
+            onArmAsk: { tool = .lasso }, onToggleEraser: { tool = tool.afterPencilDoubleTap })
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        context.coordinator.attach(to: view)
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {}
 }

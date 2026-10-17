@@ -69,6 +69,31 @@ enum SuggestionProvenance {
                 .filter { pageStrokes.indices.contains($0) })
     }
 
+    /// After the strokes at `movedIndices` changed shape in place, points their elements' references at the new
+    /// fingerprints and refreshes each element's bounds, so provenance survives a resize.
+    static func refreshing(_ metadata: PageMetadata, movedIndices: Set<Int>, strokes: [InkStroke]) -> PageMetadata {
+        var updated = metadata
+        updated.elements = metadata.elements.map { element in
+            guard element.strokeReferences.contains(where: { movedIndices.contains($0.index) }) else { return element }
+            var changed = element
+            changed.strokeReferences = element.strokeReferences.compactMap { reference in
+                guard strokes.indices.contains(reference.index) else { return nil }
+                guard movedIndices.contains(reference.index) else { return reference }
+                return StrokeReference(
+                    index: reference.index, fingerprint: StrokeFingerprint(stroke: stored(strokes[reference.index])))
+            }
+            let referenced = changed.strokeReferences.compactMap {
+                strokes.indices.contains($0.index) ? strokes[$0.index] : nil
+            }
+            let box = InkLineGrouping.bounds(of: referenced)
+            if !box.isNull { changed.bounds = bounds(of: box) }
+            return changed
+        }
+        return updated
+    }
+
+    static func storedStroke(_ stroke: InkStroke) -> StoredStroke { stored(stroke) }
+
     private static func stored(_ stroke: InkStroke) -> StoredStroke {
         StoredStroke(
             points: stroke.points.map {

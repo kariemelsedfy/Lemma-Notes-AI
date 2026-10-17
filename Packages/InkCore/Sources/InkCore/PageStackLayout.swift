@@ -19,7 +19,7 @@ public struct PageStackLayout: Equatable, Sendable {
     }
 
     /// The gap between pages, matching the notebook's `LazyVStack` spacing.
-    public static let spacing: CGFloat = 24
+    public static let spacing: CGFloat = 12
 
     public let pages: [Page]
 
