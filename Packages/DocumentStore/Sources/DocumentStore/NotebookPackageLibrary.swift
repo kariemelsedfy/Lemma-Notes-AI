@@ -32,6 +32,7 @@ public struct NotebookPackageLibrary {
         title: String,
         paper: PaperStyle = .ruled,
         size: PageSize = PageSizePreset.default.size,
+        folderID: UUID? = nil,
         now: Date = .now
     ) throws -> NotebookPackageSummary {
         let id = UUID()
@@ -43,7 +44,8 @@ public struct NotebookPackageLibrary {
                 createdAt: now,
                 modifiedAt: now,
                 pageOrder: [pageID],
-                settings: DocumentSettings(defaultPaper: paper)
+                settings: DocumentSettings(defaultPaper: paper),
+                folderID: folderID
             ),
             pages: [
                 StoredPage(
@@ -150,6 +152,43 @@ public struct NotebookPackageLibrary {
             thumbnails: document.thumbnails
         )
         try packageStore.write(renamedDocument, to: summary.packageURL)
+        return NotebookPackageSummary(packageURL: summary.packageURL, manifest: manifest)
+    }
+
+    /// Files a notebook in a folder (or takes it out of one with nil). Leaves `modifiedAt` alone, so filing a
+    /// note does not make it look recently edited.
+    @discardableResult
+    public func setFolder(_ folderID: UUID?, forNotebook id: UUID) throws -> NotebookPackageSummary {
+        try updateManifest(id: id) { $0.folderID = folderID }
+    }
+
+    @discardableResult
+    public func setFavorite(_ isFavorite: Bool, forNotebook id: UUID) throws -> NotebookPackageSummary {
+        try updateManifest(id: id) { $0.isFavorite = isFavorite }
+    }
+
+    /// Takes every notebook out of a folder that is being deleted. The notebooks themselves are kept.
+    public func unfileNotebooks(inFolder folderID: UUID) throws {
+        for notebook in try notebooks() where notebook.folderID == folderID {
+            try setFolder(nil, forNotebook: notebook.id)
+        }
+    }
+
+    private func updateManifest(
+        id: UUID, _ change: (inout MarginManifest) -> Void
+    ) throws -> NotebookPackageSummary {
+        let summary = try packageSummary(id: id)
+        let document = try packageStore.read(from: summary.packageURL)
+        var manifest = document.manifest
+        change(&manifest)
+        let updated = StoredDocument(
+            manifest: manifest,
+            pages: document.pages,
+            assets: document.assets,
+            glyphBankData: document.glyphBankData,
+            thumbnails: document.thumbnails
+        )
+        try packageStore.write(updated, to: summary.packageURL)
         return NotebookPackageSummary(packageURL: summary.packageURL, manifest: manifest)
     }
 

@@ -12,15 +12,21 @@ public struct NotebookPackageSummary: Equatable, Sendable {
     public let packageURL: URL
     public let id: UUID
     public let title: String
+    public let createdAt: Date
     public let modifiedAt: Date
     public let pageCount: Int
+    public let folderID: UUID?
+    public let isFavorite: Bool
 
     public init(packageURL: URL, manifest: MarginManifest) {
         self.packageURL = packageURL.resolvingSymlinksInPath()
         id = manifest.id
         title = manifest.title
+        createdAt = manifest.createdAt
         modifiedAt = manifest.modifiedAt
         pageCount = manifest.pageOrder.count
+        folderID = manifest.folderID
+        isFavorite = manifest.isFavorite
     }
 }
 

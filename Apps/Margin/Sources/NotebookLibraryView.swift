@@ -160,7 +160,7 @@ struct NotebookLibraryView: View {
     }
 
     private func createNotebook() {
-        if let notebook = library.create(title: String(localized: "library.default-title")) {
+        if let notebook = library.create() {
             selectedNotebookID = notebook.id
         }
     }

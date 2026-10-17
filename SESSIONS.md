@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M6-LIB-2 — put the filing where the data travels
+The choice was where "which folder" lives. A central index is one tidy file but a second source of truth that drifts the moment a package is copied, restored or deleted outside the app; a field in each manifest travels with the notebook. I took the manifest, kept the folder *list* central because it is tiny, and wrote ADR-030 with the sync caveat (two devices editing the folder list is last-write-wins) so the iCloud work starts from it. Reading the summary also showed `createdAt` had been silently populated from `modifiedAt`; fixed while there.
+
 ## 2026-10-17 · Claude · M6-LIB-1 — the data model was ahead of the app
 Everything templates needed (a per-page `paper`, per-page `size`, an exporter that honours both, appended pages that copy the last) already existed; only the screen hard-coded ruled paper. Check the model before designing storage: this needed no format change. Two build snags worth knowing: a new test file is invisible to `xcodebuild` until `./scripts/generate.sh` is re-run (an `-only-testing` run silently executed 0 tests), and a long `.onChange` chain on one view hit "unable to type-check in reasonable time", fixed by moving three of them into a `ViewModifier`.
 
