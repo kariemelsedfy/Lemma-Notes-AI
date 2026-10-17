@@ -37,7 +37,7 @@
 "ask.verb.plot" = "Plot";
 "ask.verb.plot.subtitle" = "Use ^ for powers: x^3";
 "ask.state.working" = "Working…";
-"ask.notice.substituted-characters %@" = "Typeset for the characters missing from your handwriting sample: %@";
+"ask.notice.substituted-characters %@" = "Typeset: %@";
 "ask.cancel" = "Cancel";
 "ask.keep" = "Keep";
 "ask.discard" = "Discard";

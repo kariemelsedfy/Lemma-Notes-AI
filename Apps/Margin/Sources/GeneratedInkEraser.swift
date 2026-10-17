@@ -90,6 +90,9 @@ enum GeneratedInkEraser {
         let reference: StrokeReference
         var low: Double
         var high: Double
+        /// Vertical centre and height of the stroke, to tell which line of the answer it is on.
+        var middle: Double
+        var height: Double
     }
 
     private struct CharacterColumn {
@@ -98,16 +101,50 @@ enum GeneratedInkEraser {
         var members: [StrokeReference]
     }
 
-    /// Groups an element's strokes into characters by horizontal overlap, measured on the drawing as it was
-    /// before the erase (a removed stroke is only in `previous`).
+    /// Groups an element's strokes into characters, measured on the drawing as it was before the erase (a
+    /// removed stroke is only in `previous`).
+    ///
+    /// **Line by line first.** A multi-line answer has characters stacked in the same columns, so grouping by
+    /// horizontal overlap across the whole answer made erasing one letter take the letter above and below it
+    /// (found on device 2026-10-17). Strokes are split into text lines by their vertical centres, then
+    /// grouped into characters by horizontal overlap within a line.
     private static func characters(of refs: [StrokeReference], in drawing: [StoredStroke]) -> [[StrokeReference]] {
         var spans: [Span] = []
         for reference in refs where drawing.indices.contains(reference.index) {
-            let columns = drawing[reference.index].points.map(\.horizontal)
-            if let low = columns.min(), let high = columns.max() {
-                spans.append(Span(reference: reference, low: low, high: high))
+            let points = drawing[reference.index].points
+            let columns = points.map(\.horizontal)
+            let rows = points.map(\.vertical)
+            if let low = columns.min(), let high = columns.max(), let top = rows.min(), let bottom = rows.max() {
+                spans.append(
+                    Span(
+                        reference: reference, low: low, high: high, middle: (top + bottom) / 2,
+                        height: bottom - top))
             }
         }
+        return textLines(of: spans).flatMap(columns(of:))
+    }
+
+    /// Splits strokes into lines of writing: neighbours in vertical-centre order belong to the same line until
+    /// a gap wider than most of a stroke's height opens, which is far smaller than the gap between lines and
+    /// far larger than the wobble of ascenders and descenders within one.
+    private static func textLines(of spans: [Span]) -> [[Span]] {
+        guard !spans.isEmpty else { return [] }
+        let heights = spans.map(\.height).sorted()
+        let threshold = max(heights[heights.count / 2] * 0.6, 1)
+        var lines: [[Span]] = []
+        for span in spans.sorted(by: { $0.middle < $1.middle }) {
+            if let last = lines.last?.last, span.middle - last.middle <= threshold {
+                lines[lines.count - 1].append(span)
+            } else {
+                lines.append([span])
+            }
+        }
+        return lines
+    }
+
+    /// Groups one line's strokes into characters by horizontal overlap.
+    private static func columns(of line: [Span]) -> [[StrokeReference]] {
+        var spans = line
         spans.sort { $0.low < $1.low }
 
         var groups: [CharacterColumn] = []

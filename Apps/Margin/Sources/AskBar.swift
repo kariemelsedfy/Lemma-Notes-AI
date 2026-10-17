@@ -183,30 +183,45 @@ struct AskBar: View {
     }
 
     private var decision: some View {
-        HStack(spacing: 12) {
-            if (explanation?.isEmpty == false) || renderingNotice != nil {
-                VStack(alignment: .leading, spacing: 2) {
-                    if let explanation, !explanation.isEmpty {
-                        // The explanation is shown, never inked, unless the user asks for it
-                        // (`AI_PIPELINE.md` §3).
-                        Text(explanation)
-                            .lineLimit(2)
-                            .accessibilityLabel(explanation)
-                    }
-                    if let renderingNotice {
-                        renderingNotice.message
-                            .font(.caption)
-                            .foregroundStyle(MarginColor.secondaryText)
-                            .lineLimit(2)
-                    }
-                }
+        HStack(spacing: 10) {
+            // Never the answer or the model's explanation of it: that is on the page. Only a short status
+            // (what a plot read, which characters were typeset) ever appears here.
+            if let status = Self.shortStatus(explanation) {
+                Text(verbatim: status)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(MarginColor.primaryText.opacity(0.85))
+                    .lineLimit(1)
             }
-            Button("ask.keep", action: onAccept)
-                .buttonStyle(.borderedProminent)
-                .frame(minWidth: 44, minHeight: 44)
-            Button("ask.discard", role: .destructive, action: onReject)
-                .frame(minWidth: 44, minHeight: 44)
+            if let renderingNotice {
+                renderingNotice.message
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(MarginColor.secondaryText)
+                    .lineLimit(1)
+            }
+            decisionButton("ask.discard", tint: .red, action: onReject)
+            decisionButton("ask.keep", tint: MarginColor.accent, action: onAccept)
         }
+    }
+
+    /// A one-line status, or nil when the text is long enough to be an explanation rather than a status.
+    static func shortStatus(_ text: String?, limit: Int = 36) -> String? {
+        guard let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty, text.count <= limit,
+            !text.contains("\n")
+        else { return nil }
+        return text
+    }
+
+    private func decisionButton(_ title: LocalizedStringKey, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 18)
+                .frame(height: 44)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(tint.opacity(0.16)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func failure(_ failure: AskFailure) -> some View {
