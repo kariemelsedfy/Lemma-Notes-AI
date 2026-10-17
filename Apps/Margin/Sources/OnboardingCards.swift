@@ -129,7 +129,7 @@ struct OnboardingInvitation: View {
                     .frame(maxWidth: .infinity, minHeight: 28)
             }
             .buttonStyle(.borderedProminent)
-        .tint(MarginColor.accent)
+            .tint(MarginColor.accent)
             .controlSize(.large)
         }
         .padding(MarginSpacing.xxLarge)
