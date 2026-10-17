@@ -54,15 +54,66 @@ final class PencilInteractionCoordinator: NSObject, UIPencilInteractionDelegate 
     }
 }
 
+/// Remembers where a Pencil double-tap came from, so erasing can hand the writer straight back.
+///
+/// Double-tap goes to the eraser from any other tool and, from the eraser, back to where it came from. If the
+/// writer then erases something, the eraser was a detour: once the ink stops changing they are returned to
+/// the tool they were on (owner request 2026-10-17). Choosing a tool by hand forgets the detour, and so does
+/// leaving the eraser by double-tap.
+struct PencilToolSwitcher: Equatable {
+    private var restore: CanvasTool?
+    /// The tool this switcher last selected itself, so its own change is not mistaken for the writer's.
+    private var expected: CanvasTool?
+
+    /// A double-tap: the tool to select.
+    mutating func doubleTap(current: CanvasTool) -> CanvasTool {
+        let next: CanvasTool
+        if current == .eraser {
+            next = restore ?? .pen
+            restore = nil
+        } else {
+            restore = current
+            next = .eraser
+        }
+        expected = next
+        return next
+    }
+
+    /// The ink changed and has now been still for a moment: the tool to return to, if the eraser is a detour.
+    mutating func inkSettled(current: CanvasTool) -> CanvasTool? {
+        guard current == .eraser, let back = restore else { return nil }
+        restore = nil
+        expected = back
+        return back
+    }
+
+    /// The selected tool changed. A change this switcher did not make is the writer's own choice.
+    mutating func toolChanged(to tool: CanvasTool) {
+        if tool == expected {
+            expected = nil
+        } else {
+            restore = nil
+            expected = nil
+        }
+    }
+
+    var isOnDetour: Bool { restore != nil }
+}
+
 /// Puts the Pencil interaction on a view in the notebook so double-tap and squeeze reach the app.
 ///
-/// Takes the tool binding rather than closures, so the coordinator (made once) always acts on the live value.
+/// Takes bindings rather than closures, so the coordinator (made once) always acts on the live values.
 struct PencilInteractionHost: UIViewRepresentable {
     @Binding var tool: CanvasTool
+    @Binding var switcher: PencilToolSwitcher
 
     func makeCoordinator() -> PencilInteractionCoordinator {
         PencilInteractionCoordinator(
-            onArmAsk: { tool = .lasso }, onToggleEraser: { tool = tool.afterPencilDoubleTap })
+            onArmAsk: {
+                switcher.toolChanged(to: .lasso)
+                tool = .lasso
+            },
+            onToggleEraser: { tool = switcher.doubleTap(current: tool) })
     }
 
     func makeUIView(context: Context) -> UIView {

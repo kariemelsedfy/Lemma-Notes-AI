@@ -44,12 +44,12 @@
 "ask.retry" = "Try again";
 "ask.dismiss" = "Dismiss";
 "ask.failure.unreadable" = "Couldn’t read that clearly. Check what it says, then try again.";
-"ask.failure.invalidSpec" = "Something went wrong — try again.";
+"ask.failure.invalidSpec" = "I couldn’t make sense of that one. Try again, or write it a little more clearly.";
 "ask.failure.offline" = "You’re offline, so this needs a connection.";
 "ask.failure.outOfCredits" = "You’re out of AI actions for now.";
 "ask.failure.noRoom" = "The answer won’t fit there at your writing size. Choose a larger area.";
 "ask.failure.timeout" = "That took too long. Your selection is still here.";
-"ask.failure.transport" = "Couldn’t reach the model — try again.";
+"ask.failure.transport" = "Couldn’t get an answer right now. Check your connection and try again.";
 "ask.failure.local-unclear" = "Couldn’t read that clearly. Try a smaller, clearer selection.";
 "ask.failure.local-plot-none" = "I couldn't find a function to plot. Write it like y = x², lasso it, then tap Plot.";
 "ask.failure.local-unsupported" = "Only short arithmetic using +, -, * or / is available right now. Try a simpler expression.";

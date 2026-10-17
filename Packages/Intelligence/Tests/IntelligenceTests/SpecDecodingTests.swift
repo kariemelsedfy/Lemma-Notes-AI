@@ -101,12 +101,13 @@ final class SpecDecodingTests: XCTestCase {
         XCTAssertNil(spec.explanation)
     }
 
-    func testFailsWhenRequiredFieldIsMissing() {
-        let json = """
-            {"version": 1, "read": "2+2=", "intent": "answer", "blocks": []}
-            """
+    func testFailsWhenTheIntentIsMissingButAMissingConfidenceReadsAsADecline() throws {
+        // Owner/live decision 2026-10-17: a bare decline is a decline, not an undecodable reply.
+        let noConfidence = #"{"version": 1, "read": "2+2=", "intent": "answer", "blocks": []}"#
+        XCTAssertEqual(try SpecDecoder.decode(Data(noConfidence.utf8)).readConfidence, 0)
 
-        XCTAssertThrowsError(try SpecDecoder.decode(Data(json.utf8)))
+        let noIntent = #"{"version": 1, "read": "2+2=", "readConfidence": 0.9, "blocks": []}"#
+        XCTAssertThrowsError(try SpecDecoder.decode(Data(noIntent.utf8)))
     }
 
     func testFailsOnUnknownIntent() {
@@ -201,4 +202,44 @@ final class SpecDecodingTests: XCTestCase {
           "warnings": ["ambiguous: could be 5 or S"]
         }
         """
+}
+
+final class LenientSpecDecodingTests: XCTestCase {
+    private func decode(_ json: String) throws -> Spec { try SpecDecoder.decode(Data(json.utf8)) }
+
+    func testALinesBlockHoldingASingleRunIsAcceptedAsOneLine() throws {
+        // Seen live: the model labelled a block "lines" but put a bare run in `content`.
+        let spec = try decode(
+            #"""
+            {"version":1,"read":"x","readConfidence":0.9,"intent":"answer",
+             "blocks":[{"type":"lines","placement":"belowSelection","content":{"kind":"math","latex":"x=5"}}]}
+            """#)
+        guard case .lines(let lines) = try XCTUnwrap(spec.blocks.first).content else { return XCTFail("lines") }
+        XCTAssertEqual(lines.map(\.run.value), ["x=5"])
+    }
+
+    func testAnInlineBlockHoldingLinesIsAcceptedAsLines() throws {
+        let spec = try decode(
+            #"""
+            {"version":1,"read":"x","readConfidence":0.9,"intent":"answer",
+             "blocks":[{"type":"inline","placement":"atAnchor",
+              "content":{"lines":[{"kind":"text","text":"a"},{"kind":"text","text":"b"}]}}]}
+            """#)
+        guard case .lines(let lines) = try XCTUnwrap(spec.blocks.first).content else { return XCTFail("lines") }
+        XCTAssertEqual(lines.map(\.run.value), ["a", "b"])
+    }
+
+    func testABareDeclineWithFieldsMissingIsADeclineNotAnError() throws {
+        let spec = try decode(#"{"intent":"answer"}"#)
+        XCTAssertTrue(spec.blocks.isEmpty)
+        XCTAssertEqual(spec.readConfidence, 0)
+        XCTAssertTrue(try SpecValidator.validate(spec).isDecline)
+    }
+
+    func testAMissingIntentOrNonsenseContentIsStillRefused() {
+        XCTAssertThrowsError(try decode(#"{"blocks":[]}"#))
+        XCTAssertThrowsError(
+            try decode(
+                #"{"intent":"answer","blocks":[{"type":"lines","placement":"atAnchor","content":{"nothing":1}}]}"#))
+    }
 }

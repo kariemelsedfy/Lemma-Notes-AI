@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-11 — three bugs, one cause: shapes the renderers did not expect
+The squeezed answer took three wrong theories before the right one. My synthetic bank wrapped fine, so the bug was not in the wrapping maths; the clue was a live reply of type `lines` with a single 190-character item that I had fetched hours earlier and not connected. When a rendering bug resists a unit test, check the *shape* of real input first (curl the proxy and read the JSON) before reading renderer code. The same session's `keyNotFound blocks[0].content.lines` was the same family: the model mixes `inline` and `lines` shapes, so the decoder now accepts either. I also relaxed decoding for declines on purpose; the only strict fields left are the intent and mistyped values. A flaky `xcodebuild test` run (blank "Testing failed:") passed on four reruns; treat a failure with no error line as a simulator hiccup, but read any failure that names a test.
+
 ## 2026-10-17 · Claude · M5-UI-10 — "random" was a constant seed
 The synthesizer was designed to be deterministic given a seed (a tested property, kept) and the pipeline hard-coded seed 0, so learned variants changed *which* variants existed but never *which were chosen* between two runs of the same words. The fix lives at the call site (`AskPipeline.seedProvider`), not in the synthesizer. `InkWidth` is a DesignSystem token; its preference store is app-side. (A script anchored on a SESSIONS header that did not exist and printed an assertion error while the commit still went through; I added this entry in a follow-up commit. Check the exit status of edit scripts before committing.)
 
