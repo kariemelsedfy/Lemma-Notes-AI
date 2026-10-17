@@ -138,3 +138,23 @@ struct OnboardingInvitation: View {
         .interactiveDismissDisabled()
     }
 }
+
+/// Shows the tour over the library: starts it on first launch, covers the screen for the cards, and sheets the
+/// invitation. A modifier of its own so the library view's body stays quick to type-check.
+struct OnboardingPresentation: ViewModifier {
+    @ObservedObject var coordinator: OnboardingCoordinator
+    @ObservedObject var handwriting: HandwritingStyleStore
+    let onStep: (OnboardingStep?) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { coordinator.startIfNeeded() }
+            .onChange(of: coordinator.step) { _, step in onStep(step) }
+            .fullScreenCover(isPresented: .constant(coordinator.showsCards)) {
+                OnboardingCards(coordinator: coordinator, handwriting: handwriting)
+            }
+            .sheet(isPresented: .constant(coordinator.showsInvitation)) {
+                OnboardingInvitation { coordinator.finish() }
+            }
+    }
+}

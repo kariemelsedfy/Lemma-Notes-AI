@@ -149,14 +149,7 @@ struct NotebookLibraryView: View {
                 }
             }
         }
-        .onAppear { onboarding.startIfNeeded() }
-        .onChange(of: onboarding.step) { _, step in handleTourStep(step) }
-        .fullScreenCover(isPresented: .constant(onboarding.showsCards)) {
-            OnboardingCards(coordinator: onboarding, handwriting: handwriting)
-        }
-        .sheet(isPresented: .constant(onboarding.showsInvitation)) {
-            OnboardingInvitation { onboarding.finish() }
-        }
+        .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
         .sheet(isPresented: $calibrationPresented) { CalibrationView(store: handwriting) }
         .sheet(isPresented: $addCharactersPresented) { AddCharactersView(store: handwriting) }
         #if DEBUG
