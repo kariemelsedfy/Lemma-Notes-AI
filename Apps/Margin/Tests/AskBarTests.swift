@@ -247,3 +247,14 @@ final class AskBarTests: XCTestCase {
         explanation: "Addition."
     )
 }
+
+final class DecisionStatusTests: XCTestCase {
+    func testOnlyShortStatusesAreShownBesideKeepAndDiscard() {
+        XCTAssertEqual(AskBar.shortStatus("Plotting y = x^2"), "Plotting y = x^2")
+        XCTAssertNil(
+            AskBar.shortStatus("Defined drifting and memory explosion in the context of machine learning sequences."))
+        XCTAssertNil(AskBar.shortStatus(nil))
+        XCTAssertNil(AskBar.shortStatus("   "))
+        XCTAssertNil(AskBar.shortStatus("two\nlines"))
+    }
+}

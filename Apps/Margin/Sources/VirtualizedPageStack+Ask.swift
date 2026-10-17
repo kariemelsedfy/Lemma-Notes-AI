@@ -51,7 +51,7 @@ extension VirtualizedPageStack {
         guard pencilSwitcher.isOnDetour, selectedTool == .eraser else { return }
         returnToToolTask?.cancel()
         returnToToolTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: .milliseconds(250))
             guard !Task.isCancelled, let back = pencilSwitcher.inkSettled(current: selectedTool) else { return }
             selectedTool = back
         }

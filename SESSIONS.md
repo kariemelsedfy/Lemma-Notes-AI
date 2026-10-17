@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-12 — a heuristic that was right for one line
+The eraser's "group by horizontal overlap" was designed and tested on single-line answers (`x = 5`); the multi-line answers that Explain produces broke it the first time they met a real page. Lesson for geometric heuristics here: state the dimension they assume (one line) in the test names, and add the next-larger case when the product grows into it. The 0.6x-median-height line split is a guess, tested on synthetic columns only.
+
 ## 2026-10-17 · Claude · M5-UI-11 — three bugs, one cause: shapes the renderers did not expect
 The squeezed answer took three wrong theories before the right one. My synthetic bank wrapped fine, so the bug was not in the wrapping maths; the clue was a live reply of type `lines` with a single 190-character item that I had fetched hours earlier and not connected. When a rendering bug resists a unit test, check the *shape* of real input first (curl the proxy and read the JSON) before reading renderer code. The same session's `keyNotFound blocks[0].content.lines` was the same family: the model mixes `inline` and `lines` shapes, so the decoder now accepts either. I also relaxed decoding for declines on purpose; the only strict fields left are the intent and mistyped values. A flaky `xcodebuild test` run (blank "Testing failed:") passed on four reruns; treat a failure with no error line as a simulator hiccup, but read any failure that names a test.
 
