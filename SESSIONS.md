@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-10 — "random" was a constant seed
+The synthesizer was designed to be deterministic given a seed (a tested property, kept) and the pipeline hard-coded seed 0, so learned variants changed *which* variants existed but never *which were chosen* between two runs of the same words. The fix lives at the call site (`AskPipeline.seedProvider`), not in the synthesizer. `InkWidth` is a DesignSystem token; its preference store is app-side. (A script anchored on a SESSIONS header that did not exist and printed an assertion error while the commit still went through; I added this entry in a follow-up commit. Check the exit status of edit scripts before committing.)
+
 ## 2026-10-17 · Claude · M5-UI-8 — I chose the hint over a heuristic
 Making raised exponents work means guessing which small raised strokes are an exponent and what digit they are, and a wrong exponent silently plots the wrong function (worse than a hint). I could not tune that without the owner's real ink, which I must not receive. The honest option: the hint now, and a design based on what Vision actually returns on their device later.
 
