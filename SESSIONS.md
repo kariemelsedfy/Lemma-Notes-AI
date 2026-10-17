@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M6-PLAN — docs while the owner was away
+CONTEXT.md had not been touched since 2026-10-13 and still described a recovery build with no cloud path; a new agent would have started from a false picture. Putting a dated "Now" section on top (and leaving the history below it, marked as history) was cheaper and safer than rewriting 400 lines nobody can verify. The premium proposal deliberately builds nothing: the money and compliance decisions are the owner's, and the contradiction it found in BUSINESS.md is exactly the kind of thing to surface rather than resolve silently.
+
 ## 2026-10-17 · Claude · M6-LIB-3 — `open(path, "w").write(open(path).read())` truncates first
 The one real scare of the session: appending strings with that idiom emptied Localizable.strings (the right-hand `open(path)` runs after the left-hand `open(path, "w")` has already truncated). The suite caught it because tests assert that copy exists rather than that it equals a key. If you script edits, read into a variable first. Also learned this session: `ImageRenderer` cannot render a `ScrollView`/`LazyVGrid` (blank output), a `UIWindow` created inside the test host draws blank, and macOS has no `timeout`; for UI I fell back to rendering individual views to PNG and looking at them. The full home screen is untested visually until the iPad.
 
