@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M6-LIB-1 — the data model was ahead of the app
+Everything templates needed (a per-page `paper`, per-page `size`, an exporter that honours both, appended pages that copy the last) already existed; only the screen hard-coded ruled paper. Check the model before designing storage: this needed no format change. Two build snags worth knowing: a new test file is invisible to `xcodebuild` until `./scripts/generate.sh` is re-run (an `-only-testing` run silently executed 0 tests), and a long `.onChange` chain on one view hit "unable to type-check in reasonable time", fixed by moving three of them into a `ViewModifier`.
+
 ## 2026-10-17 · Claude · M5-UI-12 — a heuristic that was right for one line
 The eraser's "group by horizontal overlap" was designed and tested on single-line answers (`x = 5`); the multi-line answers that Explain produces broke it the first time they met a real page. Lesson for geometric heuristics here: state the dimension they assume (one line) in the test names, and add the next-larger case when the product grows into it. The 0.6x-median-height line split is a guess, tested on synthetic columns only.
 

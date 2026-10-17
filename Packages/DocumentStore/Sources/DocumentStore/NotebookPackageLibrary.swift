@@ -25,7 +25,15 @@ public struct NotebookPackageLibrary {
         try repository.discover() ?? []
     }
 
-    public func create(title: String, now: Date = .now) throws -> NotebookPackageSummary {
+    /// - Parameters:
+    ///   - paper: the first page's pattern, and the default for pages added later.
+    ///   - size: the first page's size; pages added later copy the previous page.
+    public func create(
+        title: String,
+        paper: PaperStyle = .ruled,
+        size: PageSize = PageSizePreset.default.size,
+        now: Date = .now
+    ) throws -> NotebookPackageSummary {
         let id = UUID()
         let pageID = UUID()
         let document = StoredDocument(
@@ -35,14 +43,14 @@ public struct NotebookPackageLibrary {
                 createdAt: now,
                 modifiedAt: now,
                 pageOrder: [pageID],
-                settings: DocumentSettings(defaultPaper: .ruled)
+                settings: DocumentSettings(defaultPaper: paper)
             ),
             pages: [
                 StoredPage(
                     metadata: PageMetadata(
                         pageID: pageID,
-                        size: PageSize(width: 768, height: 1_024),
-                        paper: .ruled,
+                        size: size,
+                        paper: paper,
                         elements: []
                     ),
                     inkData: Data()
