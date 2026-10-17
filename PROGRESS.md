@@ -65,6 +65,10 @@ Note: `HTTPSProxyTransport` conforms to `ProxyClientTransport`: one `POST {base}
 status: Done in code · completed: Claude · 2026-10-16 · branch: feat/M4-08L-premium-implies-cloud · depends: M4-08C2 · refs: DECISIONS.md ADR-029, BUSINESS.md 5.1.2(i)
 Note: owner decision in chat. Deleted `PilotCloudSettingsView`, its menu entry and `cloud.*` strings; `PilotCloudConfiguration.consentGranted` became read-only `isEntitled` (true when the build has an access token), still feeding `ConsentGatedProvider`. Free tier (no token) makes no cloud call. The owner also ran airplane mode on the iPad: `2 + 3 =` still answered locally and `x + 2 = 7` showed the transport failure message, as designed (the copy is raw and is M6 UI work). **Open compliance item:** the premium purchase flow must carry the third-party AI disclosure and explicit acknowledgement (ADR-029); not built.
 
+### M5-UI-9 — "Draw around…" prompt matches the board
+status: Done in code; needs-device-verification · completed: Claude · 2026-10-17 · branch: feat/M5-lasso-hint-style · depends: M5-UI-8
+Note: owner request in chat. The lasso prompt is now `LassoHintBar`: same rounded card, material and shadow as the tool board, a lasso icon, and Cancel as a tinted button like Ask.
+
 ### M5-UI-8 — Say how to write powers when choosing Plot
 status: Done in code · completed: Claude · 2026-10-17 · branch: feat/M5-plot-power-hint · depends: M5-UI-7
 Note: the owner confirmed plots are right when powers are written with `^`, and asked to highlight that if it is the only way. The Plot choice's subtitle now reads "Use ^ for powers: x^3". Ordinary raised exponents are NOT supported: Vision drops or flattens a handwritten superscript, and the parser can only fix the case where it comes back as `x3` or `x²`. A detector that finds a small raised stroke cluster next to an `x` and reads it separately is possible but is a guess without real ink to tune against; the next step would be to capture the owner's own Vision output for a few superscripts on the device (content shown on screen only) and design from that.
