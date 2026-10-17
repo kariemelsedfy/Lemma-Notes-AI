@@ -19,16 +19,17 @@ final class LowConfidenceDeclineTests: XCTestCase {
         XCTAssertEqual(spec.readConfidence, 0.2, accuracy: 0.001)
     }
 
-    /// The invariant, unchanged: `readConfidence < 0.6` renders nothing. It is about rendering,
-    /// and a decline renders nothing by construction — so accepting one does not weaken it.
-    func testALowConfidenceSpecCarryingContentIsStillRefused() {
+    /// Owner decision 2026-10-17: low confidence no longer blocks content by default (the writer can delete it);
+    /// a product that wants the old floor passes `SpecLimits(minimumReadConfidence: 0.6)`.
+    func testALowConfidenceSpecCarryingContentIsRefusedOnlyUnderAFloor() {
         let spec = Self.spec(
             readConfidence: 0.2,
             blocks: [SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .text, value: "4")))]
         )
 
-        XCTAssertThrowsError(try SpecValidator.validate(spec)) { error in
-            XCTAssertEqual(error as? SpecValidationError, .lowReadConfidence(0.2))
+        XCTAssertNoThrow(try SpecValidator.validate(spec))
+        XCTAssertThrowsError(try SpecValidator.validate(spec, limits: SpecLimits(minimumReadConfidence: 0.6))) {
+            XCTAssertEqual($0 as? SpecValidationError, .lowReadConfidence(0.2))
         }
     }
 

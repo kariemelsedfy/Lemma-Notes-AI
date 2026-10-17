@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-5 — read the graph, not just the code
+The owner's "wrong graph" was diagnosable from the screenshot alone: reading the intercepts back (4 at x = 0, 0 at x = −4) gave `y = x + 4`, so the recogniser dropped the exponent, not the plotter. Showing the parsed function beside Keep/Discard turns that class of problem into something the writer can see and fix. Lowering the confidence floor to 0 broke four tests that had encoded the old invariant, including `MockProvider`'s "corrupted spec" trick (it lowered confidence to force a rejection; it now pushes confidence out of range). When an invariant is overridden by the owner, change the invariant text in AGENTS.md in the same PR.
+
 ## 2026-10-17 · Claude · M5-UI-4 — when you cannot reproduce, make the failure talk
 The proxy returned 200 and my synthetic requests always validated, so I stopped guessing and split the catch-all `invalidResponse` into causes that carry content-free detail. Also learned: Cloud Run request logs confirm a request arrived and its status/size, which rules out transport in one query. If the owner's next line names a key path, compare the model's output shape for real handwriting against `Spec` decoding.
 

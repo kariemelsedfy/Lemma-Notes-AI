@@ -146,7 +146,7 @@ Read these before touching the relevant area. They exist because they will other
 **AI**
 - The model returns a spec. The app owns all coordinates, all geometry, all ink. No exceptions (AI_PIPELINE §3.2).
 - Math is LaTeX everywhere internally.
-- Validation fails closed. `readConfidence < 0.6` renders nothing.
+- Validation fails closed on malformed or out-of-range specs. **Owner decision 2026-10-17:** a low `readConfidence` no longer blocks an answer by default (`SpecLimits.minimumReadConfidence` is 0): the writer can delete what they do not want. Only a decline (no blocks, for example a scribble) renders nothing.
 - Never send a whole page or whole document to a provider — only the selection crop and bounded neighborhood.
 - No user content in logs. Log request IDs, sizes, timings, tier, and outcome. Never the crop, the transcription, or the answer.
 

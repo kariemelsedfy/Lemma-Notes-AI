@@ -140,15 +140,21 @@ final class AskPipeline {
         }
     }
 
-    /// Hands the glyph bank the writer's own ink from this lasso, never the app's generated ink.
+    /// The strokes inside the lasso that are the writer's own: never the app's generated ink.
+    private func writersOwnInk(context: SelectionContext, pageStrokes: [InkStroke], input: PageInput) -> [InkStroke] {
+        pageStrokes.enumerated().filter { index, stroke in
+            context.strokeIDs.contains(stroke.id) && !input.generatedStrokeIndices.contains(index)
+        }.map(\.element)
+    }
+
+    /// Hands the glyph bank the writer's own ink from this lasso.
     private func shareWithLearning(
         context: SelectionContext, reading: SelectionReading, pageStrokes: [InkStroke], input: PageInput
     ) {
-        let writersOwnInk = pageStrokes.enumerated().filter { index, stroke in
-            context.strokeIDs.contains(stroke.id) && !input.generatedStrokeIndices.contains(index)
-        }.map(\.element)
         onSelectionRead?(
-            LearnableSelection(strokes: writersOwnInk, reading: reading, cropBounds: context.crop.bounds))
+            LearnableSelection(
+                strokes: writersOwnInk(context: context, pageStrokes: pageStrokes, input: input), reading: reading,
+                cropBounds: context.crop.bounds))
     }
 
     private func place(
@@ -187,7 +193,7 @@ final class AskPipeline {
             meanForce: context.style.meanForce,
             strokeWidth: context.style.strokeWidth
         )
-        let ink: [InkStroke]
+        var ink: [InkStroke]
         do {
             ink = try result.placements.flatMap { placement in
                 try renderer.strokes(for: placement, style: renderingStyle, seed: 0)
@@ -196,6 +202,10 @@ final class AskPipeline {
             // The answer was placed but cannot be drawn — an honest failure, not blank ink.
             model.apply(.fail(.invalidSpec))
             return
+        }
+        // The answer is drawn with the same nib width and pressure as the question, so the two look like one hand.
+        if let pen = PenMatching.pen(of: writersOwnInk(context: context, pageStrokes: pageStrokes, input: input)) {
+            ink = PenMatching.matched(ink, to: pen)
         }
         let renderedBounds = InkLineGrouping.bounds(of: ink)
         let inkDiagnostic =

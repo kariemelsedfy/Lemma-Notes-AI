@@ -17,7 +17,9 @@ public struct SpecLimits: Equatable, Sendable {
     public let maximumPlotFunctions: Int
     public let maximumMarks: Int
     public let maximumIndent: Int
-    /// Below this, nothing is rendered and the user is asked to confirm the read.
+    /// Below this, nothing is rendered. **Zero by owner decision (2026-10-17): answers are not blocked
+    /// pre-emptively.** The writer can delete one they do not want; only a scribble (the model declines with no
+    /// blocks) renders nothing. The field stays so a stricter product tier can raise it.
     public let minimumReadConfidence: Double
 
     public init(
@@ -30,7 +32,7 @@ public struct SpecLimits: Equatable, Sendable {
         maximumPlotFunctions: Int = 4,
         maximumMarks: Int = 24,
         maximumIndent: Int = 8,
-        minimumReadConfidence: Double = 0.6
+        minimumReadConfidence: Double = 0
     ) {
         self.maximumBlocks = maximumBlocks
         self.maximumLines = maximumLines

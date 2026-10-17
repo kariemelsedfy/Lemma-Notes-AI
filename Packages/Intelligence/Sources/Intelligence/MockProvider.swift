@@ -66,12 +66,12 @@ public actor MockProvider: SpecProvider {
     }
 
     /// The canned failure mode from `AI_PIPELINE.md` §8: a well-formed response the
-    /// validator must still refuse. Confidence is dropped below the floor.
+    /// validator must still refuse. Confidence is pushed out of range.
     private static func corrupted(_ spec: Spec) -> Spec {
         Spec(
             version: spec.version,
             read: spec.read,
-            readConfidence: 0.1,
+            readConfidence: 1.5,
             intent: spec.intent,
             blocks: spec.blocks,
             explanation: spec.explanation,

@@ -14,7 +14,8 @@ public enum LocalArithmeticOutcome: Equatable, Sendable {
 /// A deliberately small offline path for devices without Apple Intelligence.
 public enum LocalArithmetic {
     public static func evaluate(reading: SelectionReading, intent: SpecIntent) throws -> LocalArithmeticOutcome {
-        guard intent == .answer, Double(reading.confidence) >= RoutingPolicy.confidentRead else { return .unsupported }
+        // Any reading Vision produced is tried: the parser either understands it or it is unsupported.
+        guard intent == .answer, reading.confidence > 0 else { return .unsupported }
         var parser = ArithmeticParser(reading.transcript)
         guard let value = parser.result() else { return .unsupported }
         var output = value
