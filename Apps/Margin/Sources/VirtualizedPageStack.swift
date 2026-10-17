@@ -129,16 +129,7 @@ struct VirtualizedPageStack: View {
                 }
 
                 if askPath.isArmed {
-                    HStack(spacing: 8) {
-                        Text(askPath.stage.hintKey)
-                            .font(.footnote.weight(.medium))
-                            .accessibilityAddTraits(.isStaticText)
-                        Button("ask.cancel", role: .cancel, action: cancelSelection)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 4)
-                    .background(.regularMaterial, in: Capsule())
+                    LassoHintBar(hint: askPath.stage.hintKey, onCancel: cancelSelection)
                 }
 
                 HStack(alignment: .bottom, spacing: 12) {
