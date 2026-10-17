@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-8 — I chose the hint over a heuristic
+Making raised exponents work means guessing which small raised strokes are an exponent and what digit they are, and a wrong exponent silently plots the wrong function (worse than a hint). I could not tune that without the owner's real ink, which I must not receive. The honest option: the hint now, and a design based on what Vision actually returns on their device later.
+
 ## 2026-10-17 · Claude · M5-UI-7 — an interaction that was built and never attached
 `PencilInteractionCoordinator` existed with tests, but nothing in the app ever created it, so double-tap had never done anything for the app (the earlier "defer to the system" policy hid that). Worth grepping for "who constructs this?" when a feature seems missing. Resizing ink had a trap: the app's `InkStroke(PKStroke)` ignores `PKStroke.transform`, so selection and fingerprints assume strokes are untransformed; `SelectionResizer` bakes any transform into the points but selection will not find a transformed stroke where it really is. Nothing in the app creates transformed strokes today.
 
