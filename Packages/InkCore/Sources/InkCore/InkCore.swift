@@ -68,6 +68,26 @@ public struct InkStroke: Equatable, Sendable {
 }
 
 extension InkStroke {
+    /// The same stroke with its geometry scaled by `factor` about `anchor`. Nib size, pressure and timing are
+    /// kept: resizing a drawing changes its extent, not the pen it was drawn with.
+    public func scaled(by factor: CGFloat, about anchor: CGPoint) -> InkStroke {
+        InkStroke(
+            id: id,
+            points: points.map { point in
+                InkPoint(
+                    location: CGPoint(
+                        x: anchor.x + (point.location.x - anchor.x) * factor,
+                        y: anchor.y + (point.location.y - anchor.y) * factor),
+                    timeOffset: point.timeOffset,
+                    force: point.force,
+                    altitude: point.altitude,
+                    azimuth: point.azimuth,
+                    size: point.size
+                )
+            }
+        )
+    }
+
     /// The same stroke moved by `delta`, keeping its identity and every other measurement.
     public func translated(by delta: CGSize) -> InkStroke {
         InkStroke(

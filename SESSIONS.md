@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-7 — an interaction that was built and never attached
+`PencilInteractionCoordinator` existed with tests, but nothing in the app ever created it, so double-tap had never done anything for the app (the earlier "defer to the system" policy hid that). Worth grepping for "who constructs this?" when a feature seems missing. Resizing ink had a trap: the app's `InkStroke(PKStroke)` ignores `PKStroke.transform`, so selection and fingerprints assume strokes are untransformed; `SelectionResizer` bakes any transform into the points but selection will not find a transformed stroke where it really is. Nothing in the app creates transformed strokes today.
+
 ## 2026-10-17 · Claude · M5-UI-6 — small, but with one judgement call
 I did not cancel in-flight requests or a pending answer on tool change, only a selection awaiting a choice; picking the eraser to tidy up while an answer is waiting should not discard it. If the owner wants those cancelled too, it is one case in `shouldDropSelection`.
 

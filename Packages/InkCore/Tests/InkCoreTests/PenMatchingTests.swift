@@ -45,3 +45,21 @@ final class PenMatchingTests: XCTestCase {
         XCTAssertTrue(matched[0].points.allSatisfy { (0.02...1).contains($0.force) })
     }
 }
+
+final class StrokeScalingTests: XCTestCase {
+    func testScalingMovesGeometryAboutTheAnchorAndKeepsThePen() {
+        let stroke = InkStroke(points: [
+            InkPoint(
+                location: CGPoint(x: 10, y: 10), timeOffset: 0, force: 0.4, altitude: 1, azimuth: 0,
+                size: CGSize(width: 3, height: 3)),
+            InkPoint(
+                location: CGPoint(x: 20, y: 30), timeOffset: 1, force: 0.6, altitude: 1, azimuth: 0,
+                size: CGSize(width: 3, height: 3)),
+        ])
+        let scaled = stroke.scaled(by: 2, about: CGPoint(x: 10, y: 10))
+        XCTAssertEqual(scaled.points.map(\.location), [CGPoint(x: 10, y: 10), CGPoint(x: 30, y: 50)])
+        XCTAssertEqual(scaled.points.map(\.size), stroke.points.map(\.size))
+        XCTAssertEqual(scaled.points.map(\.force), stroke.points.map(\.force))
+        XCTAssertEqual(scaled.id, stroke.id)
+    }
+}

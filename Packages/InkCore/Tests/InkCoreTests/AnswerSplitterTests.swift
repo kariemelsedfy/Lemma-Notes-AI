@@ -14,13 +14,13 @@ final class AnswerSplitterTests: XCTestCase {
 
     func testPageOriginsIncludeTheGap() {
         XCTAssertEqual(layout.originY(ofPage: 0), 0)
-        XCTAssertEqual(layout.originY(ofPage: 1), 1_024)
-        XCTAssertEqual(layout.totalHeight, 2_024)
+        XCTAssertEqual(layout.originY(ofPage: 1), 1_000 + PageStackLayout.spacing)
+        XCTAssertEqual(layout.totalHeight, 2_000 + PageStackLayout.spacing)
     }
 
     func testAPointInTheGapGoesToTheNearerPage() {
-        XCTAssertEqual(layout.pageIndex(containingY: 1_005), 0)
-        XCTAssertEqual(layout.pageIndex(containingY: 1_015), 1)
+        XCTAssertEqual(layout.pageIndex(containingY: 1_000 + PageStackLayout.spacing / 2 - 1), 0)
+        XCTAssertEqual(layout.pageIndex(containingY: 1_000 + PageStackLayout.spacing / 2 + 1), 1)
         XCTAssertEqual(layout.pageIndex(containingY: -50), 0)
         XCTAssertEqual(layout.pageIndex(containingY: 9_999), 1)
     }
@@ -30,7 +30,7 @@ final class AnswerSplitterTests: XCTestCase {
 
         XCTAssertEqual(slices.map(\.pageID), [second])
         let bounds = InkLineGrouping.bounds(of: try XCTUnwrap(slices.first).strokes)
-        XCTAssertEqual(bounds.minY, 1_100 - 1_024, accuracy: 0.001)
+        XCTAssertEqual(bounds.minY, 1_100 - (1_000 + PageStackLayout.spacing), accuracy: 0.001)
     }
 
     func testLinesAreSplitBetweenPagesAndNeverThroughALine() throws {

@@ -9,6 +9,9 @@ enum CanvasTool: CaseIterable, Identifiable {
 
     var id: Self { self }
 
+    /// What a Pencil double-tap switches to: the eraser from anything else, the pen from the eraser.
+    var afterPencilDoubleTap: CanvasTool { self == .eraser ? .pen : .eraser }
+
     var symbolName: String {
         switch self {
         case .pen: "pencil.tip"

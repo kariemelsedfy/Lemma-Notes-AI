@@ -15,6 +15,8 @@ struct VirtualizedPageStack: View {
     @State var appendingPage = false
     /// Where the writer has dragged the pending answer to, in page points, relative to where it first appeared.
     @State var ghostOffset: CGSize = .zero
+    /// How far the writer has resized the pending answer with its corner handle.
+    @State var ghostScale: CGFloat = 1
     @State var ghostDragging = false
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
@@ -87,7 +89,7 @@ struct VirtualizedPageStack: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-                LazyVStack(spacing: 24) {
+                LazyVStack(spacing: PageStackLayout.spacing) {
                     ForEach(pageIDs, id: \.self) { pageID in
                         pageView(for: pageID)
                             .frame(
@@ -155,6 +157,7 @@ struct VirtualizedPageStack: View {
             .padding(.bottom, 20)
         }
         .background(.background)
+        .background { PencilInteractionHost(tool: $selectedTool) }
         .onAppear {
             visiblePageID = pageIDs.first
             undoController.configure(store: drawingStore)
@@ -175,6 +178,7 @@ struct VirtualizedPageStack: View {
             // The offset belongs to one pending answer; a new answer starts below its question again.
             if phase != .awaitingDecision {
                 ghostOffset = .zero
+                ghostScale = 1
                 ghostDragging = false
             }
         }
@@ -207,9 +211,11 @@ struct VirtualizedPageStack: View {
                 selection: selectionStore.selection(for: pageID),
                 askSelection: askSelection,
                 captureStage: captureStage(for: pageID),
+                canResizeSelection: askModel.phase == .offeringVerbs,
                 onAskLasso: { loop in
                     capture(loop, on: pageID)
-                }
+                },
+                onResizeSelection: { resizeSelection(by: $0) }
             )
         } else {
             CachedPageView(pageID: pageID, drawingStore: drawingStore)
@@ -251,7 +257,10 @@ private struct LivePageView: View {
     let selection: PageSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
     let captureStage: AskCaptureStage?
+    /// A selection that is only waiting for a choice can be resized with its corner handle.
+    let canResizeSelection: Bool
     let onAskLasso: ([CGPoint]) -> Void
+    let onResizeSelection: (CGFloat) -> Void
 
     var body: some View {
         ZStack {
@@ -273,6 +282,9 @@ private struct LivePageView: View {
             .id(drawingStore.externalGeneration)
             if let selection {
                 PageSelectionOverlay(selection: selection)
+                if canResizeSelection {
+                    SelectionResizeHandle(selection: selection, pageSize: pageSize, onResize: onResizeSelection)
+                }
             }
             if let captureStage {
                 AskLassoCapture(
