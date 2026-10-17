@@ -2437,3 +2437,5 @@ Acceptance:
 - [x] App launches to a blank white view on the iPad Pro 13-inch (M5) simulator
 
 - 2026-10-17 M6-ENT-1: product name Lemma Notes AI (display name only; bundle id unchanged); `Plan`, `HostedAskPolicy`, `EntitlementProviding` in Intelligence with tests; `PilotCloudConfiguration.isEntitled` reads the plan. No UI, no StoreKit. Pricing confirmed $4.99/mo, $39.99/yr.
+
+- 2026-10-17 M6-ONB-1: onboarding framework. Pure `OnboardingTour` / `PracticeProgress` / `OnboardingStore` (tested); welcome, handwriting and AI-disclosure cards; a "Welcome" practice note with a coach bar driven by the real Ask phases; looping SwiftUI demo; invitation sheet (no purchase button until StoreKit); replay from the gear menu. Hosted steps (Explain, Solve) appear only when this install may use the hosted model (today: the pilot token build). Needs device verification.

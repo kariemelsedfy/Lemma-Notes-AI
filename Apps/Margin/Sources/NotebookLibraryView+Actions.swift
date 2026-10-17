@@ -10,6 +10,21 @@ extension NotebookLibraryView {
         if let notebook { openedNotebookID = notebook.id }
     }
 
+    /// A practice step needs a note to work in; the invitation at the end brings the user back to the library.
+    func handleTourStep(_ step: OnboardingStep?) {
+        guard let step else { return }
+        if step.isPractice {
+            if onboarding.practiceNoteID == nil {
+                let title = NSLocalizedString("onboarding.note.title", comment: "")
+                let notebook = library.create(title: title, paper: .ruled, size: PageSizePreset.default.size)
+                onboarding.practiceNoteID = notebook?.id
+            }
+            openedNotebookID = onboarding.practiceNoteID
+        } else if step == .subscribe {
+            openedNotebookID = nil
+        }
+    }
+
     var folderDeletionPresented: Binding<Bool> {
         Binding(
             get: { folderPendingDeletion != nil },

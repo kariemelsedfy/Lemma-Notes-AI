@@ -27,6 +27,8 @@ struct VirtualizedPageStack: View {
     let handwritingStatus: HandwritingStyleStatus
     /// Where what the writer writes in a lasso goes to teach the glyph bank their characters.
     let onLearnWriting: @MainActor (LearnableSelection) -> Void
+    /// What happened in the Ask, for the first-run tour. Nothing else listens to it.
+    let onPracticeEvent: @MainActor (PracticeEvent) -> Void
 
     @State var visiblePageID: UUID?
     @StateObject var drawingStore: PageDrawingStore
@@ -59,13 +61,15 @@ struct VirtualizedPageStack: View {
         autosave: PageAutosave? = nil,
         inkRenderer: any SuggestionInkRendering = TypesetInkRenderer(),
         handwritingStatus: HandwritingStyleStatus = .defaultTypeset,
-        onLearnWriting: @escaping @MainActor (LearnableSelection) -> Void = { _ in }
+        onLearnWriting: @escaping @MainActor (LearnableSelection) -> Void = { _ in },
+        onPracticeEvent: @escaping @MainActor (PracticeEvent) -> Void = { _ in }
     ) {
         notebookID = document?.manifest.id
         self.autosave = autosave
         self.inkRenderer = inkRenderer
         self.handwritingStatus = handwritingStatus
         self.onLearnWriting = onLearnWriting
+        self.onPracticeEvent = onPracticeEvent
         let pages = document?.pages ?? []
         _pageIDs = State(initialValue: pages.map(\.metadata.pageID))
         _pageSizes = State(
@@ -168,6 +172,7 @@ struct VirtualizedPageStack: View {
         }
         .modifier(InkPreferenceSaver(ink: selectedInk, recents: recentInks, width: selectedWidth))
         .onChange(of: askModel.phase) { _, phase in
+            if let event = PracticeEvent(phase: phase, verb: askModel.lastVerb) { onPracticeEvent(event) }
             // The offset belongs to one pending answer; a new answer starts below its question again.
             if phase != .awaitingDecision {
                 ghostOffset = .zero
