@@ -45,6 +45,18 @@ extension VirtualizedPageStack {
         }
     }
 
+    /// Choosing the pen or the eraser means the writer is done with the lasso: drop a selection that is only
+    /// waiting for a choice (or a lasso being drawn). A request in flight, or an answer waiting for Keep, is
+    /// left alone: switching tools must not throw away work.
+    static func shouldDropSelection(whenChoosing tool: CanvasTool, phase: AskBarPhase, lassoArmed: Bool) -> Bool {
+        guard tool != .lasso else { return false }
+        switch phase {
+        case .offeringVerbs: return true
+        case .hidden: return lassoArmed
+        case .working, .awaitingDecision, .failed: return false
+        }
+    }
+
     func cancelSelection() {
         askPath.cancel()
         askSelection.clearSelections()
