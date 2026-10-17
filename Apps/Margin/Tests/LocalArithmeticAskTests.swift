@@ -65,10 +65,11 @@ final class LocalArithmeticAskTests: XCTestCase {
         try await harness.settle()
 
         XCTAssertEqual(harness.model.phase, .failed(.unreadable))
-        XCTAssertEqual(harness.model.localFailure, .noFunction)
+        XCTAssertEqual(harness.model.localFailure, .noFunction(read: "2+3="))
+        XCTAssertTrue(harness.model.failureMessage?.contains("2+3=") == true)
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)
         XCTAssertNotEqual(
-            NSLocalizedString("ask.failure.local-plot-none", comment: ""), "ask.failure.local-plot-none")
+            NSLocalizedString("ask.failure.local-plot-read", comment: ""), "ask.failure.local-plot-read")
     }
 
     func testCancellationBeforeReadingReturnsCannotPresentLateInk() async throws {

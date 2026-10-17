@@ -16,6 +16,13 @@ private let handwritingAskLogger = Logger(
 ///
 /// Split out of `VirtualizedPageStack` when that file crossed the 400-line lint ceiling.
 extension VirtualizedPageStack {
+    /// What the tour's arrow points at, if a practice step is running.
+    var tourTarget: TourTarget? {
+        guard let practice else { return nil }
+        let hasInk = pageIDs.contains { !drawingStore.drawing(for: $0).strokes.isEmpty }
+        return practice.pointerTarget(hasInk: hasInk, lassoArmed: askPath.isArmed)
+    }
+
     /// Arms our own capture rather than PencilKit's opaque `PKLassoTool` selection.
     func invokeAsk() {
         askPipeline?.cancel(.superseded)

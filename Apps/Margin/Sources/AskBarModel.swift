@@ -16,9 +16,7 @@ final class AskBarModel: ObservableObject {
     /// debug builds only so one screenshot says which step broke instead of the generic copy.
     @Published private(set) var failureDetail: String?
 
-    var failureMessageKey: LocalizedStringKey? {
-        localFailure.map { LocalizedStringKey($0.messageKey) }
-    }
+    var failureMessage: String? { localFailure?.message }
 
     /// Kept so a retry can reissue the same verb without asking the user again.
     private(set) var lastVerb: AskVerb?

@@ -28,7 +28,7 @@ struct LocalPlotSpecProvider: SpecProvider {
             throw LocalArithmeticFailure.unclear
         }
         guard let functions = PlotRequest.functions(from: reading.transcript) else {
-            throw LocalArithmeticFailure.noFunction
+            throw LocalArithmeticFailure.noFunction(read: reading.transcript)
         }
         let plot = SpecPlot(functions: functions.map { SpecPlotFunction(expression: $0.text) })
         let spec = Spec(
@@ -63,14 +63,29 @@ enum LocalArithmeticFailure: Error, Equatable, Sendable {
     case unclear
     case unsupported
     /// A plot was asked for but no function could be read from the selection.
-    case noFunction
+    /// - Parameter read: what was read from the selection, shown on screen so the writer can see what went wrong
+    ///   (never logged: it is their handwriting's content).
+    case noFunction(read: String)
 
     var messageKey: String {
         switch self {
         case .unclear: "ask.failure.local-unclear"
         case .unsupported: "ask.failure.local-unsupported"
-        case .noFunction: "ask.failure.local-plot-none"
+        case .noFunction(let read):
+            Self.shortReading(read) == nil ? "ask.failure.local-plot-none" : "ask.failure.local-plot-read"
         }
+    }
+
+    /// The full sentence for the bar: for a plot that found no function it names what was read.
+    var message: String {
+        let text = NSLocalizedString(messageKey, comment: "")
+        guard case .noFunction(let read) = self, let shown = Self.shortReading(read) else { return text }
+        return String(format: text, shown)
+    }
+
+    private static func shortReading(_ read: String) -> String? {
+        let trimmed = read.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : String(trimmed.prefix(40))
     }
 }
 
