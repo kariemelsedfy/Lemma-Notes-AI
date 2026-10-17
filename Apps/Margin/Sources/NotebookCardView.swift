@@ -12,7 +12,7 @@ struct NotebookCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topTrailing) {
-                Color(MarginColor.paper)
+                MarginColor.paper
                 if let preview {
                     Image(uiImage: preview)
                         .resizable()
