@@ -122,3 +122,4 @@
 "ask.plot.reading" = "Plotting y = %@";
 "ask.ghost.resize" = "Resize answer";
 "ask.selection.resize" = "Resize selection";
+"ink.width" = "Pen thickness";

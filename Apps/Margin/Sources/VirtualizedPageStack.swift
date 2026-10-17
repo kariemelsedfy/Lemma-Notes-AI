@@ -47,6 +47,7 @@ struct VirtualizedPageStack: View {
     @State var askPipeline: AskPipeline?
     @State private var selectedTool: CanvasTool = .pen
     @State var selectedInk: InkColor = InkColorPreferences.load().selected
+    @State var selectedWidth: InkWidth = InkWidthPreferences.load()
     @State private var recentInks = InkColorPreferences.load().recents
     @State var askPath = AskPathState()
 
@@ -137,6 +138,7 @@ struct VirtualizedPageStack: View {
                         selectedTool: $selectedTool,
                         selectedInk: $selectedInk,
                         recents: $recentInks,
+                        selectedWidth: $selectedWidth,
                         canUndo: undoController.canUndo,
                         canRedo: undoController.canRedo,
                         onUndo: { undoController.undo() },
@@ -159,6 +161,7 @@ struct VirtualizedPageStack: View {
                 cancelSelection()
             }
         }
+        .onChange(of: selectedWidth) { _, width in InkWidthPreferences.save(width) }
         .onChange(of: selectedInk) { _, ink in
             InkColorPreferences.save(selected: ink, recents: recentInks)
         }
@@ -199,6 +202,7 @@ struct VirtualizedPageStack: View {
                 undoController: undoController,
                 selectedTool: selectedTool,
                 selectedInk: selectedInk,
+                penWidth: selectedWidth.points,
                 selection: selectionStore.selection(for: pageID),
                 askSelection: askSelection,
                 captureStage: captureStage(for: pageID),
@@ -245,6 +249,7 @@ private struct LivePageView: View {
     @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedInk: InkColor
+    let penWidth: CGFloat
     let selection: PageSelection?
     @ObservedObject var askSelection: AskSelectionCoordinator
     let captureStage: AskCaptureStage?
@@ -263,6 +268,7 @@ private struct LivePageView: View {
                 undoController: undoController,
                 selectedTool: selectedTool,
                 selectedInk: selectedInk,
+                penWidth: penWidth,
                 askSelection: askSelection
             )
             // Rebuilt on an undo. A `PKCanvasView` restores its own internal drawing when real
@@ -317,6 +323,7 @@ struct LiveInkCanvas: UIViewRepresentable {
     @ObservedObject var undoController: CanvasUndoController
     let selectedTool: CanvasTool
     let selectedInk: InkColor
+    let penWidth: CGFloat
     @ObservedObject var askSelection: AskSelectionCoordinator
 
     func makeCoordinator() -> LiveInkCanvasCoordinator {
@@ -363,7 +370,7 @@ struct LiveInkCanvas: UIViewRepresentable {
     private func apply(_ tool: CanvasTool, to canvasView: PKCanvasView) {
         switch tool {
         case .pen:
-            canvasView.tool = PKInkingTool(.pen, color: selectedInk.uiColor, width: 5)
+            canvasView.tool = PKInkingTool(.pen, color: selectedInk.uiColor, width: penWidth)
         case .eraser:
             canvasView.tool = PKEraserTool(.vector)
         case .lasso:

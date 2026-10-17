@@ -35,6 +35,9 @@ final class AskPipeline {
     var renderer: any SuggestionInkRendering
     /// Told what the writer wrote in each lasso, so the glyph bank can learn from it. Set per Ask.
     var onSelectionRead: (@MainActor (LearnableSelection) -> Void)?
+    /// A fresh seed for every answer, so each one picks its variants of the writer's characters afresh: the
+    /// same words never come out identically twice (owner decision 2026-10-17). Tests inject a fixed one.
+    var seedProvider: @MainActor () -> UInt64 = { UInt64.random(in: .min ... .max) }
     private let model: AskBarModel
     /// Readable so a caller can check it is still writing into the layer the view reads.
     /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
@@ -194,9 +197,10 @@ final class AskPipeline {
             strokeWidth: context.style.strokeWidth
         )
         var ink: [InkStroke]
+        let seed = seedProvider()
         do {
             ink = try result.placements.flatMap { placement in
-                try renderer.strokes(for: placement, style: renderingStyle, seed: 0)
+                try renderer.strokes(for: placement, style: renderingStyle, seed: seed)
             }
         } catch {
             // The answer was placed but cannot be drawn — an honest failure, not blank ink.
