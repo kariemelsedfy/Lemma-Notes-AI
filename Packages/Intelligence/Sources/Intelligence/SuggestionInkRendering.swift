@@ -70,7 +70,7 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
             // full block makes every word come back several times its drawn width and the
             // breaker wraps after each one.
             let advance = LineBreaker.lineAdvance(style: style, frame: frame)
-            let lines = try LineBreaker.lines(for: text, in: frame, style: style) { candidate in
+            let lines = try LineBreaker.lines(for: text, in: frame, style: style, allowsOverflow: true) { candidate in
                 let oneLine = CGRect(x: 0, y: 0, width: 100_000, height: advance)
                 return (try? TypesetStyle.strokes(for: candidate, in: oneLine, style: style))
                     .map { InkLineGrouping.bounds(of: $0).width } ?? 0
@@ -96,20 +96,46 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
 
     private func render(_ lines: [SpecLine], in frame: CGRect, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
         guard !lines.isEmpty else { return [] }
-        let advance = frame.height / CGFloat(lines.count)
-        let glyphHeight = advance * Self.lineFillRatio
+        // Wrapped to the frame first, as an inline run is (see `HandwritingInkRenderer`): a long item drawn on
+        // one line was squeezed to the page width.
+        let rows = wrappedRows(lines, in: frame, style: style)
+        let wrapped = rows.count != lines.count
+        let advance = wrapped ? LineBreaker.lineAdvance(style: style, frame: frame) : frame.height / CGFloat(rows.count)
+        let glyphHeight =
+            wrapped
+            ? max(frame.height - advance * CGFloat(rows.count - 1), advance * Self.lineFillRatio)
+            : advance * Self.lineFillRatio
 
-        return try lines.enumerated().flatMap { index, line -> [InkStroke] in
-            let indent = CGFloat(line.indent) * advance
+        return try rows.enumerated().flatMap { index, row -> [InkStroke] in
             let lineFrame = CGRect(
-                x: frame.minX + indent,
-                y: frame.minY + advance * CGFloat(index) + (advance - glyphHeight),
-                width: max(frame.width - indent, 1),
+                x: frame.minX + row.indent,
+                y: frame.minY + advance * CGFloat(index) + (wrapped ? 0 : advance - glyphHeight),
+                width: max(frame.width - row.indent, 1),
                 height: glyphHeight
             )
             // Each line gets its own seed offset so the jitter does not repeat down the
             // block, which is the tell that gives away machine-drawn text.
-            return try render(line.run.value, in: lineFrame, style: style, seed: seed &+ UInt64(index))
+            return try render(row.text, in: lineFrame, style: style, seed: seed &+ UInt64(index))
+        }
+    }
+
+    private func wrappedRows(
+        _ lines: [SpecLine], in frame: CGRect, style: StyleStats
+    ) -> [(text: String, indent: CGFloat)] {
+        let advance = LineBreaker.lineAdvance(style: style, frame: frame)
+        return lines.flatMap { line -> [(text: String, indent: CGFloat)] in
+            let indent = CGFloat(line.indent) * max(style.xHeight, 1) * 2
+            let room = CGRect(x: 0, y: 0, width: max(frame.width - indent, 1), height: advance)
+            let width: (String) -> CGFloat = { candidate in
+                let oneLine = CGRect(x: 0, y: 0, width: 100_000, height: advance)
+                return (try? TypesetStyle.strokes(for: candidate, in: oneLine, style: style))
+                    .map { InkLineGrouping.bounds(of: $0).width } ?? 0
+            }
+            let pieces =
+                (try? LineBreaker.lines(
+                    for: line.run.value, in: room, style: style, allowsOverflow: true, measure: width))?
+                .map(\.text) ?? [line.run.value]
+            return (pieces.isEmpty ? [line.run.value] : pieces).map { ($0, indent) }
         }
     }
 }

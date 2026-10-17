@@ -45,6 +45,18 @@ extension VirtualizedPageStack {
         }
     }
 
+    /// After a double-tap detour to the eraser, go back to the previous tool once erasing has stopped for a
+    /// moment (so a scrub across several strokes is not cut short by the first one disappearing).
+    func scheduleReturnFromEraser() {
+        guard pencilSwitcher.isOnDetour, selectedTool == .eraser else { return }
+        returnToToolTask?.cancel()
+        returnToToolTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled, let back = pencilSwitcher.inkSettled(current: selectedTool) else { return }
+            selectedTool = back
+        }
+    }
+
     /// Choosing the pen or the eraser means the writer is done with the lasso: drop a selection that is only
     /// waiting for a choice (or a lasso being drawn). A request in flight, or an answer waiting for Keep, is
     /// left alone: switching tools must not throw away work.

@@ -45,7 +45,9 @@ struct VirtualizedPageStack: View {
     /// drew nothing (M2-16).
     @State var suggestions = SuggestionLayer()
     @State var askPipeline: AskPipeline?
-    @State private var selectedTool: CanvasTool = .pen
+    @State var selectedTool: CanvasTool = .pen
+    @State var pencilSwitcher = PencilToolSwitcher()
+    @State var returnToToolTask: Task<Void, Never>?
     @State var selectedInk: InkColor = InkColorPreferences.load().selected
     @State var selectedWidth: InkWidth = InkWidthPreferences.load()
     @State private var recentInks = InkColorPreferences.load().recents
@@ -150,13 +152,15 @@ struct VirtualizedPageStack: View {
             .padding(.bottom, 20)
         }
         .background(.background)
-        .background { PencilInteractionHost(tool: $selectedTool) }
+        .background { PencilInteractionHost(tool: $selectedTool, switcher: $pencilSwitcher) }
         .onAppear {
             visiblePageID = pageIDs.first
             undoController.configure(store: drawingStore)
             ensureTrailingBlankPage()
         }
+        .onChange(of: drawingStore.revision) { _, _ in scheduleReturnFromEraser() }
         .onChange(of: selectedTool) { _, tool in
+            pencilSwitcher.toolChanged(to: tool)
             if Self.shouldDropSelection(whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed) {
                 cancelSelection()
             }
@@ -239,7 +243,6 @@ struct VirtualizedPageStack: View {
         }
         ensureTrailingBlankPage()
     }
-
 }
 
 private struct LivePageView: View {

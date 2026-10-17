@@ -32,10 +32,17 @@ public enum LineBreaker {
     /// - Parameter measure: the width one line of text needs at the given x-height.
     ///   Injected rather than assumed, because only the glyph bank knows a writer's real
     ///   advance widths — `HANDWRITING.md` §4 is explicit that measuring precedes placing.
+    /// - Parameter allowsOverflow: when true, a block that needs more lines than `frame.height / advance`
+    ///   still gets every line (running below the frame) instead of throwing `doesNotFit`.
+    ///   **A reserved frame is `ink + (lines - 1) x advance` tall, so dividing its height by the advance
+    ///   under-counts its own lines by one whenever the ink is shorter than the line spacing** (the usual
+    ///   case). That made every answer of two or more lines "not fit" its own frame, fall back, and come out
+    ///   shrunk onto one line. Renderers pass true; the frame was already sized for exactly these lines.
     public static func lines(
         for text: String,
         in frame: CGRect,
         style: StyleStats,
+        allowsOverflow: Bool = false,
         measure: (String) -> CGFloat
     ) throws -> [Line] {
         guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
@@ -46,7 +53,7 @@ public enum LineBreaker {
         let wrapped = wrap(trimmed, width: frame.width, measure: measure)
 
         let available = max(Int((frame.height / advance).rounded(.down)), 1)
-        guard wrapped.count <= available else {
+        guard allowsOverflow || wrapped.count <= available else {
             throw Error.doesNotFit(linesNeeded: wrapped.count, linesAvailable: available)
         }
 

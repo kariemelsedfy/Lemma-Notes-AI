@@ -105,7 +105,7 @@ final class PilotCloudAskTests: XCTestCase {
         let harness = Harness(reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport)
         harness.pipeline.run(harness.input, verb: .answer)
         try await harness.settle()
-        XCTAssertEqual(harness.model.phase, .failed(.transport))
+        XCTAssertEqual(harness.model.phase, .failed(.offline), "no network says so, not \"couldn't reach the model\"")
         // A content-free reason for debug builds: the failure case and the intent, nothing else.
         XCTAssertEqual(harness.model.failureDetail, "offline · answer")
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)

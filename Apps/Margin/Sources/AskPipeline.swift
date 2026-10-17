@@ -277,8 +277,21 @@ final class AskPipeline {
             }
         case is SpecValidationError:
             .invalidSpec
+        case let failure as ProxyProviderFailure:
+            Self.failure(for: failure)
         default:
             .transport
+        }
+    }
+
+    /// What the writer is told for each hosted failure. The service answering in a shape we cannot use is
+    /// "try again", never a word about decoding.
+    private static func failure(for failure: ProxyProviderFailure) -> AskFailure {
+        switch failure {
+        case .offline: .offline
+        case .budgetExceeded: .outOfCredits
+        case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: .invalidSpec
+        case .invalidRequest, .refused, .unauthorized: .transport
         }
     }
 }

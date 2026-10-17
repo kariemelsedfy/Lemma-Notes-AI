@@ -179,11 +179,14 @@ public struct Spec: Equatable, Sendable, Codable {
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        version = try container.decode(Int.self, forKey: .version)
-        read = try container.decode(String.self, forKey: .read)
-        readConfidence = try container.decode(Double.self, forKey: .readConfidence)
+        // A model that cannot read the writing often returns a bare decline with fields missing. Those fields
+        // default to "read nothing, with no confidence, and no blocks", which renders nothing and tells the
+        // writer to try again, instead of failing as an undecodable reply. The intent stays required.
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? Spec.currentVersion
+        read = try container.decodeIfPresent(String.self, forKey: .read) ?? ""
+        readConfidence = try container.decodeIfPresent(Double.self, forKey: .readConfidence) ?? 0
         intent = try container.decode(SpecIntent.self, forKey: .intent)
-        blocks = try container.decode([SpecBlock].self, forKey: .blocks)
+        blocks = try container.decodeIfPresent([SpecBlock].self, forKey: .blocks) ?? []
         explanation = try container.decodeIfPresent(String.self, forKey: .explanation)
         warnings = try container.decodeIfPresent([String].self, forKey: .warnings) ?? []
     }
@@ -191,9 +194,9 @@ public struct Spec: Equatable, Sendable, Codable {
 
 /// Decodes model responses into the spec shape.
 ///
-/// Unknown fields are ignored, which is what `Codable` already does; missing or
-/// mistyped required fields surface as a `DecodingError` rather than a default value,
-/// so a truncated or hallucinated response can never be mistaken for a valid one.
+/// Unknown fields are ignored, which is what `Codable` already does. A reply with `blocks`, `read` or
+/// `readConfidence` missing decodes as a decline (nothing to render); a missing `intent` or a mistyped field
+/// is still a `DecodingError`, so a hallucinated response is never mistaken for a valid answer.
 public enum SpecDecoder {
     public static func decode(_ data: Data) throws -> Spec {
         try JSONDecoder().decode(Spec.self, from: data)

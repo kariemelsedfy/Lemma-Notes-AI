@@ -55,3 +55,45 @@ final class PencilActionPolicyTests: XCTestCase {
         XCTAssertTrue(view.interactions.contains { $0 is UIPencilInteraction })
     }
 }
+
+final class PencilToolSwitcherTests: XCTestCase {
+    func testErasingAfterADoubleTapReturnsToTheToolYouWereOn() {
+        var switcher = PencilToolSwitcher()
+        let eraser = switcher.doubleTap(current: .pen)
+        XCTAssertEqual(eraser, .eraser)
+        switcher.toolChanged(to: eraser)  // the switcher's own change
+        XCTAssertEqual(switcher.inkSettled(current: .eraser), .pen)
+        XCTAssertNil(switcher.inkSettled(current: .pen), "only once")
+    }
+
+    func testItReturnsToWhateverToolItCameFrom() {
+        var switcher = PencilToolSwitcher()
+        _ = switcher.doubleTap(current: .lasso)
+        switcher.toolChanged(to: .eraser)
+        XCTAssertEqual(switcher.inkSettled(current: .eraser), .lasso)
+    }
+
+    func testChoosingTheEraserByHandIsNotADetour() {
+        var switcher = PencilToolSwitcher()
+        switcher.toolChanged(to: .eraser)
+        XCTAssertNil(switcher.inkSettled(current: .eraser), "the writer chose it, so it stays")
+        XCTAssertFalse(switcher.isOnDetour)
+    }
+
+    func testPickingAToolByHandDuringADetourEndsIt() {
+        var switcher = PencilToolSwitcher()
+        _ = switcher.doubleTap(current: .pen)
+        switcher.toolChanged(to: .eraser)
+        switcher.toolChanged(to: .lasso)
+        XCTAssertFalse(switcher.isOnDetour)
+        XCTAssertNil(switcher.inkSettled(current: .eraser))
+    }
+
+    func testAnotherDoubleTapGoesBackWithoutErasing() {
+        var switcher = PencilToolSwitcher()
+        _ = switcher.doubleTap(current: .pen)
+        switcher.toolChanged(to: .eraser)
+        XCTAssertEqual(switcher.doubleTap(current: .eraser), .pen)
+        XCTAssertFalse(switcher.isOnDetour)
+    }
+}

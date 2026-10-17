@@ -258,10 +258,19 @@ public struct SpecBlock: Equatable, Sendable, Codable {
         placement = try container.decode(SpecPlacement.self, forKey: .placement)
         switch type {
         case .inline:
-            content = .inline(try container.decode(SpecRun.self, forKey: .content))
+            // A model sometimes labels a block "inline" but gives it a list of lines (or the reverse). Either
+            // shape is unambiguous from the content, so accept it rather than failing the whole answer.
+            if let run = try? container.decode(SpecRun.self, forKey: .content) {
+                content = .inline(run)
+            } else {
+                content = .lines(try Self.lines(in: container))
+            }
         case .lines:
-            let nested = try container.nestedContainer(keyedBy: ContentKeys.self, forKey: .content)
-            content = .lines(try nested.decode([SpecLine].self, forKey: .lines))
+            if let lines = try? Self.lines(in: container) {
+                content = .lines(lines)
+            } else {
+                content = .lines([SpecLine(run: try container.decode(SpecRun.self, forKey: .content))])
+            }
         case .plot:
             content = .plot(try container.decode(SpecPlot.self, forKey: .content))
         case .marks:
@@ -270,6 +279,11 @@ public struct SpecBlock: Equatable, Sendable, Codable {
         case .note:
             content = .note(try container.decode(SpecNote.self, forKey: .content))
         }
+    }
+
+    private static func lines(in container: KeyedDecodingContainer<CodingKeys>) throws -> [SpecLine] {
+        let nested = try container.nestedContainer(keyedBy: ContentKeys.self, forKey: .content)
+        return try nested.decode([SpecLine].self, forKey: .lines)
     }
 
     public func encode(to encoder: any Encoder) throws {

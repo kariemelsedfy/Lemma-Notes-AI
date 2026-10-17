@@ -114,6 +114,8 @@ struct AskBar: View {
     var onRetry: () -> Void = {}
     var onDismiss: () -> Void = {}
 
+    @State private var showsDetail = false
+
     var body: some View {
         Group {
             switch phase {
@@ -211,9 +213,12 @@ struct AskBar: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(failureOverride ?? failure.messageKey)
-                    .lineLimit(2)
+                    .lineLimit(3)
+                    // The technical line is for whoever is debugging, so it stays hidden until the message is
+                    // long-pressed, and exists only in debug builds.
+                    .onLongPressGesture { showsDetail.toggle() }
                 #if DEBUG
-                    if let failureDetail {
+                    if showsDetail, let failureDetail {
                         Text(verbatim: failureDetail)
                             .font(.caption2.monospaced())
                             .foregroundStyle(MarginColor.secondaryText)
