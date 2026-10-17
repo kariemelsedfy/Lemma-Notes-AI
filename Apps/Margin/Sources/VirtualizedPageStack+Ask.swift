@@ -207,6 +207,7 @@ extension VirtualizedPageStack {
         let placed = inStack.map { $0.scaled(by: ghostScale, about: anchor).translated(by: ghostOffset) }
         let slices = AnswerSplitter.split(placed, layout: layout)
         guard !slices.isEmpty, let accepted = suggestions.acceptWithoutInserting() else {
+            onPracticeEvent(.kept)
             askModel.accept()
             return
         }
@@ -225,6 +226,7 @@ extension VirtualizedPageStack {
             )
             recordProvenance(record, on: slice.pageID, in: committed)
         }
+        onPracticeEvent(.kept)
         askModel.accept()
         clearCompletedAskSelections()
     }

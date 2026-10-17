@@ -26,6 +26,7 @@ struct NotebookLibraryView: View {
     @State var calibrationPresented = false
     @State var addCharactersPresented = false
     @StateObject var handwriting = HandwritingStyleStore()
+    @StateObject var onboarding = OnboardingCoordinator(hostedAvailable: { PilotCloudConfiguration.standard.isReady })
     #if DEBUG
         @State private var samplePresented = false
     #endif
@@ -148,6 +149,7 @@ struct NotebookLibraryView: View {
                 }
             }
         }
+        .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
         .sheet(isPresented: $calibrationPresented) { CalibrationView(store: handwriting) }
         .sheet(isPresented: $addCharactersPresented) { AddCharactersView(store: handwriting) }
         #if DEBUG
@@ -169,11 +171,17 @@ struct NotebookLibraryView: View {
                 autosave: library.autosave,
                 inkRenderer: stylePreference.renderer(bank: handwriting.bank),
                 handwritingStatus: stylePreference.status(bank: handwriting.bank),
-                onLearnWriting: { handwriting.learn(from: $0) }
+                onLearnWriting: { handwriting.learn(from: $0) },
+                onPracticeEvent: { event in
+                    if notebookID == onboarding.practiceNoteID { onboarding.handle(event) }
+                }
             )
             .onDisappear { flushEdits() }
             .id(notebookID)
             .navigationBarTitleDisplayMode(.inline)
+            .overlay(alignment: .top) {
+                if notebookID == onboarding.practiceNoteID { PracticeCoachBar(coordinator: onboarding) }
+            }
             .toolbar {
                 Menu("library.export", systemImage: "square.and.arrow.up") {
                     Button("library.export.pdf") { export(notebookID, format: .pdf) }
@@ -201,6 +209,7 @@ struct NotebookLibraryView: View {
                 Button("sample.open") { samplePresented = true }
                     .disabled(handwriting.bank == nil)
             #endif
+            Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }
             Button("calibration.add") { addCharactersPresented = true }
                 .disabled(handwriting.bank == nil)

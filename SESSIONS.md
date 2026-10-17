@@ -3031,3 +3031,6 @@ A decline (`blocks == []`) becomes `failed(.unreadable)`, not a success with not
 
 ## 2026-10-17 M6-ENT-1
 Small by design: the policy type answers what the UI shows (allowed / onboarding ask / subscribe / allowance used up) so the paywall and tour never re-derive it. Only display name changed for the rename; changing the bundle id would orphan the installed app and its data. The onboarding allowance is client-side until App Attest lands, so the hosted tour steps must not ship to anyone else before then.
+
+## 2026-10-17 M6-ONB-1
+The coach needs no hooks into the pipeline: it reads the Ask bar's phase (selected, working with a verb, awaiting decision, failed, hidden) plus one explicit `.kept` event from `acceptSuggestion`. Kept the rules in pure types so the screen has none. A different verb than the step teaches still runs but does not advance the tour. Free installs skip the hosted steps and the disclosure until App Attest exists, so the tour never promises what it cannot deliver. Unverified on device: the practice flow with a real Pencil, the calibration card inside the full-screen cover, and the coach bar overlapping the toolbar.
