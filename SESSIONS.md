@@ -11,6 +11,9 @@ unless you check.
 
 ---
 
+## 2026-10-17 · Claude · M5-UI-4 — when you cannot reproduce, make the failure talk
+The proxy returned 200 and my synthetic requests always validated, so I stopped guessing and split the catch-all `invalidResponse` into causes that carry content-free detail. Also learned: Cloud Run request logs confirm a request arrived and its status/size, which rules out transport in one query. If the owner's next line names a key path, compare the model's output shape for real handwriting against `Spec` decoding.
+
 ## 2026-10-17 · Claude · M5-UI-3 — an interpolated LocalizedStringKey is a different key
 `LocalizedStringKey("x.\(y)")` is not the string "x.<y>": it is a format key with a placeholder, so lookups silently fail and the raw text ships. The earlier "raw failure copy, UI polish deferred" was this bug, not missing strings. It was invisible because the choices were icon-only and the failure copy only shows when offline. I added a test over every verb and failure key against `NSLocalizedString`; it cannot catch the interpolation form itself, so grep for `LocalizedStringKey("` with `\(` when touching copy.
 

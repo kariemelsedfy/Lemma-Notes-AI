@@ -81,7 +81,7 @@ final class ProxySpecProviderTests: XCTestCase {
                 // Undecodable or wrong-intent replies are `invalidResponse`; replies that decode but break a spec
                 // rule say which rule (by name only) so a debug build can show it.
                 switch error as? ProxyProviderFailure {
-                case .invalidResponse, .rejectedSpec: break
+                case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: break
                 default: XCTFail("Unexpected failure \(error)")
                 }
             }
@@ -104,6 +104,35 @@ final class ProxySpecProviderTests: XCTestCase {
             XCTFail("An over-long run became ink")
         } catch {
             XCTAssertEqual(error as? ProxyProviderFailure, .rejectedSpec("contentTooLong"))
+        }
+    }
+
+    func testAnUndecodableReplyNamesWhereAndNeverWhat() async throws {
+        let reply = Data(
+            #"""
+            {"version":1,"read":"secretread","readConfidence":0.9,"intent":"answer",
+             "blocks":[{"type":"inline","placement":"secretplace","content":{"kind":"text","text":"x"}}]}
+            """#.utf8)
+        let transport = FakeTransport(responses: ["2+3=": reply])
+        let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
+        do {
+            _ = try await provider.spec(for: Self.request("2+3="))
+            XCTFail("Undecodable reply became ink")
+        } catch {
+            XCTAssertEqual(error as? ProxyProviderFailure, .undecodable("dataCorrupted blocks[0].placement"))
+            XCTAssertFalse("\(error)".contains("secret"))
+        }
+    }
+
+    func testAWrongIntentSaysWhichOneCameBack() async throws {
+        let wrong = Spec(read: "2+3=", readConfidence: 0.95, intent: .plot, blocks: [])
+        let transport = FakeTransport(responses: ["2+3=": try SpecDecoder.encode(wrong)])
+        let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
+        do {
+            _ = try await provider.spec(for: Self.request("2+3="))
+            XCTFail("A different intent became ink")
+        } catch {
+            XCTAssertEqual(error as? ProxyProviderFailure, .wrongIntent("plot"))
         }
     }
 
