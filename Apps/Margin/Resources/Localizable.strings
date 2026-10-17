@@ -135,3 +135,30 @@
 "page.size.letter" = "Letter";
 "page.size.isoA4" = "A4";
 "page.size.square" = "Square";
+
+
+"home.allnotes" = "All Notes";
+"home.folders" = "Folders";
+"home.new" = "New";
+"home.create" = "Create";
+"home.save" = "Save";
+"home.search" = "Search notes";
+"home.favorite" = "Favorite";
+"home.unfavorite" = "Remove from favorites";
+"home.moveto" = "Move to";
+"home.unfiled" = "Unfiled";
+"home.tab.all" = "All";
+"home.tab.recents" = "Recents";
+"home.tab.favorites" = "Favorites";
+"home.tab.unfiled" = "Unfiled";
+"home.empty.title" = "No notes here yet";
+"home.empty.search" = "No notes match your search";
+"home.new.name" = "Name (optional)";
+"home.new.pattern" = "Paper";
+"home.folder.new" = "New folder";
+"home.folder.edit" = "Edit folder";
+"home.folder.name" = "Folder name";
+"home.folder.color" = "Color";
+"home.folder.delete" = "Delete folder";
+"home.folder.delete.confirmation" = "Delete this folder?";
+"home.folder.delete.message" = "The notes inside are kept and become unfiled.";

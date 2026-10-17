@@ -19,6 +19,8 @@ final class NotebookLibrary: ObservableObject {
     @Published private(set) var lastError: Error?
     private let packageLibrary: NotebookPackageLibrary
     private let folderStore: NotebookFolderStore
+    /// First-page previews for the home grid.
+    let thumbnails: NotebookThumbnailStore
 
     convenience init() {
         self.init(rootURL: Self.defaultRootURL())
@@ -27,6 +29,10 @@ final class NotebookLibrary: ObservableObject {
     init(rootURL: URL) {
         packageLibrary = NotebookPackageLibrary(rootURL: rootURL)
         folderStore = NotebookFolderStore(rootURL: rootURL)
+        thumbnails = NotebookThumbnailStore(
+            rootURL: rootURL,
+            cacheDirectory: (FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory).appendingPathComponent("Margin/Thumbnails"))
         folders = folderStore.folders()
         do {
             notebooks = try packageLibrary.notebooks().map(Self.summary)
