@@ -49,7 +49,8 @@ public enum Synthesizer {
         bank: GlyphBank,
         variation: Variation = .natural,
         seed: UInt64 = 0,
-        targetXHeight: CGFloat? = nil
+        targetXHeight: CGFloat? = nil,
+        baseline: CGFloat? = nil
     ) throws -> [InkStroke] {
         guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
         let missing = bank.missingCharacters(in: text)
@@ -59,7 +60,13 @@ public enum Synthesizer {
         let style = bank.style.stats
         var generator = SeededGenerator(seed: seed)
         let chosen = select(text, from: bank, variation: variation, using: &generator)
-        let metrics = layout(chosen, style: style, targetXHeight: targetXHeight, in: frame)
+        var metrics = layout(chosen, style: style, targetXHeight: targetXHeight, in: frame)
+        // A row drawn in several pieces (a base and its raised exponent) shares one baseline. By default the baseline
+        // depends on how far *this* text's deepest descender falls, so a piece with no descender would otherwise sit
+        // lower than its neighbours.
+        if let baseline {
+            metrics = Metrics(xHeight: metrics.xHeight, origin: CGPoint(x: metrics.origin.x, y: baseline))
+        }
 
         var strokes: [InkStroke] = []
         var clock: TimeInterval = 0
@@ -325,6 +332,24 @@ public enum Synthesizer {
             xHeight: xHeight,
             origin: CGPoint(x: frame.minX, y: frame.maxY - fall * xHeight)
         )
+    }
+
+    /// The y of the baseline `text` would sit on if drawn into `frame` with the same arguments as `strokes`.
+    /// The pieces of one row take this from the whole row so that they line up.
+    public static func baseline(
+        for text: String,
+        in frame: CGRect,
+        bank: GlyphBank,
+        variation: Variation = .natural,
+        seed: UInt64 = 0,
+        targetXHeight: CGFloat? = nil
+    ) throws -> CGFloat {
+        guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
+        let missing = bank.missingCharacters(in: text)
+        guard missing.isEmpty else { throw Error.missingGlyphs(missing) }
+        var generator = SeededGenerator(seed: seed)
+        let chosen = select(text, from: bank, variation: variation, using: &generator)
+        return layout(chosen, style: bank.style.stats, targetXHeight: targetXHeight, in: frame).origin.y
     }
 
     /// The writer's measured line weight.

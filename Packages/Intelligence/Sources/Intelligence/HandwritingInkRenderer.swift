@@ -135,14 +135,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                 )).map { InkLineGrouping.bounds(of: $0).width } ?? 0
             }
             return try lines.enumerated().flatMap { index, line in
-                try Synthesizer.strokes(
-                    for: line.text,
-                    in: line.frame,
-                    bank: bank,
-                    variation: variation,
-                    seed: seed &+ UInt64(index),
-                    targetXHeight: targetXHeight(for: line.text, matching: style.xHeight)
-                )
+                try writeRow(line.text, in: line.frame, style: style, seed: seed &+ UInt64(index))
             }
         } catch Synthesizer.Error.missingGlyphs {
             // `canRender` said yes, so this means the bank changed underneath us. Falling
@@ -188,14 +181,33 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
             )
             // Per-line seed offset, or the same jitter repeats down the block — which is
             // the tell that gives away machine-drawn text (§4.1).
+            return try writeRow(row.text, in: lineFrame, style: style, seed: seed &+ UInt64(index))
+        }
+    }
+
+    /// One row in the writer's hand. A power (`x^2`) is drawn as a smaller exponent raised beside its base, not as a
+    /// caret (`ScriptedText`); every piece uses the size the whole row would have, so the base does not grow or shrink
+    /// because of what sits next to it.
+    private func writeRow(_ text: String, in frame: CGRect, style: StyleStats, seed: UInt64) throws -> [InkStroke] {
+        guard let pieces = ScriptedText.pieces(in: text) else {
             return try Synthesizer.strokes(
-                for: row.text,
-                in: lineFrame,
-                bank: bank,
-                variation: variation,
-                seed: seed &+ UInt64(index),
-                targetXHeight: targetXHeight(for: row.text, matching: style.xHeight)
-            )
+                for: text, in: frame, bank: bank, variation: variation, seed: seed,
+                targetXHeight: targetXHeight(for: text, matching: style.xHeight))
+        }
+        let whole = pieces.map(\.text).joined()
+        let size = targetXHeight(for: whole, matching: style.xHeight)
+        // One baseline for the whole row, from the whole row's descenders; the exponent is lifted off it. Left to
+        // themselves, pieces with different descenders (a "y" or a bracket against plain digits) sit at different
+        // heights, which put the exponent on the line and the rest of the row below it.
+        let rowBaseline = try Synthesizer.baseline(
+            for: whole, in: frame, bank: bank, variation: variation, seed: seed, targetXHeight: size)
+        let lift = size * ScriptedText.liftInXHeights
+        var index: UInt64 = 0
+        return try ScriptedText.layout(pieces, in: frame, xHeight: size) { piece, room, scale, isRaised in
+            defer { index += 1 }
+            return try Synthesizer.strokes(
+                for: piece, in: room, bank: bank, variation: variation, seed: seed &+ index,
+                targetXHeight: size * scale, baseline: isRaised ? rowBaseline - lift : rowBaseline)
         }
     }
 

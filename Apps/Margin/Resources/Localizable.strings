@@ -37,7 +37,6 @@
 "ask.verb.plot" = "Plot";
 "ask.verb.plot.subtitle" = "Graph a function";
 "ask.state.working" = "Working…";
-"ask.notice.substituted-characters %@" = "Typeset: %@";
 "ask.cancel" = "Cancel";
 "ask.keep" = "Keep";
 "ask.discard" = "Discard";

@@ -234,7 +234,12 @@ public struct ProxySpecProvider: SpecProvider {
             throw ProxyProviderFailure.undecodable("other \(type(of: error))")
         }
         guard spec.intent == intent else { throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue) }
-        return spec
+        // The model may answer math in LaTeX; the page can only hold what a hand could write.
+        do { return try spec.inPlainCharacters() } catch let error as SpecValidationError {
+            throw ProxyProviderFailure.rejectedSpec(error.name)
+        } catch {
+            throw ProxyProviderFailure.undecodable("other \(type(of: error))")
+        }
     }
 }
 
