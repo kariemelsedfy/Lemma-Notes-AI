@@ -90,6 +90,11 @@ struct ToolPalette: View {
     var onUndo: () -> Void = {}
     var onRedo: () -> Void = {}
     var onAsk: () -> Void = {}
+    /// Which edge the board is docked to; on the left and right it stands up.
+    var dock: BoardDock = .bottom
+    /// The grip that moves the board (see `BoardDockLayer`).
+    var onGripChanged: (DragGesture.Value) -> Void = { _ in }
+    var onGripEnded: (DragGesture.Value) -> Void = { _ in }
 
     @State private var showsPalette = false
     @State private var showsWidths = false
@@ -97,8 +102,40 @@ struct ToolPalette: View {
     private static let hit: CGFloat = 44
 
     var body: some View {
+        Group {
+            if dock.isVertical { verticalBoard } else { horizontalBoard }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        // The horizontal divider is flexible; without this the board takes all the width it is offered and
+        // pushes the Ask button off the screen.
+        .fixedSize(horizontal: true, vertical: dock.isVertical)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
+        .animation(.easeInOut(duration: 0.15), value: selectedTool)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("tool.palette")
+    }
+
+    /// The handle that moves the board: a short bar, along the board's short side.
+    private var grip: some View {
+        Capsule()
+            .fill(MarginColor.primaryText.opacity(0.28))
+            .frame(width: dock.isVertical ? 26 : 5, height: dock.isVertical ? 5 : 26)
+            .frame(width: dock.isVertical ? 52 : 22, height: dock.isVertical ? 22 : Self.hit)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 2, coordinateSpace: .named(BoardDockSpace.name))
+                    .onChanged(onGripChanged)
+                    .onEnded(onGripEnded)
+            )
+            .accessibilityLabel("tool.palette.move")
+    }
+
+    private var horizontalBoard: some View {
         VStack(spacing: 6) {
             HStack(spacing: 4) {
+                grip
                 ForEach(CanvasTool.allCases) { tool in
                     toolButton(tool)
                 }
@@ -112,7 +149,7 @@ struct ToolPalette: View {
                 )
                 .keyboardShortcut("z", modifiers: [.command, .shift])
                 Divider().frame(height: 26).padding(.horizontal, 6)
-                askButton
+                askButton(compact: false)
             }
             // Only while the pen is selected: a colour has no meaning for the eraser or the lasso.
             if selectedTool == .pen {
@@ -121,30 +158,47 @@ struct ToolPalette: View {
                     .transition(.opacity)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        // The horizontal divider is flexible; without this the board takes all the width it is offered and
-        // pushes the Ask button off the screen.
-        .fixedSize(horizontal: true, vertical: false)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
-        .animation(.easeInOut(duration: 0.15), value: selectedTool)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("tool.palette")
+    }
+
+    /// Standing against the left or right edge: the controls in one column, the colours in another beside it.
+    private var verticalBoard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 4) {
+                grip
+                ForEach(CanvasTool.allCases) { tool in
+                    toolButton(tool)
+                }
+                Divider().frame(width: 26).padding(.vertical, 6)
+                historyButton(
+                    "arrow.uturn.backward", label: "canvas.undo", enabled: canUndo, action: onUndo
+                )
+                historyButton(
+                    "arrow.uturn.forward", label: "canvas.redo", enabled: canRedo, action: onRedo
+                )
+                Divider().frame(width: 26).padding(.vertical, 6)
+                askButton(compact: true)
+            }
+            if selectedTool == .pen {
+                colourColumn
+                    .transition(.opacity)
+            }
+        }
     }
 
     /// Ask lives in the board with the other controls: the same height and weight, tinted so it reads as the
     /// one that does something to the selection.
-    private var askButton: some View {
+    private func askButton(compact: Bool) -> some View {
         Button(action: onAsk) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 18, weight: .regular))
-                Text("ask.action")
-                    .font(.system(size: 16, weight: .semibold))
+                if !compact {
+                    Text("ask.action")
+                        .font(.system(size: 16, weight: .semibold))
+                }
             }
             .foregroundStyle(MarginColor.accent)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, compact ? 17 : 14)
             .frame(height: Self.hit)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -202,24 +256,40 @@ struct ToolPalette: View {
             ForEach(recents.colors) { ink in
                 swatch(ink)
             }
-            Button {
-                showsPalette = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(MarginColor.primaryText.opacity(0.6))
-                    .frame(width: 30, height: 30)
-                    .background(Circle().fill(MarginColor.primaryText.opacity(0.08)))
-                    .frame(width: Self.hit, height: Self.hit)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("ink.more")
-            .popover(isPresented: $showsPalette, arrowEdge: .bottom) {
-                InkPalettePopover(selected: selectedInk, onPick: choose)
-                    .presentationCompactAdaptation(.popover)
-            }
+            moreColoursButton
             Divider().frame(height: 26).padding(.horizontal, 4)
             widthButton
+        }
+    }
+
+    /// The same colours stacked, for a board standing against the side.
+    private var colourColumn: some View {
+        VStack(spacing: 2) {
+            ForEach(recents.colors) { ink in
+                swatch(ink)
+            }
+            moreColoursButton
+            Divider().frame(width: 26).padding(.vertical, 4)
+            widthButton
+        }
+    }
+
+    private var moreColoursButton: some View {
+        Button {
+            showsPalette = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(MarginColor.primaryText.opacity(0.6))
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(MarginColor.primaryText.opacity(0.08)))
+                .frame(width: Self.hit, height: Self.hit)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("ink.more")
+        .popover(isPresented: $showsPalette, arrowEdge: dock.popoverEdge) {
+            InkPalettePopover(selected: selectedInk, onPick: choose)
+                .presentationCompactAdaptation(.popover)
         }
     }
 
@@ -237,7 +307,7 @@ struct ToolPalette: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("ink.width")
-        .popover(isPresented: $showsWidths, arrowEdge: .bottom) {
+        .popover(isPresented: $showsWidths, arrowEdge: dock.popoverEdge) {
             InkWidthPopover(selected: selectedWidth, color: selectedInk.color) {
                 selectedWidth = $0
                 showsWidths = false
@@ -269,114 +339,5 @@ struct ToolPalette: View {
     private func choose(_ ink: InkColor) {
         selectedInk = ink
         recents.use(ink)
-    }
-}
-
-/// The full palette, plus a picker for any other colour.
-private struct InkPalettePopover: View {
-    let selected: InkColor
-    let onPick: (InkColor) -> Void
-    @State private var custom = MarginColor.ink
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("ink.colors").font(.headline)
-                Spacer()
-                ColorPicker("ink.custom", selection: $custom, supportsOpacity: false)
-                    .labelsHidden()
-                    .onChange(of: custom) { _, value in
-                        if let ink = InkColor(value) { onPick(ink) }
-                    }
-                    .accessibilityLabel("ink.custom")
-            }
-            let columns = Array(repeating: GridItem(.fixed(40), spacing: 14), count: 8)
-            LazyVGrid(columns: columns, spacing: 14) {
-                ForEach(InkColor.palette) { ink in
-                    Button {
-                        onPick(ink)
-                    } label: {
-                        Circle()
-                            .fill(ink.color)
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .opacity(selected == ink ? 1 : 0)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(verbatim: InkColorName.name(for: ink)))
-                    .accessibilityAddTraits(selected == ink ? .isSelected : [])
-                }
-            }
-        }
-        .padding(20)
-        .frame(width: 8 * 40 + 7 * 14 + 40)
-    }
-}
-
-extension InkColor {
-    /// A colour chosen with the system picker. Pale picks are kept as chosen: the writer asked for them.
-    init?(_ color: Color) {
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-        guard UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return nil }
-        func byte(_ value: CGFloat) -> UInt32 { UInt32((min(max(value, 0), 1) * 255).rounded()) }
-        self.init(hex: byte(red) << 16 | byte(green) << 8 | byte(blue))
-    }
-}
-
-/// Spoken names for ink colours, so a swatch is not announced as "button".
-enum InkColorName {
-    static func name(for ink: InkColor) -> String {
-        let key = "ink.name.\(String(format: "%06X", ink.hex))"
-        let localized = NSLocalizedString(key, comment: "")
-        return localized == key ? NSLocalizedString("ink.name.custom", comment: "") : localized
-    }
-}
-
-/// The four pen thicknesses, each drawn as a sample line in the current colour.
-private struct InkWidthPopover: View {
-    let selected: InkWidth
-    let color: Color
-    let onPick: (InkWidth) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("ink.width").font(.headline).padding(.bottom, 4)
-            ForEach(InkWidth.allCases) { width in
-                Button {
-                    onPick(width)
-                } label: {
-                    HStack(spacing: 14) {
-                        Capsule()
-                            .fill(color)
-                            .frame(width: 90, height: width.points)
-                            .frame(height: 20)
-                        Spacer(minLength: 0)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(MarginColor.accent)
-                            .opacity(selected == width ? 1 : 0)
-                    }
-                    .padding(.horizontal, 12)
-                    .frame(height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(selected == width ? MarginColor.accent.opacity(0.12) : .clear)
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: "\(Int(width.points))"))
-                .accessibilityAddTraits(selected == width ? .isSelected : [])
-            }
-        }
-        .padding(16)
-        .frame(width: 220)
     }
 }

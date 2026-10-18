@@ -20,6 +20,10 @@ struct VirtualizedPageStack: View {
     @State var ghostDragging = false
     /// The formula being corrected, while the editor is open.
     @State var plotFormula: String?
+    /// Which edge the tool board is docked to, and how the pages are fitted to the screen.
+    @State var boardDock = BoardDock.load()
+    @State var viewportWidth: CGFloat = 0
+    @State var topInset: CGFloat = 0
     @EnvironmentObject var premium: PremiumStore
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
@@ -101,55 +105,11 @@ struct VirtualizedPageStack: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                LazyVStack(spacing: PageStackLayout.spacing) {
-                    ForEach(pageIDs, id: \.self) { pageID in
-                        pageView(for: pageID)
-                            .frame(
-                                width: pageSizes[pageID]?.width ?? pageSize.width,
-                                height: pageSizes[pageID]?.height ?? pageSize.height
-                            )
-                            .id(pageID)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                // The pending answer floats over the whole column so it can be dragged across a page boundary.
-                .overlay(alignment: .topLeading) { ghostOverlay }
-                .scrollTargetLayout()
-                .padding(.vertical, 24)
-            }
-            // A drag that starts on the answer's outline moves the answer, not the page.
-            .scrollDisabled(ghostDragging)
-            .scrollPosition(id: $visiblePageID)
-            // No snapping: the notebook stays wherever it is left, so a page seam can sit mid-screen.
-            .scrollIndicators(.hidden)
-
-            VStack(spacing: 8) {
-                if askModel.phase != .hidden {
-                    AskBar(
-                        phase: askModel.phase,
-                        explanation: askModel.explanation,
-                        renderingNotice: askModel.renderingNotice,
-                        failureOverride: askModel.failureMessage,
-                        failureDetail: askModel.failureDetail,
-                        onVerb: { ask($0) },
-                        onCancel: { cancelAsk() },
-                        onAccept: { acceptSuggestion() },
-                        onReject: { rejectSuggestion() },
-                        onRetry: { retryAsk() },
-                        onDismiss: { askModel.dismissFailure() },
-                        onEditReading: plotEditAction,
-                        needsSubscription: askModel.needsSubscription,
-                        onSeePremium: premium.offersUpgrade ? { premium.showPaywall() } : nil
-                    )
-                }
-
-                if askPath.isArmed {
-                    LassoHintBar(hint: askPath.stage.hintKey, onCancel: cancelSelection)
-                }
-
-                HStack(alignment: .bottom, spacing: 12) {
+        ZStack {
+            pagesScrollView
+            BoardDockLayer(
+                dock: $boardDock,
+                board: { dock, changed, ended in
                     ToolPalette(
                         selectedTool: $selectedTool,
                         selectedInk: $selectedInk,
@@ -159,11 +119,18 @@ struct VirtualizedPageStack: View {
                         canRedo: undoController.canRedo,
                         onUndo: { undoController.undo() },
                         onRedo: { undoController.redo() },
-                        onAsk: invokeAsk
+                        onAsk: invokeAsk,
+                        dock: dock,
+                        onGripChanged: changed,
+                        onGripEnded: ended
                     )
-                }
-            }
-            .padding(.bottom, 20)
+                },
+                companion: askCompanion)
+        }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.safeAreaInsets.top
+        } action: {
+            topInset = $0
         }
         .background(.background)
         .modifier(TourPointerOverlay(target: tourTarget))
@@ -209,7 +176,7 @@ struct VirtualizedPageStack: View {
     }
 
     @ViewBuilder
-    private func pageView(for pageID: UUID) -> some View {
+    func pageView(for pageID: UUID) -> some View {
         if let index = pageIDs.firstIndex(of: pageID), livePageIndices.contains(index) {
             LivePageView(
                 pageID: pageID,
