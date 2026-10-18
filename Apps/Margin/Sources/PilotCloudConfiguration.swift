@@ -77,8 +77,19 @@ struct BundledFallbackSecretStore: PilotSecretStore {
 /// request time, so removing the token takes effect on the very next Ask.
 struct PilotCloudConfiguration: Sendable {
     static let urlKey = "pilot.cloud.url"
-    /// The owner's deployed pilot proxy. Not a secret: every request still needs the bearer token.
-    static let defaultServerText = "https://pilot-proxy-185495186917.us-central1.run.app"
+    /// The owner's deployed pilot proxy, read from a gitignored file bundled at build time
+    /// (`scripts/provision-pilot-token.sh`), so the address is not in the public repository. A clean checkout has none,
+    /// and hosted answers stay off until one is provisioned.
+    static var defaultServerText: String {
+        // Tests get a fake, valid address so they exercise the hosted path without reading a bundled file.
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else {
+            return "https://proxy.example"
+        }
+        guard let url = Bundle.main.url(forResource: "PilotServer", withExtension: "local"),
+            let text = try? String(contentsOf: url, encoding: .utf8)
+        else { return "" }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     private let defaults: UserDefaults
     private let secrets: any PilotSecretStore

@@ -151,6 +151,7 @@ struct NotebookLibraryView: View {
             }
         }
         .debugOpenNewNote { createNote(title: nil, paper: .ruled, size: PageSizePreset.default) }
+        .debugScenario(library, onboarding, premium)
         .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
         .fullScreenCover(isPresented: $premium.paywallPresented) {
             PremiumPaywallView(onClose: { premium.paywallPresented = false })
