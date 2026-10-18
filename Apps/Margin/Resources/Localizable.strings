@@ -210,3 +210,9 @@
 "onboarding.pointer.write" = "Write here";
 "onboarding.pointer.ask" = "Tap Ask";
 "onboarding.pointer.keep" = "Keep it";
+"ask.edit" = "Edit";
+"plot.edit.title" = "Check the formula";
+"plot.edit.hint" = "This is what I read. Fix anything that is off, then plot again.";
+"plot.edit.field" = "y = ";
+"plot.edit.plot" = "Plot";
+"plot.edit.cancel" = "Cancel";

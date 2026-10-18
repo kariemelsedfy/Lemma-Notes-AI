@@ -37,6 +37,39 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(pen.force, 0.5, accuracy: 0.01)
     }
 
+    func testACorrectedFormulaReplacesTheReadingAndReplots() async throws {
+        let transport = CountingTransport()
+        let harness = Harness(reading: SelectionReading(transcript: "y = x13", confidence: 0.9), transport)
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+        harness.pipeline.cancel(.superseded)
+        harness.pipeline.run(harness.input, verb: .plot, readingOverride: "y=x^3+cos(x)")
+        try await harness.settle()
+
+        guard case .awaitingDecision(let spec, _) = harness.model.state,
+            case .plot(let plot) = try XCTUnwrap(spec.blocks.first).content
+        else { return XCTFail("Expected a plot suggestion") }
+        XCTAssertEqual(plot.functions.map(\.expression), ["x^3+cos(x)"])
+        XCTAssertEqual(harness.model.pendingRead, "y=x^3+cos(x)")
+        let calls = await transport.count
+        XCTAssertEqual(calls, 0)
+    }
+
+    func testAPlotThatFoundNoFunctionCanBeFixedFromTheFailure() async throws {
+        let harness = Harness(
+            reading: SelectionReading(transcript: "wiggly mess", confidence: 0.9), CountingTransport())
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+        XCTAssertEqual(harness.model.localFailure, .noFunction(read: "wiggly mess"))
+
+        harness.pipeline.cancel(.superseded)
+        harness.model.dismissFailure()
+        harness.pipeline.run(harness.input, verb: .plot, readingOverride: "y=x^2")
+        try await harness.settle()
+        guard case .awaitingDecision = harness.model.state else { return XCTFail("Expected a plot suggestion") }
+        XCTAssertNil(harness.model.localFailure)
+    }
+
     func testAFlattenedSuperscriptStillPlots() async throws {
         let harness = Harness(
             reading: SelectionReading(transcript: "x2 plot:", confidence: 0.8), CountingTransport())

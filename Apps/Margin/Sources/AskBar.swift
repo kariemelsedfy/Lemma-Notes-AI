@@ -113,6 +113,8 @@ struct AskBar: View {
     var onReject: () -> Void = {}
     var onRetry: () -> Void = {}
     var onDismiss: () -> Void = {}
+    /// Set when the answer is a plot: lets the writer correct the formula that was read.
+    var onEditReading: (() -> Void)?
 
     @State private var showsDetail = false
 
@@ -201,6 +203,9 @@ struct AskBar: View {
                     .foregroundStyle(MarginColor.secondaryText)
                     .lineLimit(1)
             }
+            if let onEditReading {
+                decisionButton("ask.edit", tint: MarginColor.secondaryText, action: onEditReading)
+            }
             decisionButton("ask.discard", tint: .red, action: onReject)
             decisionButton("ask.keep", tint: MarginColor.accent, action: onAccept)
                 .tourTarget(.keep)
@@ -249,6 +254,9 @@ struct AskBar: View {
                             .foregroundStyle(MarginColor.secondaryText)
                     }
                 #endif
+            }
+            if let onEditReading {
+                decisionButton("ask.edit", tint: MarginColor.accent, action: onEditReading)
             }
             if failure.isRetryable {
                 decisionButton("ask.retry", tint: MarginColor.accent, action: onRetry)
