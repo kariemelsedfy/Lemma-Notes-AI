@@ -1,7 +1,7 @@
 # Cloud Run image for the pilot proxy (ADR-028). Build context is this directory (Tools/pilot-proxy).
 FROM swift:6.2 AS build
 WORKDIR /src
-COPY Package.swift ./
+COPY Package.swift Package.resolved ./
 COPY Sources ./Sources
 # Package.swift declares the test target, so its directory must exist (tests are not built or run here).
 COPY Tests ./Tests
