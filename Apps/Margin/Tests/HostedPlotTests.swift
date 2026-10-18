@@ -39,22 +39,26 @@ final class HostedPlotTests: XCTestCase {
             selectedAreaReading: SelectionReading(transcript: "y=x", confidence: 0.9, isCorrection: corrected))
     }
 
-    private func provider(
-        hosted: Result<ValidatedSpec, Error>, ready: Bool = true
-    ) throws -> (HostedPlotSpecProvider, hosted: Counter, local: Counter) {
+    private struct Rig {
+        let plot: HostedPlotSpecProvider
+        let hosted: Counter
+        let local: Counter
+    }
+
+    private func provider(hosted: Result<ValidatedSpec, Error>, ready: Bool = true) throws -> Rig {
         let hostedCounter = Counter()
         let localCounter = Counter()
         let value = try plotSpec("x^2")
-        return (
-            HostedPlotSpecProvider(
+        return Rig(
+            plot: HostedPlotSpecProvider(
                 hosted: StubProvider(result: hosted, counter: hostedCounter),
                 local: StubProvider(result: .success(value), counter: localCounter), isReady: { ready }),
-            hostedCounter, localCounter
-        )
+            hosted: hostedCounter, local: localCounter)
     }
 
     func testAnEntitledInstallUsesTheModelsReadingAndNormalisesIt() async throws {
-        let (plot, hosted, local) = try provider(hosted: .success(try plotSpec("x^3 + cos(x)")))
+        let rig = try provider(hosted: .success(try plotSpec("x^3 + cos(x)")))
+        let (plot, hosted, local) = (rig.plot, rig.hosted, rig.local)
         let spec = try await plot.spec(for: try request())
         guard case .plot(let drawn)? = spec.blocks.first?.content else { return XCTFail("plot") }
         XCTAssertEqual(drawn.functions.map(\.expression), ["x^3+cos(x)"])
@@ -64,21 +68,24 @@ final class HostedPlotTests: XCTestCase {
     }
 
     func testAFreeInstallNeverCallsTheModel() async throws {
-        let (plot, hosted, local) = try provider(hosted: .success(try plotSpec("x")), ready: false)
+        let rig = try provider(hosted: .success(try plotSpec("x")), ready: false)
+        let (plot, hosted, local) = (rig.plot, rig.hosted, rig.local)
         _ = try await plot.spec(for: try request())
         XCTAssertEqual(hosted.count, 0)
         XCTAssertEqual(local.count, 1)
     }
 
     func testATypedCorrectionIsPlottedAsTypedWithoutTheModel() async throws {
-        let (plot, hosted, local) = try provider(hosted: .success(try plotSpec("x")))
+        let rig = try provider(hosted: .success(try plotSpec("x")))
+        let (plot, hosted, local) = (rig.plot, rig.hosted, rig.local)
         _ = try await plot.spec(for: try request(corrected: true))
         XCTAssertEqual(hosted.count, 0)
         XCTAssertEqual(local.count, 1)
     }
 
     func testAHostedFailureFallsBackToTheDeviceReading() async throws {
-        let (plot, hosted, local) = try provider(hosted: .failure(ProxyProviderFailure.offline))
+        let rig = try provider(hosted: .failure(ProxyProviderFailure.offline))
+        let (plot, hosted, local) = (rig.plot, rig.hosted, rig.local)
         _ = try await plot.spec(for: try request())
         XCTAssertEqual(hosted.count, 1)
         XCTAssertEqual(local.count, 1)
@@ -88,7 +95,8 @@ final class HostedPlotTests: XCTestCase {
         let decline = try SpecValidator.validate(
             Spec(read: "", readConfidence: 0, intent: .plot, blocks: []))
         for reply in [decline, try plotSpec("f(x)(")] {
-            let (plot, hosted, local) = try provider(hosted: .success(reply))
+            let rig = try provider(hosted: .success(reply))
+            let (plot, hosted, local) = (rig.plot, rig.hosted, rig.local)
             _ = try await plot.spec(for: try request())
             XCTAssertEqual(hosted.count, 1)
             XCTAssertEqual(local.count, 1)
@@ -96,7 +104,8 @@ final class HostedPlotTests: XCTestCase {
     }
 
     func testCancellationIsNotSwallowed() async throws {
-        let (plot, _, local) = try provider(hosted: .failure(CancellationError()))
+        let rig = try provider(hosted: .failure(CancellationError()))
+        let (plot, local) = (rig.plot, rig.local)
         do {
             _ = try await plot.spec(for: try request())
             XCTFail("expected cancellation")
