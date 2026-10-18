@@ -494,3 +494,25 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 **Alternatives rejected.** One index file mapping every notebook to a folder (a second source of truth that drifts when a package is moved or deleted outside the app). Nested folders (owner: not now; a parent id can be added to `NotebookFolder` later without touching notebooks). Folders as directories on disk (breaks the one-directory package discovery and iCloud package semantics).
 
 **Revisit when.** Nested folders are wanted, iCloud sync lands, or folder counts reach the hundreds.
+
+---
+
+## ADR-031 — Per-install trust: App Attest identity, client-pushed signed transactions, server-side allowances
+
+**Status:** Proposed · 2026-10-18 · needs: owner review of the threat model; paid Apple Developer Program membership before anything below can run on a device. Dependencies approved by the owner in chat ("Yes, add them").
+
+**Context.** Today one bearer token, bundled into the owner's build, is the only credential for the hosted model (ADR-028), and "entitled" means "this build has the token" (ADR-029). That cannot ship: a token in an app bundle is extractable, the device is the only judge of a subscription, and the free allowance for the guided tour (3 hosted asks) and the monthly cost allowance for paying users are enforced nowhere a user cannot edit.
+
+**Decision.**
+1. **Identity.** Each install proves itself with Apple App Attest. The app generates a key, the server issues a one-time challenge, and the server verifies the attestation (CBOR object, certificate chain to Apple's App Attest root, nonce, app id hash `TEAMID.bundleid`, key id, counter 0, environment) before storing `{keyId, publicKey, counter}`. Every later request carries an **assertion** over the SHA-256 of its body; the server verifies the signature with the stored key and requires the counter to increase.
+2. **Subscription.** The app sends the signed StoreKit 2 transaction (the JWS Apple signs) to the server, which verifies its `x5c` chain to Apple's root, `bundleId`, `productId`, `environment` and `expiresDate`, and records the plan and expiry against that `keyId`. App Store Server Notifications are **not** used now (they need a public endpoint and state we do not have); a cancelled subscription is honoured until the last verified expiry.
+3. **Allowances, on the server.** Per `keyId`: guided-tour asks used (limit 3, never reset), and for paid plans a monthly cost allowance (starting at $1.50 of inference). The existing spend ledger already records per-request cost; it gains a per-install dimension. Over the limit the proxy answers with the existing over-budget refusal; the app already maps it to a friendly message and falls back to local-only.
+4. **Pilot token stays** for the owner's own build only (plan `pilot`), and is removed from any build that leaves the owner's iPad.
+5. **Dependencies.** `swift-crypto` and `swift-certificates` are added to `Tools/pilot-proxy` for ECDSA, X.509 chain validation and JWS. Hand-written certificate code for a security boundary is the riskier choice. The verification code takes its trust roots as input so tests use a generated test root instead of Apple's.
+
+**Consequences.** A leaked build no longer leaks a credential; the free allowance and the cost cap cannot be edited on the device; an unattested or unsupported device (the Simulator, jailbroken or very old hardware) gets the free tier and local plots only. Real attestation and real purchases can only be exercised on a device with a paid-membership provisioning profile; until then every seam (`InstallAttesting`, `TransactionProof`) has a fake and the server verifiers are tested against synthesized certificate chains. App Attest fraud-risk metrics and key rotation are out of scope.
+
+**Alternatives rejected.** DeviceCheck two-bit flags (cannot carry a counter or key). Per-install tokens issued without attestation (trivially farmed from a script). App Store Server Notifications V2 now (more infrastructure for no launch benefit). Trusting the client's StoreKit result alone (the device would be the only judge).
+
+**Revisit when.** Abuse appears despite attestation, subscription refunds need faster revocation (adopt server notifications), or the proxy moves off Cloud Run.
+
