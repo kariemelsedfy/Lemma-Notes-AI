@@ -90,6 +90,8 @@ struct ToolPalette: View {
     var onUndo: () -> Void = {}
     var onRedo: () -> Void = {}
     var onAsk: () -> Void = {}
+    /// Ask is Premium and this user does not have it: the button carries a lock and opens Premium.
+    var askIsLocked = false
     /// Which edge the board is docked to; on the left and right it stands up.
     var dock: BoardDock = .bottom
     /// The grip that moves the board (see `BoardDockLayer`).
@@ -205,6 +207,16 @@ struct ToolPalette: View {
                     .fill(MarginColor.accent.opacity(0.16))
             )
             .contentShape(Rectangle())
+            .overlay(alignment: .topTrailing) {
+                if askIsLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(MarginColor.surface)
+                        .frame(width: 16, height: 16)
+                        .background(Circle().fill(MarginColor.accent))
+                        .offset(x: 4, y: -4)
+                }
+            }
         }
         .buttonStyle(.plain)
         .tourTarget(.ask)

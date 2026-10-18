@@ -172,26 +172,11 @@ struct AskBar: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .overlay(alignment: .topTrailing) { premiumTag(for: verb) }
                     .tourTarget(.verb(verb))
                     .accessibilityLabel(verb.titleKey)
                     .accessibilityHint(verb.subtitleKey)
                 }
             }
-        }
-    }
-
-    /// Explain always goes to the hosted model, so a free user sees it is part of Premium before tapping.
-    @ViewBuilder
-    private func premiumTag(for verb: AskVerb) -> some View {
-        if verb == .explain, onSeePremium != nil {
-            Text("ask.premium.tag")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(MarginColor.surface)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(MarginColor.accent))
-                .padding(6)
         }
     }
 

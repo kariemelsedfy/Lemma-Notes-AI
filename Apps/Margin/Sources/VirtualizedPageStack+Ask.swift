@@ -24,7 +24,18 @@ extension VirtualizedPageStack {
     }
 
     /// Arms our own capture rather than PencilKit's opaque `PKLassoTool` selection.
+    /// Free users cannot start an Ask at all: Premium opens instead (`AskAccess`).
+    var askIsLocked: Bool {
+        AskAccess.isLocked(
+            offersUpgrade: premium.offersUpgrade, inTour: practice != nil,
+            hasPilotToken: PilotCloudConfiguration.standard.hasToken)
+    }
+
     func invokeAsk() {
+        guard !askIsLocked else {
+            premium.showPaywall()
+            return
+        }
         askPipeline?.cancel(.superseded)
         suggestions.discard()
         askSelection.clearSelections()
@@ -140,6 +151,10 @@ extension VirtualizedPageStack {
 
     /// Runs one Ask against the supported local arithmetic subset.
     func ask(_ verb: AskVerb, readingOverride: String? = nil) {
+        guard !askIsLocked else {
+            premium.showPaywall()
+            return
+        }
         guard let selection = askSelection.questionSelection else { return }
         // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
         // an unsaved bank, missing `4`, a pinned preference, and a stale renderer in one run.
