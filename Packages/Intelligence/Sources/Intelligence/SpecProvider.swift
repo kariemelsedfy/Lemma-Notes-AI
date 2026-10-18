@@ -100,6 +100,8 @@ public protocol SpecProvider: Sendable {
 
 public enum ProxyTransportFailure: Error, Equatable, Sendable, CaseIterable {
     case offline, timeout, refused, unauthorized, overBudget
+    /// HTTP 402: this install has used what a free install gets. The app offers Premium, not an error.
+    case paymentRequired
 }
 
 public enum ProxyProviderFailure: Error, Equatable, Sendable {
@@ -210,6 +212,9 @@ public struct ProxySpecProvider: SpecProvider {
             case .refused: throw ProxyProviderFailure.refused
             case .unauthorized: throw ProxyProviderFailure.unauthorized
             case .overBudget: throw ProxyProviderFailure.budgetExceeded
+            // The same outcome the consent gate produces for an install that may not use the hosted model, so the
+            // pipeline's one "offer Premium" path serves both.
+            case .paymentRequired: throw ProviderError.thirdPartyConsentRequired
             }
         } catch {
             throw ProviderError.transport

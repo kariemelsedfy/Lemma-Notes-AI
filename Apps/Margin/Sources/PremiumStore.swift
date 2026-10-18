@@ -56,6 +56,8 @@ protocol StoreBackend: Sendable {
     func offers() async throws -> [PremiumOffer]
     func purchase(_ product: PremiumProduct) async throws -> PurchaseOutcome
     func currentFacts() async -> [EntitlementFact]
+    /// The signed transactions behind the current entitlements, which the server verifies for itself (ADR-031).
+    func signedTransactions() async -> [String]
     /// Yields whenever the entitlement may have changed (a renewal, a refund, a purchase on another device).
     func changes() -> AsyncStream<Void>
     func restore() async throws
@@ -87,10 +89,18 @@ final class PremiumStore: ObservableObject {
     func showPaywall() { paywallPresented = true }
 
     private let backend: any StoreBackend
+    private let uploadTransaction: @Sendable (String) async -> Void
+    private var uploaded: Set<String> = []
     private var listener: Task<Void, Never>?
 
-    init(backend: any StoreBackend = StoreKitBackend()) {
+    /// - Parameter uploadTransaction: tells the server about a signed transaction so it grants hosted answers. It
+    ///   is called once per distinct transaction, and a failure is simply retried on the next refresh.
+    init(
+        backend: any StoreBackend = StoreKitBackend(),
+        uploadTransaction: @escaping @Sendable (String) async -> Void = { _ in }
+    ) {
         self.backend = backend
+        self.uploadTransaction = uploadTransaction
         listener = Task { [weak self] in
             guard let changes = self?.backend.changes() else { return }
             for await _ in changes { await self?.refresh() }
@@ -116,6 +126,12 @@ final class PremiumStore: ObservableObject {
 
     func refresh() async {
         plan = PlanResolver.plan(from: await backend.currentFacts())
+        PaidPlanFlag.shared.isPaid = plan != .free
+        guard plan != .free else { return }
+        for signed in await backend.signedTransactions() where !uploaded.contains(signed) {
+            await uploadTransaction(signed)
+            uploaded.insert(signed)
+        }
     }
 
     @discardableResult
@@ -184,6 +200,14 @@ struct StoreKitBackend: StoreBackend {
                     isRevoked: transaction.revocationDate != nil))
         }
         return facts
+    }
+
+    func signedTransactions() async -> [String] {
+        var signed: [String] = []
+        for await result in Transaction.currentEntitlements {
+            if case .verified = result { signed.append(result.jwsRepresentation) }
+        }
+        return signed
     }
 
     func changes() -> AsyncStream<Void> {

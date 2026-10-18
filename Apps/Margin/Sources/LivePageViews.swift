@@ -53,8 +53,7 @@ struct LivePageView: View {
                 )
             }
         }
-        .clipShape(.rect(cornerRadius: 12))
-        .shadow(color: .secondary.opacity(0.12), radius: 6, y: 2)
+        // Pages run edge to edge, so no rounded corners or shadow: the gap between pages is the only seam.
         .accessibilityLabel("Editable notebook page")
     }
 }

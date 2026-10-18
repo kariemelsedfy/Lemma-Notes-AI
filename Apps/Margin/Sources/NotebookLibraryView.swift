@@ -150,6 +150,7 @@ struct NotebookLibraryView: View {
                 }
             }
         }
+        .debugOpenNewNote { createNote(title: nil, paper: .ruled, size: PageSizePreset.default) }
         .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
         .fullScreenCover(isPresented: $premium.paywallPresented) {
             PremiumPaywallView(onClose: { premium.paywallPresented = false })
@@ -184,6 +185,8 @@ struct NotebookLibraryView: View {
             .onDisappear { flushEdits() }
             .id(notebookID)
             .navigationBarTitleDisplayMode(.inline)
+            // The page runs under the bar, like Notability; the bar keeps its buttons and loses its backdrop.
+            .toolbarBackground(.hidden, for: .navigationBar)
             .overlay(alignment: .top) {
                 if notebookID == onboarding.practiceNoteID { PracticeCoachBar(coordinator: onboarding) }
             }

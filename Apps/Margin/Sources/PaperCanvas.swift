@@ -5,6 +5,10 @@ import SwiftUI
 struct PaperCanvas: View {
     let style: PaperStyle
 
+    /// The gap between ruled lines, in page points. Wider than a school notebook's: the writer's own hand and the
+    /// answers written back are large, and a line should not cut through the middle of a letter.
+    static let ruledSpacing: CGFloat = 34
+
     var body: some View {
         Canvas { context, size in
             let bounds = CGRect(origin: .zero, size: size)
@@ -29,8 +33,8 @@ struct PaperCanvas: View {
         for position in PaperLineLayout.positions(
             from: bounds.minY,
             to: bounds.maxY,
-            inset: 28,
-            spacing: 28
+            inset: PaperCanvas.ruledSpacing,
+            spacing: PaperCanvas.ruledSpacing
         ) {
             var path = Path()
             path.move(to: CGPoint(x: bounds.minX, y: position))
