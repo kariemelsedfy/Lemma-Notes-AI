@@ -27,7 +27,6 @@ struct NotebookLibraryView: View {
     @State var addCharactersPresented = false
     @StateObject var handwriting = HandwritingStyleStore()
     @EnvironmentObject var premium: PremiumStore
-    @State var paywallPresented = false
     @StateObject var onboarding = OnboardingCoordinator(hostedAvailable: { PilotCloudConfiguration.standard.isReady })
     #if DEBUG
         @State private var samplePresented = false
@@ -152,8 +151,8 @@ struct NotebookLibraryView: View {
             }
         }
         .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
-        .fullScreenCover(isPresented: $paywallPresented) {
-            PremiumPaywallView(onClose: { paywallPresented = false })
+        .fullScreenCover(isPresented: $premium.paywallPresented) {
+            PremiumPaywallView(onClose: { premium.paywallPresented = false })
         }
         .sheet(isPresented: $calibrationPresented) { CalibrationView(store: handwriting) }
         .sheet(isPresented: $addCharactersPresented) { AddCharactersView(store: handwriting) }
@@ -189,6 +188,7 @@ struct NotebookLibraryView: View {
                 if notebookID == onboarding.practiceNoteID { PracticeCoachBar(coordinator: onboarding) }
             }
             .toolbar {
+                UpgradeToolbarButton()
                 Menu("library.export", systemImage: "square.and.arrow.up") {
                     Button("library.export.pdf") { export(notebookID, format: .pdf) }
                     Button("library.export.png") { export(notebookID, format: .png) }
@@ -215,8 +215,8 @@ struct NotebookLibraryView: View {
                 Button("sample.open") { samplePresented = true }
                     .disabled(handwriting.bank == nil)
             #endif
-            if premium.plan == .free {
-                Button("premium.menu") { paywallPresented = true }
+            if premium.offersUpgrade {
+                Button("premium.menu") { premium.showPaywall() }
             }
             Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }

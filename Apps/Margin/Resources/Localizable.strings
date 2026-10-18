@@ -225,3 +225,12 @@
 "ask.failure.subscribe" = "Ask is part of Lemma Notes AI Premium.";
 "ask.seepremium" = "See Premium";
 
+
+"upgrade.banner.title" = "Get answers in your own handwriting";
+"upgrade.banner.subtitle" = "Try Premium free for 7 days. Your notebook and plots stay free.";
+"upgrade.try" = "Try free";
+"upgrade.dismiss" = "Dismiss";
+"upgrade.sidebar.title" = "Upgrade to Premium";
+"upgrade.sidebar.subtitle" = "7 days free";
+"upgrade.toolbar" = "Premium";
+"ask.premium.tag" = "PREMIUM";

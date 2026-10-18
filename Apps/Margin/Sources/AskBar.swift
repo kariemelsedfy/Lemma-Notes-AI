@@ -115,7 +115,9 @@ struct AskBar: View {
     var onDismiss: () -> Void = {}
     /// Set when the answer is a plot: lets the writer correct the formula that was read.
     var onEditReading: (() -> Void)?
-    /// Set when the Ask needs Premium: the failure becomes an invitation instead of an error.
+    /// The last Ask needed Premium: the failure reads as an invitation, not an error.
+    var needsSubscription = false
+    /// Set for a free user: a quiet way to the Premium screen (the Explain tag, and a button on a failure).
     var onSeePremium: (() -> Void)?
 
     @State private var showsDetail = false
@@ -170,11 +172,26 @@ struct AskBar: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .overlay(alignment: .topTrailing) { premiumTag(for: verb) }
                     .tourTarget(.verb(verb))
                     .accessibilityLabel(verb.titleKey)
                     .accessibilityHint(verb.subtitleKey)
                 }
             }
+        }
+    }
+
+    /// Explain always goes to the hosted model, so a free user sees it is part of Premium before tapping.
+    @ViewBuilder
+    private func premiumTag(for verb: AskVerb) -> some View {
+        if verb == .explain, onSeePremium != nil {
+            Text("ask.premium.tag")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(MarginColor.surface)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(MarginColor.accent))
+                .padding(6)
         }
     }
 
@@ -237,7 +254,7 @@ struct AskBar: View {
 
     private func failure(_ failure: AskFailure) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: onSeePremium == nil ? "exclamationmark.circle" : "sparkles")
+            Image(systemName: needsSubscription ? "sparkles" : "exclamationmark.circle")
                 .font(.system(size: 20))
                 .foregroundStyle(MarginColor.accent)
             VStack(alignment: .leading, spacing: 2) {
@@ -263,7 +280,7 @@ struct AskBar: View {
             if let onEditReading {
                 decisionButton("ask.edit", tint: MarginColor.accent, action: onEditReading)
             }
-            if failure.isRetryable, onSeePremium == nil {
+            if failure.isRetryable, !needsSubscription {
                 decisionButton("ask.retry", tint: MarginColor.accent, action: onRetry)
             }
             decisionButton("ask.dismiss", tint: MarginColor.secondaryText, action: onDismiss)
@@ -273,7 +290,7 @@ struct AskBar: View {
 
     @ViewBuilder
     private func failureText(_ failure: AskFailure) -> some View {
-        if onSeePremium != nil {
+        if needsSubscription {
             Text("ask.failure.subscribe")
         } else if let failureOverride {
             Text(verbatim: failureOverride)

@@ -108,7 +108,12 @@ final class OnboardingCopyTests: XCTestCase {
             "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.cta", "onboarding.fine.annual",
             "onboarding.fine.monthly", "onboarding.plan.annual", "onboarding.plan.monthly", "onboarding.benefit.solve",
             "onboarding.note.title", "onboarding.pointer.write",
-            "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "plot.edit.title", "plot.edit.hint",
+            "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "ask.seepremium", "ask.premium.tag",
+            "ask.failure.subscribe", "premium.disclosure", "premium.cta.plain",
+            "premium.restore", "premium.restore.none", "premium.error", "premium.pending", "premium.menu",
+            "upgrade.banner.title", "upgrade.banner.subtitle", "upgrade.try", "upgrade.dismiss",
+            "upgrade.sidebar.title",
+            "upgrade.sidebar.subtitle", "upgrade.toolbar", "plot.edit.title", "plot.edit.hint",
             "plot.edit.field", "plot.edit.plot", "plot.edit.cancel",
         ]
         for step in [OnboardingStep.explain, .solve, .plot] {
