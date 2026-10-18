@@ -36,6 +36,9 @@ public enum MarginColor {
     /// A proper dark-paper mode is M1-13.
     public static let paper = Color(light: 0xFDFDFB, dark: 0xFDFDFB)
     public static let ink = Color(light: 0x000000, dark: 0x000000)
+    /// The surface behind the pages, seen above the first page, between pages and below the last. A soft grey with a
+    /// hint of the accent's blue, and the same in light and dark: a notebook sits on a desk, not on black.
+    public static let desk = Color(light: 0xE4E4EE, dark: 0xE4E4EE)
     /// The ruling on the page. Light enough to sit under handwriting without competing.
     public static let paperRule = Color(light: 0xC8C9D2, dark: 0xC8C9D2)
 }

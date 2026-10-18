@@ -132,7 +132,7 @@ struct VirtualizedPageStack: View {
         } action: {
             topInset = $0
         }
-        .background(.background)
+        .background(MarginColor.desk)
         .modifier(TourPointerOverlay(target: tourTarget))
         .modifier(PlotFormulaEditing(formula: $plotFormula, onApply: { replot(from: $0) }))
         .toolbar { ToolbarItem(placement: .topBarTrailing) { pageOptionsMenu } }
