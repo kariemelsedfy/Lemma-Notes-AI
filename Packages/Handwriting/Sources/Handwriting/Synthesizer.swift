@@ -334,8 +334,8 @@ public enum Synthesizer {
         )
     }
 
-    /// The y of the baseline `text` would sit on if drawn into `frame` with the same arguments as `strokes`. The pieces of
-    /// one row take this from the whole row so that they line up.
+    /// The y of the baseline `text` would sit on if drawn into `frame` with the same arguments as `strokes`.
+    /// The pieces of one row take this from the whole row so that they line up.
     public static func baseline(
         for text: String,
         in frame: CGRect,
