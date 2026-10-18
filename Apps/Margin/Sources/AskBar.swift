@@ -255,6 +255,9 @@ struct AskBar: View {
                     }
                 #endif
             }
+            if let onEditReading {
+                decisionButton("ask.edit", tint: MarginColor.accent, action: onEditReading)
+            }
             if failure.isRetryable {
                 decisionButton("ask.retry", tint: MarginColor.accent, action: onRetry)
             }

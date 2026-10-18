@@ -3040,3 +3040,6 @@ The plot failure was almost certainly Vision reading a hand-drawn caret as a 1 (
 
 ## 2026-10-18 M6-PLOT-3
 Superscripts are found from baselines, not text: an exponent's bottom edge sits above the previous letter's, while a tall digit beside a short letter still shares its baseline (test covers it, since comparing heights would misfire). Boxes must line up with the transcript or the reader gives up and returns the plain text. The editor is the safety net, since the box rule is only proven on synthetic boxes. Next: look at real boxes from a raised-3 on the iPad before tuning the 0.38 threshold.
+
+### Correction, 2026-10-18 (M6-PLOT-3)
+Device result for a clear raised 3: Vision read `Y =x3 + (US(X)`. The failure was `cos` read as `(US`, not the exponent (`x3` already reads as x^3). Fixed by repairing look-alike function names (cos, sin, tan, log, ln) only before a bracket or variable, and by an Edit button on the no-function failure. `SuperscriptReader` assumes Vision's per-character boxes carry vertical position; Vision may give every character the full line height, which would make the rule never fire. Unverified: log the box heights (content-free) on a device run before relying on it, or detect raised ink from the strokes instead.

@@ -55,6 +55,21 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
+    func testAPlotThatFoundNoFunctionCanBeFixedFromTheFailure() async throws {
+        let harness = Harness(
+            reading: SelectionReading(transcript: "wiggly mess", confidence: 0.9), CountingTransport())
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+        XCTAssertEqual(harness.model.localFailure, .noFunction(read: "wiggly mess"))
+
+        harness.pipeline.cancel(.superseded)
+        harness.model.dismissFailure()
+        harness.pipeline.run(harness.input, verb: .plot, readingOverride: "y=x^2")
+        try await harness.settle()
+        guard case .awaitingDecision = harness.model.state else { return XCTFail("Expected a plot suggestion") }
+        XCTAssertNil(harness.model.localFailure)
+    }
+
     func testAFlattenedSuperscriptStillPlots() async throws {
         let harness = Harness(
             reading: SelectionReading(transcript: "x2 plot:", confidence: 0.8), CountingTransport())

@@ -49,6 +49,7 @@ public struct PlotExpression: Sendable {
         ]
         for (symbol, plain) in replacements { text = text.replacingOccurrences(of: symbol, with: plain) }
         text = text.filter { !$0.isWhitespace }
+        text = repairingFunctionNames(in: text)
         // A hand-drawn caret is often read as a `1` (`x^3` comes back as `x13`, or `x^13`). A power of 11 to 19
         // on a bare `x` is far rarer in a student's graph than that slip, so it reads as the last digit.
         // `x^10` is left alone.
@@ -58,6 +59,24 @@ public struct PlotExpression: Sendable {
         text = text.replacingOccurrences(
             of: #"(?<![a-z])x(?=\d)"#, with: "x^", options: .regularExpression)
         return text
+    }
+
+    /// Handwriting turns `cos` into `(US`, `c0s`, `5in`, `tcm`: letters that look alike. A name is repaired only
+    /// when it is followed by an opening bracket or a variable, so ordinary brackets and words are left alone.
+    private static let confusedNames: [(pattern: String, name: String)] = [
+        (#"[(c\[{<][o0uq][s5$](?=[(x])"#, "cos"),
+        (#"[s5$][i1l|!][nhm](?=[(x])"#, "sin"),
+        (#"[t+][a@o][nhm](?=[(x])"#, "tan"),
+        (#"[l1|][o0u][g9q](?=[(x])"#, "log"),
+        (#"[l1|][nh](?=\()"#, "ln"),
+    ]
+
+    private static func repairingFunctionNames(in text: String) -> String {
+        var result = text
+        for (pattern, name) in confusedNames {
+            result = result.replacingOccurrences(of: pattern, with: name, options: .regularExpression)
+        }
+        return result
     }
 
     // MARK: - Tokens

@@ -25,6 +25,21 @@ final class PlotReadingTests: XCTestCase {
         XCTAssertEqual(text("y = xˆ2"), "x^2")
     }
 
+    /// Read back on the owner's iPad, 2026-10-18, for a clearly written `y = x^3 + cos(x)` with a raised 3.
+    func testAMisreadFunctionNameIsRepaired() {
+        XCTAssertEqual(text("Y =x3 + (US(X)"), "x^3+cos(x)")
+        XCTAssertEqual(text("y = c0s(x)"), "cos(x)")
+        XCTAssertEqual(text("y = 5in(x)"), "sin(x)")
+        XCTAssertEqual(text("y = tam(x)"), "tan(x)")
+    }
+
+    func testOrdinaryBracketsAndWordsAreNotTouched() {
+        XCTAssertEqual(text("y = (x+1)(x-1)"), "(x+1)(x-1)")
+        XCTAssertEqual(text("y = 2(x)"), "2(x)")
+        XCTAssertEqual(text("y = cos(x)"), "cos(x)")
+        XCTAssertEqual(text("y = sin(x) + ln(x)"), "sin(x)+ln(x)")
+    }
+
     func testTheWindowOfTheRepairedFunctionIsReasonable() throws {
         let functions = try XCTUnwrap(PlotRequest.functions(from: "y = x13 + cos(x)"))
         let window = PlotSampler.window(for: functions)
