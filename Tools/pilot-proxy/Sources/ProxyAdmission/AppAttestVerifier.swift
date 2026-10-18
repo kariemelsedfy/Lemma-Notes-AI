@@ -70,17 +70,7 @@ public struct AppAttestVerifier: Sendable {
 
     /// The key the attestation vouches for. `challenge` is the one the server issued for this attempt.
     public func verifyAttestation(_ attestation: Data, challenge: Data, keyID: Data) async throws -> AttestedKey {
-        guard let object = CBORDecoder.decode(attestation)?.map,
-            object["fmt"]?.text == "apple-appattest",
-            let statement = object["attStmt"]?.map,
-            let authData = object["authData"]?.bytes,
-            let x5c = statement["x5c"]?.array?.compactMap(\.bytes), x5c.count == 2
-        else { throw AppAttestError.malformed }
-
-        let certificates: [Certificate]
-        do { certificates = try x5c.map { try Certificate(derEncoded: Array($0)) } } catch {
-            throw AppAttestError.malformed
-        }
+        let (certificates, authData) = try decodeAttestation(attestation)
         let credential = certificates[0]
         try await verifyChain(credential: credential, intermediate: certificates[1])
 
@@ -93,7 +83,26 @@ public struct AppAttestVerifier: Sendable {
         let x963 = publicKey.x963Representation
         guard Data(SHA256.hash(data: x963)) == keyID else { throw AppAttestError.keyIDMismatch }
 
-        let parsed = try parseAttestationAuthData(authData)
+        try checkAuthData(try parseAttestationAuthData(authData), keyID: keyID)
+        return AttestedKey(keyID: keyID, publicKeyX963: x963, counter: 0)
+    }
+
+    /// The credential and intermediate certificates and the authenticator data, from the CBOR attestation object.
+    private func decodeAttestation(_ attestation: Data) throws -> (certificates: [Certificate], authData: Data) {
+        guard let object = CBORDecoder.decode(attestation)?.map,
+            object["fmt"]?.text == "apple-appattest",
+            let statement = object["attStmt"]?.map,
+            let authData = object["authData"]?.bytes,
+            let x5c = statement["x5c"]?.array?.compactMap(\.bytes), x5c.count == 2
+        else { throw AppAttestError.malformed }
+        do {
+            return (try x5c.map { try Certificate(derEncoded: Array($0)) }, authData)
+        } catch {
+            throw AppAttestError.malformed
+        }
+    }
+
+    private func checkAuthData(_ parsed: AuthData, keyID: Data) throws {
         guard parsed.rpIDHash == appIDHash else { throw AppAttestError.wrongApp }
         guard parsed.counter == 0 else { throw AppAttestError.nonZeroCounter }
         guard parsed.credentialID == keyID else { throw AppAttestError.keyIDMismatch }
@@ -102,7 +111,6 @@ public struct AppAttestVerifier: Sendable {
         case Self.developmentAAGUID where allowsDevelopment: break
         default: throw AppAttestError.wrongEnvironment
         }
-        return AttestedKey(keyID: keyID, publicKeyX963: x963, counter: 0)
     }
 
     private func verifyChain(credential: Certificate, intermediate: Certificate) async throws {

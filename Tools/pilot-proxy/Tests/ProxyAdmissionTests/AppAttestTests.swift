@@ -26,48 +26,54 @@ final class AppAttestTests: XCTestCase {
         XCTAssertEqual(key.counter, 0)
     }
 
+    private struct BrokenAttestation {
+        let name: String
+        let device: TestAttestation.Device
+        let expected: AppAttestError
+    }
+
     func testEachBrokenAttestationIsRefusedForItsOwnReason() async throws {
         let authority = try TestAttestation()
         let subject = verifier(authority)
-        let cases: [(String, TestAttestation.Device, AppAttestError)] = [
-            (
-                "another challenge", try authority.attest(challenge: Self.challenge, nonceChallenge: Data([9])),
-                .badNonce
-            ),
-            ("no nonce extension", try authority.attest(challenge: Self.challenge, includeNonce: false), .badNonce),
-            (
-                "another app",
-                try authority.attest(challenge: Self.challenge, appID: "OTHER.app"), .wrongApp
-            ),
-            ("non-zero counter", try authority.attest(challenge: Self.challenge, counter: 5), .nonZeroCounter),
-            (
-                "development environment",
-                try authority.attest(challenge: Self.challenge, aaguid: TestAttestation.developmentAAGUID),
-                .wrongEnvironment
-            ),
-            (
-                "unknown environment",
-                try authority.attest(challenge: Self.challenge, aaguid: Data(repeating: 7, count: 16)),
-                .wrongEnvironment
-            ),
-            (
-                "credential id differs",
-                try authority.attest(challenge: Self.challenge, credentialID: Data(repeating: 1, count: 32)),
-                .keyIDMismatch
-            ),
-            (
-                "key id differs",
-                try authority.attest(challenge: Self.challenge, claimedKeyID: Data(repeating: 2, count: 32)),
-                .keyIDMismatch
-            ),
+        let challenge = Self.challenge
+        let cases = [
+            BrokenAttestation(
+                name: "another challenge",
+                device: try authority.attest(challenge: challenge, nonceChallenge: Data([9])),
+                expected: .badNonce),
+            BrokenAttestation(
+                name: "no nonce extension", device: try authority.attest(challenge: challenge, includeNonce: false),
+                expected: .badNonce),
+            BrokenAttestation(
+                name: "another app", device: try authority.attest(challenge: challenge, appID: "OTHER.app"),
+                expected: .wrongApp),
+            BrokenAttestation(
+                name: "non-zero counter", device: try authority.attest(challenge: challenge, counter: 5),
+                expected: .nonZeroCounter),
+            BrokenAttestation(
+                name: "development environment",
+                device: try authority.attest(challenge: challenge, aaguid: TestAttestation.developmentAAGUID),
+                expected: .wrongEnvironment),
+            BrokenAttestation(
+                name: "unknown environment",
+                device: try authority.attest(challenge: challenge, aaguid: Data(repeating: 7, count: 16)),
+                expected: .wrongEnvironment),
+            BrokenAttestation(
+                name: "credential id differs",
+                device: try authority.attest(challenge: challenge, credentialID: Data(repeating: 1, count: 32)),
+                expected: .keyIDMismatch),
+            BrokenAttestation(
+                name: "key id differs",
+                device: try authority.attest(challenge: challenge, claimedKeyID: Data(repeating: 2, count: 32)),
+                expected: .keyIDMismatch),
         ]
-        for (name, device, expected) in cases {
+        for broken in cases {
             do {
                 _ = try await subject.verifyAttestation(
-                    device.attestation, challenge: Self.challenge, keyID: device.keyID)
-                XCTFail("\(name) was accepted")
+                    broken.device.attestation, challenge: challenge, keyID: broken.device.keyID)
+                XCTFail("\(broken.name) was accepted")
             } catch let error as AppAttestError {
-                XCTAssertEqual(error, expected, name)
+                XCTAssertEqual(error, broken.expected, broken.name)
             }
         }
     }
@@ -130,26 +136,21 @@ final class AppAttestTests: XCTestCase {
         let authority = try TestAttestation()
         let (device, key) = try await registered(authority)
         let body = Data("request body".utf8)
+        let other = Data("another body".utf8)
         let subject = verifier(authority)
-        let cases: [(Data, Data, AppAttestError)] = [
-            (
-                try TestAttestation.assertion(for: device, clientData: body, counter: 1), Data("another body".utf8),
-                .badSignature
-            ),
-            (
-                try TestAttestation.assertion(
-                    for: device, clientData: body, counter: 1, signingKey: P256.Signing.PrivateKey()), body,
-                .badSignature
-            ),
-            (
-                try TestAttestation.assertion(for: device, clientData: body, counter: 1, appID: "OTHER.app"), body,
-                .wrongApp
-            ),
-        ]
-        for (assertion, data, expected) in cases {
-            XCTAssertThrowsError(try subject.verifyAssertion(assertion, clientData: data, key: key)) {
-                XCTAssertEqual($0 as? AppAttestError, expected)
-            }
+        let genuine = try TestAttestation.assertion(for: device, clientData: body, counter: 1)
+        let wrongKey = try TestAttestation.assertion(
+            for: device, clientData: body, counter: 1, signingKey: P256.Signing.PrivateKey())
+        let wrongApp = try TestAttestation.assertion(for: device, clientData: body, counter: 1, appID: "OTHER.app")
+
+        XCTAssertThrowsError(try subject.verifyAssertion(genuine, clientData: other, key: key)) {
+            XCTAssertEqual($0 as? AppAttestError, .badSignature)
+        }
+        XCTAssertThrowsError(try subject.verifyAssertion(wrongKey, clientData: body, key: key)) {
+            XCTAssertEqual($0 as? AppAttestError, .badSignature)
+        }
+        XCTAssertThrowsError(try subject.verifyAssertion(wrongApp, clientData: body, key: key)) {
+            XCTAssertEqual($0 as? AppAttestError, .wrongApp)
         }
     }
 
