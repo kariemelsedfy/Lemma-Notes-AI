@@ -20,3 +20,5 @@ Derived/
 
 # Pilot bearer token bundled into owner-installed builds (scripts/provision-pilot-token.sh)
 Apps/Margin/Resources/PilotToken.local
+# The proxy address bundled into owner-installed builds (same script); kept out of the public repository
+Apps/Margin/Resources/PilotServer.local

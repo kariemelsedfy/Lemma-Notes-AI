@@ -245,7 +245,7 @@ re-measuring only after that ships.
 ## 9. Answer weight and placement — the 2026-08-12 rendering changes
 
 **Build installed and launched 2026-08-12 by Claude**, from `main` at `1e96a76`, team
-`7SUY6YP3G6`, DerivedData `/private/tmp/margin-dd-B3ati0`. Installed *over* the existing app, so
+`<TEAM_ID>`, DerivedData `/private/tmp/margin-dd-B3ati0`. Installed *over* the existing app, so
 your notebooks and glyph bank are intact.
 
 Five fixes merged that day change how every generated answer is drawn. **Three of them cannot be

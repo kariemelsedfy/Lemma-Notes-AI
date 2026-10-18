@@ -27,3 +27,88 @@ extension View {
         #endif
     }
 }
+
+#if DEBUG
+    /// Debug builds only: `-margin.scenario <name>` stages the app for a Simulator screenshot or recording with no taps
+    /// (README media). `seed` fills the library with sample notes and folders; `paywall` opens Premium;
+    /// `tour-handwriting`, `tour-disclosure` and `tour-subscribe` jump to a step of the first-run tour.
+    private struct SampleNote {
+        let title: String
+        let paper: PaperStyle
+        let folder: UUID?
+        let favorite: Bool
+
+        init(_ title: String, _ paper: PaperStyle, _ folder: UUID?, _ favorite: Bool = false) {
+            self.title = title
+            self.paper = paper
+            self.folder = folder
+            self.favorite = favorite
+        }
+    }
+
+    struct DebugScenario: ViewModifier {
+        let library: NotebookLibrary
+        let onboarding: OnboardingCoordinator
+        let premium: PremiumStore
+
+        func body(content: Content) -> some View {
+            content.task { await run() }
+        }
+
+        @MainActor
+        private func run() async {
+            let arguments = ProcessInfo.processInfo.arguments
+            guard let flag = arguments.firstIndex(of: "-margin.scenario"), flag + 1 < arguments.count else { return }
+            try? await Task.sleep(for: .milliseconds(500))
+            switch arguments[flag + 1] {
+            case "seed": seed()
+            case "paywall": premium.showPaywall()
+            case "tour-handwriting": jump(to: .handwriting)
+            case "tour-disclosure": jump(to: .disclosure)
+            case "tour-subscribe": jump(to: .subscribe)
+            default: break
+            }
+        }
+
+        private func jump(to step: OnboardingStep) {
+            onboarding.start()
+            while onboarding.step != step, onboarding.step != nil { onboarding.next() }
+        }
+
+        private func seed() {
+            guard library.notebooks.isEmpty else { return }
+            let biology = library.createFolder(name: "Biology", colorHex: 0x0B_5227)
+            let calculus = library.createFolder(name: "Calculus", colorHex: 0x2C_63E0)
+            let reading = library.createFolder(name: "Reading", colorHex: 0xAB_1E4A)
+            let size = PageSizePreset.default.size
+            let samples = [
+                SampleNote("Photosynthesis", .ruled, biology?.id, true),
+                SampleNote("Derivatives", .grid5Millimeters, calculus?.id, true),
+                SampleNote("Limits and continuity", .grid5Millimeters, calculus?.id),
+                SampleNote("Cell respiration", .ruled, biology?.id),
+                SampleNote("Essay outline", .ruled, reading?.id),
+                SampleNote("Sketches", .dotted, nil),
+                SampleNote("Problem set 4", .grid5Millimeters, calculus?.id),
+                SampleNote("Lecture notes", .blank, nil),
+            ]
+            for sample in samples {
+                guard
+                    let note = library.create(
+                        title: sample.title, paper: sample.paper, size: size, folderID: sample.folder)
+                else { continue }
+                if sample.favorite { library.setFavorite(true, notebook: note.id) }
+            }
+        }
+    }
+#endif
+
+extension View {
+    @ViewBuilder
+    func debugScenario(_ library: NotebookLibrary, _ tour: OnboardingCoordinator, _ store: PremiumStore) -> some View {
+        #if DEBUG
+            modifier(DebugScenario(library: library, onboarding: tour, premium: store))
+        #else
+            self
+        #endif
+    }
+}
