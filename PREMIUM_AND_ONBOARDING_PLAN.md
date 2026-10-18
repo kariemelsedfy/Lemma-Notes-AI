@@ -52,3 +52,19 @@ The tour watches the real pipeline (the user's lasso and Ask), so a failure or a
 1. The number of onboarding asks (assumed 3).
 2. The monthly cost allowance (assumed $1.50, tune with measured image cost).
 3. ADR-029 and BUSINESS.md need amending: the free tier no longer lists "30 AI actions a month," and onboarding asks are a defined exception.
+
+## 6. Build order for server trust and purchases (owner approved 2026-10-18)
+
+Needs a paid Apple Developer Program membership to run on a device. Everything is built behind fakes first.
+
+| PR | What | How it is tested without a paid account |
+|---|---|---|
+| P1 | StoreKit 2 client: product ids, `PremiumStore`, local `Margin.storekit` with the 7-day trial, paywall wired to the real purchase, Restore, disclosure acknowledgement | Xcode StoreKit testing and unit tests over the plan resolver |
+| P2 | Proxy: JWS verification (Apple chain, bundle, product, expiry) with swift-crypto and swift-certificates; ADR-031 accepted | Synthesized certificate chains |
+| P3 | Proxy: App Attest verification, install store, assertion check on every request | Synthesized attestations |
+| P4 | Proxy: per-install guided-tour allowance (3) and monthly cost allowance | Fake ledger plus the existing Firestore store tests |
+| P5 | App: attest on first hosted use, sign requests, upload the transaction; pilot token only in the owner's build | Fakes for `InstallAttesting` and `TransactionProof` |
+| P6 | Whole-screen pages and the dockable tool board (pure UI, device-testable now) | Layout tests and the iPad |
+
+Owner actions still needed: enroll in the Apple Developer Program; create the two subscription products and the introductory offer in App Store Connect with the ids in `Margin.storekit`; add the App Attest capability (a `TUIST_APP_ATTEST=1` switch keeps free-profile builds working).
+
