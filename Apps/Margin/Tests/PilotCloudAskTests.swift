@@ -62,7 +62,7 @@ final class PilotCloudAskTests: XCTestCase {
         unsupported.pipeline.run(unsupported.input, verb: .answer)
         try await unsupported.settle()
         XCTAssertEqual(unsupported.model.phase, .failed(.unreadable))
-        XCTAssertEqual(unsupported.model.localFailure, .unsupported)
+        XCTAssertTrue(unsupported.model.needsSubscription, "What local cannot answer is offered as Premium")
         let calls = await transport.requests.count
         XCTAssertEqual(calls, 0, "Nothing may leave the iPad without the premium entitlement")
     }
@@ -75,7 +75,7 @@ final class PilotCloudAskTests: XCTestCase {
         try await harness.settle()
         let calls = await transport.requests.count
         XCTAssertEqual(calls, 0)
-        XCTAssertEqual(harness.model.localFailure, .unsupported)
+        XCTAssertTrue(harness.model.needsSubscription, "A free install is offered Premium, not an error")
     }
 
     func testAnEntitledBuildEscalatesOnlyWhatLocalCannotAnswer() async throws {

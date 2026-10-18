@@ -160,7 +160,10 @@ extension VirtualizedPageStack {
             other: FallbackSpecProvider(
                 primary: LocalArithmeticSpecProvider(),
                 fallback: cloud,
-                shouldEscalate: { $0 is LocalArithmeticFailure && configuration.isReady }
+                // A question local arithmetic cannot answer is what Premium is for; an unreadable scribble keeps its
+                // own, friendlier explanation.
+                surfacesConsentRequirement: { ($0 as? LocalArithmeticFailure) == .unsupported },
+                shouldEscalate: { $0 is LocalArithmeticFailure }
             )
         )
     }

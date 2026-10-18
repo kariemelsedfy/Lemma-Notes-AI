@@ -86,6 +86,22 @@ final class PlotAskTests: XCTestCase {
         XCTAssertNil(harness.model.localFailure)
     }
 
+    func testAFreeInstallAskingForExplainIsOfferedPremiumNotAnError() async throws {
+        let transport = CountingTransport()
+        let harness = Harness(
+            reading: SelectionReading(transcript: "what is photosynthesis", confidence: 0.9), transport,
+            entitled: false)
+        harness.pipeline.run(harness.input, verb: .explain)
+        try await harness.settle()
+
+        XCTAssertTrue(harness.model.needsSubscription)
+        XCTAssertTrue(harness.suggestions.strokes.isEmpty)
+        let calls = await transport.count
+        XCTAssertEqual(calls, 0, "Nothing may be sent without an entitlement")
+        harness.model.dismissFailure()
+        XCTAssertFalse(harness.model.needsSubscription)
+    }
+
     func testAFlattenedSuperscriptStillPlots() async throws {
         let harness = Harness(
             reading: SelectionReading(transcript: "x2 plot:", confidence: 0.8), CountingTransport())

@@ -15,6 +15,8 @@ final class AskBarModel: ObservableObject {
     /// A content-free name for why the last Ask failed (an error's case name, never its payload), shown in
     /// debug builds only so one screenshot says which step broke instead of the generic copy.
     @Published private(set) var failureDetail: String?
+    /// The last Ask needed the hosted model and this install is not subscribed: show Premium, not an error.
+    @Published private(set) var needsSubscription = false
 
     var failureMessage: String? { localFailure?.message }
 
@@ -48,8 +50,11 @@ final class AskBarModel: ObservableObject {
         }
     }
 
+    func requireSubscription() { needsSubscription = true }
+
     func selectionChanged(hasSelection: Bool) {
         self.hasSelection = hasSelection
+        needsSubscription = false
         renderingNotice = nil
         localFailure = nil
         failureDetail = nil
@@ -64,6 +69,7 @@ final class AskBarModel: ObservableObject {
     @discardableResult
     func begin(_ verb: AskVerb) -> Bool {
         guard hasSelection else { return false }
+        needsSubscription = false
         renderingNotice = nil
         localFailure = nil
         failureDetail = nil
@@ -108,6 +114,7 @@ final class AskBarModel: ObservableObject {
     /// Clears a failure without starting anything new.
     func dismissFailure() {
         guard case .failed = state else { return }
+        needsSubscription = false
         localFailure = nil
         machine = AskStateMachine()
         state = machine.state

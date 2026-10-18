@@ -215,3 +215,13 @@
 "plot.edit.field" = "y = ";
 "plot.edit.plot" = "Plot";
 "plot.edit.cancel" = "Cancel";
+"premium.disclosure" = "I agree that the writing I circle is sent to Google's Gemini to get an answer.";
+"premium.cta.plain" = "Subscribe";
+"premium.restore" = "Restore purchases";
+"premium.restore.none" = "No earlier purchase was found for this Apple ID.";
+"premium.error" = "Couldn't reach the App Store. Try again in a moment.";
+"premium.pending" = "Your purchase is waiting for approval. Premium turns on when it comes through.";
+"premium.menu" = "Premium";
+"ask.failure.subscribe" = "Ask is part of Lemma Notes AI Premium.";
+"ask.seepremium" = "See Premium";
+
