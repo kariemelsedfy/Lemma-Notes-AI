@@ -34,17 +34,12 @@ enum AskBarPhase: Equatable {
     }
 }
 
+/// A fact about how an answer was drawn. **Never shown to the writer**: telling someone which letters were
+/// "typeset" only draws attention to the seams. Kept so the app and its tests can still tell.
 enum AskRenderingNotice: Equatable {
     /// These characters of the answer have no sample in the writer's hand and are drawn typeset;
     /// everything else in the answer is their own writing.
     case substitutedCharacters(String)
-
-    var message: Text {
-        switch self {
-        case .substitutedCharacters(let characters):
-            Text("ask.notice.substituted-characters \(characters)")
-        }
-    }
 }
 
 /// The choices offered for a selection, in the order they are shown.
@@ -104,7 +99,6 @@ extension AskFailure {
 struct AskBar: View {
     let phase: AskBarPhase
     let explanation: String?
-    var renderingNotice: AskRenderingNotice?
     var failureOverride: String?
     var failureDetail: String?
     var onVerb: (AskVerb) -> Void = { _ in }
@@ -199,12 +193,6 @@ struct AskBar: View {
                 Text(verbatim: status)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(MarginColor.primaryText.opacity(0.85))
-                    .lineLimit(1)
-            }
-            if let renderingNotice {
-                renderingNotice.message
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(MarginColor.secondaryText)
                     .lineLimit(1)
             }
             if let onEditReading {
