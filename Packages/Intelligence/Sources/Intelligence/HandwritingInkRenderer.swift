@@ -194,15 +194,20 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
                 for: text, in: frame, bank: bank, variation: variation, seed: seed,
                 targetXHeight: targetXHeight(for: text, matching: style.xHeight))
         }
-        let size = targetXHeight(for: pieces.map(\.text).joined(), matching: style.xHeight)
+        let whole = pieces.map(\.text).joined()
+        let size = targetXHeight(for: whole, matching: style.xHeight)
+        // One baseline for the whole row, from the whole row's descenders; the exponent is lifted off it. Left to
+        // themselves, pieces with different descenders (a "y" or a bracket against plain digits) sit at different
+        // heights, which put the exponent on the line and the rest of the row below it.
+        let rowBaseline = try Synthesizer.baseline(
+            for: whole, in: frame, bank: bank, variation: variation, seed: seed, targetXHeight: size)
+        let lift = size * ScriptedText.liftInXHeights
         var index: UInt64 = 0
-        return try ScriptedText.layout(
-            pieces, in: frame, xHeight: size, lift: size * ScriptedText.liftInXHeights
-        ) { piece, room, scale in
+        return try ScriptedText.layout(pieces, in: frame, xHeight: size) { piece, room, scale, isRaised in
             defer { index += 1 }
             return try Synthesizer.strokes(
                 for: piece, in: room, bank: bank, variation: variation, seed: seed &+ index,
-                targetXHeight: size * scale)
+                targetXHeight: size * scale, baseline: isRaised ? rowBaseline - lift : rowBaseline)
         }
     }
 

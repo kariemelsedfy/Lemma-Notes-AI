@@ -60,4 +60,28 @@ final class PowerRenderingTests: XCTestCase {
         }
         try assertRaisedExponent(HandwritingInkRenderer(bank: bank), "handwriting")
     }
+
+    /// The owner's device, 2026-10-18: in `dy/dx = 2x sin(x) + x^2 cos(x)` the 2 sat on the line and the text after it
+    /// dropped below it, because every piece found its own baseline from its own descenders.
+    func testPiecesOfOneRowShareABaselineWhateverTheirDescenders() throws {
+        let reference = CGRect(x: 0, y: 0, width: 120, height: 120)
+        let xHeight = InkLineGrouping.bounds(of: try TypesetStyle.strokes(for: "x", in: reference)).height
+        var bank = GlyphBank(capturedAt: Date(timeIntervalSince1970: 0))
+        for character in "ycx2" {
+            let drawn = try TypesetStyle.strokes(for: String(character), in: reference)
+            bank.add(try GlyphNormalizer.glyph(for: character, from: drawn, xHeight: xHeight))
+        }
+        let frame = CGRect(x: 0, y: 0, width: 300, height: 60)
+        let withDescender = try Synthesizer.baseline(for: "y", in: frame, bank: bank, targetXHeight: 20)
+        let without = try Synthesizer.baseline(for: "c", in: frame, bank: bank, targetXHeight: 20)
+        XCTAssertLessThan(withDescender, without, "left alone, text with a descender sits higher")
+
+        let forced = try Synthesizer.strokes(
+            for: "c", in: frame, bank: bank, targetXHeight: 20, baseline: withDescender)
+        XCTAssertEqual(
+            InkLineGrouping.bounds(of: forced).maxY, withDescender, accuracy: 1.5,
+            "a forced baseline is where the letters sit")
+        let natural = try Synthesizer.strokes(for: "c", in: frame, bank: bank, targetXHeight: 20)
+        XCTAssertGreaterThan(InkLineGrouping.bounds(of: natural).maxY, withDescender + 1)
+    }
 }

@@ -73,14 +73,12 @@ enum ScriptedText {
         return characters[start].isLetter ? (String(characters[start]), start + 1) : nil
     }
 
-    /// Draws `pieces` left to right inside `frame`. `draw(text, frame, scale)` renders one piece at `scale` times the
-    /// row's size and returns its strokes; this places them: each starts where the last one's ink ended, and a raised
-    /// piece is lifted off the baseline.
-    ///
-    /// - Parameter lift: how far above the baseline a raised piece goes, in points.
+    /// Draws `pieces` left to right inside `frame`. `draw(text, frame, scale, isRaised)` renders one piece at `scale`
+    /// times the row's size, on the row's baseline or lifted off it for a raised piece, and returns its strokes; this
+    /// places them side by side: each starts where the last one's ink ended.
     static func layout(
-        _ pieces: [Piece], in frame: CGRect, xHeight: CGFloat, lift: CGFloat,
-        draw: (_ text: String, _ frame: CGRect, _ scale: CGFloat) throws -> [InkStroke]
+        _ pieces: [Piece], in frame: CGRect, xHeight: CGFloat,
+        draw: (_ text: String, _ frame: CGRect, _ scale: CGFloat, _ isRaised: Bool) throws -> [InkStroke]
     ) rethrows -> [InkStroke] {
         var strokes: [InkStroke] = []
         var cursor = frame.minX
@@ -88,9 +86,8 @@ enum ScriptedText {
         for piece in pieces {
             let room = CGRect(x: cursor, y: frame.minY, width: max(frame.maxX - cursor, 1), height: frame.height)
             let scale = piece.isRaised ? raisedScale : 1
-            var drawn = try draw(piece.text, room, scale)
+            let drawn = try draw(piece.text, room, scale, piece.isRaised)
             guard !drawn.isEmpty else { continue }
-            if piece.isRaised { drawn = drawn.map { $0.translated(by: CGSize(width: 0, height: -lift)) } }
             strokes += drawn
             cursor = InkLineGrouping.bounds(of: drawn).maxX + (piece.isRaised ? gap * 1.5 : gap)
         }

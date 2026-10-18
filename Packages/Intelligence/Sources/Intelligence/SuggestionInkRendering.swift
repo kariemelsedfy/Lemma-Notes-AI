@@ -93,12 +93,12 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
         guard let pieces = ScriptedText.pieces(in: text) else {
             return try TypesetStyle.strokes(for: text, in: frame, style: style)
         }
-        return try ScriptedText.layout(
-            pieces, in: frame, xHeight: frame.height * 0.5, lift: frame.height * 0.4
-        ) { piece, room, scale in
+        let lift = frame.height * 0.4
+        return try ScriptedText.layout(pieces, in: frame, xHeight: frame.height * 0.5) { piece, room, scale, isRaised in
             let height = room.height * scale
             let drawn = CGRect(x: room.minX, y: room.maxY - height, width: room.width, height: height)
-            return try TypesetStyle.strokes(for: piece, in: drawn, style: style)
+            let strokes = try TypesetStyle.strokes(for: piece, in: drawn, style: style)
+            return isRaised ? strokes.map { $0.translated(by: CGSize(width: 0, height: -lift)) } : strokes
         }
     }
 
