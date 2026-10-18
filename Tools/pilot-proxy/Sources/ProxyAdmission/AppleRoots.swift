@@ -20,4 +20,21 @@ public enum AppleRoots {
 
     /// Its SHA-256 fingerprint, as Apple publishes it.
     public static let rootCAG3SHA256 = "63343ABFB89A6A03EBB57E9B3F5FA7BE7C4F5C756F3017B3A8C488C3653E9179"
+
+    /// "Apple App Attestation Root CA" (ECC P-384, self-signed). Signs the chain inside an App Attest attestation.
+    /// Valid to 2045-03-15. Taken from https://www.apple.com/certificateauthority/Apple_App_Attestation_Root_CA.pem;
+    /// compare the fingerprint with Apple's "Validating apps that connect to your server" page when it changes.
+    public static let appAttestRoot = Data(
+        base64Encoded:
+            "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRp"
+            + "b24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAz"
+            + "MTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMw"
+            + "EQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAH"
+            + "GbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMB"
+            + "Af8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIw"
+            + "QgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpq"
+            + "tijVoyFraWVIyd/dganmrduC1bmTBGwD"
+    )!
+
+    public static let appAttestRootSHA256 = "1CB9823BA28BA6AD2D33A006941DE2AE4F513EF1D4E831B9F7E0FA7B6242C932"
 }
