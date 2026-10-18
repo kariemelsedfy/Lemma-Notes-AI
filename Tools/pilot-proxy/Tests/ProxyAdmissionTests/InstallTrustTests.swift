@@ -57,11 +57,11 @@ final class InstallTrustTests: XCTestCase {
         let first = try await service.authorize(
             keyID: device.keyID, assertion: try TestAttestation.assertion(for: device, clientData: body, counter: 1),
             clientData: body)
-        XCTAssertEqual(first.counter, 1)
+        XCTAssertEqual(first.key.counter, 1)
         let second = try await service.authorize(
             keyID: device.keyID, assertion: try TestAttestation.assertion(for: device, clientData: body, counter: 2),
             clientData: body)
-        XCTAssertEqual(second.counter, 2)
+        XCTAssertEqual(second.key.counter, 2)
     }
 
     func testAReplayedAssertionIsRefused() async throws {
@@ -105,6 +105,59 @@ final class InstallTrustTests: XCTestCase {
             XCTFail("accepted a forged challenge")
         } catch let error as InstallTrustError {
             XCTAssertEqual(error, .invalidChallenge)
+        }
+    }
+
+    func testAllowanceAndCounterAreWrittenTogetherAndARefusalWritesNothing() async throws {
+        let authority = try TestAttestation()
+        let store = InMemoryInstallStore()
+        let service = trust(authority, store: store)
+        let challenge = service.newChallenge()
+        let device = try authority.attest(challenge: challenge)
+        try await service.register(attestation: device.attestation, challenge: challenge, keyID: device.keyID)
+        let body = Data("hello".utf8)
+
+        let record = try await service.authorize(
+            keyID: device.keyID, assertion: try TestAttestation.assertion(for: device, clientData: body, counter: 1),
+            clientData: body
+        ) { try InstallAllowance.reserve(&$0, micros: 4_000, at: TestAttestation.now) }
+        XCTAssertEqual(record.tourAsksUsed, 1)
+        XCTAssertEqual(record.key.counter, 1)
+
+        for counter in UInt32(2)...3 {
+            try await service.authorize(
+                keyID: device.keyID,
+                assertion: try TestAttestation.assertion(for: device, clientData: body, counter: counter),
+                clientData: body
+            ) { try InstallAllowance.reserve(&$0, micros: 4_000, at: TestAttestation.now) }
+        }
+        do {
+            try await service.authorize(
+                keyID: device.keyID,
+                assertion: try TestAttestation.assertion(for: device, clientData: body, counter: 4), clientData: body
+            ) { try InstallAllowance.reserve(&$0, micros: 4_000, at: TestAttestation.now) }
+            XCTFail("a fourth free ask was allowed")
+        } catch let error as AllowanceError {
+            XCTAssertEqual(error, .subscriptionRequired)
+        }
+        let stored = try await store.load(device.keyID)
+        XCTAssertEqual(stored?.record.key.counter, 3, "the refused request did not advance the counter")
+        XCTAssertEqual(stored?.record.tourAsksUsed, 3)
+    }
+
+    func testUpdateAppliesAChangeWithoutAnAssertion() async throws {
+        let authority = try TestAttestation()
+        let service = trust(authority)
+        let challenge = service.newChallenge()
+        let device = try authority.attest(challenge: challenge)
+        try await service.register(attestation: device.attestation, challenge: challenge, keyID: device.keyID)
+        let updated = try await service.update(keyID: device.keyID) { $0.plan = .premium }
+        XCTAssertEqual(updated.plan, .premium)
+        do {
+            try await service.update(keyID: Data(repeating: 9, count: 32)) { _ in }
+            XCTFail("updated an unknown install")
+        } catch let error as InstallTrustError {
+            XCTAssertEqual(error, .unknownInstall)
         }
     }
 
