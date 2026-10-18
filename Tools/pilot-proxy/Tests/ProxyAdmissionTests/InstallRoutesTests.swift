@@ -112,8 +112,8 @@ final class InstallRoutesTests: XCTestCase {
     // MARK: - Tests
 
     func testChallengesAreIssuedOnlyWhenInstallsAreEnabled() async throws {
-        let on = try rig()
-        _ = try challengeData(await get(on, "/v1/challenge"))
+        let enabled = try rig()
+        _ = try challengeData(await get(enabled, "/v1/challenge"))
         let off = try rig(installsEnabled: false)
         let disabled = await get(off, "/v1/challenge")
         XCTAssertEqual(disabled.status, 404)

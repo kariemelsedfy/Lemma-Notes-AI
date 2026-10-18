@@ -4,6 +4,16 @@ import Foundation
     import FoundationNetworking
 #endif
 
+/// What an attested-installs deployment is configured with (ADR-031).
+struct PilotInstallSettings: Equatable {
+    /// `TEAMID.bundleid`, as hashed into every App Attest object.
+    let appID: String
+    let bundleID: String
+    let productIDs: Set<String>
+    let challengeSecret: Data
+    let allowsDevelopment: Bool
+}
+
 /// Process entry for the hosted pilot proxy. Configuration comes only from the environment (Cloud Run injects
 /// secrets as environment values), so nothing sensitive is ever in an argument, file or image layer.
 public enum PilotServer {
@@ -19,16 +29,7 @@ public enum PilotServer {
         let subjectID: String
         let geminiKey: String
         /// Present only when the deployment accepts attested installs (ADR-031); absent, the install routes are off.
-        let installs: Installs?
-
-        struct Installs: Equatable {
-            /// `TEAMID.bundleid`, as hashed into every App Attest object.
-            let appID: String
-            let bundleID: String
-            let productIDs: Set<String>
-            let challengeSecret: Data
-            let allowsDevelopment: Bool
-        }
+        let installs: PilotInstallSettings?
 
         init(environment: [String: String]) throws {
             func value(_ name: String) throws -> String {
@@ -50,7 +51,7 @@ public enum PilotServer {
 
         /// All-or-nothing: setting `APPLE_APP_ID` turns attested installs on and then requires the rest, so a
         /// half-configured deployment fails to start instead of running open.
-        static func installs(_ environment: [String: String]) throws -> Installs? {
+        static func installs(_ environment: [String: String]) throws -> PilotInstallSettings? {
             guard let appID = environment["APPLE_APP_ID"], !appID.isEmpty else { return nil }
             func value(_ name: String) throws -> String {
                 guard let found = environment[name], !found.isEmpty else { throw ConfigurationError.missing(name) }
@@ -68,7 +69,7 @@ public enum PilotServer {
             guard !products.isEmpty, !products.contains("") else {
                 throw ConfigurationError.invalid("PREMIUM_PRODUCT_IDS")
             }
-            return Installs(
+            return PilotInstallSettings(
                 appID: appID, bundleID: try value("APPLE_BUNDLE_ID"), productIDs: products, challengeSecret: secret,
                 allowsDevelopment: environment["ALLOW_APP_ATTEST_DEVELOPMENT"] == "1")
         }

@@ -100,10 +100,8 @@ extension InstallRecord {
             }
             return
         }
-        if let current = planExpiresAt, current > expiresAt, originalTransactionID != transaction.originalTransactionID
-        {
-            return
-        }
+        let isAnotherTransaction = originalTransactionID != transaction.originalTransactionID
+        if let current = planExpiresAt, current > expiresAt, isAnotherTransaction { return }
         plan = transaction.isIntroductoryTrial ? .trial : .premium
         planExpiresAt = expiresAt
         originalTransactionID = transaction.originalTransactionID
