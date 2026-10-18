@@ -4,13 +4,15 @@ import XCTest
 
 @testable import Margin
 
-/// The Plot choice draws a function locally: nothing about it may reach the hosted proxy, even for an entitled
-/// build with a token.
+/// The Plot choice draws a function locally, always. Reading it is on the device too, except for an entitled
+/// install, where the model reads the handwriting (`HostedPlotSpecProvider`) and any hosted failure falls back to
+/// the device reading. A free install never makes a call.
 @MainActor
 final class PlotAskTests: XCTestCase {
     func testPlotDrawsTheFunctionWithoutAnyNetworkCall() async throws {
         let transport = CountingTransport()
-        let harness = Harness(reading: SelectionReading(transcript: "y = x^2", confidence: 0.9), transport)
+        let harness = Harness(
+            reading: SelectionReading(transcript: "y = x^2", confidence: 0.9), transport, entitled: false)
         harness.pipeline.run(harness.input, verb: .plot)
         try await harness.settle()
 
@@ -22,7 +24,21 @@ final class PlotAskTests: XCTestCase {
         XCTAssertFalse(harness.suggestions.strokes.isEmpty)
         XCTAssertEqual(harness.engine.strokes.count, 1, "The plot must not reach the page before Keep")
         let calls = await transport.count
-        XCTAssertEqual(calls, 0, "Plotting is local; nothing may be sent")
+        XCTAssertEqual(calls, 0, "A free install plots on the device; nothing may be sent")
+    }
+
+    func testAnEntitledInstallAsksTheModelOnceAndFallsBackWhenItIsUnreachable() async throws {
+        let transport = CountingTransport()
+        let harness = Harness(reading: SelectionReading(transcript: "y = x^2", confidence: 0.9), transport)
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+
+        guard case .awaitingDecision(let spec, _) = harness.model.state,
+            case .plot(let plot) = try XCTUnwrap(spec.blocks.first).content
+        else { return XCTFail("The device reading is the fallback") }
+        XCTAssertEqual(plot.functions.map(\.expression), ["x^2"])
+        let calls = await transport.count
+        XCTAssertEqual(calls, 1)
     }
 
     func testTheAnswerIsDrawnWithTheQuestionsNibWidthAndPressure() async throws {
@@ -52,7 +68,7 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(plot.functions.map(\.expression), ["x^3+cos(x)"])
         XCTAssertEqual(harness.model.pendingRead, "y=x^3+cos(x)")
         let calls = await transport.count
-        XCTAssertEqual(calls, 0)
+        XCTAssertEqual(calls, 1, "Only the first read goes to the model; the typed correction never does")
     }
 
     func testAPlotThatFoundNoFunctionCanBeFixedFromTheFailure() async throws {
@@ -81,9 +97,10 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(plot.functions.map(\.expression), ["x^2"])
     }
 
-    func testAPlotRequestNeverEscalatesToTheCloudWhenItCannotBeRead() async throws {
+    func testAFreeInstallNeverEscalatesToTheCloudWhenAPlotCannotBeRead() async throws {
         let transport = CountingTransport()
-        let harness = Harness(reading: SelectionReading(transcript: "hello there", confidence: 0.9), transport)
+        let harness = Harness(
+            reading: SelectionReading(transcript: "hello there", confidence: 0.9), transport, entitled: false)
         harness.pipeline.run(harness.input, verb: .plot)
         try await harness.settle()
         XCTAssertEqual(harness.model.localFailure, .noFunction(read: "hello there"))
@@ -112,7 +129,7 @@ final class PlotAskTests: XCTestCase {
         let pipeline: AskPipeline
         let input: AskPipeline.PageInput
 
-        init(reading: SelectionReading, _ transport: CountingTransport) {
+        init(reading: SelectionReading, _ transport: CountingTransport, entitled: Bool = true) {
             let ink = InkStroke(points: [
                 InkPoint(location: CGPoint(x: 100, y: 100), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
                 InkPoint(location: CGPoint(x: 320, y: 126), timeOffset: 1, force: 0.5, altitude: 1, azimuth: 0),
@@ -126,11 +143,11 @@ final class PlotAskTests: XCTestCase {
                 ],
                 pageSize: CGSize(width: 1_668, height: 2_388)
             )
-            // An entitled build: it has a token and a valid address, so the cloud is fully reachable. A plot
-            // must still not use it.
+            // Entitled: a token and a valid address, so the cloud is reachable. Free: no token.
             let suite = "plot-ask-\(UUID().uuidString)"
             let configuration = PilotCloudConfiguration(
-                defaults: UserDefaults(suiteName: suite) ?? .standard, secrets: TokenSecrets())
+                defaults: UserDefaults(suiteName: suite) ?? .standard,
+                secrets: entitled ? TokenSecrets() : NoSecrets())
             pipeline = AskPipeline(
                 provider: VirtualizedPageStack.makeAskProvider(configuration: configuration, transport: transport),
                 model: model,
@@ -148,6 +165,11 @@ final class PlotAskTests: XCTestCase {
             XCTAssertNotEqual(model.phase, .working, "Ask must leave working state before assertions")
         }
     }
+}
+
+private struct NoSecrets: PilotSecretStore {
+    func token() -> String? { nil }
+    func setToken(_ value: String?) -> Bool { true }
 }
 
 private struct TokenSecrets: PilotSecretStore {

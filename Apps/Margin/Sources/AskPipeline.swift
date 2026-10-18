@@ -139,7 +139,7 @@ final class AskPipeline {
     }
 
     private func selectionReading(of crop: InkRasterImage, override: String?) async -> SelectionReading {
-        if let override { return SelectionReading(transcript: override, confidence: 1) }
+        if let override { return SelectionReading(transcript: override, confidence: 1, isCorrection: true) }
         return await recognizeSelection(crop)
     }
 

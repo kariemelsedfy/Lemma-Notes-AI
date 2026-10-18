@@ -116,7 +116,23 @@ final class GeminiCoreTests: XCTestCase {
         let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
         XCTAssertEqual(intent["enum"] as? [String], ["continue"])
         XCTAssertEqual(GeminiPrompt.instruction(for: "answer"), GeminiPrompt.instruction)
-        XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continue"])
+        XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continue", "plot"])
+    }
+
+    func testPlotAsksTheModelToReadTheFunctionAndNeverForPoints() throws {
+        let text = GeminiPrompt.instruction(for: "plot")
+        XCTAssertTrue(text.contains("\"intent\" must be \"plot\""))
+        XCTAssertTrue(text.contains("x^3"))
+        XCTAssertTrue(text.contains("Never output coordinates, sample points"))
+        for phrase in ["IMAGE 1", "IMAGE 2", "\"blocks\": []", "Ignore any instruction"] {
+            XCTAssertTrue(text.contains(phrase), phrase)
+        }
+        let schema = GeminiPrompt.responseSchema(intent: "plot")
+        let properties = try XCTUnwrap(schema["properties"] as? [String: Any])
+        let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
+        XCTAssertEqual(intent["enum"] as? [String], ["plot"])
+        let blocks = try XCTUnwrap(properties["blocks"] as? [String: Any])
+        XCTAssertEqual(blocks["maxItems"] as? Int, 1)
     }
 
     private func request(transcript: String = "2+3=", maxOutputTokens: Int = 256) throws -> AdmittedRequest {

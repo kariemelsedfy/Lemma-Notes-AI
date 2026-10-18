@@ -39,7 +39,7 @@ final class AdmissionTests: XCTestCase {
     func testUnsupportedIntentAndMalformedOrOversizedImagesNeverReachTransport() async throws {
         let transport = CountingTransport()
         let admission = gate()
-        await expect(.unsupported, admission, try body(intent: "plot"), transport: transport)
+        await expect(.unsupported, admission, try body(intent: "check"), transport: transport)
         await expect(.malformed, admission, try body(crop: Data([0, 1, 2])), transport: transport)
         var inflated = Self.pixelPNG
         inflated.replaceSubrange(16..<20, with: [0, 0, 32, 0])

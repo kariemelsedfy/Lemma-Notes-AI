@@ -48,8 +48,8 @@ struct LocalPlotSpecProvider: SpecProvider {
     }
 }
 
-/// Sends a plot request to the local plotter and everything else to `other`, so a plot can never reach the
-/// hosted proxy (which refuses it anyway) and the other choices keep their own routing.
+/// Sends a plot request to the plot provider (which reads the function on the device, or through the model for an
+/// entitled install) and everything else to `other`, which keeps its own routing.
 struct PlotRoutingProvider: SpecProvider {
     let plot: any SpecProvider
     let other: any SpecProvider

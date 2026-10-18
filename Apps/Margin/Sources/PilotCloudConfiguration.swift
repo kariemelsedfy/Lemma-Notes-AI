@@ -152,8 +152,11 @@ extension VirtualizedPageStack {
             transport: transport ?? ConfiguredProxyTransport(configuration: configuration),
             isConsentGranted: { configuration.isEntitled }
         )
+        // Plot: an entitled install has the model read the function from the handwriting (the drawing is still
+        // local); anyone else, a typed correction, or any hosted failure reads it on the device.
         return PlotRoutingProvider(
-            plot: LocalPlotSpecProvider(),
+            plot: HostedPlotSpecProvider(
+                hosted: cloud, local: LocalPlotSpecProvider(), isReady: { configuration.isReady }),
             other: FallbackSpecProvider(
                 primary: LocalArithmeticSpecProvider(),
                 fallback: cloud,
