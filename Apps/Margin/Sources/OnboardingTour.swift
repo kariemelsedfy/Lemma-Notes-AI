@@ -33,7 +33,7 @@ enum OnboardingStep: String, CaseIterable, Equatable {
         switch self {
         case .explain: "photosynthesis is"
         case .solve: "2x + 3 = 11"
-        case .plot: "y = x^3 + cos(x)"
+        case .plot: "y = x³ + cos(x)"
         default: nil
         }
     }

@@ -33,7 +33,7 @@ It teaches by having the user do each action with their own hand. Each step show
 3. **AI disclosure and acknowledgement:** before the first hosted step (ADR-029): Google Gemini named, what is sent, retention. Declining skips to the free tour of the notebook and plots.
 4. **Explain:** "Write *photosynthesis is*, circle it, tap Ask, choose Explain." The answer returns in their handwriting.
 5. **Solve:** "Write an equation, for example *2x + 3 = 11*, circle it, choose Solve."
-6. **Plot:** "Write *y = x^3 + cos(x)*, circle it, choose Plot." Local, free, no AI. The step mentions `^` for powers.
+6. **Plot:** "Write *y = x³ + cos(x)*, circle it, choose Plot." Free installs read it on the device; Premium has the model read it. No hint about `^` (powers are read from the handwriting).
 7. **Subscribe:** an invitation card, never a gate: what Premium adds, price, 7-day trial, "Maybe later". The free tier is fully usable.
 
 The tour watches the real pipeline (the user's lasso and Ask), so a failure or an unreadable write shows the normal friendly errors with "try again" and a skip, never a dead end. The tour runs in a sandbox note that is kept (named "Welcome") so the examples are not lost. State is one `onboardingVersion` integer so a future change shows only the new step; nothing collects personal data or asks permissions up front. It can be replayed from Settings.
