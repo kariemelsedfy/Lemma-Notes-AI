@@ -65,7 +65,6 @@ extension VirtualizedPageStack {
                 AskBar(
                     phase: askModel.phase,
                     explanation: askModel.explanation,
-                    renderingNotice: askModel.renderingNotice,
                     failureOverride: askModel.failureMessage,
                     failureDetail: askModel.failureDetail,
                     onVerb: { ask($0) },

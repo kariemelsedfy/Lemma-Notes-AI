@@ -119,6 +119,14 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(GeminiPrompt.supportedIntents, ["answer", "continue", "plot"])
     }
 
+    func testEveryAnswerPromptForbidsLatex() {
+        for intent in ["answer", "continue"] {
+            let text = GeminiPrompt.instruction(for: intent)
+            XCTAssertTrue(text.contains("NEVER LaTeX") || text.contains("never LaTeX"), intent)
+            XCTAssertFalse(text.contains("Math is LaTeX"), intent)
+        }
+    }
+
     func testPlotAsksTheModelToReadTheFunctionAndNeverForPoints() throws {
         let text = GeminiPrompt.instruction(for: "plot")
         XCTAssertTrue(text.contains("\"intent\" must be \"plot\""))
