@@ -63,6 +63,7 @@ struct CalibrationView: View {
                     // Leaving mid-way is legitimate, not an escape hatch: a partial bank
                     // is kept rather than thrown away.
                     Button("calibration.leave") { finish() }
+                        .foregroundStyle(MarginColor.accent)
                 }
             }
             .alert("calibration.save.failed.title", isPresented: $saveErrorPresented) {
@@ -77,48 +78,10 @@ struct CalibrationView: View {
 
     private func sheetView(_ sheet: CalibrationSheet.Sheet) -> some View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
-            HStack(spacing: MarginSpacing.medium) {
-                ProgressView(value: session.progress)
-                    .tint(MarginColor.accent)
-                Text("calibration.progress \(session.stepNumber) \(session.stepCount)")
-                    .font(MarginTypography.caption)
-                    .foregroundStyle(MarginColor.secondaryText)
-                    .fixedSize()
-            }
-
-            Text(sheet.instruction)
-                .font(MarginTypography.body)
-                .foregroundStyle(MarginColor.primaryText)
-
-            GeometryReader { proxy in
-                let area = CGRect(origin: .zero, size: proxy.size)
-                    .insetBy(dx: MarginSpacing.medium, dy: MarginSpacing.medium)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12).fill(MarginColor.paper)
-                    switch sheet.kind {
-                    case .guideBoxes(let characters):
-                        GuideBoxes(boxes: CalibrationSheet.layout(Array(characters), in: area))
-                    case .ruledLines(_, let lines):
-                        RuledLines(count: lines, in: area)
-                    }
-                    CalibrationCanvas(generation: generation) { strokes = $0 }
-                }
-                .onAppear { layout(sheet, in: area) }
-                .onChange(of: proxy.size) { _, _ in layout(sheet, in: area) }
-            }
-
-            HStack(spacing: MarginSpacing.medium) {
-                Button("calibration.clear") { clear() }
-                    .disabled(strokes.isEmpty)
-                if sheet.isOptional {
-                    Button("calibration.skip") { skip() }
-                }
-                Spacer()
-                Button("calibration.next") { next(sheet) }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(strokes.isEmpty && !sheet.isOptional)
-            }
-            .font(MarginTypography.body)
+            progressHeader
+            instructionCard(sheet.instruction)
+            writingSurface(sheet)
+            actionRow(sheet)
         }
         .padding(MarginSpacing.xLarge)
         // One view identity per sheet. Without it SwiftUI reuses the same views for every sheet, so
@@ -127,6 +90,73 @@ struct CalibrationView: View {
         // lowercase letters and reporting the real characters as never written (device report 2026-10-16:
         // "Captured 26 characters", everything else missing).
         .id(sheet.id)
+    }
+
+    private var progressHeader: some View {
+        HStack(spacing: MarginSpacing.medium) {
+            ProgressView(value: session.progress)
+                .tint(MarginColor.accent)
+            Text("calibration.progress \(session.stepNumber) \(session.stepCount)")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(MarginColor.accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(MarginColor.accent.opacity(0.16)))
+                .fixedSize()
+        }
+    }
+
+    private func instructionCard(_ text: String) -> some View {
+        HStack(spacing: MarginSpacing.medium) {
+            Image(systemName: "pencil.and.scribble")
+                .font(.system(size: 22))
+                .foregroundStyle(MarginColor.accent)
+            Text(text)
+                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .foregroundStyle(MarginColor.primaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(MarginSpacing.large)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(MarginColor.surface))
+    }
+
+    private func writingSurface(_ sheet: CalibrationSheet.Sheet) -> some View {
+        GeometryReader { proxy in
+            let area = CGRect(origin: .zero, size: proxy.size)
+                .insetBy(dx: MarginSpacing.medium, dy: MarginSpacing.medium)
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous).fill(MarginColor.paper)
+                switch sheet.kind {
+                case .guideBoxes(let characters):
+                    GuideBoxes(boxes: CalibrationSheet.layout(Array(characters), in: area))
+                case .ruledLines(_, let lines):
+                    RuledLines(count: lines, in: area)
+                }
+                CalibrationCanvas(generation: generation) { strokes = $0 }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(MarginColor.divider))
+            .shadow(color: .black.opacity(0.08), radius: 14, y: 6)
+            .onAppear { layout(sheet, in: area) }
+            .onChange(of: proxy.size) { _, _ in layout(sheet, in: area) }
+        }
+    }
+
+    private func actionRow(_ sheet: CalibrationSheet.Sheet) -> some View {
+        HStack(spacing: MarginSpacing.small) {
+            Button("calibration.clear") { clear() }
+                .buttonStyle(.pill(MarginColor.secondaryText))
+                .disabled(strokes.isEmpty)
+            if sheet.isOptional {
+                Button("calibration.skip") { skip() }
+                    .buttonStyle(.pill(MarginColor.secondaryText))
+            }
+            Spacer()
+            Button("calibration.next") { next(sheet) }
+                .buttonStyle(.filledPill)
+                .disabled(strokes.isEmpty && !sheet.isOptional)
+        }
     }
 
     // MARK: - Flow
@@ -255,8 +285,13 @@ private struct CalibrationSummaryView: View {
         VStack(alignment: .leading, spacing: MarginSpacing.large) {
             ScrollView {
                 VStack(alignment: .leading, spacing: MarginSpacing.large) {
-                    Text("calibration.summary.captured \(outcome.bank.characterCount)")
-                        .font(MarginTypography.title)
+                    HStack(spacing: MarginSpacing.medium) {
+                        Image(systemName: outstanding.isEmpty ? "checkmark.circle.fill" : "checkmark.circle")
+                            .font(.system(size: 34))
+                            .foregroundStyle(MarginColor.accent)
+                        Text("calibration.summary.captured \(outcome.bank.characterCount)")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                    }
 
                     if !outstanding.isEmpty {
                         // Named plainly, because "26 characters captured" reads as success
@@ -269,7 +304,7 @@ private struct CalibrationSummaryView: View {
                         MissingCharacters(characters: outstanding)
 
                         Button("calibration.repair \(outstanding.count)") { onRepair(outstanding) }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.pill)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -279,9 +314,10 @@ private struct CalibrationSummaryView: View {
             // the bank to disk, so it must never be pushed off-screen by a long list of
             // missing characters — that turns "you missed some" into "your calibration was
             // silently thrown away" (M3-16).
-            Button("calibration.finish", action: onFinish)
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
+            Button(action: onFinish) {
+                Text("calibration.finish").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.filledPill)
         }
         .padding(MarginSpacing.xLarge)
     }
@@ -306,7 +342,7 @@ private struct MissingCharacters: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(MarginSpacing.medium)
-            .background(MarginColor.surface, in: RoundedRectangle(cornerRadius: MarginSpacing.small))
+            .background(MarginColor.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .accessibilityLabel(Text(characters.map(String.init).joined(separator: ", ")))
     }
 }

@@ -55,11 +55,13 @@ struct AddCharactersView: View {
                                     characterButton(character)
                                 }
                             }
-                            Button("calibration.add.start") {
+                            Button {
                                 route = .characters(
                                     CalibrationSheet.standardCharacters.filter { picked.contains($0) })
+                            } label: {
+                                Text("calibration.add.start").frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.filledPill)
                             .disabled(picked.isEmpty)
                         }
                         .padding(MarginSpacing.xLarge)
@@ -69,7 +71,7 @@ struct AddCharactersView: View {
                         Text("calibration.add.legacy")
                             .font(MarginTypography.body)
                         Button("calibration.start") { route = .startOver }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.filledPill)
                     }
                     .padding(MarginSpacing.xLarge)
                 }
@@ -80,6 +82,7 @@ struct AddCharactersView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("library.cancel") { dismiss() }
+                        .foregroundStyle(MarginColor.accent)
                 }
             }
         }
@@ -91,10 +94,14 @@ struct AddCharactersView: View {
             if isPicked { picked.remove(character) } else { picked.insert(character) }
         } label: {
             Text(String(character))
-                .font(.title3)
-                .frame(minWidth: 44, minHeight: 44)
-                .background(isPicked ? MarginColor.accent.opacity(0.25) : MarginColor.paper)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .font(.system(size: 20, weight: .medium, design: .rounded))
+                .foregroundStyle(isPicked ? MarginColor.accent : MarginColor.primaryText)
+                .frame(minWidth: 44, minHeight: 48)
+                .background(isPicked ? MarginColor.accent.opacity(0.16) : MarginColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(isPicked ? MarginColor.accent : MarginColor.divider, lineWidth: isPicked ? 2 : 1))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isPicked ? .isSelected : [])
