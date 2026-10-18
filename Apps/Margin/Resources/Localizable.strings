@@ -33,9 +33,9 @@
 "ask.verb.answer" = "Solve";
 "ask.verb.answer.subtitle" = "Math and equations";
 "ask.verb.explain" = "Explain";
-"ask.verb.explain.subtitle" = "Answer, define, continue";
+"ask.verb.explain.subtitle" = "Prose answer";
 "ask.verb.plot" = "Plot";
-"ask.verb.plot.subtitle" = "Use ^ for powers: x^3";
+"ask.verb.plot.subtitle" = "Graph a function";
 "ask.state.working" = "Working…";
 "ask.notice.substituted-characters %@" = "Typeset: %@";
 "ask.cancel" = "Cancel";
@@ -190,7 +190,6 @@
 "onboarding.coach.waiting" = "Working on it...";
 "onboarding.coach.keep" = "There it is, in your handwriting. Tap Keep.";
 "onboarding.coach.done" = "Nice. That's how it works.";
-"onboarding.coach.plot.hint" = "Use ^ for powers.";
 "onboarding.subscribe.title" = "Keep asking with Premium";
 "onboarding.subscribe.body" = "Your notebook, plots and handwriting are free forever. Premium adds AI answers that write back in your hand.";
 "onboarding.note.title" = "Welcome";

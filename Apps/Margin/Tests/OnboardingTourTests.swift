@@ -36,7 +36,7 @@ final class OnboardingTourTests: XCTestCase {
         XCTAssertEqual(OnboardingStep.solve.practiceVerb, .answer)
         XCTAssertEqual(OnboardingStep.plot.practiceVerb, .plot)
         XCTAssertNil(OnboardingStep.welcome.practiceVerb)
-        XCTAssertEqual(OnboardingStep.plot.example, "y = x^3 + cos(x)")
+        XCTAssertEqual(OnboardingStep.plot.example, "y = x³ + cos(x)")
     }
 
     func testPracticeWalksFromWritingToDone() {
@@ -107,7 +107,7 @@ final class OnboardingCopyTests: XCTestCase {
             "onboarding.disclosure.body", "onboarding.disclosure.accept", "onboarding.disclosure.decline",
             "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.cta", "onboarding.fine.annual",
             "onboarding.fine.monthly", "onboarding.plan.annual", "onboarding.plan.monthly", "onboarding.benefit.solve",
-            "onboarding.note.title", "onboarding.coach.plot.hint", "onboarding.pointer.write",
+            "onboarding.note.title", "onboarding.pointer.write",
             "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "plot.edit.title", "plot.edit.hint",
             "plot.edit.field", "plot.edit.plot", "plot.edit.cancel",
         ]
@@ -129,8 +129,7 @@ final class OnboardingCopyTests: XCTestCase {
 
     func testTheWriteInstructionNamesTheExample() {
         let text = PracticeCoachBar.instruction(step: .plot, progress: PracticeProgress(expected: .plot))
-        XCTAssertTrue(text.contains("y = x^3 + cos(x)"))
-        XCTAssertTrue(text.contains("^"))
+        XCTAssertTrue(text.contains("y = x³ + cos(x)"))
     }
 }
 

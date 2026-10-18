@@ -75,7 +75,6 @@ struct PracticeCoachBar: View {
     static func instruction(step: OnboardingStep, progress: PracticeProgress) -> String {
         let text = NSLocalizedString(instructionName(step: step, progress: progress), comment: "")
         guard progress.stage == .write, let example = step.example else { return text }
-        let hint = step == .plot ? " " + NSLocalizedString("onboarding.coach.plot.hint", comment: "") : ""
-        return String(format: text, example) + hint
+        return String(format: text, example)
     }
 }
