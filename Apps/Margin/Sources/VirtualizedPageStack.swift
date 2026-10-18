@@ -120,6 +120,7 @@ struct VirtualizedPageStack: View {
                         onUndo: { undoController.undo() },
                         onRedo: { undoController.redo() },
                         onAsk: invokeAsk,
+                        askIsLocked: askIsLocked,
                         dock: dock,
                         onGripChanged: changed,
                         onGripEnded: ended

@@ -108,7 +108,7 @@ final class OnboardingCopyTests: XCTestCase {
             "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.cta", "onboarding.fine.annual",
             "onboarding.fine.monthly", "onboarding.plan.annual", "onboarding.plan.monthly", "onboarding.benefit.solve",
             "onboarding.note.title", "onboarding.pointer.write",
-            "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "ask.seepremium", "ask.premium.tag",
+            "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "ask.seepremium",
             "ask.failure.subscribe", "premium.disclosure", "premium.cta.plain",
             "premium.restore", "premium.restore.none", "premium.error", "premium.pending", "premium.menu",
             "upgrade.banner.title", "upgrade.banner.subtitle", "upgrade.try", "upgrade.dismiss",

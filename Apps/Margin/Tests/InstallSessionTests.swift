@@ -8,25 +8,43 @@ import XCTest
 final class InstallSessionTests: XCTestCase {
     private static let base = URL(string: "https://proxy.example")!
 
+    /// Called from concurrent tasks (the session hands out assertions in parallel), so its state is locked.
     private final class FakeAttesting: InstallAttesting, @unchecked Sendable {
-        var isSupported = true
-        var keysMade = 0
-        var attestedHashes: [Data] = []
-        var assertedHashes: [Data] = []
-        var failNextAssertion = false
-        var invalidKeys: Set<String> = []
+        private let lock = NSLock()
+        private var state = FakeAttestingState()
+
+        var isSupported: Bool {
+            get { locked { $0.isSupported } }
+            set { locked { $0.isSupported = newValue } }
+        }
+        var keysMade: Int { locked { $0.keysMade } }
+        var attestedHashes: [Data] { locked { $0.attestedHashes } }
+        var assertedHashes: [Data] { locked { $0.assertedHashes } }
+        var invalidKeys: Set<String> {
+            get { locked { $0.invalidKeys } }
+            set { locked { $0.invalidKeys = newValue } }
+        }
+
+        private func locked<T>(_ body: (inout FakeAttestingState) -> T) -> T {
+            lock.lock()
+            defer { lock.unlock() }
+            return body(&state)
+        }
 
         func generateKey() async throws -> String {
-            keysMade += 1
-            return Data("key-\(keysMade)".utf8).base64EncodedString()
+            let count = locked {
+                $0.keysMade += 1
+                return $0.keysMade
+            }
+            return Data("key-\(count)".utf8).base64EncodedString()
         }
         func attestKey(_ keyID: String, clientDataHash: Data) async throws -> Data {
-            attestedHashes.append(clientDataHash)
+            locked { $0.attestedHashes.append(clientDataHash) }
             return Data("attestation-for-\(keyID)".utf8)
         }
         func generateAssertion(_ keyID: String, clientDataHash: Data) async throws -> Data {
-            if invalidKeys.contains(keyID) { throw InstallIdentityError.unsupported }
-            assertedHashes.append(clientDataHash)
+            guard !locked({ $0.invalidKeys.contains(keyID) }) else { throw InstallIdentityError.unsupported }
+            locked { $0.assertedHashes.append(clientDataHash) }
             return Data("assertion".utf8)
         }
     }
@@ -236,4 +254,12 @@ final class HostedAccessConfigurationTests: XCTestCase {
         XCTAssertFalse(configuration(installs: false, paid: true).usesHostedPlotReading)
         XCTAssertFalse(configuration(paid: true).usesHostedPlotReading)
     }
+}
+
+private struct FakeAttestingState {
+    var isSupported = true
+    var keysMade = 0
+    var attestedHashes: [Data] = []
+    var assertedHashes: [Data] = []
+    var invalidKeys: Set<String> = []
 }
