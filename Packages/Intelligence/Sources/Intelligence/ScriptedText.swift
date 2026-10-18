@@ -43,29 +43,34 @@ enum ScriptedText {
     private static func exponent(in characters: [Character], after caret: Int) -> (String, Int)? {
         let start = caret + 1
         guard start < characters.count else { return nil }
-        if characters[start] == "(" {
-            var depth = 0
-            var end = start
-            while end < characters.count {
-                if characters[end] == "(" { depth += 1 }
-                if characters[end] == ")" {
-                    depth -= 1
-                    if depth == 0 { break }
-                }
-                end += 1
+        if characters[start] == "(" { return bracketedExponent(in: characters, from: start) }
+        return plainExponent(in: characters, from: start)
+    }
+
+    private static func bracketedExponent(in characters: [Character], from start: Int) -> (String, Int)? {
+        var depth = 0
+        var end = start
+        while end < characters.count {
+            if characters[end] == "(" { depth += 1 }
+            if characters[end] == ")" {
+                depth -= 1
+                if depth == 0 { break }
             }
-            guard end < characters.count, end - start <= 14 else { return nil }
-            let inside = String(characters[(start + 1)..<end]).trimmingCharacters(in: .whitespaces)
-            return inside.isEmpty ? nil : (inside, end + 1)
+            end += 1
         }
+        guard end < characters.count, end - start <= 14 else { return nil }
+        let inside = String(characters[(start + 1)..<end]).trimmingCharacters(in: .whitespaces)
+        return inside.isEmpty ? nil : (inside, end + 1)
+    }
+
+    private static func plainExponent(in characters: [Character], from start: Int) -> (String, Int)? {
         var end = start
         if characters[end] == "-", end + 1 < characters.count, characters[end + 1].isNumber { end += 1 }
         if characters[end].isNumber {
             while end < characters.count, characters[end].isNumber { end += 1 }
             return (String(characters[start..<end]), end)
         }
-        if characters[start].isLetter { return (String(characters[start]), start + 1) }
-        return nil
+        return characters[start].isLetter ? (String(characters[start]), start + 1) : nil
     }
 
     /// Draws `pieces` left to right inside `frame`. `draw(text, frame, scale)` renders one piece at `scale` times the
