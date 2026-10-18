@@ -82,16 +82,30 @@ struct PilotCloudConfiguration: Sendable {
 
     private let defaults: UserDefaults
     private let secrets: any PilotSecretStore
+    /// This install's App Attest identity (ADR-031), when the build and device can attest. Nil in tests and in
+    /// builds without the capability.
+    var installs: (any InstallCredentialSource)?
+    /// Whether the App Store says this user has Premium. Read at request time.
+    var isPaid: @Sendable () -> Bool
 
     init(
         defaults: UserDefaults = .standard,
-        secrets: any PilotSecretStore = BundledFallbackSecretStore(primary: KeychainPilotSecretStore())
+        secrets: any PilotSecretStore = BundledFallbackSecretStore(primary: KeychainPilotSecretStore()),
+        installs: (any InstallCredentialSource)? = nil,
+        isPaid: @escaping @Sendable () -> Bool = { false }
     ) {
         self.defaults = defaults
         self.secrets = secrets
+        self.installs = installs
+        self.isPaid = isPaid
     }
 
-    static var standard: PilotCloudConfiguration { PilotCloudConfiguration() }
+    /// The app's real configuration: the token if this build has one, else this install's attested identity.
+    static var standard: PilotCloudConfiguration {
+        var configuration = PilotCloudConfiguration(isPaid: { PaidPlanFlag.shared.isPaid })
+        configuration.installs = InstallSessionRegistry.shared.session(for: configuration.serverURL)
+        return configuration
+    }
 
     /// Whether this install may use the hosted model. **Entitlement, not a toggle** (ADR-029): hosted answers
     /// are part of the premium plan, so there is no consent switch in the app. Until StoreKit entitlements
@@ -99,7 +113,16 @@ struct PilotCloudConfiguration: Sendable {
     /// the free tier and never makes a cloud call. The provider layer still gates on this (invariant 8), and
     /// the purchase flow must carry the third-party AI disclosure and acceptance (BUSINESS.md 5.1.2(i)).
     var plan: Plan { hasToken ? .pilot : .free }
-    var isEntitled: Bool { plan.includesHostedAsk }
+
+    /// Whether a hosted request may leave the device at all: this build has the pilot token, or this install can
+    /// attest and the server decides (three free asks, then Premium, ADR-031). Without either, nothing is sent.
+    var isEntitled: Bool { plan.includesHostedAsk || installs?.isAvailable == true }
+
+    /// Whether Plot should have the model read the handwriting. A plot costs nothing for a free install, so it never
+    /// spends one of the three free asks: only the pilot token or a paying, attested install uses the model.
+    var usesHostedPlotReading: Bool {
+        serverURL != nil && (hasToken || (isPaid() && installs?.isAvailable == true))
+    }
 
     var serverText: String {
         get { defaults.string(forKey: Self.urlKey) ?? Self.defaultServerText }
@@ -132,10 +155,64 @@ struct ConfiguredProxyTransport: ProxyClientTransport {
     let configuration: PilotCloudConfiguration
 
     func response(to request: ProxyClientRequest) async throws -> Data {
-        guard let url = configuration.serverURL,
-            let transport = HTTPSProxyTransport(baseURL: url, token: { configuration.token })
-        else { throw ProxyTransportFailure.refused }
-        return try await transport.response(to: request)
+        guard let url = configuration.serverURL else { throw ProxyTransportFailure.refused }
+        // The pilot token wins when there is one (the owner's build); otherwise the request is signed by this install.
+        let token = configuration.token
+        let installs = token == nil ? configuration.installs : nil
+        let authorizer: HTTPSProxyTransport.Authorizer = { body in
+            if let token { return ["Authorization": "Bearer \(token)"] }
+            guard let installs, installs.isAvailable else { throw ProxyTransportFailure.unauthorized }
+            return try await installs.headers(forBody: body)
+        }
+        guard let transport = HTTPSProxyTransport(baseURL: url, authorizer: authorizer) else {
+            throw ProxyTransportFailure.refused
+        }
+        do {
+            return try await transport.response(to: request)
+        } catch ProxyTransportFailure.unauthorized {
+            // The server did not accept this install (a reinstall invalidates its key): register afresh next time.
+            await installs?.rejected()
+            throw ProxyTransportFailure.unauthorized
+        }
+    }
+}
+
+/// One App Attest identity per server address, created on first use.
+final class InstallSessionRegistry: @unchecked Sendable {
+    static let shared = InstallSessionRegistry()
+
+    private let lock = NSLock()
+    private var sessions: [URL: InstallSession] = [:]
+
+    func session(for url: URL?) -> InstallSession? {
+        guard let url else { return nil }
+        lock.lock()
+        defer { lock.unlock() }
+        if let existing = sessions[url] { return existing }
+        let created = InstallSession(baseURL: url)
+        sessions[url] = created
+        return created
+    }
+}
+
+/// Whether the user has Premium, readable from any thread (the provider layer asks at request time).
+final class PaidPlanFlag: @unchecked Sendable {
+    static let shared = PaidPlanFlag()
+
+    private let lock = NSLock()
+    private var paid = false
+
+    var isPaid: Bool {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return paid
+        }
+        set {
+            lock.lock()
+            paid = newValue
+            lock.unlock()
+        }
     }
 }
 
@@ -156,7 +233,7 @@ extension VirtualizedPageStack {
         // local); anyone else, a typed correction, or any hosted failure reads it on the device.
         return PlotRoutingProvider(
             plot: HostedPlotSpecProvider(
-                hosted: cloud, local: LocalPlotSpecProvider(), isReady: { configuration.isReady }),
+                hosted: cloud, local: LocalPlotSpecProvider(), isReady: { configuration.usesHostedPlotReading }),
             other: FallbackSpecProvider(
                 primary: LocalArithmeticSpecProvider(),
                 fallback: cloud,

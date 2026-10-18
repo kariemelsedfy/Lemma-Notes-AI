@@ -9,8 +9,12 @@ public struct HTTPSProxyTransport: ProxyClientTransport {
     public static let path = "/v1/answer"
     public static let maxReplyBytes = 70_000
 
+    /// Produces the credential headers for one request body: a bearer token, or an App Attest assertion over the
+    /// body (ADR-031). Throws `ProxyTransportFailure.unauthorized` when there is nothing to present.
+    public typealias Authorizer = @Sendable (_ body: Data) async throws -> [String: String]
+
     private let baseURL: URL
-    private let token: @Sendable () -> String?
+    private let authorizer: Authorizer
     private let send: Send
     private let timeout: TimeInterval
 
@@ -19,20 +23,42 @@ public struct HTTPSProxyTransport: ProxyClientTransport {
         baseURL: URL, token: @escaping @Sendable () -> String?, timeout: TimeInterval = 45,
         send: @escaping Send = { try await URLSession(configuration: .ephemeral).data(for: $0) }
     ) {
+        self.init(
+            baseURL: baseURL,
+            authorizer: { _ in
+                guard let token = token(), !token.isEmpty else { throw ProxyTransportFailure.unauthorized }
+                return ["Authorization": "Bearer \(token)"]
+            }, timeout: timeout, send: send)
+    }
+
+    public init?(
+        baseURL: URL, authorizer: @escaping Authorizer, timeout: TimeInterval = 45,
+        send: @escaping Send = { try await URLSession(configuration: .ephemeral).data(for: $0) }
+    ) {
         guard baseURL.scheme == "https", baseURL.host?.isEmpty == false else { return nil }
         self.baseURL = baseURL
-        self.token = token
+        self.authorizer = authorizer
         self.timeout = timeout
         self.send = send
     }
 
     public func response(to request: ProxyClientRequest) async throws -> Data {
-        guard let token = token(), !token.isEmpty else { throw ProxyTransportFailure.unauthorized }
+        let body = try JSONEncoder().encode(request)
+        let credentials: [String: String]
+        do {
+            credentials = try await authorizer(body)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let failure as ProxyTransportFailure {
+            throw failure
+        } catch {
+            throw ProxyTransportFailure.unauthorized
+        }
         var http = URLRequest(url: baseURL.appendingPathComponent(Self.path), timeoutInterval: timeout)
         http.httpMethod = "POST"
-        http.httpBody = try JSONEncoder().encode(request)
+        http.httpBody = body
         http.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        http.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        for (name, value) in credentials { http.setValue(value, forHTTPHeaderField: name) }
         let data: Data
         let response: URLResponse
         do {
@@ -55,6 +81,7 @@ public struct HTTPSProxyTransport: ProxyClientTransport {
     private static func failure(forStatus status: Int) -> ProxyTransportFailure {
         switch status {
         case 401, 403: return .unauthorized
+        case 402: return .paymentRequired
         case 429: return .overBudget
         case 408, 504: return .timeout
         default: return .refused

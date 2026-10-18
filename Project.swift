@@ -18,6 +18,15 @@ let developmentTeam = Environment.developmentTeam.getString(default: "")
 /// approved clean-app test may use an alternate prefix.
 let bundleIDPrefix = Environment.bundleIdPrefix.getString(default: "edu.bowdoin")
 
+/// App Attest (ADR-031) needs a capability a free Apple ID cannot provision, so the entitlement is added only when
+/// asked for: `TUIST_APP_ATTEST=development` for builds run from Xcode on a device, `production` for TestFlight and
+/// the App Store. Unset, the project builds and signs exactly as before and the app simply has no install identity.
+let appAttestEnvironment = Environment.appAttest.getString(default: "")
+let appEntitlements: Entitlements? =
+    ["development", "production"].contains(appAttestEnvironment)
+    ? .dictionary(["com.apple.developer.devicecheck.appattest-environment": .string(appAttestEnvironment)])
+    : nil
+
 let signingSettings: SettingsDictionary =
     developmentTeam.isEmpty
     ? [:]
@@ -49,6 +58,7 @@ let project = Project(
             ]),
             sources: ["Apps/Margin/Sources/**"],
             resources: ["Apps/Margin/Resources/**"],
+            entitlements: appEntitlements,
             dependencies: [
                 .package(product: "DocumentStore"),
                 .package(product: "Intelligence"),

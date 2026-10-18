@@ -161,6 +161,7 @@ final class ProxySpecProviderTests: XCTestCase {
                 case .refused: XCTAssertEqual(error as? ProxyProviderFailure, .refused)
                 case .unauthorized: XCTAssertEqual(error as? ProxyProviderFailure, .unauthorized)
                 case .overBudget: XCTAssertEqual(error as? ProxyProviderFailure, .budgetExceeded)
+                case .paymentRequired: XCTAssertEqual(error as? ProviderError, .thirdPartyConsentRequired)
                 }
             }
         }

@@ -45,7 +45,7 @@ final class HTTPSProxyTransportTests: XCTestCase {
 
     func testStatusAndNetworkErrorsReduceToTransportFailures() async throws {
         let cases: [(Int, ProxyTransportFailure)] = [
-            (401, .unauthorized), (403, .unauthorized), (429, .overBudget), (504, .timeout),
+            (401, .unauthorized), (403, .unauthorized), (402, .paymentRequired), (429, .overBudget), (504, .timeout),
             (422, .refused), (500, .refused), (302, .refused),
         ]
         for (status, failure) in cases {
@@ -78,6 +78,47 @@ final class HTTPSProxyTransportTests: XCTestCase {
             XCTFail("Expected cancellation")
         } catch is CancellationError {
         }
+    }
+
+    // MARK: - Pluggable credentials (App Attest)
+
+    func testTheAuthorizerSeesTheExactBodyAndItsHeadersAreSent() async throws {
+        let seen = BodyBox()
+        let sent = BodyBox()
+        let transport = try XCTUnwrap(
+            HTTPSProxyTransport(
+                baseURL: Self.base,
+                authorizer: { body in
+                    await seen.set(body)
+                    return ["x-install-key": "K", "x-install-assertion": "A"]
+                },
+                send: { request in
+                    await sent.set(request.httpBody ?? Data())
+                    XCTAssertEqual(request.value(forHTTPHeaderField: "x-install-key"), "K")
+                    XCTAssertEqual(request.value(forHTTPHeaderField: "x-install-assertion"), "A")
+                    XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+                    return (Data(), Self.reply(500))
+                }))
+        await expect(.refused, transport)
+        let authorizedBody = await seen.value
+        let sentBody = await sent.value
+        XCTAssertFalse(authorizedBody.isEmpty)
+        XCTAssertEqual(authorizedBody, sentBody, "the assertion must cover exactly the bytes that are sent")
+    }
+
+    func testAnAuthorizerThatCannotProduceCredentialsFailsClosedWithoutSending() async throws {
+        let calls = BodyBox()
+        struct Unsupported: Error {}
+        let transport = try XCTUnwrap(
+            HTTPSProxyTransport(
+                baseURL: Self.base, authorizer: { _ in throw Unsupported() },
+                send: { _ in
+                    await calls.set(Data([1]))
+                    return (Data(), Self.reply(200))
+                }))
+        await expect(.unauthorized, transport)
+        let sent = await calls.value
+        XCTAssertTrue(sent.isEmpty, "nothing may be sent without credentials")
     }
 
     // MARK: - helpers
@@ -118,4 +159,9 @@ private actor Seen {
 private actor Counter {
     private(set) var count = 0
     func bump() { count += 1 }
+}
+
+private actor BodyBox {
+    private(set) var value = Data()
+    func set(_ data: Data) { value = data }
 }

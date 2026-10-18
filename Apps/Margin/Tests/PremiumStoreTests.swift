@@ -23,6 +23,8 @@ final class PremiumStoreTests: XCTestCase {
             return outcome
         }
         func currentFacts() async -> [EntitlementFact] { facts }
+        var signed: [String] = []
+        func signedTransactions() async -> [String] { signed }
         func changes() -> AsyncStream<Void> { stream.stream }
         func restore() async throws { if let restoreGrants { facts.append(restoreGrants) } }
         func announceChange() { stream.continuation.yield() }
@@ -110,6 +112,30 @@ final class PremiumStoreTests: XCTestCase {
         XCTAssertEqual(store.plan, .premium)
     }
 
+    func testASubscribersTransactionIsUploadedOncePerDistinctTransaction() async {
+        let backend = FakeBackend()
+        backend.facts = [fact(expires: 1_000_000_000_000)]
+        backend.signed = ["jws-one"]
+        let uploads = UploadLog()
+        let store = PremiumStore(backend: backend, uploadTransaction: { await uploads.add($0) })
+        await store.start()
+        await store.refresh()
+        backend.signed = ["jws-one", "jws-two"]
+        await store.refresh()
+        let seen = await uploads.items
+        XCTAssertEqual(seen, ["jws-one", "jws-two"])
+    }
+
+    func testAFreeUserUploadsNothing() async {
+        let backend = FakeBackend()
+        backend.signed = ["jws"]
+        let uploads = UploadLog()
+        let store = PremiumStore(backend: backend, uploadTransaction: { await uploads.add($0) })
+        await store.start()
+        let seen = await uploads.items
+        XCTAssertTrue(seen.isEmpty)
+    }
+
     func testARenewalOrRefundAnnouncedByTheStoreIsPickedUp() async throws {
         let backend = FakeBackend()
         let store = PremiumStore(backend: backend)
@@ -119,4 +145,9 @@ final class PremiumStoreTests: XCTestCase {
         for _ in 0..<50 where store.plan == .free { try await Task.sleep(for: .milliseconds(20)) }
         XCTAssertEqual(store.plan, .premium)
     }
+}
+
+private actor UploadLog {
+    private(set) var items: [String] = []
+    func add(_ item: String) { items.append(item) }
 }
