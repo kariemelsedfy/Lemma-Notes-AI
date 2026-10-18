@@ -15,8 +15,14 @@ public struct SelectionReading: Equatable, Sendable {
     /// Vision's box for each character, in the crop's normalised coordinates (origin bottom-left). Used only on
     /// the device, to learn the writer's characters (`GlyphHarvester`); never part of a request.
     public let characters: [RecognizedCharacter]
+    /// True when the writer typed this text to correct a reading, so it is exact and was never handwriting. Such a
+    /// reading is plotted as typed and never sent to a model.
+    public let isCorrection: Bool
 
-    public init(transcript: String, confidence: Float, characters: [RecognizedCharacter] = []) {
+    public init(
+        transcript: String, confidence: Float, characters: [RecognizedCharacter] = [], isCorrection: Bool = false
+    ) {
+        self.isCorrection = isCorrection
         self.transcript = transcript
         self.confidence = confidence.isFinite ? min(max(confidence, 0), 1) : 0
         self.characters = characters
