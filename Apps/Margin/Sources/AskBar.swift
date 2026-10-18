@@ -115,6 +115,8 @@ struct AskBar: View {
     var onDismiss: () -> Void = {}
     /// Set when the answer is a plot: lets the writer correct the formula that was read.
     var onEditReading: (() -> Void)?
+    /// Set when the Ask needs Premium: the failure becomes an invitation instead of an error.
+    var onSeePremium: (() -> Void)?
 
     @State private var showsDetail = false
 
@@ -235,7 +237,7 @@ struct AskBar: View {
 
     private func failure(_ failure: AskFailure) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.circle")
+            Image(systemName: onSeePremium == nil ? "exclamationmark.circle" : "sparkles")
                 .font(.system(size: 20))
                 .foregroundStyle(MarginColor.accent)
             VStack(alignment: .leading, spacing: 2) {
@@ -255,10 +257,13 @@ struct AskBar: View {
                     }
                 #endif
             }
+            if let onSeePremium {
+                decisionButton("ask.seepremium", tint: MarginColor.accent, action: onSeePremium)
+            }
             if let onEditReading {
                 decisionButton("ask.edit", tint: MarginColor.accent, action: onEditReading)
             }
-            if failure.isRetryable {
+            if failure.isRetryable, onSeePremium == nil {
                 decisionButton("ask.retry", tint: MarginColor.accent, action: onRetry)
             }
             decisionButton("ask.dismiss", tint: MarginColor.secondaryText, action: onDismiss)
@@ -268,7 +273,9 @@ struct AskBar: View {
 
     @ViewBuilder
     private func failureText(_ failure: AskFailure) -> some View {
-        if let failureOverride {
+        if onSeePremium != nil {
+            Text("ask.failure.subscribe")
+        } else if let failureOverride {
             Text(verbatim: failureOverride)
         } else {
             Text(failure.messageKey)

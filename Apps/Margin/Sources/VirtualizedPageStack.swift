@@ -20,6 +20,7 @@ struct VirtualizedPageStack: View {
     @State var ghostDragging = false
     /// The formula being corrected, while the editor is open.
     @State var plotFormula: String?
+    @State var paywallPresented = false
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
@@ -138,7 +139,8 @@ struct VirtualizedPageStack: View {
                         onReject: { rejectSuggestion() },
                         onRetry: { retryAsk() },
                         onDismiss: { askModel.dismissFailure() },
-                        onEditReading: plotEditAction
+                        onEditReading: plotEditAction,
+                        onSeePremium: askModel.needsSubscription ? { paywallPresented = true } : nil
                     )
                 }
 
@@ -165,6 +167,9 @@ struct VirtualizedPageStack: View {
         .background(.background)
         .modifier(TourPointerOverlay(target: tourTarget))
         .modifier(PlotFormulaEditing(formula: $plotFormula, onApply: { replot(from: $0) }))
+        .fullScreenCover(isPresented: $paywallPresented) {
+            PremiumPaywallView(onClose: { paywallPresented = false })
+        }
         .toolbar { ToolbarItem(placement: .topBarTrailing) { pageOptionsMenu } }
         .background { PencilInteractionHost(tool: $selectedTool, switcher: $pencilSwitcher) }
         .onAppear {

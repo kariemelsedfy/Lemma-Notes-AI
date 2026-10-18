@@ -4,10 +4,13 @@ import SwiftUI
 struct MarginApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var library = NotebookLibrary()
+    @StateObject private var premium = PremiumStore()
 
     var body: some Scene {
         WindowGroup {
             NotebookLibraryView(library: library)
+                .environmentObject(premium)
+                .task { await premium.start() }
         }
         .onChange(of: scenePhase) { _, phase in
             // Leaving the foreground is the last reliable moment to write. The autosave's

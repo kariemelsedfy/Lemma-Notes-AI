@@ -80,5 +80,20 @@ let project = Project(
             ],
             settings: .settings(base: signingSettings)
         ),
+    ],
+    schemes: [
+        // The shared scheme, with the local StoreKit configuration attached so purchases can be tried in the
+        // Simulator and from Xcode without App Store Connect (`PREMIUM_AND_ONBOARDING_PLAN.md` §6).
+        .scheme(
+            name: "Margin",
+            shared: true,
+            buildAction: .buildAction(targets: ["Margin"]),
+            testAction: .targets(["MarginTests"]),
+            runAction: .runAction(
+                configuration: .debug,
+                executable: "Margin",
+                options: .options(storeKitConfigurationPath: "Apps/Margin/StoreKit/Margin.storekit")
+            )
+        )
     ]
 )

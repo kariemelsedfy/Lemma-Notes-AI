@@ -111,22 +111,7 @@ final class AskPipeline {
         )
         guard model.apply(.intentClassified(request)) else { return }
 
-        let spec: ValidatedSpec
-        do {
-            spec = try await provider.spec(for: request)
-        } catch is CancellationError {
-            // Already handled by whoever cancelled; saying so again would overwrite the
-            // reason they recorded.
-            return
-        } catch let error as LocalArithmeticFailure {
-            guard !Task.isCancelled else { return }
-            model.failedLocally(error)
-            model.apply(.fail(.unreadable))
-            return
-        } catch {
-            fail(with: error, intent: verb.intent)
-            return
-        }
+        guard let spec = await fetchSpec(for: request, verb: verb) else { return }
         guard !Task.isCancelled, model.apply(.specValidated(spec)) else { return }
 
         place(
@@ -136,6 +121,31 @@ final class AskPipeline {
             input: input,
             requestID: request.cacheKey
         )
+    }
+
+    /// The provider's answer, or nil after the failure has been shown (or the Ask was cancelled).
+    private func fetchSpec(for request: SpecRequest, verb: AskVerb) async -> ValidatedSpec? {
+        do {
+            return try await provider.spec(for: request)
+        } catch is CancellationError {
+            // Already handled by whoever cancelled; saying so again would overwrite the
+            // reason they recorded.
+            return nil
+        } catch let error as LocalArithmeticFailure {
+            guard !Task.isCancelled else { return nil }
+            model.failedLocally(error)
+            model.apply(.fail(.unreadable))
+            return nil
+        } catch ProviderError.thirdPartyConsentRequired {
+            // Nothing was sent: this install is not entitled to the hosted model. Offer Premium, not an error.
+            guard !Task.isCancelled else { return nil }
+            model.requireSubscription()
+            model.apply(.fail(.unreadable))
+            return nil
+        } catch {
+            fail(with: error, intent: verb.intent)
+            return nil
+        }
     }
 
     private func selectionReading(of crop: InkRasterImage, override: String?) async -> SelectionReading {

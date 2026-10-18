@@ -26,6 +26,8 @@ struct NotebookLibraryView: View {
     @State var calibrationPresented = false
     @State var addCharactersPresented = false
     @StateObject var handwriting = HandwritingStyleStore()
+    @EnvironmentObject var premium: PremiumStore
+    @State var paywallPresented = false
     @StateObject var onboarding = OnboardingCoordinator(hostedAvailable: { PilotCloudConfiguration.standard.isReady })
     #if DEBUG
         @State private var samplePresented = false
@@ -150,6 +152,9 @@ struct NotebookLibraryView: View {
             }
         }
         .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
+        .fullScreenCover(isPresented: $paywallPresented) {
+            PremiumPaywallView(onClose: { paywallPresented = false })
+        }
         .sheet(isPresented: $calibrationPresented) { CalibrationView(store: handwriting) }
         .sheet(isPresented: $addCharactersPresented) { AddCharactersView(store: handwriting) }
         #if DEBUG
@@ -210,6 +215,9 @@ struct NotebookLibraryView: View {
                 Button("sample.open") { samplePresented = true }
                     .disabled(handwriting.bank == nil)
             #endif
+            if premium.plan == .free {
+                Button("premium.menu") { paywallPresented = true }
+            }
             Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }
             Button("calibration.add") { addCharactersPresented = true }

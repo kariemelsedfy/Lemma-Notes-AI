@@ -35,8 +35,9 @@ final class LocalArithmeticAskTests: XCTestCase {
     }
 
     func testUnsupportedAndUnclearReadingsLeaveNoInkAndHaveDistinctCopy() async throws {
-        let cases: [(SelectionReading, LocalArithmeticFailure)] = [
-            (SelectionReading(transcript: "x+2=", confidence: 0.95), .unsupported),
+        // What local arithmetic cannot answer is offered as Premium (hosted); an unreadable selection keeps its copy.
+        let cases: [(SelectionReading, LocalArithmeticFailure?)] = [
+            (SelectionReading(transcript: "x+2=", confidence: 0.95), nil),
             (.unreadable, .unclear),
         ]
         for (reading, expected) in cases {
@@ -46,6 +47,7 @@ final class LocalArithmeticAskTests: XCTestCase {
 
             XCTAssertEqual(harness.model.phase, .failed(.unreadable))
             XCTAssertEqual(harness.model.localFailure, expected)
+            XCTAssertEqual(harness.model.needsSubscription, expected == nil)
             XCTAssertTrue(harness.suggestions.strokes.isEmpty)
             XCTAssertEqual(harness.engine.strokes.count, 1)
         }
