@@ -31,6 +31,7 @@ struct LibraryHomeGrid: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 header
+                UpgradeBanner()
                 tabs
                 if visible.isEmpty {
                     empty

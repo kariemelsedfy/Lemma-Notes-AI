@@ -58,6 +58,7 @@ struct LibrarySidebar: View {
             }
         }
         .navigationTitle("library.title")
+        .safeAreaInset(edge: .bottom) { UpgradeSidebarCard() }
     }
 
     private func count(_ value: Int) -> some View {

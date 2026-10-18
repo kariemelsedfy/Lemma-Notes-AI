@@ -77,6 +77,14 @@ final class PremiumStore: ObservableObject {
     @Published private(set) var phase = Phase.idle
     /// Set after a restore that found nothing, so the paywall can say so.
     @Published private(set) var restoreFoundNothing = false
+    /// The Premium screen is showing. One cover at the root of the app presents it, so any view that wants it
+    /// calls `showPaywall()` instead of carrying its own.
+    @Published var paywallPresented = false
+
+    /// Whether to invite the user to upgrade (every upgrade prompt in the app reads this).
+    var offersUpgrade: Bool { plan == .free }
+
+    func showPaywall() { paywallPresented = true }
 
     private let backend: any StoreBackend
     private var listener: Task<Void, Never>?
