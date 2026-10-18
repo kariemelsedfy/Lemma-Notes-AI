@@ -109,3 +109,15 @@ extension InstallRecord {
         originalTransactionID = transaction.originalTransactionID
     }
 }
+
+extension InstallAllowance {
+    /// Gives back a hold for a request that was not served: the ask or the money was never spent.
+    public static func refund(_ record: inout InstallRecord, reserved: Int64, at now: Date) {
+        switch record.effectivePlan(at: now) {
+        case .free: record.tourAsksUsed = max(0, record.tourAsksUsed - 1)
+        case .trial, .premium:
+            guard record.usageMonth == month(of: now) else { return }
+            record.usageMicros = max(0, record.usageMicros - reserved)
+        }
+    }
+}

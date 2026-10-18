@@ -25,7 +25,17 @@ actor PilotAdmission {
     }
 
     func invoke(_ body: Data, proof: String?, transport: any PilotModelTransport) async throws -> PilotAnswer {
-        let validated = try await admission.validate(body, proof: proof)
+        try await invoke(try await admission.validate(body, proof: proof), transport: transport)
+    }
+
+    /// For a caller already authenticated by App Attest: same checks, ledger and model call, no bearer token.
+    func invoke(_ body: Data, identity: PilotIdentity, transport: any PilotModelTransport) async throws -> PilotAnswer {
+        try await invoke(try await admission.validate(body, identity: identity), transport: transport)
+    }
+
+    private func invoke(
+        _ validated: (request: AdmittedRequest, identity: PilotIdentity), transport: any PilotModelTransport
+    ) async throws -> PilotAnswer {
         guard let pilotID = UUID(uuidString: validated.identity.subjectID) else {
             throw AdmissionError.unauthorized
         }

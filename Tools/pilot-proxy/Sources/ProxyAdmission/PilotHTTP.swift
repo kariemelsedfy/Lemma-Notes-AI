@@ -83,7 +83,8 @@ struct HTTPReply: Equatable, Sendable {
     func encoded() -> Data {
         let reasons = [
             200: "OK", 400: "Bad Request", 401: "Unauthorized", 404: "Not Found", 405: "Method Not Allowed",
-            411: "Length Required", 413: "Payload Too Large", 422: "Unprocessable Content",
+            402: "Payment Required", 409: "Conflict", 411: "Length Required", 413: "Payload Too Large",
+            422: "Unprocessable Content",
             429: "Too Many Requests", 500: "Internal Server Error",
         ]
         let head =
@@ -99,6 +100,9 @@ struct PilotRouter: Sendable {
     static let healthPath = "/status"
 
     let service: PilotService
+    /// Nil on a pilot-token-only deployment; the install routes then do not exist.
+    var installs: InstallGate?
+
     func route(_ head: HTTPHead, body: Data) async -> HTTPReply {
         switch head.path {
         case Self.healthPath:
@@ -107,12 +111,28 @@ struct PilotRouter: Sendable {
         case Self.answerPath:
             guard head.method == "POST" else { return HTTPReply(status: 405) }
             guard body.count == head.contentLength else { return HTTPReply(status: 400) }
+            if let installs, let credentials = installs.credentials(in: head.headers) {
+                return Self.reply(for: await service.handle(body: body, install: credentials, gate: installs))
+            }
             let proof = Self.bearer(head.headers["authorization"])
             let outcome = await service.handle(body: body, proof: proof)
             return Self.reply(for: outcome)
+        case InstallGate.challengePath, InstallGate.registerPath, InstallGate.entitlementPath:
+            return await routeInstall(head, body: body)
         default:
             return HTTPReply(status: 404)
         }
+    }
+
+    private func routeInstall(_ head: HTTPHead, body: Data) async -> HTTPReply {
+        guard let installs else { return HTTPReply(status: 404) }
+        if head.path == InstallGate.challengePath {
+            return head.method == "GET" ? installs.challenge() : HTTPReply(status: 405)
+        }
+        guard head.method == "POST" else { return HTTPReply(status: 405) }
+        guard body.count == head.contentLength else { return HTTPReply(status: 400) }
+        return head.path == InstallGate.registerPath
+            ? await installs.register(body: body) : await installs.entitlement(headers: head.headers, body: body)
     }
 
     /// Admission authorizer for the single pilot device: the presented bearer token must equal the configured
@@ -130,6 +150,7 @@ struct PilotRouter: Sendable {
         case .unauthorized: return HTTPReply(status: 401)
         case .refused: return HTTPReply(status: 422)
         case .overBudget: return HTTPReply(status: 429)
+        case .paymentRequired: return HTTPReply(status: 402)
         }
     }
 

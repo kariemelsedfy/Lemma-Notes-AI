@@ -18,6 +18,17 @@ public enum PilotServer {
         let token: String
         let subjectID: String
         let geminiKey: String
+        /// Present only when the deployment accepts attested installs (ADR-031); absent, the install routes are off.
+        let installs: Installs?
+
+        struct Installs: Equatable {
+            /// `TEAMID.bundleid`, as hashed into every App Attest object.
+            let appID: String
+            let bundleID: String
+            let productIDs: Set<String>
+            let challengeSecret: Data
+            let allowsDevelopment: Bool
+        }
 
         init(environment: [String: String]) throws {
             func value(_ name: String) throws -> String {
@@ -34,6 +45,32 @@ public enum PilotServer {
             subjectID = try value("PILOT_SUBJECT")
             guard UUID(uuidString: subjectID) != nil else { throw ConfigurationError.invalid("PILOT_SUBJECT") }
             geminiKey = try value("GEMINI_API_KEY")
+            installs = try Self.installs(environment)
+        }
+
+        /// All-or-nothing: setting `APPLE_APP_ID` turns attested installs on and then requires the rest, so a
+        /// half-configured deployment fails to start instead of running open.
+        static func installs(_ environment: [String: String]) throws -> Installs? {
+            guard let appID = environment["APPLE_APP_ID"], !appID.isEmpty else { return nil }
+            func value(_ name: String) throws -> String {
+                guard let found = environment[name], !found.isEmpty else { throw ConfigurationError.missing(name) }
+                return found
+            }
+            guard appID.contains("."), appID.split(separator: ".").first?.count == 10 else {
+                throw ConfigurationError.invalid("APPLE_APP_ID")
+            }
+            let secret = Data(try value("CHALLENGE_SECRET").utf8)
+            guard secret.count >= 32 else { throw ConfigurationError.invalid("CHALLENGE_SECRET") }
+            let products = Set(
+                try value("PREMIUM_PRODUCT_IDS").split(separator: ",").map {
+                    String($0).trimmingCharacters(in: .whitespaces)
+                })
+            guard !products.isEmpty, !products.contains("") else {
+                throw ConfigurationError.invalid("PREMIUM_PRODUCT_IDS")
+            }
+            return Installs(
+                appID: appID, bundleID: try value("APPLE_BUNDLE_ID"), productIDs: products, challengeSecret: secret,
+                allowsDevelopment: environment["ALLOW_APP_ATTEST_DEVELOPMENT"] == "1")
         }
     }
 
@@ -54,7 +91,22 @@ public enum PilotServer {
         let transport = GeminiHTTPTransport(key: { key }, send: { try await session.data(for: $0) })
         let gate = AdmissionGate(authorize: PilotRouter.authorizer(token: config.token, subjectID: config.subjectID))
         let service = PilotService(pilot: PilotAdmission(admission: gate, ledger: ledger), transport: transport)
-        let server = PilotSocketServer(router: PilotRouter(service: service), port: config.port)
+        var router = PilotRouter(service: service)
+        if let settings = config.installs {
+            let trust = InstallTrust(
+                verifier: try AppAttestVerifier.standard(
+                    appID: settings.appID, allowsDevelopment: settings.allowsDevelopment),
+                challenges: AttestationChallenges(secret: settings.challengeSecret),
+                store: FirestoreInstallStore(
+                    projectID: config.projectID, token: { try await access.value() }, send: send))
+            router.installs = InstallGate(
+                trust: trust,
+                transactions: try AppleTransactionVerifier.standard(
+                    bundleID: settings.bundleID, productIDs: settings.productIDs),
+                now: { Date() })
+            log("pilot-proxy: attested installs enabled")
+        }
+        let server = PilotSocketServer(router: router, port: config.port)
         let bound = try server.start()
         log("pilot-proxy: listening on \(bound)")
         while true { try await Task.sleep(for: .seconds(3_600)) }

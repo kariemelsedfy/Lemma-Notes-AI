@@ -89,6 +89,13 @@ actor AdmissionGate {
         let identity = await authorize(proof)
         try Task.checkCancellation()
         guard let identity, !identity.subjectID.isEmpty else { throw AdmissionError.unauthorized }
+        return try validate(body, identity: identity)
+    }
+
+    /// Validates a body for a caller that is already authenticated (an attested install, ADR-031).
+    func validate(_ body: Data, identity: PilotIdentity) throws -> (request: AdmittedRequest, identity: PilotIdentity) {
+        guard body.count <= 3_000_000 else { throw AdmissionError.oversized }
+        guard !identity.subjectID.isEmpty else { throw AdmissionError.unauthorized }
         let request: AdmittedRequest
         do {
             request = try JSONDecoder().decode(AdmittedRequest.self, from: body)

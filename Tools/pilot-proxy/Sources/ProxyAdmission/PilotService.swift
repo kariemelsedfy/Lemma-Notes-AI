@@ -7,6 +7,8 @@ enum PilotStatus: UInt8, Sendable {
     case unauthorized = 1
     case refused = 2
     case overBudget = 3
+    /// A free install has used its guided-tour asks: the app shows Premium (HTTP 402).
+    case paymentRequired = 4
 }
 
 struct PilotOutcome: Equatable, Sendable {
@@ -34,6 +36,9 @@ struct PilotService: Sendable {
         switch error {
         case AdmissionError.unauthorized: return .unauthorized
         case LedgerError.overBudget, LedgerError.rateLimited, LedgerError.costExceeded: return .overBudget
+        case AllowanceError.subscriptionRequired: return .paymentRequired
+        case AllowanceError.allowanceUsedUp: return .overBudget
+        case is AppAttestError, is InstallTrustError: return .unauthorized
         default: return .refused
         }
     }
