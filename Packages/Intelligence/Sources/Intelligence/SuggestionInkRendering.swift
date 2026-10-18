@@ -76,15 +76,29 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
                     .map { InkLineGrouping.bounds(of: $0).width } ?? 0
             }
             guard lines.count > 1 else {
-                return try TypesetStyle.strokes(for: text, in: frame, style: style)
+                return try typesetRow(text, in: frame, style: style)
             }
-            return try lines.flatMap { try TypesetStyle.strokes(for: $0.text, in: $0.frame, style: style) }
+            return try lines.flatMap { try typesetRow($0.text, in: $0.frame, style: style) }
         } catch TypesetStyle.Error.unsupportedCharacter {
             throw SuggestionRenderError.unsupportedContent
         } catch is LineBreaker.Error {
             // Too short a frame for the wrapped text. Placement should prevent it; drawing
             // it scaled down is the one option that hides the problem, so do not.
+            return try typesetRow(text, in: frame, style: style)
+        }
+    }
+
+    /// One row in the typeface, with powers drawn as raised exponents (`ScriptedText`).
+    private func typesetRow(_ text: String, in frame: CGRect, style: StyleStats) throws -> [InkStroke] {
+        guard let pieces = ScriptedText.pieces(in: text) else {
             return try TypesetStyle.strokes(for: text, in: frame, style: style)
+        }
+        return try ScriptedText.layout(
+            pieces, in: frame, xHeight: frame.height * 0.5, lift: frame.height * 0.4
+        ) { piece, room, scale in
+            let height = room.height * scale
+            let drawn = CGRect(x: room.minX, y: room.maxY - height, width: room.width, height: height)
+            return try TypesetStyle.strokes(for: piece, in: drawn, style: style)
         }
     }
 
