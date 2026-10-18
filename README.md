@@ -21,9 +21,9 @@ Circle a question. Tap **Ask**. The answer appears on the page, drawn from *your
 
 <br>
 
-<img src="docs/media/demo-explain.gif" alt="Write a sentence, circle it, and the answer is written back in the writer's handwriting" width="360">
+<img src="docs/media/demo-loop.gif" alt="The in-app intro: a sentence and then an equation, each circled and answered in handwriting" width="640">
 
-<sub>Real iPad recording: write it, circle it, tap Ask. The answer is drawn back in the writer's own hand.</sub>
+<sub>The in-app intro animation: write it, circle it, and the answer is written back in handwriting.</sub>
 
 <br><br>
 
@@ -82,24 +82,22 @@ Everything else is a real notebook, not a demo:
 
 <div align="center">
 
-<a href="docs/media/demo.mp4">
-<img src="docs/media/demo-poster.png" alt="Watch the full walkthrough" width="340">
-</a>
-
-**[▶ Watch the 2-minute walkthrough (MP4)](docs/media/demo.mp4)**
-
-<sub>Recorded on an iPad mini: the guided first run, teaching it a handwriting, then Explain, Solve and Plot on a fresh note.</sub>
+<table>
+<tr>
+<td align="center" width="50%">
+<a href="docs/media/demo.mp4"><img src="docs/media/demo-poster.png" alt="Watch the full walkthrough" width="300"></a>
+<br><b><a href="docs/media/demo.mp4">▶ Watch the 2-minute walkthrough (MP4)</a></b>
+<br><sub>Recorded on an iPad mini: the guided first run, teaching it a handwriting, then Explain, Solve and Plot on a fresh note.</sub>
+</td>
+<td align="center" width="50%">
+<img src="docs/media/demo-explain.gif" alt="Explain: the answer is written back in the writer's handwriting" width="300">
+<br><b>Explain, live on the iPad</b>
+<br><sub>Write a sentence, circle it, tap Ask: the answer is drawn back in the writer's own hand.</sub>
+</td>
+</tr>
+</table>
 
 </div>
-
-<details>
-<summary><b>Also: the in-app intro animation</b></summary>
-
-<div align="center">
-<img src="docs/media/demo-loop.gif" alt="The intro animation: a sentence, then an equation, each circled and answered in handwriting" width="620">
-</div>
-
-</details>
 
 ---
 
