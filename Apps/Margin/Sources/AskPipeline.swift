@@ -62,13 +62,16 @@ final class AskPipeline {
     }
 
     /// Starts an Ask. The previous one, if any, is abandoned first.
-    func run(_ input: PageInput, verb: AskVerb) {
+    ///
+    /// - Parameter readingOverride: text the writer typed to correct what was read (a plot's formula). It replaces
+    ///   the recognition, and is not used to teach the glyph bank, since it is not their handwriting.
+    func run(_ input: PageInput, verb: AskVerb, readingOverride: String? = nil) {
         task?.cancel()
         guard model.begin(verb) else { return }
 
         task = Task { [weak self] in
             guard let self else { return }
-            await execute(input, verb: verb)
+            await execute(input, verb: verb, readingOverride: readingOverride)
         }
     }
 
@@ -80,7 +83,7 @@ final class AskPipeline {
         model.apply(.cancel(reason))
     }
 
-    private func execute(_ input: PageInput, verb: AskVerb) async {
+    private func execute(_ input: PageInput, verb: AskVerb, readingOverride: String?) async {
         let pageStrokes = input.strokes
         guard
             let context = SelectionContextBuilder.build(
@@ -93,10 +96,12 @@ final class AskPipeline {
             return
         }
         guard let rasterized = rasterize(context, using: input.engine) else { return }
-        let reading = await recognizeSelection(rasterized.crop)
+        let reading = await selectionReading(of: rasterized.crop, override: readingOverride)
         guard !Task.isCancelled else { return }
         guard model.apply(.contextExtracted(context)) else { return }
-        shareWithLearning(context: context, reading: reading, pageStrokes: pageStrokes, input: input)
+        shareWithLearning(
+            context: context, reading: reading, pageStrokes: pageStrokes, input: input,
+            isHandwritten: readingOverride == nil)
 
         let request = SpecRequest(
             context: context,
@@ -133,6 +138,11 @@ final class AskPipeline {
         )
     }
 
+    private func selectionReading(of crop: InkRasterImage, override: String?) async -> SelectionReading {
+        if let override { return SelectionReading(transcript: override, confidence: 1) }
+        return await recognizeSelection(crop)
+    }
+
     /// The crop and neighbourhood images, or a failed Ask when they cannot be drawn.
     private func rasterize(_ context: SelectionContext, using engine: any InkEngine) -> RasterizedSelection? {
         do {
@@ -152,8 +162,11 @@ final class AskPipeline {
 
     /// Hands the glyph bank the writer's own ink from this lasso.
     private func shareWithLearning(
-        context: SelectionContext, reading: SelectionReading, pageStrokes: [InkStroke], input: PageInput
+        context: SelectionContext, reading: SelectionReading, pageStrokes: [InkStroke], input: PageInput,
+        isHandwritten: Bool
     ) {
+        // A corrected formula is typed, not written: it must not teach the bank what the writer's hand looks like.
+        guard isHandwritten else { return }
         onSelectionRead?(
             LearnableSelection(
                 strokes: writersOwnInk(context: context, pageStrokes: pageStrokes, input: input), reading: reading,

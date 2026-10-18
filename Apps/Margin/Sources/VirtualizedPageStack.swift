@@ -18,6 +18,8 @@ struct VirtualizedPageStack: View {
     /// How far the writer has resized the pending answer with its corner handle.
     @State var ghostScale: CGFloat = 1
     @State var ghostDragging = false
+    /// The formula being corrected, while the editor is open.
+    @State var plotFormula: String?
     let pageSize = CGSize(width: 768, height: 1_024)
     let notebookID: UUID?
     let autosave: PageAutosave?
@@ -135,7 +137,8 @@ struct VirtualizedPageStack: View {
                         onAccept: { acceptSuggestion() },
                         onReject: { rejectSuggestion() },
                         onRetry: { retryAsk() },
-                        onDismiss: { askModel.dismissFailure() }
+                        onDismiss: { askModel.dismissFailure() },
+                        onEditReading: plotEditAction
                     )
                 }
 
@@ -161,6 +164,7 @@ struct VirtualizedPageStack: View {
         }
         .background(.background)
         .modifier(TourPointerOverlay(target: tourTarget))
+        .modifier(PlotFormulaEditing(formula: $plotFormula, onApply: { replot(from: $0) }))
         .toolbar { ToolbarItem(placement: .topBarTrailing) { pageOptionsMenu } }
         .background { PencilInteractionHost(tool: $selectedTool, switcher: $pencilSwitcher) }
         .onAppear {

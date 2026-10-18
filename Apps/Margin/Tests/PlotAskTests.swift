@@ -37,6 +37,24 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(pen.force, 0.5, accuracy: 0.01)
     }
 
+    func testACorrectedFormulaReplacesTheReadingAndReplots() async throws {
+        let transport = CountingTransport()
+        let harness = Harness(reading: SelectionReading(transcript: "y = x13", confidence: 0.9), transport)
+        harness.pipeline.run(harness.input, verb: .plot)
+        try await harness.settle()
+        harness.pipeline.cancel(.superseded)
+        harness.pipeline.run(harness.input, verb: .plot, readingOverride: "y=x^3+cos(x)")
+        try await harness.settle()
+
+        guard case .awaitingDecision(let spec, _) = harness.model.state,
+            case .plot(let plot) = try XCTUnwrap(spec.blocks.first).content
+        else { return XCTFail("Expected a plot suggestion") }
+        XCTAssertEqual(plot.functions.map(\.expression), ["x^3+cos(x)"])
+        XCTAssertEqual(harness.model.pendingRead, "y=x^3+cos(x)")
+        let calls = await transport.count
+        XCTAssertEqual(calls, 0)
+    }
+
     func testAFlattenedSuperscriptStillPlots() async throws {
         let harness = Harness(
             reading: SelectionReading(transcript: "x2 plot:", confidence: 0.8), CountingTransport())

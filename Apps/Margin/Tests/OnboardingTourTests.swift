@@ -108,7 +108,8 @@ final class OnboardingCopyTests: XCTestCase {
             "onboarding.subscribe.title", "onboarding.subscribe.body", "onboarding.cta", "onboarding.fine.annual",
             "onboarding.fine.monthly", "onboarding.plan.annual", "onboarding.plan.monthly", "onboarding.benefit.solve",
             "onboarding.note.title", "onboarding.coach.plot.hint", "onboarding.pointer.write",
-            "onboarding.pointer.ask", "onboarding.pointer.keep",
+            "onboarding.pointer.ask", "onboarding.pointer.keep", "ask.edit", "plot.edit.title", "plot.edit.hint",
+            "plot.edit.field", "plot.edit.plot", "plot.edit.cancel",
         ]
         for step in [OnboardingStep.explain, .solve, .plot] {
             keys.append(PracticeCoachBar.titleName(step))
@@ -154,5 +155,13 @@ final class TourPointerTests: XCTestCase {
         progress.apply(.selected)
         progress.apply(.verbChosen(.plot))
         XCTAssertEqual(progress.pointerTarget(hasInk: true, lassoArmed: false), .verb(.explain))
+    }
+}
+
+final class DemoTests: XCTestCase {
+    func testTheDemoShowsASentenceThenAnEquation() {
+        XCTAssertEqual(OnboardingDemoView.scenes.map(\.verb), [.explain, .answer])
+        XCTAssertTrue(OnboardingDemoView.scenes[0].question.contains(" "))
+        XCTAssertTrue(OnboardingDemoView.scenes[1].question.contains("="))
     }
 }

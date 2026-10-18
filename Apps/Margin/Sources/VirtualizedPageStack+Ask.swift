@@ -139,7 +139,7 @@ extension VirtualizedPageStack {
     }
 
     /// Runs one Ask against the supported local arithmetic subset.
-    func ask(_ verb: AskVerb) {
+    func ask(_ verb: AskVerb, readingOverride: String? = nil) {
         guard let selection = askSelection.questionSelection else { return }
         // Content-free by design (`AGENTS.md` AI privacy rule). These five values distinguish
         // an unsaved bank, missing `4`, a pinned preference, and a stale renderer in one run.
@@ -182,8 +182,21 @@ extension VirtualizedPageStack {
                 generatedStrokeIndices: SuggestionProvenance.generatedStrokeIndices(
                     metadata: drawingStore.metadata(for: selection.pageID), pageStrokes: pageEngine.strokes)
             ),
-            verb: verb
+            verb: verb,
+            readingOverride: readingOverride
         )
+    }
+
+    /// The Edit button on a plot's Keep bar; nil for any other answer.
+    var plotEditAction: (() -> Void)? {
+        guard askModel.lastVerb == .plot, let read = askModel.pendingRead else { return nil }
+        return { plotFormula = read }
+    }
+
+    /// Plots again from the formula the writer corrected, in place of the answer waiting for Keep.
+    func replot(from formula: String) {
+        askPipeline?.cancel(.superseded)
+        ask(.plot, readingOverride: formula)
     }
 
     func cancelAsk() {

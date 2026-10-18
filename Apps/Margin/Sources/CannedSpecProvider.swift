@@ -27,12 +27,14 @@ struct LocalPlotSpecProvider: SpecProvider {
         guard let reading = request.selectedAreaReading, reading.confidence > 0 else {
             throw LocalArithmeticFailure.unclear
         }
-        guard let functions = PlotRequest.functions(from: reading.transcript) else {
-            throw LocalArithmeticFailure.noFunction(read: reading.transcript)
+        // A raised number (x³) is found from where it sits; the plain transcript flattens or drops it.
+        let transcript = SuperscriptReader.transcript(from: reading.characters, fallback: reading.transcript)
+        guard let functions = PlotRequest.functions(from: transcript) else {
+            throw LocalArithmeticFailure.noFunction(read: transcript)
         }
         let plot = SpecPlot(functions: functions.map { SpecPlotFunction(expression: $0.text) })
         let spec = Spec(
-            read: reading.transcript,
+            read: transcript,
             readConfidence: Double(reading.confidence),
             intent: .plot,
             blocks: [SpecBlock(placement: .belowSelection, content: .plot(plot))],

@@ -113,6 +113,8 @@ struct AskBar: View {
     var onReject: () -> Void = {}
     var onRetry: () -> Void = {}
     var onDismiss: () -> Void = {}
+    /// Set when the answer is a plot: lets the writer correct the formula that was read.
+    var onEditReading: (() -> Void)?
 
     @State private var showsDetail = false
 
@@ -200,6 +202,9 @@ struct AskBar: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(MarginColor.secondaryText)
                     .lineLimit(1)
+            }
+            if let onEditReading {
+                decisionButton("ask.edit", tint: MarginColor.secondaryText, action: onEditReading)
             }
             decisionButton("ask.discard", tint: .red, action: onReject)
             decisionButton("ask.keep", tint: MarginColor.accent, action: onAccept)

@@ -32,6 +32,14 @@ final class AskBarModel: ObservableObject {
         }
     }
 
+    /// What was read from the question, while an answer waits for Keep. A plot's formula is edited from this.
+    var pendingRead: String? {
+        switch state {
+        case .awaitingDecision(let spec, _): spec.read
+        default: nil
+        }
+    }
+
     /// The frames the answer will occupy, for the canvas to outline while the user decides.
     var pendingFrames: [CGRect] {
         switch state {
