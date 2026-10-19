@@ -14,7 +14,7 @@ enum HTTPParseError: Error, Equatable {
 
 enum HTTPHeadParser {
     static let maxHeadBytes = 16_384
-    static let maxBodyBytes = 3_000_000
+    static let maxBodyBytes = 6_000_000
     static let terminator = Data("\r\n\r\n".utf8)
 
     /// Index just past the blank line, or nil if the head is not complete yet. Throws once the head exceeds the cap.

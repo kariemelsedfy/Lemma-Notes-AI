@@ -43,6 +43,7 @@ final class AskPipeline {
     /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
     let suggestions: SuggestionLayer
     private let recognizeSelection: @Sendable (InkRasterImage) async -> SelectionReading
+    private let isPaid: @Sendable () -> Bool
     private var task: Task<Void, Never>?
 
     init(
@@ -52,8 +53,10 @@ final class AskPipeline {
         suggestions: SuggestionLayer,
         recognizeSelection: @escaping @Sendable (InkRasterImage) async -> SelectionReading = {
             await OnDeviceSelectionReader.read($0)
-        }
+        },
+        isPaid: @escaping @Sendable () -> Bool = { PaidPlanFlag.shared.isPaid }
     ) {
+        self.isPaid = isPaid
         self.provider = provider
         self.renderer = renderer
         self.model = model
@@ -121,31 +124,6 @@ final class AskPipeline {
             input: input,
             requestID: request.cacheKey
         )
-    }
-
-    /// The provider's answer, or nil after the failure has been shown (or the Ask was cancelled).
-    private func fetchSpec(for request: SpecRequest, verb: AskVerb) async -> ValidatedSpec? {
-        do {
-            return try await provider.spec(for: request)
-        } catch is CancellationError {
-            // Already handled by whoever cancelled; saying so again would overwrite the
-            // reason they recorded.
-            return nil
-        } catch let error as LocalArithmeticFailure {
-            guard !Task.isCancelled else { return nil }
-            model.failedLocally(error)
-            model.apply(.fail(.unreadable))
-            return nil
-        } catch ProviderError.thirdPartyConsentRequired {
-            // Nothing was sent: this install is not entitled to the hosted model. Offer Premium, not an error.
-            guard !Task.isCancelled else { return nil }
-            model.requireSubscription()
-            model.apply(.fail(.unreadable))
-            return nil
-        } catch {
-            fail(with: error, intent: verb.intent)
-            return nil
-        }
     }
 
     private func selectionReading(of crop: InkRasterImage, override: String?) async -> SelectionReading {
@@ -315,6 +293,67 @@ final class AskPipeline {
         case .budgetExceeded: .outOfCredits
         case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: .invalidSpec
         case .invalidRequest, .refused, .unauthorized: .transport
+        }
+    }
+}
+
+extension AskPipeline {
+    private enum Attempt {
+        case spec(ValidatedSpec)
+        case failed(any Error)
+    }
+
+    /// The provider's answer, or nil after the failure has been shown (or the Ask was cancelled). A subscriber's Ask
+    /// that fails for a reason that may pass (a slow or garbled reply) is tried once more before they hear about it.
+    private func fetchSpec(for request: SpecRequest, verb: AskVerb) async -> ValidatedSpec? {
+        var result = await attempt(request)
+        if case .failed(let error) = result, isPaid(), Self.isWorthRetrying(error), !Task.isCancelled {
+            result = await attempt(request)
+        }
+        switch result {
+        case .spec(let spec): return spec
+        case .failed(let error):
+            report(error, verb: verb)
+            return nil
+        }
+    }
+
+    private func attempt(_ request: SpecRequest) async -> Attempt {
+        do { return .spec(try await provider.spec(for: request)) } catch { return .failed(error) }
+    }
+
+    /// Transient trouble worth a second try: not being offline, out of allowance, or sending something unusable.
+    private static func isWorthRetrying(_ error: any Error) -> Bool {
+        switch error {
+        case let failure as ProxyProviderFailure:
+            switch failure {
+            case .offline, .budgetExceeded, .invalidRequest: false
+            default: true
+            }
+        case let failure as ProviderError: failure == .timeout || failure == .transport
+        default: false
+        }
+    }
+
+    private func report(_ error: any Error, verb: AskVerb) {
+        guard !Task.isCancelled, !(error is CancellationError) else {
+            // Already handled by whoever cancelled; saying so again would overwrite the reason they recorded.
+            return
+        }
+        if let failure = error as? LocalArithmeticFailure {
+            model.failedLocally(failure)
+            model.apply(.fail(.unreadable))
+        } else if case ProviderError.thirdPartyConsentRequired = error {
+            // Nothing was sent. A free install is offered Premium; a subscriber is never told to subscribe, so the
+            // reason (an address, a receipt not yet known to the server) is shown as a failure they can retry.
+            if isPaid() {
+                fail(with: ProviderError.transport, intent: verb.intent)
+            } else {
+                model.requireSubscription()
+                model.apply(.fail(.unreadable))
+            }
+        } else {
+            fail(with: error, intent: verb.intent)
         }
     }
 }

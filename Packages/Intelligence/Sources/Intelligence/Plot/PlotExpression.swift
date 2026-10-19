@@ -5,14 +5,16 @@ import Foundation
 /// made to call arbitrary selectors.
 ///
 /// Understands numbers, `x`, `pi`, `e`, `+ - * / ^`, parentheses, implicit multiplication (`2x`, `x(x+1)`) and
-/// `sin cos tan asin acos atan exp ln log sqrt abs`. Handwriting recognition tends to flatten a superscript, so
-/// an `x` followed directly by digits (`x2`) reads as a power (`x^2`); nobody writes `x·2` that way.
+/// `sin cos tan asin acos atan exp ln log sqrt abs` and a postfix factorial (`x!`, `(x+1)!`, drawn as the
+/// gamma function so it is a smooth curve between the whole numbers). Handwriting recognition tends to flatten a
+/// superscript, so an `x` followed directly by digits (`x2`) reads as a power (`x^2`); nobody writes `x·2` that way.
 public struct PlotExpression: Sendable {
     /// The normalised text, e.g. `x^2` for `x²`.
     public let text: String
     public let usesVariable: Bool
     public let usesPeriodicFunction: Bool
     public let usesRestrictedDomain: Bool
+    public let usesFactorial: Bool
 
     private let root: Node
 
@@ -33,6 +35,7 @@ public struct PlotExpression: Sendable {
         }
         self.usesPeriodicFunction = names.contains { ["sin", "cos", "tan"].contains($0) }
         self.usesRestrictedDomain = names.contains { ["ln", "log", "sqrt", "asin", "acos"].contains($0) }
+        self.usesFactorial = tokens.contains(.symbol("!"))
     }
 
     /// `nan` or infinity where the function is undefined.
@@ -58,6 +61,9 @@ public struct PlotExpression: Sendable {
         // `x2` is x squared; `2x2` is 2·x². Only a variable followed by digits that are not already an exponent.
         text = text.replacingOccurrences(
             of: #"(?<![a-z])x(?=\d)"#, with: "x^", options: .regularExpression)
+        // A hand-drawn `!` after a variable or a bracket is often read as `|` or `l`.
+        text = text.replacingOccurrences(
+            of: #"(?<=[x\)])[|l](?![a-z\d(])"#, with: "!", options: .regularExpression)
         return text
     }
 
@@ -104,7 +110,7 @@ public struct PlotExpression: Sendable {
                 read = number(in: characters, from: index)
             } else if character.isLetter {
                 read = word(in: characters, from: index)
-            } else if "+-*/^".contains(character) {
+            } else if "+-*/^!".contains(character) {
                 read = (.symbol(character), 1)
             } else if character == "(" || character == ")" {
                 read = (character == "(" ? .open : .close, 1)
@@ -172,6 +178,8 @@ public struct PlotExpression: Sendable {
             "asin": { asin($0) }, "acos": { acos($0) }, "atan": { atan($0) },
             "exp": { exp($0) }, "ln": { log($0) }, "log": { log10($0) },
             "sqrt": { sqrt($0) }, "abs": { abs($0) },
+            // n! as the gamma function, so x! is a curve; a gap at -1, -2, ... and past what a Double holds.
+            "!": { $0 < 0 && $0 == $0.rounded() ? .nan : tgamma($0 + 1) },
         ]
 
         private static func call(_ name: String, _ argument: Double) -> Double {
@@ -238,7 +246,11 @@ public struct PlotExpression: Sendable {
         }
 
         private mutating func power() -> Node? {
-            guard let base = primary() else { return nil }
+            guard var base = primary() else { return nil }
+            while case .symbol("!")? = current {
+                index += 1
+                base = .call("!", base)
+            }
             if case .symbol("^")? = current {
                 index += 1
                 guard let exponent = unary() else { return nil }

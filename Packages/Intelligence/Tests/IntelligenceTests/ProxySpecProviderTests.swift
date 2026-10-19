@@ -48,9 +48,8 @@ final class ProxySpecProviderTests: XCTestCase {
         let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
         let initial = try Self.request("2+3=")
         let noImage = SpecRequest(context: initial.context, intent: .answer)
-        let oversized = try Self.request("2+3=", crop: Data(repeating: 0, count: 1_000_001))
-        let longRead = try Self.request(String(repeating: "a", count: 257))
-        for request in [noImage, oversized, longRead] {
+        let oversized = try Self.request("2+3=", crop: Data(repeating: 0, count: 2_000_001))
+        for request in [noImage, oversized] {
             do {
                 _ = try await provider.spec(for: request)
                 XCTFail("Invalid image request reached the transport")
@@ -64,7 +63,7 @@ final class ProxySpecProviderTests: XCTestCase {
 
     func testMalformedSpecFailsClosed() async throws {
         let invalid = Spec(
-            read: "2+3=", readConfidence: 1.4, intent: .answer,
+            version: 9, read: "2+3=", readConfidence: 0.9, intent: .answer,
             blocks: [SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: .math, value: "5")))]
         )
         let wrongIntent = Spec(read: "2+3=", readConfidence: 0.95, intent: .plot, blocks: [])
@@ -89,22 +88,42 @@ final class ProxySpecProviderTests: XCTestCase {
     }
 
     func testARuleViolationNamesTheRuleAndNothingElse() async throws {
+        let unknown = Spec(version: 9, read: "secret", readConfidence: 0.95, intent: .answer, blocks: [])
+        let transport = FakeTransport(responses: ["2+3=": try SpecDecoder.encode(unknown)])
+        let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
+
+        do {
+            _ = try await provider.spec(for: Self.request("2+3="))
+            XCTFail("A spec this build cannot read became ink")
+        } catch {
+            XCTAssertEqual(error as? ProxyProviderFailure, .rejectedSpec("unsupportedVersion"))
+        }
+    }
+
+    func testAnOverLongReplyIsTrimmedAndDrawnNotRefused() async throws {
         let tooLong = Spec(
             read: "x", readConfidence: 0.95, intent: .answer,
             blocks: [
                 SpecBlock(
                     placement: .atAnchor,
-                    content: .inline(SpecRun(kind: .text, value: String(repeating: "secret ", count: 100))))
+                    content: .inline(SpecRun(kind: .text, value: String(repeating: "word ", count: 400))))
             ])
         let transport = FakeTransport(responses: ["2+3=": try SpecDecoder.encode(tooLong)])
         let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
 
-        do {
-            _ = try await provider.spec(for: Self.request("2+3="))
-            XCTFail("An over-long run became ink")
-        } catch {
-            XCTAssertEqual(error as? ProxyProviderFailure, .rejectedSpec("contentTooLong"))
-        }
+        let spec = try await provider.spec(for: Self.request("2+3="))
+        guard case .inline(let run)? = spec.blocks.first?.content else { return XCTFail("No answer was drawn") }
+        XCTAssertLessThanOrEqual(run.value.count, SpecLimits.standard.maximumContentLength)
+        XCTAssertTrue(run.value.hasPrefix("word word"))
+    }
+
+    func testALongReadingIsClippedNotRefused() async throws {
+        let transport = FakeTransport(responses: [:])
+        let provider = ProxySpecProvider.consentGated(transport: transport, isConsentGranted: { true })
+        _ = try? await provider.spec(for: Self.request(String(repeating: "é", count: 600)))
+        let sent = await transport.requests
+        XCTAssertEqual(sent.count, 1)
+        XCTAssertLessThanOrEqual(sent.first?.transcript.utf8.count ?? .max, 512)
     }
 
     func testAnUndecodableReplyNamesWhereAndNeverWhat() async throws {

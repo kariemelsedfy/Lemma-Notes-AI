@@ -93,7 +93,7 @@ final class PilotCloudAskTests: XCTestCase {
         let sent = await transport.requests
         XCTAssertEqual(sent.count, 1)
         XCTAssertEqual(sent.first?.transcript, "x+2=")
-        XCTAssertEqual(sent.first?.maxOutputTokens, 256)
+        XCTAssertEqual(sent.first?.maxOutputTokens, 512)
         XCTAssertTrue(harness.suggestions.strokes.isEmpty == false)
         XCTAssertEqual(harness.engine.strokes.count, 1, "Suggestion must not reach the page before Keep")
     }
@@ -109,6 +109,39 @@ final class PilotCloudAskTests: XCTestCase {
         // A content-free reason for debug builds: the failure case and the intent, nothing else.
         XCTAssertEqual(harness.model.failureDetail, "offline · answer")
         XCTAssertTrue(harness.suggestions.strokes.isEmpty)
+    }
+
+    func testASubscriberIsNeverToldToSubscribe() async throws {
+        let transport = Recording(reply: Self.reply)
+        let (configuration, _) = makeConfiguration()
+        let harness = Harness(
+            reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport, isPaid: true)
+        harness.pipeline.run(harness.input, verb: .answer)
+        try await harness.settle()
+        XCTAssertFalse(harness.model.needsSubscription, "they already pay: this is a failure to retry")
+        XCTAssertEqual(harness.model.phase, .failed(.transport))
+    }
+
+    func testASubscribersAskIsTriedOnceMoreWhenTheFirstReplyIsUnusable() async throws {
+        let transport = Recording(reply: Self.reply, failuresFirst: 1)
+        let (configuration, _) = makeConfiguration()
+        configuration.setToken("tok")
+        let paid = Harness(
+            reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, transport, isPaid: true)
+        paid.pipeline.run(paid.input, verb: .answer)
+        try await paid.settle()
+        guard case .awaitingDecision = paid.model.state else { return XCTFail("The second try should have answered") }
+        let sent = await transport.requests.count
+        XCTAssertEqual(sent, 2)
+
+        let once = Recording(reply: Self.reply, failuresFirst: 1)
+        let free = Harness(
+            reading: SelectionReading(transcript: "x+2=", confidence: 0.95), configuration, once, isPaid: false)
+        free.pipeline.run(free.input, verb: .answer)
+        try await free.settle()
+        XCTAssertEqual(free.model.phase, .failed(.transport))
+        let freeSent = await once.requests.count
+        XCTAssertEqual(freeSent, 1, "only a subscriber's ask is retried")
     }
 
     func testBundledTokenIsUsedOnlyWhenTheKeychainHasNone() throws {
@@ -163,7 +196,10 @@ final class PilotCloudAskTests: XCTestCase {
         let pipeline: AskPipeline
         let input: AskPipeline.PageInput
 
-        init(reading: SelectionReading, _ configuration: PilotCloudConfiguration, _ transport: Recording) {
+        init(
+            reading: SelectionReading, _ configuration: PilotCloudConfiguration, _ transport: Recording,
+            isPaid: Bool = false
+        ) {
             let ink = InkStroke(points: [
                 InkPoint(location: CGPoint(x: 100, y: 100), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0),
                 InkPoint(location: CGPoint(x: 320, y: 126), timeOffset: 1, force: 0.5, altitude: 1, azimuth: 0),
@@ -181,7 +217,8 @@ final class PilotCloudAskTests: XCTestCase {
                 provider: VirtualizedPageStack.makeAskProvider(configuration: configuration, transport: transport),
                 model: model,
                 suggestions: suggestions,
-                recognizeSelection: { _ in reading }
+                recognizeSelection: { _ in reading },
+                isPaid: { isPaid }
             )
             model.selectionChanged(hasSelection: true)
         }
@@ -212,14 +249,17 @@ private actor Recording: ProxyClientTransport {
     private(set) var requests: [ProxyClientRequest] = []
     private let reply: Data?
     private let failure: ProxyTransportFailure?
+    private let failuresFirst: Int
 
-    init(reply: Data?, failure: ProxyTransportFailure? = nil) {
+    init(reply: Data?, failure: ProxyTransportFailure? = nil, failuresFirst: Int = 0) {
         self.reply = reply
         self.failure = failure
+        self.failuresFirst = failuresFirst
     }
 
     func response(to request: ProxyClientRequest) async throws -> Data {
         requests.append(request)
+        if requests.count <= failuresFirst { throw ProxyTransportFailure.refused }
         if let failure { throw failure }
         return reply ?? Data()
     }

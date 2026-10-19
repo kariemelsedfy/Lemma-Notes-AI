@@ -29,7 +29,7 @@ final class PilotHTTPTests: XCTestCase {
             "POST /v1/answer HTTP/1.1\r\nHost: x\r\n\r\n",
             "POST /v1/answer HTTP/1.1\r\nContent-Length: 5\r\nContent-Length: 6\r\n\r\n",
             "POST /v1/answer HTTP/1.1\r\nContent-Length: -1\r\n\r\n",
-            "POST /v1/answer HTTP/1.1\r\nContent-Length: 4000000\r\n\r\n",
+            "POST /v1/answer HTTP/1.1\r\nContent-Length: 7000000\r\n\r\n",
             "POST /v1/answer HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n",
             "DELETE /v1/answer HTTP/1.1\r\n\r\n",
             "POST /v1/answer?x=1 HTTP/1.1\r\nContent-Length: 1\r\n\r\n",

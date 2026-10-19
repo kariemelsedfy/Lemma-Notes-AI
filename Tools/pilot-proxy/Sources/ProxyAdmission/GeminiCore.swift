@@ -8,7 +8,7 @@ enum GeminiPilot {
     static let outputMicrosPerMillion: Int64 = 1_500_000
     /// Conservative ceiling for one crop plus neighborhood and a short prompt. Measured in M4-15.
     static let worstCaseInputTokens: Int64 = 20_000
-    static let maxOutputTokens = 512
+    static let maxOutputTokens = 1024
 
     /// Price of a usage report, rounded up to a whole micro-dollar. Thought tokens bill as output.
     static func costMicros(promptTokens: Int, outputTokens: Int) -> Int64? {

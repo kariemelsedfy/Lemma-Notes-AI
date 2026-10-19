@@ -23,12 +23,12 @@ public struct SpecLimits: Equatable, Sendable {
     public let minimumReadConfidence: Double
 
     public init(
-        maximumBlocks: Int = 8,
-        maximumLines: Int = 24,
-        maximumContentLength: Int = 512,
-        maximumReadLength: Int = 1024,
-        maximumExplanationLength: Int = 1024,
-        maximumWarnings: Int = 16,
+        maximumBlocks: Int = 16,
+        maximumLines: Int = 48,
+        maximumContentLength: Int = 1024,
+        maximumReadLength: Int = 2048,
+        maximumExplanationLength: Int = 2048,
+        maximumWarnings: Int = 32,
         maximumPlotFunctions: Int = 4,
         maximumMarks: Int = 24,
         maximumIndent: Int = 8,

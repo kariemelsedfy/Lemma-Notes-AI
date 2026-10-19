@@ -89,18 +89,19 @@ final class PremiumStore: ObservableObject {
     func showPaywall() { paywallPresented = true }
 
     private let backend: any StoreBackend
-    private let uploadTransaction: @Sendable (String) async -> Void
+    private let uploadTransaction: @Sendable (String) async -> Bool
     private var uploaded: Set<String> = []
     private var listener: Task<Void, Never>?
 
     /// - Parameter uploadTransaction: tells the server about a signed transaction so it grants hosted answers. It
-    ///   is called once per distinct transaction, and a failure is simply retried on the next refresh.
+    ///   returns whether the server took it; one it did not take is sent again on the next refresh.
     init(
         backend: any StoreBackend = StoreKitBackend(),
-        uploadTransaction: @escaping @Sendable (String) async -> Void = { _ in }
+        uploadTransaction: @escaping @Sendable (String) async -> Bool = { _ in true }
     ) {
         self.backend = backend
         self.uploadTransaction = uploadTransaction
+        PaidPlanFlag.shared.resync = { [weak self] in await self?.resyncEntitlement() }
         listener = Task { [weak self] in
             guard let changes = self?.backend.changes() else { return }
             for await _ in changes { await self?.refresh() }
@@ -129,9 +130,15 @@ final class PremiumStore: ObservableObject {
         PaidPlanFlag.shared.isPaid = plan != .free
         guard plan != .free else { return }
         for signed in await backend.signedTransactions() where !uploaded.contains(signed) {
-            await uploadTransaction(signed)
-            uploaded.insert(signed)
+            if await uploadTransaction(signed) { uploaded.insert(signed) }
         }
+    }
+
+    /// Sends the server every current transaction again. A paying install the server still counts as free (an upload
+    /// that was lost, or a server that was down) is put right before its next ask.
+    func resyncEntitlement() async {
+        uploaded.removeAll()
+        await refresh()
     }
 
     @discardableResult

@@ -74,6 +74,9 @@ public enum PlotSampler {
             xBounds = (xRange.lowerBound, xRange.upperBound)
         } else if functions.contains(where: \.usesPeriodicFunction) {
             xBounds = (-2 * .pi, 2 * .pi)
+        } else if functions.contains(where: \.usesFactorial) {
+            // x! climbs fast and has gaps at the negative whole numbers; this window shows both.
+            xBounds = (-4, 5)
         } else if functions.contains(where: \.usesRestrictedDomain) {
             xBounds = (-1, 9)
         } else {

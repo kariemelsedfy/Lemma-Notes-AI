@@ -51,4 +51,37 @@ final class PlotReadingTests: XCTestCase {
         XCTAssertEqual(PlotFormat.label(-5_000_000_000, step: 500_000_000), "-5e9")
         XCTAssertEqual(PlotFormat.label(250, step: 50), "250")
     }
+
+    // MARK: - Factorial
+
+    func testAFactorialIsDrawnAsTheGammaCurve() throws {
+        let factorial = try XCTUnwrap(PlotExpression("x!"))
+        XCTAssertTrue(factorialactorial.usesFactorial)
+        XCTAssertEqual(factorial.value(at: 0), 1, accuracy: 1e-9)
+        XCTAssertEqual(factorial.value(at: 3), 6, accuracy: 1e-9)
+        XCTAssertEqual(factorial.value(at: 5), 120, accuracy: 1e-9)
+        XCTAssertEqual(factorial.value(at: 0.5), 0.8862269, accuracy: 1e-6)
+        XCTAssertTrue(factorialactorial.value(at: -2).isNaN, "undefined at the negative whole numbers")
+        XCTAssertFalse(factorial.value(at: 300).isFinite)
+    }
+
+    func testFactorialBindsTighterThanPowersAndProducts() throws {
+        XCTAssertEqual(try XCTUnwrap(PlotExpression("2x!")).value(at: 3), 12, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(PlotExpression("(x+1)!")).value(at: 2), 6, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(PlotExpression("x!/2")).value(at: 4), 12, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(PlotExpression("x!!")).value(at: 3), 720, accuracy: 1e-6)
+        XCTAssertNil(PlotExpression("!x"))
+    }
+
+    func testAHandDrawnExclamationMarkReadAsABarOrAnLIsRepaired() {
+        XCTAssertEqual(text("y = x|"), "x!")
+        XCTAssertEqual(text("y = (x+1)l"), "(x+1)!")
+        XCTAssertEqual(text("y = ln(x)"), "ln(x)")
+    }
+
+    func testTheFactorialWindowShowsTheGapsAndTheClimb() throws {
+        let window = PlotSampler.window(for: [try XCTUnwrap(PlotExpression("x!"))])
+        XCTAssertEqual(window.xMin, -4)
+        XCTAssertEqual(window.xMax, 5)
+    }
 }

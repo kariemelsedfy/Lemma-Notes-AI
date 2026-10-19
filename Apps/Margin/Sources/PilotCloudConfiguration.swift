@@ -184,6 +184,11 @@ struct ConfiguredProxyTransport: ProxyClientTransport {
             // The server did not accept this install (a reinstall invalidates its key): register afresh next time.
             await installs?.rejected()
             throw ProxyTransportFailure.unauthorized
+        } catch ProxyTransportFailure.paymentRequired where configuration.isPaid() && token == nil {
+            // This person pays, so the server not knowing it is our bookkeeping, not theirs: send the receipts
+            // again and ask once more, instead of telling a subscriber to subscribe.
+            await PaidPlanFlag.shared.resync()
+            return try await transport.response(to: request)
         }
     }
 }
@@ -212,6 +217,21 @@ final class PaidPlanFlag: @unchecked Sendable {
 
     private let lock = NSLock()
     private var paid = false
+    private var resyncHook: (@Sendable () async -> Void)?
+
+    /// Sends the server the current App Store receipts again (set by the store).
+    var resync: @Sendable () async -> Void {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return resyncHook ?? {}
+        }
+        set {
+            lock.lock()
+            resyncHook = newValue
+            lock.unlock()
+        }
+    }
 
     var isPaid: Bool {
         get {
