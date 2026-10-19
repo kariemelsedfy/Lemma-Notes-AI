@@ -39,7 +39,7 @@ public struct PlacementResult: Equatable, Sendable {
 /// broken. The model never sends coordinates (`AI_PIPELINE.md` §3.2); everything here is
 /// computed inside the answer area the user marked, using the page's occupancy.
 public struct PlacementEngine: Sendable {
-    private let allowedArea: CGRect
+    public let allowedArea: CGRect
     private let occupancy: OccupancyGrid
     private let measurer: any ContentMeasuring
 
@@ -127,12 +127,15 @@ public struct PlacementEngine: Sendable {
     /// they like. So there is no occupancy test here and nothing is ever "unplaced". Blocks stack downward in
     /// order. The frame is kept inside the page's left and right margins and above the bottom margin; a block
     /// wider than the page wraps through the measurer's width ceiling.
+    /// - Parameter textScale: below 1 to draw the answer smaller, for one that would not fit on the page at the
+    ///   writer's size. The caller draws it at the same scale.
     public func placeBelowSelection(
         _ spec: ValidatedSpec,
         context: SelectionContext,
-        pageStrokes: [InkStroke] = []
+        pageStrokes: [InkStroke] = [],
+        textScale: CGFloat = 1
     ) -> PlacementResult {
-        let xHeight = Self.usableXHeight(for: context)
+        let xHeight = Self.usableXHeight(for: context) * textScale
         let margin = max(xHeight, 16)
         let page = allowedArea
         let gap = xHeight * 0.5
@@ -155,7 +158,7 @@ public struct PlacementEngine: Sendable {
             let size = measurer.size(
                 of: block.content,
                 xHeight: xHeight,
-                lineSpacing: context.style.lineSpacing,
+                lineSpacing: context.style.lineSpacing * textScale,
                 maxWidth: page.width - 2 * margin
             )
             guard size.width > 0, size.height > 0 else {

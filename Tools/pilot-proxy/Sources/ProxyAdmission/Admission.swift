@@ -20,7 +20,7 @@ struct AdmittedRequest: Decodable, Sendable {
     let neighborhoodPNG: Data
     let transcript: String
     let intent: String
-    let maxOutputTokens: Int
+    var maxOutputTokens: Int
 
     private enum Fields: String, CodingKey {
         case requestID, cropPNG, neighborhoodPNG, transcript, intent, maxOutputTokens

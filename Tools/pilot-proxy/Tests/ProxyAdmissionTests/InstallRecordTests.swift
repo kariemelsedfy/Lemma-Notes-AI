@@ -122,8 +122,8 @@ final class InstallRecordTests: XCTestCase {
     // MARK: - Pro
 
     func testAProInstallHasTheLargerAllowanceAndIsStoppedAtItsOwnCap() throws {
-        var pro = record(plan: .pro, expires: 86_400 * 30, month: "2027-01", micros: 14_950_000)
-        XCTAssertEqual(InstallAllowance.proMonthlyMicros, 15_000_000)
+        var pro = record(plan: .pro, expires: 86_400 * 30, month: "2027-01", micros: 6_950_000)
+        XCTAssertEqual(InstallAllowance.proMonthlyMicros, 7_000_000)
         try InstallAllowance.reserve(&pro, micros: 50_000, at: Self.now)
         XCTAssertThrowsError(try InstallAllowance.reserve(&pro, micros: 1, at: Self.now)) { error in
             XCTAssertEqual(error as? AllowanceError, .allowanceUsedUp)

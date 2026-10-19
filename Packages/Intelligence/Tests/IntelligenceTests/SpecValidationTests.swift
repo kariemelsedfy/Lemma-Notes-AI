@@ -177,7 +177,7 @@ final class SpecLeniencyTests: XCTestCase {
         let line = SpecLine(run: SpecRun(kind: .text, value: "step"), indent: 99)
         let lines = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 80)))
         let long = inline(.text, String(repeating: "word ", count: 500))
-        let fitted = SpecLeniency.fitted(spec([lines, long] + Array(repeating: long, count: 30)))
+        let fitted = SpecLeniency.fitted(spec([lines, long] + Array(repeating: inline(.text, "ok"), count: 30)))
         XCTAssertNoThrow(try SpecValidator.validate(fitted))
         XCTAssertEqual(fitted.blocks.count, SpecLimits.standard.maximumBlocks)
         guard case .lines(let kept) = fitted.blocks[0].content else { return XCTFail("Lines were lost") }
@@ -201,6 +201,17 @@ final class SpecLeniencyTests: XCTestCase {
             explanation: String(repeating: "e", count: 5_000))
         let fitted = SpecLeniency.fitted(long)
         XCTAssertEqual(fitted.readConfidence, 1)
+        XCTAssertNoThrow(try SpecValidator.validate(fitted))
+    }
+
+    func testAnAnswerTallerThanAPageKeepsItsStartAndIsCutAtTheTotalLimit() throws {
+        let line = SpecLine(run: SpecRun(kind: .text, value: String(repeating: "word ", count: 60)))
+        let block = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 48)))
+        let fitted = SpecLeniency.fitted(spec([block]))
+        guard case .lines(let kept)? = fitted.blocks.first?.content else { return XCTFail("The start was lost") }
+        let total = kept.reduce(0) { $0 + $1.run.value.count }
+        XCTAssertLessThanOrEqual(total, SpecLimits.standard.maximumTotalCharacters)
+        XCTAssertGreaterThan(total, SpecLimits.standard.maximumTotalCharacters - 300, "most of the allowance is used")
         XCTAssertNoThrow(try SpecValidator.validate(fitted))
     }
 

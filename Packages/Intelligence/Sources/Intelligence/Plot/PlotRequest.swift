@@ -5,37 +5,80 @@ import Foundation
 public enum PlotRequest {
     public static let maximumFunctions = 4
 
+    private static let fillerWords = ["plot", "graph", "draw", "sketch", "function", "please", "the", "of"]
+    /// "y = x^2 for -2 <= x <= 2": what follows these words describes the domain, which the drawing picks for itself.
+    private static let domainWords = "for|from|on|where|when|if|with|over|between|domain|range|in|using"
+
     /// The functions found in a recognised selection, or nil when there is nothing to plot.
     ///
-    /// Filler words are dropped; `y =`, `f(x) =` and `g(x) =` prefixes are stripped; several functions may be
-    /// separated by commas, semicolons, `&` or "and". A piece with no `x` in it is plotted only when the writer
-    /// said `y =` (a horizontal line), so a stray sum is not drawn as a graph.
+    /// Filler words and a trailing domain are dropped; `y =`, `f(x) =` (any letter) and `y <` prefixes are stripped;
+    /// several functions may be separated by commas, semicolons, new lines, `&` or "and". An equation with both
+    /// sides (`x^2 = 4`) draws both sides, so where they cross is the answer; `x^2 - 4 = 0` draws the left side. A
+    /// piece with no `x` in it is plotted only when the writer said `y =` (a horizontal line), so a stray sum is not
+    /// drawn as a graph.
     public static func functions(from transcript: String) -> [PlotExpression]? {
+        var found: [PlotExpression] = []
+        for piece in pieces(of: transcript) {
+            for expression in expressions(in: piece) where !found.contains(where: { $0.text == expression.text }) {
+                found.append(expression)
+                if found.count == maximumFunctions { return found }
+            }
+        }
+        return found.isEmpty ? nil : found
+    }
+
+    private static func pieces(of transcript: String) -> [String] {
         var text = transcript.lowercased()
-        for word in ["plot", "graph", "draw", "sketch", "function", "please", "the", "of"] {
+        for word in fillerWords {
             text = text.replacingOccurrences(
                 of: #"(?<![a-z])\#(word)(?![a-z])"#, with: " ", options: .regularExpression)
         }
         text = text.replacingOccurrences(of: ":", with: " ")
         text = text.replacingOccurrences(of: #"(?<![a-z])and(?![a-z])"#, with: ",", options: .regularExpression)
-        text = text.replacingOccurrences(of: "&", with: ",")
-        text = text.replacingOccurrences(of: ";", with: ",")
-
-        var found: [PlotExpression] = []
-        for piece in text.split(separator: ",") {
-            var body = piece.trimmingCharacters(in: .whitespacesAndNewlines)
-            var hadY = false
-            if let range = body.range(of: #"^(?:y|f\(x\)|g\(x\))\s*="#, options: .regularExpression) {
-                body.removeSubrange(range)
-                hadY = true
-            }
-            if body.hasSuffix("=") { body.removeLast() }
-            guard let expression = PlotExpression(body), expression.usesVariable || hadY else { continue }
-            guard !found.contains(where: { $0.text == expression.text }) else { continue }
-            found.append(expression)
-            if found.count == maximumFunctions { break }
+        for separator in ["&", ";", "\n", "\r", "\u{2028}"] {
+            text = text.replacingOccurrences(of: separator, with: ",")
         }
-        return found.isEmpty ? nil : found
+        return text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+
+    private static func expressions(in piece: String) -> [PlotExpression] {
+        var body = piece.replacingOccurrences(
+            of: #"(?<![a-z0-9])(?:\#(domainWords))(?![a-z]).*$"#, with: "", options: .regularExpression)
+        body = strippingOuterBrackets(body.trimmingCharacters(in: .whitespacesAndNewlines))
+        var hadY = false
+        if let range = body.range(of: #"^(?:[a-z]\(x\)|y\d?)\s*(?:=|[<>≤≥]=?)"#, options: .regularExpression) {
+            body.removeSubrange(range)
+            hadY = true
+        }
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        while body.hasSuffix("=") { body.removeLast() }
+        let sides = body.split(separator: "=", omittingEmptySubsequences: false).map(String.init)
+        if hadY || sides.count < 2 {
+            let formula = sides.first ?? body
+            guard let expression = PlotExpression(formula), expression.usesVariable || hadY else { return [] }
+            return [expression]
+        }
+        return equation(left: sides[0], right: sides[1])
+    }
+
+    /// Both sides of `A = B`; just `A` when `B` is 0 (the graph's roots are the equation's solutions).
+    private static func equation(left: String, right: String) -> [PlotExpression] {
+        guard let lhs = PlotExpression(left), lhs.usesVariable else { return [] }
+        let rhsText = right.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard rhsText != "0", let rhs = PlotExpression(rhsText) else { return [lhs] }
+        return [lhs, rhs]
+    }
+
+    /// `(y = x^2)` or `[x^2]`: a wrapper that holds the whole piece.
+    private static func strippingOuterBrackets(_ text: String) -> String {
+        guard text.hasPrefix("("), text.hasSuffix(")") else { return text }
+        var depth = 0
+        for (offset, character) in text.enumerated() {
+            if character == "(" { depth += 1 }
+            if character == ")" { depth -= 1 }
+            if depth == 0, offset < text.count - 1 { return text }
+        }
+        return String(text.dropFirst().dropLast())
     }
 }
 

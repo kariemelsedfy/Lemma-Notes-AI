@@ -124,6 +124,16 @@ enum GeminiResponseParser {
         return sum
     }
 
+    /// A model sometimes wraps JSON in a markdown fence or pads it with blank lines despite being asked for JSON only.
+    static func unfenced(_ text: String) -> String {
+        var trimmed = text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(["\u{FEFF}"]))
+        guard trimmed.hasPrefix("```") else { return trimmed }
+        trimmed = String(trimmed.drop(while: { $0 == "`" }))
+        if trimmed.lowercased().hasPrefix("json") { trimmed = String(trimmed.dropFirst(4)) }
+        while trimmed.hasSuffix("`") { trimmed.removeLast() }
+        return trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     static func parse(_ data: Data) throws -> GeminiReply {
         guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(ReplyEnvelope.self, from: data)
         else { throw GeminiError.malformed }
@@ -140,7 +150,7 @@ enum GeminiResponseParser {
         case "SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION": throw GeminiError.blocked
         default: throw GeminiError.malformed
         }
-        let text = (candidate.content?.parts ?? []).compactMap(\.text).joined()
+        let text = unfenced((candidate.content?.parts ?? []).compactMap(\.text).joined())
         let json = Data(text.utf8)
         guard !json.isEmpty, json.count <= maxReplyBytes,
             (try? JSONSerialization.jsonObject(with: json)) is [String: Any]

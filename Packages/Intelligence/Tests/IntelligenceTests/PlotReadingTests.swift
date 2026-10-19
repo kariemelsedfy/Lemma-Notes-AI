@@ -56,12 +56,12 @@ final class PlotReadingTests: XCTestCase {
 
     func testAFactorialIsDrawnAsTheGammaCurve() throws {
         let factorial = try XCTUnwrap(PlotExpression("x!"))
-        XCTAssertTrue(factorialactorial.usesFactorial)
+        XCTAssertTrue(factorial.usesFactorial)
         XCTAssertEqual(factorial.value(at: 0), 1, accuracy: 1e-9)
         XCTAssertEqual(factorial.value(at: 3), 6, accuracy: 1e-9)
         XCTAssertEqual(factorial.value(at: 5), 120, accuracy: 1e-9)
         XCTAssertEqual(factorial.value(at: 0.5), 0.8862269, accuracy: 1e-6)
-        XCTAssertTrue(factorialactorial.value(at: -2).isNaN, "undefined at the negative whole numbers")
+        XCTAssertTrue(factorial.value(at: -2).isNaN, "undefined at the negative whole numbers")
         XCTAssertFalse(factorial.value(at: 300).isFinite)
     }
 

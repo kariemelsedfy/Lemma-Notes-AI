@@ -77,9 +77,9 @@ public enum InstallAllowance {
     public static let tourAsks = 3
     /// $1.50 a month of inference per Premium install. A starting value, tuned from measured cost.
     public static let monthlyMicros: Int64 = 1_500_000
-    /// $15 a month for Pro: effectively unlimited for a student, and a hard stop for a script. Below the plan's
-    /// price after Apple's cut only for someone who really uses all of it.
-    public static let proMonthlyMicros: Int64 = 15_000_000
+    /// $7 a month for Pro: about five times Premium, plenty for a student, and a hard stop for a script. Leaves about
+    /// $10 of the $19.99 after Apple's 15%, and about $7 at the standard 30%.
+    public static let proMonthlyMicros: Int64 = 7_000_000
 
     static func allowance(for plan: InstallPlan) -> Int64 { plan == .pro ? proMonthlyMicros : monthlyMicros }
 

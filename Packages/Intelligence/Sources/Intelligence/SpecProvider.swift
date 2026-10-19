@@ -246,7 +246,12 @@ public struct ProxySpecProvider: SpecProvider {
         } catch {
             throw ProxyProviderFailure.undecodable("other \(type(of: error))")
         }
-        guard spec.intent == intent else { throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue) }
+        // Answer and Explain are one kind of reply to the writer; a model that labels one as the other still
+        // answered. Anything else (a plot for a sum) is a different reply entirely.
+        let sameKind: Set<SpecIntent> = [.answer, .continuation]
+        guard spec.intent == intent || (sameKind.contains(spec.intent) && sameKind.contains(intent)) else {
+            throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue)
+        }
         // The model may answer math in LaTeX; the page can only hold what a hand could write.
         do { return try spec.inPlainCharacters() } catch let error as SpecValidationError {
             throw ProxyProviderFailure.rejectedSpec(error.name)

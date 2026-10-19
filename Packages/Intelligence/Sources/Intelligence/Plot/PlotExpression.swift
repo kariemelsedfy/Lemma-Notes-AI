@@ -18,7 +18,7 @@ public struct PlotExpression: Sendable {
 
     private let root: Node
 
-    public static let maximumLength = 80
+    public static let maximumLength = 200
 
     public init?(_ raw: String) {
         let normalised = Self.normalise(raw)
@@ -33,57 +33,13 @@ public struct PlotExpression: Sendable {
             if case .function(let name) = token { return name }
             return nil
         }
-        self.usesPeriodicFunction = names.contains { ["sin", "cos", "tan"].contains($0) }
+        self.usesPeriodicFunction = names.contains { ["sin", "cos", "tan", "cot", "sec", "csc"].contains($0) }
         self.usesRestrictedDomain = names.contains { ["ln", "log", "sqrt", "asin", "acos"].contains($0) }
         self.usesFactorial = tokens.contains(.symbol("!"))
     }
 
     /// `nan` or infinity where the function is undefined.
     public func value(at x: Double) -> Double { root.evaluate(x) }
-
-    // MARK: - Normalising
-
-    static func normalise(_ raw: String) -> String {
-        var text = raw.lowercased()
-        let replacements: [(String, String)] = [
-            ("²", "^2"), ("³", "^3"), ("−", "-"), ("–", "-"), ("×", "*"), ("·", "*"), ("÷", "/"),
-            ("√", "sqrt"), ("π", "pi"), ("**", "^"), ("ˆ", "^"), ("∧", "^"), ("⌃", "^"),
-            ("[", "("), ("]", ")"), ("{", "("), ("}", ")"),
-        ]
-        for (symbol, plain) in replacements { text = text.replacingOccurrences(of: symbol, with: plain) }
-        text = text.filter { !$0.isWhitespace }
-        text = repairingFunctionNames(in: text)
-        // A hand-drawn caret is often read as a `1` (`x^3` comes back as `x13`, or `x^13`). A power of 11 to 19
-        // on a bare `x` is far rarer in a student's graph than that slip, so it reads as the last digit.
-        // `x^10` is left alone.
-        text = text.replacingOccurrences(
-            of: #"(?<![a-z])x\^?1([1-9])(?!\d)"#, with: "x^$1", options: .regularExpression)
-        // `x2` is x squared; `2x2` is 2·x². Only a variable followed by digits that are not already an exponent.
-        text = text.replacingOccurrences(
-            of: #"(?<![a-z])x(?=\d)"#, with: "x^", options: .regularExpression)
-        // A hand-drawn `!` after a variable or a bracket is often read as `|` or `l`.
-        text = text.replacingOccurrences(
-            of: #"(?<=[x\)])[|l](?![a-z\d(])"#, with: "!", options: .regularExpression)
-        return text
-    }
-
-    /// Handwriting turns `cos` into `(US`, `c0s`, `5in`, `tcm`: letters that look alike. A name is repaired only
-    /// when it is followed by an opening bracket or a variable, so ordinary brackets and words are left alone.
-    private static let confusedNames: [(pattern: String, name: String)] = [
-        (#"[(c\[{<][o0uq][s5$](?=[(x])"#, "cos"),
-        (#"[s5$][i1l|!][nhm](?=[(x])"#, "sin"),
-        (#"[t+][a@o][nhm](?=[(x])"#, "tan"),
-        (#"[l1|][o0u][g9q](?=[(x])"#, "log"),
-        (#"[l1|][nh](?=\()"#, "ln"),
-    ]
-
-    private static func repairingFunctionNames(in text: String) -> String {
-        var result = text
-        for (pattern, name) in confusedNames {
-            result = result.replacingOccurrences(of: pattern, with: name, options: .regularExpression)
-        }
-        return result
-    }
 
     // MARK: - Tokens
 
@@ -97,7 +53,10 @@ public struct PlotExpression: Sendable {
         case close
     }
 
-    private static let functions = ["asin", "acos", "atan", "sin", "cos", "tan", "exp", "ln", "log", "sqrt", "abs"]
+    static let functions = [
+        "asin", "acos", "atan", "sinh", "cosh", "tanh", "sin", "cos", "tan", "cot", "sec", "csc", "exp", "ln", "log",
+        "sqrt", "cbrt", "abs", "floor", "ceil", "sign",
+    ]
 
     private static func tokenise(_ text: String) -> [Token]? {
         let characters = Array(text)
@@ -169,12 +128,29 @@ public struct PlotExpression: Sendable {
             case "-": left - right
             case "*": left * right
             case "/": left / right
-            default: pow(left, right)
+            default: realPower(left, right)
             }
+        }
+
+        /// `pow`, except that a negative base with an odd-denominator exponent is real (`x^(1/3)`, `x^(2/3)`), the
+        /// way a graphing calculator draws it.
+        private static func realPower(_ base: Double, _ exponent: Double) -> Double {
+            guard base < 0, exponent.isFinite, exponent != exponent.rounded() else { return pow(base, exponent) }
+            for denominator in stride(from: 3.0, through: 15.0, by: 2.0) {
+                let numerator = exponent * denominator
+                guard abs(numerator - numerator.rounded()) < 1e-9 else { continue }
+                let magnitude = pow(-base, exponent)
+                return numerator.rounded().truncatingRemainder(dividingBy: 2) == 0 ? magnitude : -magnitude
+            }
+            return pow(base, exponent)
         }
 
         private static let unaryFunctions: [String: @Sendable (Double) -> Double] = [
             "sin": { sin($0) }, "cos": { cos($0) }, "tan": { tan($0) },
+            "cot": { 1 / tan($0) }, "sec": { 1 / cos($0) }, "csc": { 1 / sin($0) },
+            "sinh": { sinh($0) }, "cosh": { cosh($0) }, "tanh": { tanh($0) },
+            "cbrt": { cbrt($0) }, "floor": { floor($0) }, "ceil": { ceil($0) },
+            "sign": { $0 > 0 ? 1 : ($0 < 0 ? -1 : 0) },
             "asin": { asin($0) }, "acos": { acos($0) }, "atan": { atan($0) },
             "exp": { exp($0) }, "ln": { log($0) }, "log": { log10($0) },
             "sqrt": { sqrt($0) }, "abs": { abs($0) },
@@ -229,6 +205,13 @@ public struct PlotExpression: Sendable {
             return left
         }
 
+        private func isPlainFactor(_ token: Token) -> Bool {
+            switch token {
+            case .number, .variable, .constant: true
+            case .function, .open, .symbol, .close: false
+            }
+        }
+
         private func startsFactor(_ token: Token) -> Bool {
             switch token {
             case .number, .variable, .constant, .function, .open: true
@@ -259,6 +242,23 @@ public struct PlotExpression: Sendable {
             return base
         }
 
+        /// `sin(x)`, or `sin x` / `sin2x` without brackets: the argument is the next factor. A bracketed argument is
+        /// only the bracket, so `sin(x)^2` squares the sine. Without brackets the argument runs over the numbers and
+        /// variables written next to it: `cos 2x` is `cos(2x)`, while `sin x cos x` stops at the next function.
+        private mutating func functionCall(_ name: String) -> Node? {
+            var argument: Node?
+            if case .open? = current {
+                argument = primary()
+            } else {
+                argument = power()
+                while let next = current, let soFar = argument, isPlainFactor(next) {
+                    guard let more = power() else { return nil }
+                    argument = .binary("*", soFar, more)
+                }
+            }
+            return argument.map { .call(name, $0) }
+        }
+
         private mutating func primary() -> Node? {
             guard let token = current, depth < 32 else { return nil }
             index += 1
@@ -272,13 +272,7 @@ public struct PlotExpression: Sendable {
                 guard let inner = sum(), case .close? = current else { return nil }
                 index += 1
                 return inner
-            case .function(let name):
-                // `sin(x)`, or `sin x` / `sin2x` without brackets: the argument is the next factor.
-                // A bracketed argument is only the bracket, so `sin(x)^2` squares the sine.
-                let argument: Node?
-                if case .open? = current { argument = primary() } else { argument = power() }
-                guard let argument else { return nil }
-                return .call(name, argument)
+            case .function(let name): return functionCall(name)
             case .symbol, .close: return nil
             }
         }

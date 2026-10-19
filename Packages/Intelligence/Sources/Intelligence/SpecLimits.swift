@@ -17,6 +17,9 @@ public struct SpecLimits: Equatable, Sendable {
     public let maximumPlotFunctions: Int
     public let maximumMarks: Int
     public let maximumIndent: Int
+    /// Across every run of a hosted reply: more than this is cut off by `SpecLeniency` rather than drawn, because the
+    /// ink for it would be taller than a page.
+    public let maximumTotalCharacters: Int
     /// Below this, nothing is rendered. **Zero by owner decision (2026-10-17): answers are not blocked
     /// pre-emptively.** The writer can delete one they do not want; only a scribble (the model declines with no
     /// blocks) renders nothing. The field stays so a stricter product tier can raise it.
@@ -32,6 +35,7 @@ public struct SpecLimits: Equatable, Sendable {
         maximumPlotFunctions: Int = 4,
         maximumMarks: Int = 24,
         maximumIndent: Int = 8,
+        maximumTotalCharacters: Int = 3_000,
         minimumReadConfidence: Double = 0
     ) {
         self.maximumBlocks = maximumBlocks
@@ -43,6 +47,7 @@ public struct SpecLimits: Equatable, Sendable {
         self.maximumPlotFunctions = maximumPlotFunctions
         self.maximumMarks = maximumMarks
         self.maximumIndent = maximumIndent
+        self.maximumTotalCharacters = maximumTotalCharacters
         self.minimumReadConfidence = minimumReadConfidence
     }
 }

@@ -9,7 +9,8 @@ import Foundation
 /// to salvage comes back unchanged so the validator reports the real reason.
 public enum SpecLeniency {
     public static func fitted(_ spec: Spec, to limits: SpecLimits = .standard) -> Spec {
-        let blocks = spec.blocks.prefix(limits.maximumBlocks).compactMap { fitted($0, limits) }
+        let blocks = withinTotal(
+            spec.blocks.prefix(limits.maximumBlocks).compactMap { fitted($0, limits) }, limits.maximumTotalCharacters)
         guard !blocks.isEmpty || spec.blocks.isEmpty else { return spec }
         return Spec(
             version: spec.version, read: cut(spec.read, to: limits.maximumReadLength),
@@ -17,6 +18,39 @@ public enum SpecLeniency {
             intent: spec.intent, blocks: blocks,
             explanation: spec.explanation.map { cut($0, to: limits.maximumExplanationLength) },
             warnings: Array(spec.warnings.prefix(limits.maximumWarnings)))
+    }
+
+    /// Keeps the start of the answer when the whole of it would be taller than a page.
+    private static func withinTotal(_ blocks: [SpecBlock], _ allowed: Int) -> [SpecBlock] {
+        var room = allowed
+        var kept: [SpecBlock] = []
+        for block in blocks where room > 0 {
+            guard let fitted = trimmed(block, to: &room) else { continue }
+            kept.append(fitted)
+        }
+        return kept.isEmpty ? blocks : kept
+    }
+
+    private static func trimmed(_ block: SpecBlock, to room: inout Int) -> SpecBlock? {
+        func take(_ run: SpecRun) -> SpecRun? {
+            guard room > 0 else { return nil }
+            let value = cut(run.value, to: room)
+            room -= value.count
+            return value.isEmpty ? nil : SpecRun(kind: run.kind, value: value)
+        }
+        switch block.content {
+        case .inline(let run):
+            return take(run).map { SpecBlock(placement: block.placement, content: .inline($0)) }
+        case .lines(let lines):
+            let kept = lines.compactMap { line in take(line.run).map { SpecLine(run: $0, indent: line.indent) } }
+            return kept.isEmpty ? nil : SpecBlock(placement: block.placement, content: .lines(kept))
+        case .note(let note):
+            return take(SpecRun(kind: .text, value: note.text)).map {
+                SpecBlock(placement: block.placement, content: .note(SpecNote(text: $0.value, side: note.side)))
+            }
+        case .plot, .marks:
+            return block
+        }
     }
 
     private static func fitted(_ block: SpecBlock, _ limits: SpecLimits) -> SpecBlock? {

@@ -89,7 +89,8 @@ public enum PilotServer {
             log("pilot-proxy: ledger not ready; requests will be refused until it is")
         }
         let key = config.geminiKey
-        let transport = GeminiHTTPTransport(key: { key }, send: { try await session.data(for: $0) })
+        let transport = RetryingModelTransport(
+            base: GeminiHTTPTransport(key: { key }, send: { try await session.data(for: $0) }))
         let gate = AdmissionGate(authorize: PilotRouter.authorizer(token: config.token, subjectID: config.subjectID))
         let service = PilotService(pilot: PilotAdmission(admission: gate, ledger: ledger), transport: transport)
         var router = PilotRouter(service: service)

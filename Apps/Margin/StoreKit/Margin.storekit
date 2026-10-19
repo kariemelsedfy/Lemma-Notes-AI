@@ -24,7 +24,7 @@
           "introductoryOffer": {
             "internalID": "6740000011",
             "paymentMode": "free",
-            "subscriptionPeriod": "P1W"
+            "subscriptionPeriod": "P3D"
           },
           "localizations": [
             {
@@ -49,7 +49,7 @@
           "introductoryOffer": {
             "internalID": "6740000012",
             "paymentMode": "free",
-            "subscriptionPeriod": "P1W"
+            "subscriptionPeriod": "P3D"
           },
           "localizations": [
             {
@@ -73,7 +73,7 @@
           "internalID": "6740000003",
           "localizations": [
             {
-              "description": "About ten times the AI allowance, for heavy use.",
+              "description": "About five times the AI allowance, for heavy use.",
               "displayName": "Pro Monthly",
               "locale": "en_US"
             }

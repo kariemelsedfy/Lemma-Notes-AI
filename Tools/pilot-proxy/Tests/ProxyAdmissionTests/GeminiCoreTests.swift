@@ -83,6 +83,17 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(reply.costMicros, 48)  // 25 + 22.5 rounded up
     }
 
+    func testAFencedOrPaddedJSONReplyIsStillRead() throws {
+        let usage = #""promptTokenCount":10,"candidatesTokenCount":2"#
+        let json = #"{"intent":"answer"}"#
+        for text in [
+            "```json\n\(json)\n```", "```\n\(json)\n```", "\n\n \(json) \n", "\u{FEFF}\(json)", "```JSON \(json)```",
+        ] {
+            let reply = try GeminiResponseParser.parse(response(text: text, finish: "STOP", usage: usage))
+            XCTAssertEqual(reply.specJSON, Data(json.utf8), text)
+        }
+    }
+
     func testRefusesTruncatedBlockedMalformedAndUsagelessReplies() throws {
         let usage = #""promptTokenCount":10,"candidatesTokenCount":2"#
         expect(.truncated, response(text: "{}", finish: "MAX_TOKENS", usage: usage))

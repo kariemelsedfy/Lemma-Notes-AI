@@ -40,10 +40,10 @@ final class PlotExpressionTests: XCTestCase {
     }
 
     func testRejectsWhatItCannotRead() {
-        for bad in ["", "x+", "(x", "x)", "foo(x)", "x^^2", "2 3 +", "x=", String(repeating: "x+", count: 60)] {
+        for bad in ["", "foo(x)", "x^^2", "()", "+", "=", "x y z", String(repeating: "x+", count: 120)] {
             XCTAssertNil(PlotExpression(bad), bad)
         }
-        XCTAssertNil(PlotExpression(String(repeating: "(", count: 40) + "x" + String(repeating: ")", count: 40)))
+        XCTAssertNil(PlotExpression(String(repeating: "sin(", count: 40) + "x" + String(repeating: ")", count: 40)))
     }
 }
 

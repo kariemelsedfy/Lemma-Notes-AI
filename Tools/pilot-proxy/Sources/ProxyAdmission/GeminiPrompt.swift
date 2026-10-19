@@ -44,7 +44,11 @@ enum GeminiPrompt {
         with ^ (x^3). Never LaTeX. A small raised number after x or after a closing bracket is an exponent: \
         x with a raised 3 is x^3. At most 4 functions. Include "xRange" or "yRange" only if the person wrote a \
         domain or interval.
-        3. If there is no function in the selection (a scribble, ordinary words, or a sum with no x and no "y ="), \
+        3. An equation that is not solved for y is returned as its branches, each its own function: a circle \
+        x^2 + y^2 = 4 is sqrt(4 - x^2) and -sqrt(4 - x^2); x^2 = 4 is x^2 and 4. A domain the person wrote (for \
+        example -2 <= x <= 2) goes in "xRange", never in "expr". A formula you cannot express with the allowed \
+        operators and functions is given as the closest one that you can.
+        4. If there is no function in the selection (a scribble, ordinary words, or a sum with no x and no "y ="), \
         set a low "readConfidence" and return "blocks": [].
 
         Output rules: reply with JSON matching the schema and nothing else. "intent" must be "plot". \
