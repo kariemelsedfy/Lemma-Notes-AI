@@ -50,6 +50,23 @@ final class PremiumStoreTests: XCTestCase {
         XCTAssertEqual(PlanResolver.plan(from: [fact(trial: true), fact(.monthly)], now: Self.now), .premium)
     }
 
+    func testALiveProSubscriptionIsProAndWinsOverPremium() {
+        XCTAssertEqual(PlanResolver.plan(from: [fact(.pro)], now: Self.now), .pro)
+        XCTAssertEqual(PlanResolver.plan(from: [fact(.yearly), fact(.pro)], now: Self.now), .pro)
+        XCTAssertEqual(PlanResolver.plan(from: [fact(.yearly), fact(.pro, revoked: true)], now: Self.now), .premium)
+        XCTAssertEqual(PlanResolver.plan(from: [fact(.pro, expires: -1)], now: Self.now), .free)
+    }
+
+    func testOnlyAPremiumSubscriberIsOfferedPro() async {
+        for (facts, expected) in [([fact(.yearly)], true), ([fact(.pro)], false), ([], false)] {
+            let backend = FakeBackend()
+            backend.facts = facts
+            let store = PremiumStore(backend: backend)
+            await store.refresh()
+            XCTAssertEqual(store.offersPro, expected)
+        }
+    }
+
     func testExpiredRevokedAndForeignEntitlementsCountForNothing() {
         XCTAssertEqual(PlanResolver.plan(from: [fact(expires: -1)], now: Self.now), .free)
         XCTAssertEqual(PlanResolver.plan(from: [fact(revoked: true)], now: Self.now), .free)

@@ -222,6 +222,9 @@ struct NotebookLibraryView: View {
             if premium.offersUpgrade {
                 Button("premium.menu") { premium.showPaywall() }
             }
+            if premium.offersPro {
+                Button("premium.menu.pro") { premium.showPaywall() }
+            }
             Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }
             Button("calibration.add") { addCharactersPresented = true }

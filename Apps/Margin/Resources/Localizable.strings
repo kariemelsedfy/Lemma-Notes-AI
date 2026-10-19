@@ -232,3 +232,15 @@
 "upgrade.sidebar.title" = "Upgrade to Premium";
 "upgrade.sidebar.subtitle" = "7 days free";
 "upgrade.toolbar" = "Premium";
+
+"pro.plan.name" = "Pro";
+"pro.plan.price" = "$19.99";
+"pro.plan.per" = "a month";
+"pro.badge" = "HEAVY USE";
+"pro.plan.blurb" = "Ten times the AI allowance, for a full course load. A fair-use limit applies.";
+"pro.fine" = "$19.99 a month, no free trial. Renews until you cancel; manage it in Settings. A fair-use limit applies.";
+"pro.upgrade.title" = "Need more AI?";
+"pro.upgrade.body" = "Pro lifts your monthly allowance about tenfold, for long problem sets and heavy reading.";
+"pro.benefit.allowance" = "About ten times the monthly AI allowance";
+"pro.benefit.heavy" = "Built for a whole semester of problem sets";
+"premium.menu.pro" = "Upgrade to Pro";

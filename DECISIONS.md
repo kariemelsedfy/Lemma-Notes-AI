@@ -520,3 +520,4 @@ The owner approved a **$10 USD total ceiling** for new external provider and hos
 
 **Revisit when.** Abuse appears despite attestation, subscription refunds need faster revocation (adopt server notifications), or the proxy moves off Cloud Run.
 
+**ADR-031 addendum (2026-10-19, proposed): a Pro tier.** `lemmanotesai.pro.monthly`, $19.99 a month, no trial, same subscription group above Premium; server allowance $15 a month against $1.50 for Premium. Gross margin is thin by design: after Apple's 15% (Small Business Program) $19.99 nets about $17.00, so a user who spends the whole $15 leaves about $2; at Apple's standard 30% it nets about $14.00 and that user costs money. Typical use is far below the cap. The global pilot ledger ($10 total, fixed 50,000 hold per request never released, 40 an hour per install) must be replaced before launch or it stops everyone after 200 asks.

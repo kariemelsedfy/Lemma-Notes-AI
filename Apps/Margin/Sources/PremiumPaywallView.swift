@@ -3,6 +3,7 @@ import SwiftUI
 
 /// The Premium screen: shown at the end of the tour, when a free user asks for something hosted, and from the
 /// gear menu. Prices and the trial come from the App Store; the strings below are only what shows before they load.
+/// A free user sees Premium (yearly or monthly) and Pro; a Premium subscriber sees only the step up to Pro.
 struct PremiumPaywallView: View {
     @EnvironmentObject private var store: PremiumStore
     @State private var choice = PremiumProduct.yearly
@@ -15,11 +16,16 @@ struct PremiumPaywallView: View {
         ScrollView {
             VStack(spacing: MarginSpacing.xLarge) {
                 header
-                benefits
-                HStack(spacing: MarginSpacing.medium) {
-                    planCard(.yearly)
-                    planCard(.monthly)
+                if isUpgrade {
+                    proBenefits
+                } else {
+                    benefits
+                    HStack(spacing: MarginSpacing.medium) {
+                        planCard(.yearly)
+                        planCard(.monthly)
+                    }
                 }
+                proCard
                 VStack(spacing: MarginSpacing.small) {
                     disclosure
                     subscribeButton
@@ -42,9 +48,15 @@ struct PremiumPaywallView: View {
             .frame(maxWidth: .infinity)
         }
         .background(MarginColor.canvas)
-        .task { await store.start() }
-        .onChange(of: store.plan) { _, plan in if plan != .free { onClose() } }
+        .task {
+            await store.start()
+            if isUpgrade { choice = .pro }
+        }
+        .onChange(of: store.plan) { old, plan in if plan != old, plan != .free { onClose() } }
     }
+
+    /// A Premium subscriber looking at the screen: the only thing to offer is Pro.
+    private var isUpgrade: Bool { store.offersPro }
 
     // MARK: - Pieces
 
@@ -53,10 +65,10 @@ struct PremiumPaywallView: View {
             Image(systemName: "sparkles")
                 .font(.system(size: 64))
                 .foregroundStyle(MarginColor.accent)
-            Text("onboarding.subscribe.title")
+            Text(isUpgrade ? "pro.upgrade.title" : "onboarding.subscribe.title")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
-            Text("onboarding.subscribe.body")
+            Text(isUpgrade ? "pro.upgrade.body" : "onboarding.subscribe.body")
                 .font(.system(size: 18))
                 .foregroundStyle(MarginColor.secondaryText)
                 .multilineTextAlignment(.center)
@@ -131,7 +143,11 @@ struct PremiumPaywallView: View {
     }
 
     static func fallbackPriceKey(_ product: PremiumProduct) -> String {
-        product == .yearly ? "onboarding.plan.annual.price" : "onboarding.plan.monthly.price"
+        switch product {
+        case .yearly: "onboarding.plan.annual.price"
+        case .monthly: "onboarding.plan.monthly.price"
+        case .pro: "pro.plan.price"
+        }
     }
 
     /// AI disclosure (ADR-029, App Store 5.1.2(i)): consent is separate from the purchase and is recorded.
@@ -159,11 +175,15 @@ struct PremiumPaywallView: View {
         .disabled(!acknowledged || store.phase == .purchasing || store.phase == .restoring)
     }
 
-    /// Shows the trial unless the App Store has told us this plan has none.
-    private var hasTrial: Bool { store.offer(for: choice)?.hasFreeTrial ?? true }
+    /// Shows the trial unless the App Store has told us this plan has none. Pro never has one.
+    private var hasTrial: Bool { !choice.isPro && (store.offer(for: choice)?.hasFreeTrial ?? true) }
 
     private var finePrint: LocalizedStringKey {
-        choice == .yearly ? "onboarding.fine.annual" : "onboarding.fine.monthly"
+        switch choice {
+        case .yearly: "onboarding.fine.annual"
+        case .monthly: "onboarding.fine.monthly"
+        case .pro: "pro.fine"
+        }
     }
 
     private var footer: some View {
@@ -202,5 +222,63 @@ struct PremiumPaywallView: View {
         } else if store.restoreFoundNothing {
             notice = "premium.restore.none"
         }
+    }
+}
+
+// MARK: - Pro
+
+extension PremiumPaywallView {
+    var proBenefits: some View {
+        VStack(alignment: .leading, spacing: MarginSpacing.medium) {
+            benefit("infinity", "pro.benefit.allowance")
+            benefit("bolt", "pro.benefit.heavy")
+            benefit("pencil.and.scribble", "onboarding.benefit.handwriting")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MarginSpacing.large)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(MarginColor.surface))
+    }
+
+    /// The step up for heavy use, one wide card under the Premium plans.
+    var proCard: some View {
+        let selected = choice == .pro
+        return Button {
+            choice = .pro
+        } label: {
+            HStack(spacing: MarginSpacing.medium) {
+                VStack(alignment: .leading, spacing: MarginSpacing.xSmall) {
+                    HStack(spacing: MarginSpacing.small) {
+                        Text("pro.plan.name").font(.system(size: 19, weight: .bold))
+                        Text("pro.badge")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(MarginColor.surface)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(MarginColor.accent))
+                    }
+                    Text("pro.plan.blurb")
+                        .font(.system(size: 14))
+                        .foregroundStyle(MarginColor.secondaryText)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: MarginSpacing.small)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(price(of: .pro)).font(.system(size: 22, weight: .bold, design: .rounded))
+                    Text("pro.plan.per").font(.system(size: 14)).foregroundStyle(MarginColor.secondaryText)
+                }
+            }
+            .foregroundStyle(MarginColor.primaryText)
+            .padding(MarginSpacing.large)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(selected ? MarginColor.accent.opacity(0.14) : MarginColor.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(selected ? MarginColor.accent : MarginColor.divider, lineWidth: selected ? 2.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

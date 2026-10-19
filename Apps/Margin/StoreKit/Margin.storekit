@@ -1,74 +1,94 @@
 {
-  "identifier" : "A1B2C3D4",
-  "nonRenewingSubscriptions" : [],
-  "products" : [],
-  "settings" : {
-    "_failTransactionsEnabled" : false,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
-    "_storeKitErrors" : []
+  "identifier": "A1B2C3D4",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
   },
-  "subscriptionGroups" : [
+  "subscriptionGroups": [
     {
-      "id" : "21000001",
-      "localizations" : [],
-      "name" : "Lemma Notes AI Premium",
-      "subscriptions" : [
+      "id": "21000001",
+      "localizations": [],
+      "name": "Lemma Notes AI Premium",
+      "subscriptions": [
         {
-          "adHocOffers" : [],
-          "codeOffers" : [],
-          "displayPrice" : "39.99",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "6740000001",
-          "introductoryOffer" : {
-            "internalID" : "6740000011",
-            "paymentMode" : "free",
-            "subscriptionPeriod" : "P1W"
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6740000001",
+          "introductoryOffer": {
+            "internalID": "6740000011",
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
           },
-          "localizations" : [
+          "localizations": [
             {
-              "description" : "AI answers in your own handwriting, billed yearly.",
-              "displayName" : "Premium Yearly",
-              "locale" : "en_US"
+              "description": "AI answers in your own handwriting, billed yearly.",
+              "displayName": "Premium Yearly",
+              "locale": "en_US"
             }
           ],
-          "productID" : "lemmanotesai.premium.yearly",
-          "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Premium Yearly",
-          "subscriptionGroupID" : "21000001",
-          "type" : "RecurringSubscription"
+          "productID": "lemmanotesai.premium.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Yearly",
+          "subscriptionGroupID": "21000001",
+          "type": "RecurringSubscription"
         },
         {
-          "adHocOffers" : [],
-          "codeOffers" : [],
-          "displayPrice" : "4.99",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "6740000002",
-          "introductoryOffer" : {
-            "internalID" : "6740000012",
-            "paymentMode" : "free",
-            "subscriptionPeriod" : "P1W"
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6740000002",
+          "introductoryOffer": {
+            "internalID": "6740000012",
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
           },
-          "localizations" : [
+          "localizations": [
             {
-              "description" : "AI answers in your own handwriting, billed monthly.",
-              "displayName" : "Premium Monthly",
-              "locale" : "en_US"
+              "description": "AI answers in your own handwriting, billed monthly.",
+              "displayName": "Premium Monthly",
+              "locale": "en_US"
             }
           ],
-          "productID" : "lemmanotesai.premium.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Premium Monthly",
-          "subscriptionGroupID" : "21000001",
-          "type" : "RecurringSubscription"
+          "productID": "lemmanotesai.premium.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly",
+          "subscriptionGroupID": "21000001",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740000003",
+          "localizations": [
+            {
+              "description": "About ten times the AI allowance, for heavy use.",
+              "displayName": "Pro Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "lemmanotesai.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Pro Monthly",
+          "subscriptionGroupID": "21000001",
+          "type": "RecurringSubscription"
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 3,
-    "minor" : 0
+  "version": {
+    "major": 3,
+    "minor": 0
   }
 }
