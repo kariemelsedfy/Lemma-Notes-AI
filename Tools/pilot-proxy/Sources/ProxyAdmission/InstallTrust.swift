@@ -50,12 +50,14 @@ public actor InMemoryInstallStore: InstallStore {
 public struct AttestationChallenges: Sendable {
     public static let length = 16 + 8 + 32
 
-    private let key: SymmetricKey
+    /// The secret as bytes: `SymmetricKey` is not `Sendable` in the Linux build of swift-crypto, so the key is made
+    /// where it is used.
+    private let secret: Data
     private let lifetime: TimeInterval
     private let now: @Sendable () -> Date
 
     public init(secret: Data, lifetime: TimeInterval = 300, now: @escaping @Sendable () -> Date = { Date() }) {
-        self.key = SymmetricKey(data: secret)
+        self.secret = secret
         self.lifetime = lifetime
         self.now = now
     }
@@ -64,14 +66,15 @@ public struct AttestationChallenges: Sendable {
         var body = Data((0..<16).map { _ in UInt8.random(in: .min ... .max) })
         let expiry = UInt64(now().addingTimeInterval(lifetime).timeIntervalSince1970)
         body += withUnsafeBytes(of: expiry.bigEndian) { Data($0) }
-        return body + Data(HMAC<SHA256>.authenticationCode(for: body, using: key))
+        return body + Data(HMAC<SHA256>.authenticationCode(for: body, using: SymmetricKey(data: secret)))
     }
 
     public func isValid(_ challenge: Data) -> Bool {
         guard challenge.count == Self.length else { return false }
         let body = challenge.prefix(24)
         let mac = challenge.suffix(32)
-        guard HMAC<SHA256>.isValidAuthenticationCode(mac, authenticating: body, using: key) else { return false }
+        guard HMAC<SHA256>.isValidAuthenticationCode(mac, authenticating: body, using: SymmetricKey(data: secret))
+        else { return false }
         let expiry = body.suffix(8).reduce(UInt64(0)) { ($0 << 8) | UInt64($1) }
         return Date(timeIntervalSince1970: TimeInterval(expiry)) > now()
     }
