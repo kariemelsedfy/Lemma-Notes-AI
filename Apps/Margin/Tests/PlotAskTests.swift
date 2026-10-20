@@ -113,6 +113,19 @@ final class PlotAskTests: XCTestCase {
         XCTAssertEqual(plot.functions.map(\.expression), ["x^2"])
     }
 
+    func testAFactorialReadWithASpaceStillPlots() async throws {
+        for reading in ["x !", "x |", "x ¡", "x ! ."] {
+            let harness = Harness(
+                reading: SelectionReading(transcript: reading, confidence: 0.8), CountingTransport(), entitled: false)
+            harness.pipeline.run(harness.input, verb: .plot)
+            try await harness.settle()
+            guard case .awaitingDecision(let spec, _) = harness.model.state,
+                case .plot(let plot) = try XCTUnwrap(spec.blocks.first).content
+            else { return XCTFail("\(reading) did not plot") }
+            XCTAssertEqual(plot.functions.map(\.expression), ["x!"], reading)
+        }
+    }
+
     func testAFreeInstallNeverEscalatesToTheCloudWhenAPlotCannotBeRead() async throws {
         let transport = CountingTransport()
         let harness = Harness(

@@ -136,6 +136,36 @@ final class PlotRobustnessTests: XCTestCase {
         ])
     }
 
+    func testAHandDrawnFactorialSignIsReadWhateverRecognitionMakesOfItOrOfTheSpaceAroundIt() {
+        // The writer's "!" is a bar and a dot; recognition reads it as `!`, `¡`, `|`, `l` or a bar and a dot, and
+        // puts spaces anywhere (a screenshot read "x !").
+        for input in [
+            "x !", "x!", "X !", "y = x !", "x ! ", " x  !", "x ¡", "x ǃ", "x ！", "x |", "x | .", "x l", "x|.", "x l .",
+            "(x+1) !", "y = x ! .", "plot x !",
+        ] {
+            XCTAssertNotNil(PlotRequest.functions(from: input), input)
+        }
+        XCTAssertEqual(texts("x ! ."), ["x!"])
+        XCTAssertEqual(value("x !", at: 4), 24)
+        XCTAssertEqual(value("(x + 1) !", at: 3), 24)
+    }
+
+    func testSpacesNeverChangeWhatIsRead() {
+        for (spaced, plain) in [
+            ("y = x ^ 2 + 3 x - 1", "y=x^2+3x-1"), ("s i n ( x )", "sin(x)"), ("y = 2 x + 1", "y=2x+1"),
+            ("y = e ^ ( - x )", "y=e^(-x)"), ("  y  =  s q r t ( x )  ", "y=sqrt(x)"),
+            ("y = 1 / ( x + 1 )", "y=1/(x+1)"),
+        ] {
+            XCTAssertEqual(texts(spaced), texts(plain), spaced)
+        }
+    }
+
+    func testAStrayDotAfterTheFormulaIsIgnored() {
+        XCTAssertEqual(texts("y = x^2 ."), ["x^2"])
+        XCTAssertEqual(texts("y = x^2."), ["x^2"])
+        XCTAssertEqual(value("y = .5x", at: 4), 2, "a leading decimal point is a number, not a stray dot")
+    }
+
     func testLatexFromAModelIsReadAsPlainText() {
         check([
             Row("\\sin(x)", .pi / 2, 1), Row("y = \\frac{1}{x}", 4, 0.25), Row("y = x^{2}", 3, 9),
