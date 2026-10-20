@@ -20,7 +20,7 @@ extension PlotExpression {
         text = text.replacingOccurrences(of: #"(?<![a-z])x(?=\d)"#, with: "x^", options: .regularExpression)
         // A hand-drawn `!` after a variable or a bracket is often read as `|` or `l`.
         text = text.replacingOccurrences(
-            of: #"(?<=[x\)])[|l](?![a-z\d(])"#, with: "!", options: .regularExpression)
+            of: #"(?<=[x\)])[|l]\.?(?![a-z\d(])"#, with: "!", options: .regularExpression)
         text = rewritingFunctionPowers(in: text)
         text = rewritingLogBases(in: text)
         text = repairingStars(in: text)
@@ -52,6 +52,7 @@ extension PlotExpression {
         ("√", "sqrt"), ("∛", "cbrt"), ("π", "pi"), ("ℯ", "e"), ("**", "^"), ("ˆ", "^"), ("∧", "^"), ("⌃", "^"),
         ("[", "("), ("]", ")"), ("{", "("), ("}", ")"), ("（", "("), ("）", ")"),
         ("½", "(1/2)"), ("¼", "(1/4)"), ("¾", "(3/4)"), ("⅓", "(1/3)"), ("⅔", "(2/3)"),
+        ("！", "!"), ("¡", "!"), ("ǃ", "!"), ("‼", "!!"), ("ᵎ", "!"), ("∣", "|"), ("｜", "|"), ("ǀ", "|"),
         ("arcsin", "asin"), ("arccos", "acos"), ("arctan", "atan"), ("log10", "log"), ("lg", "log"),
     ]
 
@@ -226,7 +227,7 @@ extension PlotExpression {
     }
 
     private static func trimmingOperators(_ text: String) -> String {
-        text.replacingOccurrences(of: #"^[*/^]+"#, with: "", options: .regularExpression)
-            .replacingOccurrences(of: #"[+\-*/^=]+$"#, with: "", options: .regularExpression)
+        text.replacingOccurrences(of: #"^(?:[*/^]|\.(?!\d))+"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"[+\-*/^=.]+$"#, with: "", options: .regularExpression)
     }
 }
