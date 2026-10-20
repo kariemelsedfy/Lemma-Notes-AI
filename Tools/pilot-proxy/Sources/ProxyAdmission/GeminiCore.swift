@@ -134,6 +134,33 @@ enum GeminiResponseParser {
         return trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The JSON object a reply cut off mid-way would have been, if its start can be closed into one: unfinished
+    /// strings and brackets are closed and the last few characters dropped until it parses.
+    private static func salvaged(_ candidate: ReplyCandidate) -> Data? {
+        let text = unfenced((candidate.content?.parts ?? []).compactMap(\.text).joined())
+        guard text.hasPrefix("{"), text.count > 20 else { return nil }
+        for cut in 0..<240 where text.count - cut > 20 {
+            let head = String(text.dropLast(cut))
+            guard let closed = closing(head) else { continue }
+            let data = Data(closed.utf8)
+            if (try? JSONSerialization.jsonObject(with: data)) is [String: Any], data.count <= maxReplyBytes {
+                return data
+            }
+        }
+        return nil
+    }
+
+    /// `text` followed by whatever closes its open string, arrays and objects; nil if it is not an open JSON object.
+    private static func closing(_ text: String) -> String? {
+        var tail = OpenJSON()
+        for character in text where !tail.consume(character) { return nil }
+        guard !tail.escaped else { return nil }
+        var result = text + (tail.inString ? "\"" : "")
+        // A dangling comma or a key with no value cannot be closed over; the caller drops characters and retries.
+        while let last = result.last, last == "," || last == ":" { result.removeLast() }
+        return result + String(tail.stack.reversed())
+    }
+
     static func parse(_ data: Data) throws -> GeminiReply {
         guard data.count <= 4 * maxReplyBytes, let reply = try? JSONDecoder().decode(ReplyEnvelope.self, from: data)
         else { throw GeminiError.malformed }
@@ -146,7 +173,10 @@ enum GeminiResponseParser {
         }
         switch candidate.finishReason {
         case "STOP": break
-        case "MAX_TOKENS": throw GeminiError.truncated
+        case "MAX_TOKENS":
+            // Cut off, but the start is usually a whole answer: close what is open and use it rather than fail.
+            guard let salvaged = salvaged(candidate), output > 0 else { throw GeminiError.truncated }
+            return GeminiReply(specJSON: salvaged, promptTokens: prompt, outputTokens: output)
         case "SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION": throw GeminiError.blocked
         default: throw GeminiError.malformed
         }
@@ -156,5 +186,34 @@ enum GeminiResponseParser {
             (try? JSONSerialization.jsonObject(with: json)) is [String: Any]
         else { throw GeminiError.malformed }
         return GeminiReply(specJSON: json, promptTokens: prompt, outputTokens: output)
+    }
+}
+
+/// What a JSON text has left open: its brackets and whether it stopped inside a string.
+private struct OpenJSON {
+    var stack: [Character] = []
+    var inString = false
+    var escaped = false
+
+    /// False when a closing bracket does not match the one that is open.
+    mutating func consume(_ character: Character) -> Bool {
+        if inString {
+            if escaped {
+                escaped = false
+            } else if character == "\\" {
+                escaped = true
+            } else if character == "\"" {
+                inString = false
+            }
+            return true
+        }
+        switch character {
+        case "\"": inString = true
+        case "{": stack.append("}")
+        case "[": stack.append("]")
+        case "}", "]": return stack.popLast() == character
+        default: break
+        }
+        return true
     }
 }

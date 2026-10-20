@@ -105,7 +105,7 @@ extension PilotService {
             _ = try? await gate.trust.update(keyID: credentials.keyID) {
                 InstallAllowance.refund(&$0, reserved: hold, at: moment)
             }
-            return PilotOutcome(status: Self.status(for: error), body: Data())
+            return Self.refused(error)
         }
     }
 

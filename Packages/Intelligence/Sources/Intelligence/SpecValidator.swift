@@ -1,5 +1,12 @@
 import Foundation
 
+/// Where a validated spec came from.
+public enum SpecOrigin: Equatable, Sendable {
+    case unknown
+    /// The frontier model that looked at the writer's handwriting; its `read` can be trusted over the recogniser's.
+    case hostedModel
+}
+
 /// A spec that has passed `SpecValidator`.
 ///
 /// The initializer is private to this file, so the only way to obtain one is to validate.
@@ -8,9 +15,18 @@ import Foundation
 /// reviewers have to remember (`AI_PIPELINE.md` §3.2, rule 4).
 public struct ValidatedSpec: Equatable, Sendable {
     public let spec: Spec
+    /// Who produced the spec. A hosted model's `read` is a far better reading of the handwriting than the on-device
+    /// recogniser's, which is what lets the app learn the writer's characters from it.
+    public let origin: SpecOrigin
 
-    fileprivate init(spec: Spec) {
+    fileprivate init(spec: Spec, origin: SpecOrigin = .unknown) {
         self.spec = spec
+        self.origin = origin
+    }
+
+    /// The same spec, recorded as coming from `origin`. Still a validated spec: only the provenance changes.
+    public func markedAs(_ origin: SpecOrigin) -> ValidatedSpec {
+        ValidatedSpec(spec: spec, origin: origin)
     }
 
     public var read: String { spec.read }

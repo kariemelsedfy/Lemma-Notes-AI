@@ -253,7 +253,7 @@ public struct ProxySpecProvider: SpecProvider {
             throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue)
         }
         // The model may answer math in LaTeX; the page can only hold what a hand could write.
-        do { return try spec.inPlainCharacters() } catch let error as SpecValidationError {
+        do { return try spec.inPlainCharacters().markedAs(.hostedModel) } catch let error as SpecValidationError {
             throw ProxyProviderFailure.rejectedSpec(error.name)
         } catch {
             throw ProxyProviderFailure.undecodable("other \(type(of: error))")

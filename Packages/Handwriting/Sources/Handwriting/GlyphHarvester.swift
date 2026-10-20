@@ -31,6 +31,8 @@ public enum GlyphHarvester {
     public static let samplesPerCharacterLimit = 20
     /// One selection may add at most this many of the same character, so a word like "eeeee" cannot dominate.
     public static let samplesPerCharacterPerSelection = 2
+    /// When the model that answered has confirmed what the writing says, a little more is safe to take.
+    public static let confirmedSamplesPerCharacterPerSelection = 3
 
     public struct Outcome: Equatable, Sendable {
         public var glyphs: [Glyph]
@@ -41,9 +43,16 @@ public enum GlyphHarvester {
     }
 
     /// New samples for `bank` from `strokes`, which must be the writer's own ink (never generated ink).
-    public static func harvest(strokes: [InkStroke], regions: [CharacterRegion], bank: GlyphBank) -> Outcome {
+    ///
+    /// - Parameter confirmedText: what the model that answered the question read in this writing. Where it lines up
+    ///   with the recogniser's boxes it names each character (an `A` the recogniser called a `4` is an `A`), and a
+    ///   character named this way can be learned even if the bank has none of it yet.
+    public static func harvest(
+        strokes: [InkStroke], regions: [CharacterRegion], bank: GlyphBank, confirmedText: String? = nil
+    ) -> Outcome {
         guard !strokes.isEmpty else { return .none }
-        let groups = cleanGroups(strokes: strokes, regions: regions, bank: bank)
+        let (named, confirmed) = naming(regions, from: confirmedText)
+        let groups = cleanGroups(strokes: strokes, regions: named, confirmed: confirmed, bank: bank)
         guard let scale = localScale(of: groups, bank: bank) else { return .none }
 
         var accepted: [Glyph] = []
@@ -51,11 +60,10 @@ public enum GlyphHarvester {
         for group in groups {
             let key = String(group.character)
             let existing = bank.samples(for: group.character)
-            guard existing.count + taken[key, default: 0] < samplesPerCharacterLimit,
-                taken[key, default: 0] < samplesPerCharacterPerSelection,
+            let allowed = group.isConfirmed ? confirmedSamplesPerCharacterPerSelection : samplesPerCharacterPerSelection
+            guard existing.count + taken[key, default: 0] < samplesPerCharacterLimit, taken[key, default: 0] < allowed,
                 let glyph = try? GlyphNormalizer.glyph(for: group.character, from: group.strokes, xHeight: scale),
-                fitsSize(glyph, among: existing),
-                isClosestToClaimed(glyph, in: bank),
+                isAcceptable(glyph, group: group, existing: existing, bank: bank),
                 isNovel(glyph, among: existing + accepted.filter { $0.character == key })
             else { continue }
             accepted.append(glyph)
@@ -64,12 +72,39 @@ public enum GlyphHarvester {
         return Outcome(glyphs: accepted, considered: groups.count)
     }
 
+    /// The regions with the model's characters where they line up, and which regions were named that way.
+    private static func naming(_ regions: [CharacterRegion], from text: String?) -> ([CharacterRegion], Set<Int>) {
+        guard let text, let labels = ReadingAlignment.labels(seen: regions.map(\.character), confirmed: text) else {
+            return (regions, [])
+        }
+        let named = regions.enumerated().map { index, region in
+            CharacterRegion(character: labels[index] ?? region.character, box: region.box)
+        }
+        return (named, Set(labels.keys))
+    }
+
+    /// Whether a normalised glyph is a believable sample of the character it is claimed to be. A character the model
+    /// confirmed skips the shape comparison (that exists to catch the recogniser's misreads) and, if the bank has none
+    /// of it, only has to be a sensible size.
+    private static func isAcceptable(_ glyph: Glyph, group: Group, existing: [Glyph], bank: GlyphBank) -> Bool {
+        if existing.isEmpty { return group.isConfirmed && isPlausibleSize(glyph) }
+        return fitsSize(glyph, among: existing) && (group.isConfirmed || isClosestToClaimed(glyph, in: bank))
+    }
+
+    private static func isPlausibleSize(_ glyph: Glyph) -> Bool {
+        let box = glyph.bounds
+        guard !box.isNull else { return false }
+        return (0.15...3.5).contains(box.height) && box.width <= 4
+    }
+
     // MARK: - Grouping
 
     private struct Group {
         let character: Character
         let strokes: [InkStroke]
         let bounds: CGRect
+        /// Named by the model that answered, not only by the recogniser.
+        let isConfirmed: Bool
     }
 
     static func isLearnable(_ character: Character) -> Bool {
@@ -77,13 +112,17 @@ public enum GlyphHarvester {
     }
 
     /// Strokes assigned to exactly one character, with that character's group sitting on its box.
-    private static func cleanGroups(strokes: [InkStroke], regions: [CharacterRegion], bank: GlyphBank) -> [Group] {
-        let usable = regions.filter {
-            isLearnable($0.character) && $0.box.width > 0 && $0.box.height > 0
-                && !bank.samples(for: $0.character).isEmpty
-        }
+    private static func cleanGroups(
+        strokes: [InkStroke], regions: [CharacterRegion], confirmed: Set<Int>, bank: GlyphBank
+    ) -> [Group] {
+        let usable = regions.enumerated().filter { index, region in
+            isLearnable(region.character) && region.box.width > 0 && region.box.height > 0
+                && (confirmed.contains(index) || !bank.samples(for: region.character).isEmpty)
+        }.map { (region: $0.element, isConfirmed: confirmed.contains($0.offset)) }
         guard !usable.isEmpty else { return [] }
-        let padded = usable.map { $0.box.insetBy(dx: -$0.box.width * 0.12, dy: -$0.box.height * 0.08) }
+        let padded = usable.map {
+            $0.region.box.insetBy(dx: -$0.region.box.width * 0.12, dy: -$0.region.box.height * 0.08)
+        }
 
         var assigned = [[InkStroke]](repeating: [], count: usable.count)
         var spoiled = Set<Int>()
@@ -103,12 +142,13 @@ public enum GlyphHarvester {
         }
 
         var groups: [Group] = []
-        for (index, region) in usable.enumerated() where !spoiled.contains(index) {
+        for (index, item) in usable.enumerated() where !spoiled.contains(index) {
             let own = assigned[index]
             guard (1...4).contains(own.count) else { continue }
             let bounds = InkLineGrouping.bounds(of: own)
-            guard !bounds.isNull, intersectionOverUnion(bounds, region.box) >= 0.35 else { continue }
-            groups.append(Group(character: region.character, strokes: own, bounds: bounds))
+            guard !bounds.isNull, intersectionOverUnion(bounds, item.region.box) >= 0.35 else { continue }
+            groups.append(
+                Group(character: item.region.character, strokes: own, bounds: bounds, isConfirmed: item.isConfirmed))
         }
         return groups
     }

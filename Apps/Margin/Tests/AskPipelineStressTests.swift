@@ -176,4 +176,44 @@ final class AskPipelineStressTests: XCTestCase {
         try await harness.settle()
         assertDrawn(harness, "rapid repeats")
     }
+
+    // MARK: - Learning from the answer's reading
+
+    private func learned(from reply: ValidatedSpec, override: String? = nil) async throws -> [String?] {
+        let harness = Harness(Canned(result: .success(reply)))
+        var seen: [String?] = []
+        harness.pipeline.onSelectionRead = { seen.append($0.confirmedText) }
+        harness.pipeline.run(harness.input, verb: .explain, readingOverride: override)
+        try await harness.settle()
+        return seen
+    }
+
+    func testTheModelsReadingOfTheWritingIsHandedToLearning() async throws {
+        let hosted = try spec([text("5")]).markedAs(.hostedModel)
+        let seen = try await learned(from: hosted)
+        XCTAssertEqual(seen, ["q"], "the hosted model's `read` names the characters")
+    }
+
+    func testAnAnswerFromTheDeviceOrAnUnsureModelConfirmsNothing() async throws {
+        let device = try spec([text("5")])
+        let unsure = try spec([text("5")], confidence: 0.3).markedAs(.hostedModel)
+        let fromDevice = try await learned(from: device)
+        let fromUnsure = try await learned(from: unsure)
+        XCTAssertEqual(fromDevice, [nil])
+        XCTAssertEqual(fromUnsure, [nil])
+    }
+
+    func testATypedCorrectionNeverTeachesTheBank() async throws {
+        let seen = try await learned(from: try spec([text("5")]).markedAs(.hostedModel), override: "y=x^2")
+        XCTAssertTrue(seen.isEmpty)
+    }
+
+    func testAFailedAskStillLearnsFromTheRecognisersLabels() async throws {
+        let harness = Harness(Canned(result: .failure(ProxyProviderFailure.offline)))
+        var seen: [String?] = []
+        harness.pipeline.onSelectionRead = { seen.append($0.confirmedText) }
+        harness.pipeline.run(harness.input, verb: .explain)
+        try await harness.settle()
+        XCTAssertEqual(seen, [nil])
+    }
 }
