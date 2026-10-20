@@ -14,6 +14,9 @@ struct CalibrationView: View {
     @State private var session: CalibrationSession
     /// Set when only some characters are being taught: the existing bank the new ones are merged into.
     private let baseBank: GlyphBank?
+    /// True when the writer is recording another variant of characters they already have: what they write is added
+    /// to the samples there, not substituted for them.
+    private let addsVariants: Bool
     @State private var strokes: [InkStroke] = []
     @State private var boxes: [GuideBoxSegmenter.Box] = []
     /// Bumped to clear the canvas; the writing surface owns its own ink otherwise.
@@ -23,8 +26,9 @@ struct CalibrationView: View {
 
     /// - Parameter characters: empty teaches the whole alphabet from the start. Otherwise only these are
     ///   written, and they are merged into the writer's existing bank rather than replacing it.
-    init(store: HandwritingStyleStore, characters: [Character] = []) {
+    init(store: HandwritingStyleStore, characters: [Character] = [], addsVariants: Bool = false) {
         self.store = store
+        self.addsVariants = addsVariants
         var session = CalibrationSession()
         if characters.isEmpty {
             baseBank = nil
@@ -207,7 +211,11 @@ struct CalibrationView: View {
         // Adding characters: scale them by the size the existing bank's glyphs were normalized by (not its
         // `style.xHeight`, a different measurement), and let only the rewritten characters replace theirs.
         let outcome = session.outcome(capturedAt: Date(), xHeight: merged.normalizationXHeight)
-        merged.replaceSamples(from: outcome.bank)
+        if addsVariants {
+            merged.appendSamples(from: outcome.bank)
+        } else {
+            merged.replaceSamples(from: outcome.bank)
+        }
         summary = CalibrationSession.Outcome(bank: merged, rejected: outcome.rejected, missing: outcome.missing)
     }
 }

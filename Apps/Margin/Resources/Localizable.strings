@@ -258,3 +258,11 @@
 "gallery.cell.a11y" = "%@, %d recorded variants";
 "gallery.empty.title" = "No handwriting yet";
 "gallery.empty.body" = "Teach it your handwriting from the gear menu, and the characters you write will appear here.";
+
+"gallery.record.all" = "Record another variant of every character";
+"gallery.record.hint" = "Write each character once more. The new variants are added to the ones you already have.";
+"gallery.record.one" = "Record another variant";
+"handwriting.card.title" = "My handwriting";
+"handwriting.card.subtitle" = "%d characters, %d variants";
+"handwriting.card.teach" = "Teach it your handwriting";
+"handwriting.card.teach.subtitle" = "A few minutes, once";

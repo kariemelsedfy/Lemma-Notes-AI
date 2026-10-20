@@ -157,6 +157,14 @@ public struct GlyphBank: Codable, Equatable, Sendable {
         }
     }
 
+    /// Adds `other`'s samples to this bank's, **keeping** what is already here, for "record another variant". A
+    /// character holds at most `limit` samples; past it the oldest are dropped so the newest writing wins.
+    public mutating func appendSamples(from other: GlyphBank, limit: Int = 20) {
+        for (character, glyphs) in other.samples where !glyphs.isEmpty {
+            samples[character] = Array(((samples[character] ?? []) + glyphs).suffix(limit))
+        }
+    }
+
     /// Drops every sample of a character, for the "retap any glyph to rewrite it" flow
     /// in `HANDWRITING.md` §3.2.
     public mutating func removeSamples(for character: Character) {

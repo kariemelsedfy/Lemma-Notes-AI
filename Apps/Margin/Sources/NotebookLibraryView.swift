@@ -56,7 +56,11 @@ struct NotebookLibraryView: View {
                 selection: $selection,
                 onNewFolder: { folderSheet = .new },
                 onEditFolder: { folderSheet = .edit($0) },
-                onDeleteFolder: { folderPendingDeletion = $0 }
+                onDeleteFolder: { folderPendingDeletion = $0 },
+                handwriting: handwriting.bank.map { ($0.characterCount, $0.sampleCount) },
+                onOpenHandwriting: {
+                    if handwriting.bank == nil { calibrationPresented = true } else { galleryPresented = true }
+                }
             )
             .toolbar { ToolbarItem(placement: .topBarLeading) { settingsMenu } }
         } detail: {
@@ -208,15 +212,8 @@ struct NotebookLibraryView: View {
     /// ADR-014: calibration is optional, so it lives here rather than in front of a new user.
     private var settingsMenu: some View {
         Menu {
-            // §8's three styles. Offered even without a bank so the choice is discoverable, but they
-            // resolve to typeset until one exists.
-            Picker("style.title", selection: $stylePreference.choice) {
-                ForEach(HandwritingStyleChoice.allCases) { style in
-                    Text(LocalizedStringKey(style.localizedNameKey)).tag(style)
-                }
-            }
-            .pickerStyle(.inline)
-            .disabled(handwriting.bank == nil)
+            Button("gallery.menu", systemImage: "pencil.and.scribble") { galleryPresented = true }
+                .disabled(handwriting.bank == nil)
             #if DEBUG
                 Button("sample.open") { samplePresented = true }
                     .disabled(handwriting.bank == nil)
@@ -230,8 +227,6 @@ struct NotebookLibraryView: View {
             Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }
             Button("calibration.add") { addCharactersPresented = true }
-                .disabled(handwriting.bank == nil)
-            Button("gallery.menu") { galleryPresented = true }
                 .disabled(handwriting.bank == nil)
             if handwriting.bank != nil {
                 Button("calibration.delete", role: .destructive) { handwriting.delete() }
