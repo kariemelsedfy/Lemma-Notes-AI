@@ -39,12 +39,26 @@ final class BoardDockTests: XCTestCase {
         XCTAssertEqual(bottom.x, 372, accuracy: 0.01)
         XCTAssertEqual(bottom.y, 1133 - 20 - 12 - 60, accuracy: 0.01)
         let top = BoardDock.top.center(of: board, in: screen, safeArea: inset)
-        XCTAssertEqual(top.y, 24 + 6 + 60, accuracy: 0.01)
+        XCTAssertEqual(top.y, BoardDock.restingTop + 60, accuracy: 0.01, "on the bar's level, not below the safe area")
         let tall = CGSize(width: 130, height: 360)
         let leading = BoardDock.leading.center(of: tall, in: screen, safeArea: inset)
         XCTAssertEqual(leading.x, 12 + 65, accuracy: 0.01)
         let trailing = BoardDock.trailing.center(of: tall, in: screen, safeArea: inset)
         XCTAssertEqual(trailing.x, 744 - 12 - 65, accuracy: 0.01)
+    }
+
+    func testABoardAtTheTopLeansIntoTheGapBetweenTheBarsButtons() {
+        let inset = EdgeInsetsValues(top: 92, leading: 0, bottom: 20, trailing: 0)
+        // 744 wide, buttons take 120 and 180: a 400 board fits the 444 gap only between 320 and 364 (centre).
+        let narrow = BoardDock.top.center(of: CGSize(width: 400, height: 120), in: screen, safeArea: inset)
+        XCTAssertEqual(narrow.x, 364, accuracy: 0.01)
+        // A wide screen has room to spare: the board stays centred.
+        let wide = CGSize(width: 1_194, height: 834)
+        XCTAssertEqual(
+            BoardDock.top.center(of: CGSize(width: 400, height: 120), in: wide, safeArea: inset).x, 597, accuracy: 0.01)
+        // Too wide to fit between the buttons at all: centred, not squeezed.
+        let huge = BoardDock.top.center(of: CGSize(width: 600, height: 120), in: screen, safeArea: inset)
+        XCTAssertEqual(huge.x, 372, accuracy: 0.01)
     }
 
     func testTheDockIsRememberedAndAnUnknownValueMeansTop() {

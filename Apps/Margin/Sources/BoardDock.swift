@@ -43,17 +43,33 @@ enum BoardDock: String, CaseIterable, Equatable {
         return distances.min { $0.1 < $1.1 }?.0 ?? .top
     }
 
+    /// Where the board's top edge rests when docked at the top, measured from the top of the screen (not the safe
+    /// area): just below the middle of the bar's buttons.
+    static let restingTop: CGFloat = 58
+    /// The width the bar's buttons take at each end (the sidebar and back buttons; the Premium, share and page
+    /// buttons), which a board docked at the top keeps clear of.
+    static let barButtonsLeading: CGFloat = 120
+    static let barButtonsTrailing: CGFloat = 180
+
     /// Where the board's centre goes when docked: against its edge, inside the safe area and a margin, and centred
     /// along the edge.
     func center(of board: CGSize, in container: CGSize, safeArea: EdgeInsetsValues, margin: CGFloat = 12) -> CGPoint {
-        let midX = (container.width + safeArea.leading - safeArea.trailing) / 2
+        var midX = (container.width + safeArea.leading - safeArea.trailing) / 2
         let midY = (container.height + safeArea.top - safeArea.bottom) / 2
         switch self {
         case .bottom:
             return CGPoint(x: midX, y: container.height - safeArea.bottom - margin - board.height / 2)
         case .top:
-            // Closer to the edge than the others: the board rests on the top of the page.
-            return CGPoint(x: midX, y: safeArea.top + margin / 2 + board.height / 2)
+            // On the top bar's own level: the board's first row sits beside the back and share buttons, its colours
+            // a little below them. It stays clear of those buttons sideways, so on a narrow screen it leans to the
+            // gap between them rather than sitting dead centre.
+            let room = container.width - Self.barButtonsLeading - Self.barButtonsTrailing
+            if board.width <= room {
+                midX = min(
+                    max(midX, Self.barButtonsLeading + board.width / 2),
+                    container.width - Self.barButtonsTrailing - board.width / 2)
+            }
+            return CGPoint(x: midX, y: Self.restingTop + board.height / 2)
         case .leading:
             return CGPoint(x: safeArea.leading + margin + board.width / 2, y: midY)
         case .trailing:

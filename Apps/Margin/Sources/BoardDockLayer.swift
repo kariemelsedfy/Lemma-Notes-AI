@@ -22,9 +22,9 @@ struct BoardDockLayer<Board: View, Companion: View>: View {
     var body: some View {
         GeometryReader { proxy in
             let container = proxy.size
-            // The layer respects the safe area (the bar, the home indicator), so the board docks inside it and
-            // needs no insets of its own.
-            let safe = EdgeInsetsValues()
+            // The layer runs up under the top bar so a board docked at the top can sit on the bar's level; the other
+            // edges still dock inside the safe area (the home indicator), and the sides centre below the bar.
+            let safe = EdgeInsetsValues(top: proxy.safeAreaInsets.top)
             let docked = dock.center(of: boardSize, in: container, safeArea: safe, margin: Self.margin)
             ZStack {
                 if let dragCenter { targetEdge(BoardDock.nearest(to: dragCenter, in: container), in: container) }
@@ -43,6 +43,7 @@ struct BoardDockLayer<Board: View, Companion: View>: View {
             .frame(width: container.width, height: container.height)
             .coordinateSpace(name: BoardDockSpace.name)
         }
+        .ignoresSafeArea(.container, edges: .top)
     }
 
     /// Space the Ask bar leaves for the board when it is docked at the bottom; the screen's own edge otherwise.
