@@ -6,6 +6,8 @@ import SwiftUI
 /// variants so that two of the same letter never look stamped; seeing them shows what the app learned from you.
 struct HandwritingGalleryView: View {
     @ObservedObject var store: HandwritingStyleStore
+    /// Shown straight after the writer taught it their handwriting: explains what they are looking at.
+    var afterTeaching = false
     @Environment(\.dismiss) private var dismiss
     /// Characters the writer is recording another variant of; set to open the guided writing sheet.
     @State private var recording: Recording?
@@ -47,6 +49,7 @@ struct HandwritingGalleryView: View {
         let lineWidth = HandwritingGallery.lineWidth(for: bank)
         return ScrollView {
             VStack(alignment: .leading, spacing: MarginSpacing.xLarge) {
+                if afterTeaching { afterTeachingNote }
                 summary(bank)
                 ForEach(HandwritingGallery.sections(from: bank)) { section in
                     VStack(alignment: .leading, spacing: MarginSpacing.medium) {
@@ -65,6 +68,21 @@ struct HandwritingGalleryView: View {
             .frame(maxWidth: 900)
             .frame(maxWidth: .infinity)
         }
+    }
+
+    private var afterTeachingNote: some View {
+        HStack(alignment: .top, spacing: MarginSpacing.medium) {
+            Image(systemName: "checkmark.seal.fill").font(.system(size: 26)).foregroundStyle(MarginColor.accent)
+            VStack(alignment: .leading, spacing: MarginSpacing.xSmall) {
+                Text("gallery.after.title").font(.system(size: 19, weight: .bold, design: .rounded))
+                Text("gallery.after.body")
+                    .font(.system(size: 15))
+                    .foregroundStyle(MarginColor.secondaryText)
+            }
+        }
+        .padding(MarginSpacing.large)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(MarginColor.accent.opacity(0.12)))
     }
 
     private func summary(_ bank: GlyphBank) -> some View {
