@@ -25,6 +25,7 @@ struct NotebookLibraryView: View {
     @State var exportErrorPresented = false
     @State var calibrationPresented = false
     @State var addCharactersPresented = false
+    @State var galleryPresented = false
     @StateObject var handwriting = HandwritingStyleStore()
     @EnvironmentObject var premium: PremiumStore
     @StateObject var onboarding = OnboardingCoordinator(hostedAvailable: { PilotCloudConfiguration.standard.isReady })
@@ -151,13 +152,14 @@ struct NotebookLibraryView: View {
             }
         }
         .debugOpenNewNote { createNote(title: nil, paper: .ruled, size: PageSizePreset.default) }
-        .debugScenario(library, onboarding, premium)
+        .debugScenario(library, onboarding, premium, handwriting, showGallery: { galleryPresented = true })
         .modifier(OnboardingPresentation(coordinator: onboarding, handwriting: handwriting) { handleTourStep($0) })
         .fullScreenCover(isPresented: $premium.paywallPresented) {
             PremiumPaywallView(onClose: { premium.paywallPresented = false })
         }
         .sheet(isPresented: $calibrationPresented) { CalibrationView(store: handwriting) }
         .sheet(isPresented: $addCharactersPresented) { AddCharactersView(store: handwriting) }
+        .sheet(isPresented: $galleryPresented) { HandwritingGalleryView(store: handwriting) }
         #if DEBUG
             // Debug-only (M3-24): produces the material the M3-10 panel needs, and is the only
             // place anything renders a *sentence* in the user's synthesized hand.
@@ -228,6 +230,8 @@ struct NotebookLibraryView: View {
             Button("onboarding.replay") { onboarding.start() }
             Button("calibration.start") { calibrationPresented = true }
             Button("calibration.add") { addCharactersPresented = true }
+                .disabled(handwriting.bank == nil)
+            Button("gallery.menu") { galleryPresented = true }
                 .disabled(handwriting.bank == nil)
             if handwriting.bank != nil {
                 Button("calibration.delete", role: .destructive) { handwriting.delete() }

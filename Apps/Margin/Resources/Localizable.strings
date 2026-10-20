@@ -244,3 +244,17 @@
 "pro.benefit.allowance" = "About five times the monthly AI allowance";
 "pro.benefit.heavy" = "Built for a whole semester of problem sets";
 "premium.menu.pro" = "Upgrade to Pro";
+
+"gallery.menu" = "See my handwriting";
+"gallery.title" = "Your handwriting";
+"gallery.summary" = "%d characters, %d recorded variants";
+"gallery.explain" = "Answers pick among the variants you recorded for each character, so two of the same letter never look stamped. Tap a character to see them all.";
+"gallery.group.lowercase" = "Lowercase";
+"gallery.group.uppercase" = "Capitals";
+"gallery.group.digits" = "Digits";
+"gallery.group.symbols" = "Symbols";
+"gallery.variants" = "%d recorded variants";
+"gallery.variant" = "Variant %d";
+"gallery.cell.a11y" = "%@, %d recorded variants";
+"gallery.empty.title" = "No handwriting yet";
+"gallery.empty.body" = "Teach it your handwriting from the gear menu, and the characters you write will appear here.";
