@@ -11,7 +11,7 @@ final class PilotPriceEnvelopeTests: XCTestCase {
     }
 
     func testOutputBoundsAreEnforced() {
-        for tokens in [0, -1, 513] {
+        for tokens in [0, -1, 1025] {
             XCTAssertThrowsError(try PilotPriceEnvelope.quote(maxOutputTokens: tokens)) { error in
                 XCTAssertEqual(error as? PilotPriceError, .invalidOutput)
             }

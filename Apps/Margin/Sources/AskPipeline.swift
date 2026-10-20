@@ -43,6 +43,7 @@ final class AskPipeline {
     /// The pipeline outlives a `View` rebuild and the layer used not to (M2-16).
     let suggestions: SuggestionLayer
     private let recognizeSelection: @Sendable (InkRasterImage) async -> SelectionReading
+    private let isPaid: @Sendable () -> Bool
     private var task: Task<Void, Never>?
 
     init(
@@ -52,8 +53,10 @@ final class AskPipeline {
         suggestions: SuggestionLayer,
         recognizeSelection: @escaping @Sendable (InkRasterImage) async -> SelectionReading = {
             await OnDeviceSelectionReader.read($0)
-        }
+        },
+        isPaid: @escaping @Sendable () -> Bool = { PaidPlanFlag.shared.isPaid }
     ) {
+        self.isPaid = isPaid
         self.provider = provider
         self.renderer = renderer
         self.model = model
@@ -66,8 +69,10 @@ final class AskPipeline {
     /// - Parameter readingOverride: text the writer typed to correct what was read (a plot's formula). It replaces
     ///   the recognition, and is not used to teach the glyph bank, since it is not their handwriting.
     func run(_ input: PageInput, verb: AskVerb, readingOverride: String? = nil) {
-        task?.cancel()
+        // A tap while one is in flight is ignored: cancelling it first and then failing to begin left the bar working
+        // with nothing running.
         guard model.begin(verb) else { return }
+        task?.cancel()
 
         task = Task { [weak self] in
             guard let self else { return }
@@ -123,31 +128,6 @@ final class AskPipeline {
         )
     }
 
-    /// The provider's answer, or nil after the failure has been shown (or the Ask was cancelled).
-    private func fetchSpec(for request: SpecRequest, verb: AskVerb) async -> ValidatedSpec? {
-        do {
-            return try await provider.spec(for: request)
-        } catch is CancellationError {
-            // Already handled by whoever cancelled; saying so again would overwrite the
-            // reason they recorded.
-            return nil
-        } catch let error as LocalArithmeticFailure {
-            guard !Task.isCancelled else { return nil }
-            model.failedLocally(error)
-            model.apply(.fail(.unreadable))
-            return nil
-        } catch ProviderError.thirdPartyConsentRequired {
-            // Nothing was sent: this install is not entitled to the hosted model. Offer Premium, not an error.
-            guard !Task.isCancelled else { return nil }
-            model.requireSubscription()
-            model.apply(.fail(.unreadable))
-            return nil
-        } catch {
-            fail(with: error, intent: verb.intent)
-            return nil
-        }
-    }
-
     private func selectionReading(of crop: InkRasterImage, override: String?) async -> SelectionReading {
         if let override { return SelectionReading(transcript: override, confidence: 1, isCorrection: true) }
         return await recognizeSelection(crop)
@@ -198,35 +178,25 @@ final class AskPipeline {
         let page = CGRect(origin: .zero, size: input.pageSize)
         // Measured by whoever is going to draw it (M3-12B): a handwriting renderer reserves
         // room through the writer's own glyph advances, a typeset one through its estimate.
-        let result = PlacementEngine(
-            page: page,
-            allowedArea: page,
-            occupancy: grid,
-            measurer: renderer.measurer
-        )
-        .placeBelowSelection(spec, context: context, pageStrokes: pageStrokes)
+        let engine = PlacementEngine(page: page, allowedArea: page, occupancy: grid, measurer: renderer.measurer)
+        let (result, textScale) = Self.placedToFit(spec, engine, context: context, pageStrokes: pageStrokes)
         Self.logBlocks(result.placements)
 
         // Placement may prefer the last line's anchor measurement over the selection-wide
         // style estimate. Rendering must use the same winning value or the reserved frame
         // and the generated glyphs disagree again.
         let renderingStyle = StyleStats(
-            xHeight: usableXHeight,
+            xHeight: usableXHeight * textScale,
             slant: context.style.slant,
-            lineSpacing: context.style.lineSpacing,
+            lineSpacing: context.style.lineSpacing * textScale,
             baselineDrift: context.style.baselineDrift,
             meanVelocity: context.style.meanVelocity,
             meanForce: context.style.meanForce,
             strokeWidth: context.style.strokeWidth
         )
-        var ink: [InkStroke]
         let seed = seedProvider()
-        do {
-            ink = try result.placements.flatMap { placement in
-                try renderer.strokes(for: placement, style: renderingStyle, seed: seed)
-            }
-        } catch {
-            // The answer was placed but cannot be drawn — an honest failure, not blank ink.
+        guard var ink = Self.drawn(result.placements, style: renderingStyle, seed: seed, by: renderer) else {
+            // The answer was placed but cannot be drawn by either renderer: an honest failure, not blank ink.
             model.apply(.fail(.invalidSpec))
             return
         }
@@ -248,6 +218,41 @@ final class AskPipeline {
         )
         suggestions.present(ink, requestID: requestID)
         model.apply(.placed(result))
+    }
+
+    /// The answer's ink from the chosen renderer, or from the typeset one when the chosen one cannot draw it: an answer
+    /// the model gave should reach the page in some hand rather than fail.
+    /// The answer placed at the writer's size, or smaller when it would run off the bottom of the page.
+    private static func placedToFit(
+        _ spec: ValidatedSpec, _ engine: PlacementEngine, context: SelectionContext, pageStrokes: [InkStroke]
+    ) -> (PlacementResult, CGFloat) {
+        var scale: CGFloat = 1
+        var result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes)
+        for smaller: CGFloat in [0.8, 0.65, 0.5] where !fits(result.placements, in: engine.allowedArea) {
+            scale = smaller
+            result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes, textScale: smaller)
+        }
+        return (result, scale)
+    }
+
+    private static func fits(_ placements: [BlockPlacement], in area: CGRect) -> Bool {
+        placements.allSatisfy { $0.frame.maxY <= area.maxY + 1 && $0.frame.minY >= area.minY - 1 }
+    }
+
+    private static func drawn(
+        _ placements: [BlockPlacement], style: StyleStats, seed: UInt64, by renderer: any SuggestionInkRendering
+    ) -> [InkStroke]? {
+        func draw(_ renderer: any SuggestionInkRendering) -> [InkStroke]? {
+            try? placements.flatMap { try renderer.strokes(for: $0, style: style, seed: seed) }
+        }
+        if let ink = draw(renderer), !ink.isEmpty { return ink }
+        let typeset = TypesetInkRenderer()
+        if let ink = draw(typeset), !ink.isEmpty { return ink }
+        // A symbol the typeface lacks (CJK, an emoji) becomes `?` rather than costing the writer the whole answer.
+        let substituted = try? placements.flatMap {
+            try typeset.strokes(for: typeset.substitutingUnsupportedCharacters(in: $0), style: style, seed: seed)
+        }
+        return substituted?.isEmpty == false ? substituted : nil
     }
 
     /// Content-free device evidence for M2-17: whether the local handwriting size survived
@@ -315,6 +320,67 @@ final class AskPipeline {
         case .budgetExceeded: .outOfCredits
         case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: .invalidSpec
         case .invalidRequest, .refused, .unauthorized: .transport
+        }
+    }
+}
+
+extension AskPipeline {
+    private enum Attempt {
+        case spec(ValidatedSpec)
+        case failed(any Error)
+    }
+
+    /// The provider's answer, or nil after the failure has been shown (or the Ask was cancelled). A subscriber's Ask
+    /// that fails for a reason that may pass (a slow or garbled reply) is tried once more before they hear about it.
+    private func fetchSpec(for request: SpecRequest, verb: AskVerb) async -> ValidatedSpec? {
+        var result = await attempt(request)
+        if case .failed(let error) = result, isPaid(), Self.isWorthRetrying(error), !Task.isCancelled {
+            result = await attempt(request)
+        }
+        switch result {
+        case .spec(let spec): return spec
+        case .failed(let error):
+            report(error, verb: verb)
+            return nil
+        }
+    }
+
+    private func attempt(_ request: SpecRequest) async -> Attempt {
+        do { return .spec(try await provider.spec(for: request)) } catch { return .failed(error) }
+    }
+
+    /// Transient trouble worth a second try: not being offline, out of allowance, or sending something unusable.
+    private static func isWorthRetrying(_ error: any Error) -> Bool {
+        switch error {
+        case let failure as ProxyProviderFailure:
+            switch failure {
+            case .offline, .budgetExceeded, .invalidRequest: false
+            default: true
+            }
+        case let failure as ProviderError: failure == .timeout || failure == .transport
+        default: false
+        }
+    }
+
+    private func report(_ error: any Error, verb: AskVerb) {
+        guard !Task.isCancelled, !(error is CancellationError) else {
+            // Already handled by whoever cancelled; saying so again would overwrite the reason they recorded.
+            return
+        }
+        if let failure = error as? LocalArithmeticFailure {
+            model.failedLocally(failure)
+            model.apply(.fail(.unreadable))
+        } else if case ProviderError.thirdPartyConsentRequired = error {
+            // Nothing was sent. A free install is offered Premium; a subscriber is never told to subscribe, so the
+            // reason (an address, a receipt not yet known to the server) is shown as a failure they can retry.
+            if isPaid() {
+                fail(with: ProviderError.transport, intent: verb.intent)
+            } else {
+                model.requireSubscription()
+                model.apply(.fail(.unreadable))
+            }
+        } else {
+            fail(with: error, intent: verb.intent)
         }
     }
 }

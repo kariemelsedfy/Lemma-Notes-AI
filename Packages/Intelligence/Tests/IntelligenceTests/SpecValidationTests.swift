@@ -42,18 +42,18 @@ final class SpecValidationTests: XCTestCase {
 
     func testRejectsTooManyBlocks() {
         let block = Self.inlineBlock()
-        assertRejects(Self.spec(blocks: Array(repeating: block, count: 9)), with: .tooManyBlocks(9))
+        assertRejects(Self.spec(blocks: Array(repeating: block, count: 17)), with: .tooManyBlocks(17))
     }
 
     func testRejectsTooManyLines() {
         let line = SpecLine(run: SpecRun(kind: .text, value: "step"))
-        let block = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 25)))
-        assertRejects(Self.spec(blocks: [block]), with: .tooManyLines(25))
+        let block = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 49)))
+        assertRejects(Self.spec(blocks: [block]), with: .tooManyLines(49))
     }
 
     func testRejectsOverLongContent() {
-        let block = Self.inlineBlock(value: String(repeating: "a", count: 513), kind: .text)
-        assertRejects(Self.spec(blocks: [block]), with: .contentTooLong(513))
+        let block = Self.inlineBlock(value: String(repeating: "a", count: 1025), kind: .text)
+        assertRejects(Self.spec(blocks: [block]), with: .contentTooLong(1025))
     }
 
     func testRejectsEmptyContent() {
@@ -161,5 +161,63 @@ final class SpecValidationTests: XCTestCase {
             explanation: "Power rule.",
             warnings: []
         )
+    }
+}
+
+final class SpecLeniencyTests: XCTestCase {
+    private func spec(_ blocks: [SpecBlock], confidence: Double = 0.9, version: Int = 1) -> Spec {
+        Spec(version: version, read: "r", readConfidence: confidence, intent: .answer, blocks: blocks)
+    }
+
+    private func inline(_ kind: SpecContentKind, _ value: String) -> SpecBlock {
+        SpecBlock(placement: .atAnchor, content: .inline(SpecRun(kind: kind, value: value)))
+    }
+
+    func testTooManyBlocksLinesAndLongTextAreTrimmedToFit() throws {
+        let line = SpecLine(run: SpecRun(kind: .text, value: "step"), indent: 99)
+        let lines = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 80)))
+        let long = inline(.text, String(repeating: "word ", count: 500))
+        let fitted = SpecLeniency.fitted(spec([lines, long] + Array(repeating: inline(.text, "ok"), count: 30)))
+        XCTAssertNoThrow(try SpecValidator.validate(fitted))
+        XCTAssertEqual(fitted.blocks.count, SpecLimits.standard.maximumBlocks)
+        guard case .lines(let kept) = fitted.blocks[0].content else { return XCTFail("Lines were lost") }
+        XCTAssertEqual(kept.count, SpecLimits.standard.maximumLines)
+        XCTAssertEqual(kept[0].indent, SpecLimits.standard.maximumIndent)
+    }
+
+    func testLineBreaksBecomeSpacesAndBrokenMathBecomesPlainText() throws {
+        let fitted = SpecLeniency.fitted(spec([inline(.text, "one\ntwo"), inline(.math, "\\frac{1}{2")]))
+        XCTAssertNoThrow(try SpecValidator.validate(fitted))
+        guard case .inline(let first)? = fitted.blocks.first?.content,
+            case .inline(let second)? = fitted.blocks.last?.content
+        else { return XCTFail("Blocks were lost") }
+        XCTAssertEqual(first.value, "one two")
+        XCTAssertEqual(second.kind, .text)
+    }
+
+    func testAnOutOfRangeConfidenceIsClampedAndOverLongExplanationCut() throws {
+        let long = Spec(
+            read: "r", readConfidence: 1.7, intent: .answer, blocks: [inline(.text, "ok")],
+            explanation: String(repeating: "e", count: 5_000))
+        let fitted = SpecLeniency.fitted(long)
+        XCTAssertEqual(fitted.readConfidence, 1)
+        XCTAssertNoThrow(try SpecValidator.validate(fitted))
+    }
+
+    func testAnAnswerTallerThanAPageKeepsItsStartAndIsCutAtTheTotalLimit() throws {
+        let line = SpecLine(run: SpecRun(kind: .text, value: String(repeating: "word ", count: 60)))
+        let block = SpecBlock(placement: .belowSelection, content: .lines(Array(repeating: line, count: 48)))
+        let fitted = SpecLeniency.fitted(spec([block]))
+        guard case .lines(let kept)? = fitted.blocks.first?.content else { return XCTFail("The start was lost") }
+        let total = kept.reduce(0) { $0 + $1.run.value.count }
+        XCTAssertLessThanOrEqual(total, SpecLimits.standard.maximumTotalCharacters)
+        XCTAssertGreaterThan(total, SpecLimits.standard.maximumTotalCharacters - 300, "most of the allowance is used")
+        XCTAssertNoThrow(try SpecValidator.validate(fitted))
+    }
+
+    func testWhatCannotBeSalvagedIsStillRefused() {
+        XCTAssertThrowsError(try SpecValidator.validate(SpecLeniency.fitted(spec([inline(.text, "ok")], version: 9))))
+        let blank = spec([inline(.text, "   ")])
+        XCTAssertEqual(SpecLeniency.fitted(blank), blank, "nothing to salvage: the validator reports the reason")
     }
 }

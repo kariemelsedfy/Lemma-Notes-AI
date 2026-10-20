@@ -33,19 +33,24 @@ struct HostedPlotSpecProvider: SpecProvider {
         return try await local.spec(for: request)
     }
 
-    /// The reply as a plot the device can evaluate, or nil (so the on-device reading is used).
+    /// The reply as a plot the device can evaluate, or nil (so the on-device reading is used). One function the
+    /// device cannot read is dropped and the rest are drawn; a reply with none it can read is not used.
     static func checked(_ reply: ValidatedSpec) -> ValidatedSpec? {
         guard !reply.isDecline, reply.intent == .plot,
             case .plot(let plot)? = reply.blocks.first?.content
         else { return nil }
         var functions: [SpecPlotFunction] = []
         for function in plot.functions {
-            guard let parsed = PlotExpression(function.expression) else { return nil }
-            functions.append(SpecPlotFunction(expression: parsed.text, domain: function.domain, style: function.style))
+            for parsed in readable(function.expression)
+            where !functions.contains(where: { $0.expression == parsed.text }) {
+                functions.append(
+                    SpecPlotFunction(expression: parsed.text, domain: function.domain, style: function.style))
+            }
         }
+        guard !functions.isEmpty else { return nil }
         let drawn = SpecPlot(
-            functions: functions, xRange: plot.xRange, yRange: plot.yRange, xLabel: plot.xLabel, yLabel: plot.yLabel,
-            gridStyle: plot.gridStyle)
+            functions: Array(functions.prefix(PlotRequest.maximumFunctions)), xRange: plot.xRange,
+            yRange: plot.yRange, xLabel: plot.xLabel, yLabel: plot.yLabel, gridStyle: plot.gridStyle)
         let spec = Spec(
             read: reply.read,
             readConfidence: reply.readConfidence,
@@ -53,7 +58,14 @@ struct HostedPlotSpecProvider: SpecProvider {
             blocks: [SpecBlock(placement: .belowSelection, content: .plot(drawn))],
             explanation: String(
                 format: NSLocalizedString("ask.plot.reading", comment: ""),
-                functions.map(\.expression).joined(separator: ", ")))
+                drawn.functions.map(\.expression).joined(separator: ", ")))
         return try? SpecValidator.validate(spec)
+    }
+
+    /// What one reply entry holds: usually a single formula, but the model may write `y = x^2, y = x^3`, an
+    /// equation, a domain after the formula, or a bare constant.
+    private static func readable(_ expression: String) -> [PlotExpression] {
+        if let several = PlotRequest.functions(from: expression) { return several }
+        return PlotExpression(expression).map { [$0] } ?? []
     }
 }

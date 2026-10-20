@@ -5,9 +5,11 @@ import Foundation
 public enum Plan: String, Equatable, Sendable {
     /// No subscription: everything except hosted Ask.
     case free
-    /// The 7-day introductory offer. Hosted Ask works, under the same cost allowance as a paying user.
+    /// The 3-day introductory offer. Hosted Ask works, under the same cost allowance as a paying user.
     case trial
     case premium
+    /// The heavy-use tier: the same hosted Ask with a much larger monthly allowance (still capped on the server).
+    case pro
     /// A build provisioned with the owner's access token (the pilot). Replaced by App Attest before anyone else
     /// receives a build.
     case pilot

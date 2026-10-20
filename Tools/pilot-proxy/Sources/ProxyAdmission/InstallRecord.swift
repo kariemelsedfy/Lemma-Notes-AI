@@ -4,6 +4,26 @@ public enum InstallPlan: String, Sendable, Equatable {
     case free
     case trial
     case premium
+    /// The heavy-use tier: a much larger monthly allowance, still capped.
+    case pro
+
+    /// Pro products are the ids that start with this. Everything else the verifier accepts is Premium.
+    static let proProductPrefix = "lemmanotesai.pro."
+
+    static func plan(forProduct productID: String, isTrial: Bool) -> InstallPlan {
+        if productID.hasPrefix(proProductPrefix) { return .pro }
+        return isTrial ? .trial : .premium
+    }
+
+    /// Orders the paid tiers so a Premium receipt never replaces a live Pro one.
+    var rank: Int {
+        switch self {
+        case .free: 0
+        case .trial: 1
+        case .premium: 2
+        case .pro: 3
+        }
+    }
 }
 
 /// Everything the server knows about one attested install (ADR-031): its key and assertion counter, the plan its
@@ -55,8 +75,13 @@ public enum AllowanceError: Error, Equatable, Sendable {
 /// a monthly cost allowance for a paid one. Pure functions over an `InstallRecord`, so every rule is testable.
 public enum InstallAllowance {
     public static let tourAsks = 3
-    /// $1.50 a month of inference per paid install. A starting value, tuned from measured cost.
+    /// $1.50 a month of inference per Premium install. A starting value, tuned from measured cost.
     public static let monthlyMicros: Int64 = 1_500_000
+    /// $7 a month for Pro: about five times Premium, plenty for a student, and a hard stop for a script. Leaves about
+    /// $10 of the $19.99 after Apple's 15%, and about $7 at the standard 30%.
+    public static let proMonthlyMicros: Int64 = 7_000_000
+
+    static func allowance(for plan: InstallPlan) -> Int64 { plan == .pro ? proMonthlyMicros : monthlyMicros }
 
     static func month(of date: Date) -> String {
         let parts = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC")!, from: date)
@@ -70,11 +95,13 @@ public enum InstallAllowance {
         case .free:
             guard record.tourAsksUsed < tourAsks else { throw AllowanceError.subscriptionRequired }
             record.tourAsksUsed += 1
-        case .trial, .premium:
+        case .trial, .premium, .pro:
             let thisMonth = month(of: now)
             let spent = record.usageMonth == thisMonth ? record.usageMicros : 0
             let (total, overflow) = spent.addingReportingOverflow(micros)
-            guard !overflow, total <= monthlyMicros else { throw AllowanceError.allowanceUsedUp }
+            guard !overflow, total <= allowance(for: record.effectivePlan(at: now)) else {
+                throw AllowanceError.allowanceUsedUp
+            }
             record.usageMonth = thisMonth
             record.usageMicros = total
         }
@@ -101,8 +128,12 @@ extension InstallRecord {
             return
         }
         let isAnotherTransaction = originalTransactionID != transaction.originalTransactionID
-        if let current = planExpiresAt, current > expiresAt, isAnotherTransaction { return }
-        plan = transaction.isIntroductoryTrial ? .trial : .premium
+        let granted = InstallPlan.plan(forProduct: transaction.productID, isTrial: transaction.isIntroductoryTrial)
+        if isAnotherTransaction, effectivePlan(at: now).rank > granted.rank { return }
+        if let current = planExpiresAt, current > expiresAt, isAnotherTransaction, effectivePlan(at: now) == granted {
+            return
+        }
+        plan = granted
         planExpiresAt = expiresAt
         originalTransactionID = transaction.originalTransactionID
     }
@@ -113,7 +144,7 @@ extension InstallAllowance {
     public static func refund(_ record: inout InstallRecord, reserved: Int64, at now: Date) {
         switch record.effectivePlan(at: now) {
         case .free: record.tourAsksUsed = max(0, record.tourAsksUsed - 1)
-        case .trial, .premium:
+        case .trial, .premium, .pro:
             guard record.usageMonth == month(of: now) else { return }
             record.usageMicros = max(0, record.usageMicros - reserved)
         }

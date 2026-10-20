@@ -6,7 +6,10 @@ struct MarginApp: App {
     @StateObject private var library = NotebookLibrary()
     @StateObject private var premium = PremiumStore(uploadTransaction: { signed in
         // A failure is not final: the next refresh sends it again.
-        await PilotCloudConfiguration.standard.installs.flatMap { $0 as? InstallSession }?.uploadIgnoringFailure(signed)
+        guard let session = PilotCloudConfiguration.standard.installs.flatMap({ $0 as? InstallSession }) else {
+            return true
+        }
+        return await session.upload(signed)
     })
 
     var body: some Scene {

@@ -85,7 +85,7 @@ extension PilotService {
     /// refused request never advances the counter; after the call the hold is replaced by the real cost, or given
     /// back if the ask was not served.
     func handle(body: Data, install credentials: InstallGate.Credentials, gate: InstallGate) async -> PilotOutcome {
-        let hold = (try? PilotPriceEnvelope.quote(maxOutputTokens: 256).reservationMicros) ?? 50_000
+        let hold = (try? PilotPriceEnvelope.quote(maxOutputTokens: 512).reservationMicros) ?? 50_000
         let moment = gate.now()
         do {
             try await gate.trust.authorize(

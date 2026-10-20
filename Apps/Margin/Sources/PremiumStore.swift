@@ -2,12 +2,16 @@ import Foundation
 import Intelligence
 import StoreKit
 
-/// The two Premium subscriptions (one group, ADR-031 / `PREMIUM_AND_ONBOARDING_PLAN.md`). The ids are created in
-/// App Store Connect with these exact strings, and mirrored in `Apps/Margin/StoreKit/Margin.storekit` for local
-/// testing.
+/// The subscriptions (one group, ADR-031 / `PREMIUM_AND_ONBOARDING_PLAN.md`): Premium yearly and monthly, and Pro for
+/// heavy use. The ids are created in App Store Connect with these exact strings, and mirrored in
+/// `Apps/Margin/StoreKit/Margin.storekit` for local testing. The server tells Pro apart by the
+/// `lemmanotesai.pro.` prefix, so a new Pro id must keep it.
 enum PremiumProduct: String, CaseIterable, Identifiable {
     case yearly = "lemmanotesai.premium.yearly"
     case monthly = "lemmanotesai.premium.monthly"
+    case pro = "lemmanotesai.pro.monthly"
+
+    var isPro: Bool { self == .pro }
 
     var id: String { rawValue }
 }
@@ -22,14 +26,16 @@ struct EntitlementFact: Equatable, Sendable {
 }
 
 enum PlanResolver {
-    /// `.trial` while any live entitlement is the introductory free trial, `.premium` for any other live one,
-    /// otherwise `.free`. A revoked or expired entitlement counts for nothing, and so does a product that is not ours.
+    /// `.pro` while a Pro subscription is live, else `.trial` while any live entitlement is the introductory free
+    /// trial, `.premium` for any other live one, otherwise `.free`. A revoked or expired entitlement counts for
+    /// nothing, and so does a product that is not ours.
     static func plan(from facts: [EntitlementFact], now: Date = .now) -> Plan {
         let live = facts.filter { fact in
             PremiumProduct(rawValue: fact.productID) != nil && !fact.isRevoked
                 && (fact.expiresAt.map { $0 > now } ?? true)
         }
         if live.isEmpty { return .free }
+        if live.contains(where: { PremiumProduct(rawValue: $0.productID)?.isPro == true }) { return .pro }
         return live.contains { !$0.isIntroductoryTrial } ? .premium : .trial
     }
 }
@@ -86,21 +92,25 @@ final class PremiumStore: ObservableObject {
     /// Whether to invite the user to upgrade (every upgrade prompt in the app reads this).
     var offersUpgrade: Bool { plan == .free }
 
+    /// Whether a Premium subscriber may be offered Pro (more allowance).
+    var offersPro: Bool { plan == .premium || plan == .trial }
+
     func showPaywall() { paywallPresented = true }
 
     private let backend: any StoreBackend
-    private let uploadTransaction: @Sendable (String) async -> Void
+    private let uploadTransaction: @Sendable (String) async -> Bool
     private var uploaded: Set<String> = []
     private var listener: Task<Void, Never>?
 
     /// - Parameter uploadTransaction: tells the server about a signed transaction so it grants hosted answers. It
-    ///   is called once per distinct transaction, and a failure is simply retried on the next refresh.
+    ///   returns whether the server took it; one it did not take is sent again on the next refresh.
     init(
         backend: any StoreBackend = StoreKitBackend(),
-        uploadTransaction: @escaping @Sendable (String) async -> Void = { _ in }
+        uploadTransaction: @escaping @Sendable (String) async -> Bool = { _ in true }
     ) {
         self.backend = backend
         self.uploadTransaction = uploadTransaction
+        PaidPlanFlag.shared.resync = { [weak self] in await self?.resyncEntitlement() }
         listener = Task { [weak self] in
             guard let changes = self?.backend.changes() else { return }
             for await _ in changes { await self?.refresh() }
@@ -129,9 +139,15 @@ final class PremiumStore: ObservableObject {
         PaidPlanFlag.shared.isPaid = plan != .free
         guard plan != .free else { return }
         for signed in await backend.signedTransactions() where !uploaded.contains(signed) {
-            await uploadTransaction(signed)
-            uploaded.insert(signed)
+            if await uploadTransaction(signed) { uploaded.insert(signed) }
         }
+    }
+
+    /// Sends the server every current transaction again. A paying install the server still counts as free (an upload
+    /// that was lost, or a server that was down) is put right before its next ask.
+    func resyncEntitlement() async {
+        uploaded.removeAll()
+        await refresh()
     }
 
     @discardableResult

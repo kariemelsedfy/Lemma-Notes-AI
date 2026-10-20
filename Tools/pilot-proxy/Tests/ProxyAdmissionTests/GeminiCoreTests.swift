@@ -21,7 +21,7 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(worst, 5_000 + 768)
         XCTAssertLessThan(worst, 50_000)
         XCTAssertNil(GeminiPilot.worstCaseMicros(maxOutputTokens: 0))
-        XCTAssertNil(GeminiPilot.worstCaseMicros(maxOutputTokens: 513))
+        XCTAssertNil(GeminiPilot.worstCaseMicros(maxOutputTokens: 1025))
     }
 
     func testRequestKeepsInstructionSeparateFromUntrustedContent() throws {
@@ -60,13 +60,13 @@ final class GeminiCoreTests: XCTestCase {
         let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
         XCTAssertEqual(intent["enum"] as? [String], ["answer"])
         let blocks = try XCTUnwrap(properties["blocks"] as? [String: Any])
-        XCTAssertEqual(blocks["maxItems"] as? Int, 3)
+        XCTAssertEqual(blocks["maxItems"] as? Int, 6)
     }
 
     func testRequestRejectsEmptyInstructionOutputBoundsAndMissingImages() throws {
         let good = try request()
         XCTAssertThrowsError(try GeminiRequestBuilder.body(for: good, instruction: ""))
-        let tooMany = try request(maxOutputTokens: 513)
+        let tooMany = try request(maxOutputTokens: 1025)
         let none = try request(maxOutputTokens: 0)
         XCTAssertThrowsError(try GeminiRequestBuilder.body(for: tooMany, instruction: "x"))
         XCTAssertThrowsError(try GeminiRequestBuilder.body(for: none, instruction: "x"))
@@ -81,6 +81,17 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(reply.promptTokens, 100)
         XCTAssertEqual(reply.outputTokens, 15)
         XCTAssertEqual(reply.costMicros, 48)  // 25 + 22.5 rounded up
+    }
+
+    func testAFencedOrPaddedJSONReplyIsStillRead() throws {
+        let usage = #""promptTokenCount":10,"candidatesTokenCount":2"#
+        let json = #"{"intent":"answer"}"#
+        for text in [
+            "```json\n\(json)\n```", "```\n\(json)\n```", "\n\n \(json) \n", "\u{FEFF}\(json)", "```JSON \(json)```",
+        ] {
+            let reply = try GeminiResponseParser.parse(response(text: text, finish: "STOP", usage: usage))
+            XCTAssertEqual(reply.specJSON, Data(json.utf8), text)
+        }
     }
 
     func testRefusesTruncatedBlockedMalformedAndUsagelessReplies() throws {

@@ -135,9 +135,9 @@ actor InstallSession: InstallCredentialSource {
         guard status == 200 else { throw InstallIdentityError.registrationFailed }
     }
 
-    /// For callers that retry later anyway.
-    func uploadIgnoringFailure(_ signedTransaction: String) async {
-        try? await uploadTransaction(signedTransaction)
+    /// Whether the server accepted it, for callers that try again later when it did not.
+    func upload(_ signedTransaction: String) async -> Bool {
+        (try? await uploadTransaction(signedTransaction)) != nil
     }
 
     // MARK: - Registration

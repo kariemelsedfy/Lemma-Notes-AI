@@ -20,7 +20,7 @@ struct AdmittedRequest: Decodable, Sendable {
     let neighborhoodPNG: Data
     let transcript: String
     let intent: String
-    let maxOutputTokens: Int
+    var maxOutputTokens: Int
 
     private enum Fields: String, CodingKey {
         case requestID, cropPNG, neighborhoodPNG, transcript, intent, maxOutputTokens
@@ -84,7 +84,7 @@ actor AdmissionGate {
     }
 
     func validate(_ body: Data, proof: String?) async throws -> (request: AdmittedRequest, identity: PilotIdentity) {
-        guard body.count <= 3_000_000 else { throw AdmissionError.oversized }
+        guard body.count <= 6_000_000 else { throw AdmissionError.oversized }
         try Task.checkCancellation()
         let identity = await authorize(proof)
         try Task.checkCancellation()
@@ -94,7 +94,7 @@ actor AdmissionGate {
 
     /// Validates a body for a caller that is already authenticated (an attested install, ADR-031).
     func validate(_ body: Data, identity: PilotIdentity) throws -> (request: AdmittedRequest, identity: PilotIdentity) {
-        guard body.count <= 3_000_000 else { throw AdmissionError.oversized }
+        guard body.count <= 6_000_000 else { throw AdmissionError.oversized }
         guard !identity.subjectID.isEmpty else { throw AdmissionError.unauthorized }
         let request: AdmittedRequest
         do {
@@ -103,10 +103,10 @@ actor AdmissionGate {
             throw AdmissionError.malformed
         }
         guard GeminiPrompt.supportedIntents.contains(request.intent) else { throw AdmissionError.unsupported }
-        guard (1...512).contains(request.maxOutputTokens), request.transcript.utf8.count <= 256 else {
+        guard (1...1024).contains(request.maxOutputTokens), request.transcript.utf8.count <= 1024 else {
             throw AdmissionError.oversized
         }
-        let crop = try PNG.normalized(request.cropPNG, maxBytes: 1_000_000, maxPixels: 1_500_000)
+        let crop = try PNG.normalized(request.cropPNG, maxBytes: 2_000_000, maxPixels: 1_500_000)
         let neighborhood = try PNG.normalized(request.neighborhoodPNG, maxBytes: 500_000, maxPixels: 500_000)
         return (AdmittedRequest(normalizing: request, cropPNG: crop, neighborhoodPNG: neighborhood), identity)
     }

@@ -187,17 +187,30 @@ public struct ProxySpecProvider: SpecProvider {
         let nearbyPixels = Double(
             neighborhood.size.width * neighborhood.size.height * neighborhood.scale * neighborhood.scale
         )
-        let transcript = request.selectedAreaReading?.transcript ?? ""
-        guard !crop.data.isEmpty, crop.data.count <= 1_000_000,
+        // A long reading is cut, not refused: the model works from the image and the transcript is only a hint.
+        let transcript = Self.clipped(request.selectedAreaReading?.transcript ?? "", toBytes: maximumTranscriptBytes)
+        guard !crop.data.isEmpty, crop.data.count <= 2_000_000,
             !neighborhood.data.isEmpty, neighborhood.data.count <= 500_000,
             cropPixels.isFinite, (1...1_500_000).contains(cropPixels),
-            nearbyPixels.isFinite, (1...500_000).contains(nearbyPixels),
-            transcript.utf8.count <= 256
+            nearbyPixels.isFinite, (1...500_000).contains(nearbyPixels)
         else { throw ProxyProviderFailure.invalidRequest }
         return ProxyClientRequest(
             requestID: UUID(), cropPNG: crop.data, neighborhoodPNG: neighborhood.data,
-            transcript: transcript, intent: intent, maxOutputTokens: 256
+            transcript: transcript, intent: intent, maxOutputTokens: maximumOutputTokens
         )
+    }
+
+    /// The reading hint sent with a crop, and the room the model gets for its answer (thinking counts against it).
+    private static let maximumTranscriptBytes = 512
+    private static let maximumOutputTokens = 512
+
+    private static func clipped(_ text: String, toBytes limit: Int) -> String {
+        var result = ""
+        for character in text {
+            guard result.utf8.count + String(character).utf8.count <= limit else { break }
+            result.append(character)
+        }
+        return result
     }
 
     private func send(_ wire: ProxyClientRequest) async throws -> Data {
@@ -225,7 +238,7 @@ public struct ProxySpecProvider: SpecProvider {
         guard response.count <= 65_536 else { throw ProxyProviderFailure.responseTooLarge }
         let spec: ValidatedSpec
         do {
-            spec = try SpecValidator.validate(response)
+            spec = try SpecValidator.validateFitting(response)
         } catch let error as SpecValidationError {
             throw ProxyProviderFailure.rejectedSpec(error.name)
         } catch let error as DecodingError {
@@ -233,7 +246,12 @@ public struct ProxySpecProvider: SpecProvider {
         } catch {
             throw ProxyProviderFailure.undecodable("other \(type(of: error))")
         }
-        guard spec.intent == intent else { throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue) }
+        // Answer and Explain are one kind of reply to the writer; a model that labels one as the other still
+        // answered. Anything else (a plot for a sum) is a different reply entirely.
+        let sameKind: Set<SpecIntent> = [.answer, .continuation]
+        guard spec.intent == intent || (sameKind.contains(spec.intent) && sameKind.contains(intent)) else {
+            throw ProxyProviderFailure.wrongIntent(spec.intent.rawValue)
+        }
         // The model may answer math in LaTeX; the page can only hold what a hand could write.
         do { return try spec.inPlainCharacters() } catch let error as SpecValidationError {
             throw ProxyProviderFailure.rejectedSpec(error.name)

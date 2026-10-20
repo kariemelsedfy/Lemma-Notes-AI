@@ -18,10 +18,11 @@ final class InstallRecordTests: XCTestCase {
     }
 
     private func transaction(
-        trial: Bool = false, expires: TimeInterval = 86_400, revoked: Bool = false, original: String = "tx1"
+        trial: Bool = false, expires: TimeInterval = 86_400, revoked: Bool = false, original: String = "tx1",
+        product: String = "p"
     ) -> VerifiedTransaction {
         VerifiedTransaction(
-            bundleID: "b", productID: "p", originalTransactionID: original,
+            bundleID: "b", productID: product, originalTransactionID: original,
             expiresAt: Self.now.addingTimeInterval(expires), isIntroductoryTrial: trial,
             revokedAt: revoked ? Self.now.addingTimeInterval(-10) : nil, environment: "Production")
     }
@@ -116,5 +117,40 @@ final class InstallRecordTests: XCTestCase {
         paid.apply(transaction(expires: 86_400 * 300, original: "long"), at: Self.now)
         paid.apply(transaction(expires: 86_400 * 2, original: "short"), at: Self.now)
         XCTAssertEqual(paid.planExpiresAt, Self.now.addingTimeInterval(86_400 * 300))
+    }
+
+    // MARK: - Pro
+
+    func testAProInstallHasTheLargerAllowanceAndIsStoppedAtItsOwnCap() throws {
+        var pro = record(plan: .pro, expires: 86_400 * 30, month: "2027-01", micros: 6_950_000)
+        XCTAssertEqual(InstallAllowance.proMonthlyMicros, 7_000_000)
+        try InstallAllowance.reserve(&pro, micros: 50_000, at: Self.now)
+        XCTAssertThrowsError(try InstallAllowance.reserve(&pro, micros: 1, at: Self.now)) { error in
+            XCTAssertEqual(error as? AllowanceError, .allowanceUsedUp)
+        }
+        var premium = record(plan: .premium, expires: 86_400 * 30, month: "2027-01", micros: 1_500_000)
+        XCTAssertThrowsError(try InstallAllowance.reserve(&premium, micros: 1, at: Self.now))
+    }
+
+    func testAProProductGrantsProAndAPremiumReceiptNeverReplacesALiveOne() {
+        var install = record()
+        install.apply(
+            transaction(expires: 86_400 * 30, original: "pro1", product: "lemmanotesai.pro.monthly"), at: Self.now)
+        XCTAssertEqual(install.plan, .pro)
+        install.apply(
+            transaction(expires: 86_400 * 365, original: "yearly1", product: "lemmanotesai.premium.yearly"),
+            at: Self.now)
+        XCTAssertEqual(install.plan, .pro, "a longer Premium receipt must not downgrade a live Pro one")
+        XCTAssertEqual(install.originalTransactionID, "pro1")
+    }
+
+    func testUpgradingWithinTheSameSubscriptionMovesToProAndBackToPremium() {
+        var install = record()
+        install.apply(transaction(original: "sub", product: "lemmanotesai.premium.monthly"), at: Self.now)
+        XCTAssertEqual(install.plan, .premium)
+        install.apply(transaction(original: "sub", product: "lemmanotesai.pro.monthly"), at: Self.now)
+        XCTAssertEqual(install.plan, .pro)
+        install.apply(transaction(original: "sub", product: "lemmanotesai.premium.monthly"), at: Self.now)
+        XCTAssertEqual(install.plan, .premium)
     }
 }

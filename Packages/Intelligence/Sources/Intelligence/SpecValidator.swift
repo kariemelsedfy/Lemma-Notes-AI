@@ -71,6 +71,11 @@ public enum SpecValidator {
         try validate(SpecDecoder.decode(data), limits: limits)
     }
 
+    /// Decodes a hosted model's reply, trims it to fit (`SpecLeniency`), then validates it.
+    public static func validateFitting(_ data: Data, limits: SpecLimits = .standard) throws -> ValidatedSpec {
+        try validate(SpecLeniency.fitted(SpecDecoder.decode(data), to: limits), limits: limits)
+    }
+
     private static func validate(_ block: SpecBlock, limits: SpecLimits) throws {
         switch block.content {
         case .inline(let run):

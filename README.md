@@ -74,7 +74,7 @@ Everything else is a real notebook, not a demo:
 - **Library.** Folders, favourites, recents, a title search, preview-card grid, templates (blank, lined, grid, dots) and paper sizes (Tablet, Letter, A4, Square), day-named notes, PDF/PNG export.
 - **Ghost answers.** Every answer lands as a preview you can drag, resize, **Keep** or **Discard**. Nothing touches your page until you say so.
 - **A guided first run.** An interactive tour that has you write, circle and ask for real, with bouncing arrows pointing at what to do next.
-- **A business behind it.** Free notebook, Premium AI (StoreKit 2 subscriptions, 7-day trial), and a server that verifies purchases and devices so the AI can't be abused.
+- **A business behind it.** Free notebook, Premium AI (StoreKit 2 subscriptions, 3-day trial), and a server that verifies purchases and devices so the AI can't be abused.
 
 ---
 

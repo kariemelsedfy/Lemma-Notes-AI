@@ -54,7 +54,7 @@ final class PNGNormalizationTests: XCTestCase {
 
     func testByteAndPixelCapsRejectBeforeNormalizedDispatch() async throws {
         let transport = RecordedImageTransport()
-        await expect(.oversized, crop: Data(repeating: 0xFF, count: 1_000_001), transport: transport)
+        await expect(.oversized, crop: Data(repeating: 0xFF, count: 2_000_001), transport: transport)
         var bytes = [UInt8](try Self.png(width: 4, height: 4, opaque: true))
         bytes[16...19] = [0, 0, 16, 0]
         bytes[20...23] = [0, 0, 16, 0]

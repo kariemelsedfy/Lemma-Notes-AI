@@ -201,3 +201,22 @@ final class TypesetInkRendererTests: XCTestCase {
         ])
     }
 }
+
+final class TypesetSubstitutionTests: XCTestCase {
+    func testSymbolsTheTypefaceLacksBecomeQuestionMarksAndTheRestIsKept() throws {
+        let frame = CGRect(x: 0, y: 0, width: 400, height: 40)
+        let content = SpecBlockContent.lines([
+            SpecLine(run: SpecRun(kind: .text, value: "answer: 漢字 😀 √2")),
+            SpecLine(run: SpecRun(kind: .math, value: "x²")),
+        ])
+        let placement = BlockPlacement(
+            block: SpecBlock(placement: .belowSelection, content: content), frame: frame, requested: .belowSelection,
+            usedFallback: false)
+        let renderer = TypesetInkRenderer()
+        XCTAssertThrowsError(try renderer.strokes(for: placement, style: .unmeasured, seed: 0))
+        let fixed = renderer.substitutingUnsupportedCharacters(in: placement)
+        guard case .lines(let lines) = fixed.block.content else { return XCTFail("Lines were lost") }
+        XCTAssertEqual(lines.map(\.run.value), ["answer: ?? ? √2", "x²"])
+        XCTAssertFalse(try renderer.strokes(for: fixed, style: .unmeasured, seed: 0).isEmpty)
+    }
+}

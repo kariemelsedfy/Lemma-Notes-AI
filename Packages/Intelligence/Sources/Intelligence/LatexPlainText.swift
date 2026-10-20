@@ -36,7 +36,7 @@ public enum LatexPlainText {
     ]
     private static let wrappers: Set<String> = [
         "text", "mathrm", "mathbf", "mathit", "mathbb", "mathcal", "operatorname", "textbf", "textit", "mbox",
-        "boldsymbol", "displaystyle", "textstyle",
+        "boldsymbol", "displaystyle", "textstyle", "boxed", "underline", "overline", "textrm", "mathsf",
     ]
     private static let skipped: Set<String> = ["left", "right", "big", "Big", "bigg", "Bigg", "limits", "nolimits"]
     private static let spaces: Set<String> = ["quad", "qquad", ",", ";", ":", "!", " ", "\\"]
@@ -144,6 +144,10 @@ public enum LatexPlainText {
                     index += 1
                 }
                 return "sqrt(" + group() + ")"
+            case "begin", "end":
+                // `\begin{matrix}` and `\end{cases}` frame a layout the page cannot draw; the entries remain.
+                _ = group()
+                return " "
             case _ where LatexPlainText.wrappers.contains(name):
                 return group()
             case _ where LatexPlainText.skipped.contains(name):
@@ -188,9 +192,11 @@ extension ValidatedSpec {
                 return block
             }
         }
+        // Plain characters can be longer or emptier than the LaTeX they came from, so they are fitted again.
         return try SpecValidator.validate(
-            Spec(
-                version: spec.version, read: spec.read, readConfidence: spec.readConfidence, intent: spec.intent,
-                blocks: blocks, explanation: spec.explanation, warnings: spec.warnings))
+            SpecLeniency.fitted(
+                Spec(
+                    version: spec.version, read: spec.read, readConfidence: spec.readConfidence, intent: spec.intent,
+                    blocks: blocks, explanation: spec.explanation, warnings: spec.warnings)))
     }
 }

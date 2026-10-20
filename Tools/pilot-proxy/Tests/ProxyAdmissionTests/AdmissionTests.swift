@@ -44,9 +44,9 @@ final class AdmissionTests: XCTestCase {
         var inflated = Self.pixelPNG
         inflated.replaceSubrange(16..<20, with: [0, 0, 32, 0])
         await expect(.oversized, admission, try body(crop: inflated), transport: transport)
-        let bytes = Data(repeating: 0, count: 1_000_001)
+        let bytes = Data(repeating: 0, count: 2_000_001)
         await expect(.oversized, admission, try body(crop: bytes), transport: transport)
-        await expect(.oversized, admission, Data(repeating: 0, count: 3_000_001), transport: transport)
+        await expect(.oversized, admission, Data(repeating: 0, count: 6_000_001), transport: transport)
         let calls = await transport.calls
         XCTAssertEqual(calls, 0)
     }
@@ -70,10 +70,10 @@ final class AdmissionTests: XCTestCase {
         let transport = CountingTransport()
         let admission = gate()
         await expect(
-            .oversized, admission, try body(transcript: String(repeating: "a", count: 257)),
+            .oversized, admission, try body(transcript: String(repeating: "a", count: 1025)),
             transport: transport
         )
-        await expect(.oversized, admission, try body(maxOutputTokens: 513), transport: transport)
+        await expect(.oversized, admission, try body(maxOutputTokens: 1025), transport: transport)
         let calls = await transport.calls
         XCTAssertEqual(calls, 0)
     }
