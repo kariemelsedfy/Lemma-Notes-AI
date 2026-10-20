@@ -104,10 +104,6 @@ final class AskPipeline {
         let reading = await selectionReading(of: rasterized.crop, override: readingOverride)
         guard !Task.isCancelled else { return }
         guard model.apply(.contextExtracted(context)) else { return }
-        shareWithLearning(
-            context: context, reading: reading, pageStrokes: pageStrokes, input: input,
-            isHandwritten: readingOverride == nil)
-
         let request = SpecRequest(
             context: context,
             intent: verb.intent,
@@ -116,7 +112,15 @@ final class AskPipeline {
         )
         guard model.apply(.intentClassified(request)) else { return }
 
-        guard let spec = await fetchSpec(for: request, verb: verb) else { return }
+        let fetched = await fetchSpec(for: request, verb: verb)
+        // Learned from after the answer, so a model that read the writing can say what each character is.
+        // A corrected formula is typed, not written: it must not teach the bank what the writer's hand looks like.
+        if !Task.isCancelled, readingOverride == nil {
+            shareWithLearning(
+                context: context, reading: reading, pageStrokes: pageStrokes, input: input,
+                confirmedText: fetched?.confirmedReading)
+        }
+        guard let spec = fetched else { return }
         guard !Task.isCancelled, model.apply(.specValidated(spec)) else { return }
 
         place(
@@ -153,14 +157,12 @@ final class AskPipeline {
     /// Hands the glyph bank the writer's own ink from this lasso.
     private func shareWithLearning(
         context: SelectionContext, reading: SelectionReading, pageStrokes: [InkStroke], input: PageInput,
-        isHandwritten: Bool
+        confirmedText: String?
     ) {
-        // A corrected formula is typed, not written: it must not teach the bank what the writer's hand looks like.
-        guard isHandwritten else { return }
         onSelectionRead?(
             LearnableSelection(
                 strokes: writersOwnInk(context: context, pageStrokes: pageStrokes, input: input), reading: reading,
-                cropBounds: context.crop.bounds))
+                cropBounds: context.crop.bounds, confirmedText: confirmedText))
     }
 
     private func place(
@@ -321,6 +323,14 @@ final class AskPipeline {
         case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: .invalidSpec
         case .invalidRequest, .refused, .unauthorized: .transport
         }
+    }
+}
+
+extension ValidatedSpec {
+    /// What the hosted model read in the writing, if it was the hosted model that answered and it was sure enough.
+    var confirmedReading: String? {
+        guard origin == .hostedModel, readConfidence >= 0.6, !read.isEmpty else { return nil }
+        return read
     }
 }
 

@@ -59,7 +59,7 @@ struct HostedPlotSpecProvider: SpecProvider {
             explanation: String(
                 format: NSLocalizedString("ask.plot.reading", comment: ""),
                 drawn.functions.map(\.expression).joined(separator: ", ")))
-        return try? SpecValidator.validate(spec)
+        return (try? SpecValidator.validate(spec))?.markedAs(.hostedModel)
     }
 
     /// What one reply entry holds: usually a single formula, but the model may write `y = x^2, y = x^3`, an

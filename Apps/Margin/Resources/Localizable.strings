@@ -266,3 +266,6 @@
 "handwriting.card.subtitle" = "%d characters, %d variants";
 "handwriting.card.teach" = "Teach it your handwriting";
 "handwriting.card.teach.subtitle" = "A few minutes, once";
+
+"gallery.after.title" = "Here is what we recorded";
+"gallery.after.body" = "We will keep recording your characters as you write and use Ask, so your answers vary the way real handwriting does. Come back any time from My handwriting to see them.";

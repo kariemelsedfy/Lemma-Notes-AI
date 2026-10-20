@@ -11,6 +11,9 @@ struct LearnableSelection {
     let reading: SelectionReading
     /// The page rectangle the reading's image covered.
     let cropBounds: CGRect
+    /// What the model that answered read in this writing, when one did: it names the characters the recogniser may
+    /// have misread, and the writer's own strokes are recorded as the characters it says they are.
+    var confirmedText: String?
 
     /// Vision's per-character boxes (normalised to the crop, origin bottom-left) as page-space rectangles.
     var regions: [CharacterRegion] {

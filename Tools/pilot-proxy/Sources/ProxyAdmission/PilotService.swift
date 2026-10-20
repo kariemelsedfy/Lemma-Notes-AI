@@ -28,7 +28,27 @@ struct PilotService: Sendable {
             let answer = try await pilot.invoke(body, proof: proof, transport: transport)
             return PilotOutcome(status: .success, body: answer.specJSON)
         } catch {
-            return PilotOutcome(status: Self.status(for: error), body: Data())
+            return Self.refused(error)
+        }
+    }
+
+    /// The outcome for a failed ask, with the reason's name (never its content) written to the server log so a
+    /// refusal the app can only call "couldn't answer" can be told apart: a cut-off reply, a block, a dropped call.
+    static func refused(_ error: Error) -> PilotOutcome {
+        let status = status(for: error)
+        PilotServer.log("pilot-proxy: ask not served: \(status) (\(reasonName(for: error)))")
+        return PilotOutcome(status: status, body: Data())
+    }
+
+    static func reasonName(for error: Error) -> String {
+        switch error {
+        case let billed as GeminiBilledFailure: "model reply \(billed.reason) after \(billed.outputTokens) tokens"
+        case let model as GeminiError: "model \(model)"
+        case let transport as GeminiTransportError: "model call \(transport)"
+        case let admission as AdmissionError: "admission \(admission)"
+        case let ledger as LedgerError: "ledger \(ledger)"
+        case let allowance as AllowanceError: "allowance \(allowance)"
+        default: "other \(type(of: error))"
         }
     }
 

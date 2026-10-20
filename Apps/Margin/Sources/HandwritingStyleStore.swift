@@ -68,7 +68,8 @@ final class HandwritingStyleStore: ObservableObject {
     func learn(from selection: LearnableSelection) {
         guard let current = bank, !selection.strokes.isEmpty else { return }
         let outcome = GlyphHarvester.harvest(
-            strokes: selection.strokes, regions: selection.regions, bank: current)
+            strokes: selection.strokes, regions: selection.regions, bank: current,
+            confirmedText: selection.confirmedText)
         guard !outcome.glyphs.isEmpty else { return }
         var updated = current
         for glyph in outcome.glyphs { updated.add(glyph) }

@@ -23,6 +23,8 @@ struct CalibrationView: View {
     @State private var generation = 0
     @State private var summary: CalibrationSession.Outcome?
     @State private var saveErrorPresented = false
+    /// Set once the writing is saved: the writer is then shown what was recorded.
+    @State private var recorded = false
 
     /// - Parameter characters: empty teaches the whole alphabet from the start. Otherwise only these are
     ///   written, and they are merged into the writer's existing bank rather than replacing it.
@@ -41,6 +43,16 @@ struct CalibrationView: View {
     }
 
     var body: some View {
+        if recorded {
+            // What we recorded, with a word on how it keeps growing (not after "record another variant", which
+            // already came from that screen).
+            HandwritingGalleryView(store: store, afterTeaching: true)
+        } else {
+            calibration
+        }
+    }
+
+    private var calibration: some View {
         NavigationStack {
             Group {
                 if let summary {
@@ -48,7 +60,7 @@ struct CalibrationView: View {
                         repair(characters)
                     } onFinish: {
                         if store.save(summary.bank) {
-                            dismiss()
+                            if addsVariants { dismiss() } else { recorded = true }
                         } else {
                             saveErrorPresented = true
                         }

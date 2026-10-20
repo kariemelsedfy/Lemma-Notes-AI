@@ -194,6 +194,7 @@ struct NotebookLibraryView: View {
             .navigationBarTitleDisplayMode(.inline)
             // The page runs under the bar, like Notability; the bar keeps its buttons and loses its backdrop.
             .toolbarBackground(.hidden, for: .navigationBar)
+            .background(NavigationBarPassThrough())
             .overlay(alignment: .top) {
                 if notebookID == onboarding.practiceNoteID { PracticeCoachBar(coordinator: onboarding) }
             }

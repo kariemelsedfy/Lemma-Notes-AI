@@ -83,6 +83,28 @@ final class GeminiCoreTests: XCTestCase {
         XCTAssertEqual(reply.costMicros, 48)  // 25 + 22.5 rounded up
     }
 
+    func testAReplyCutOffMidAnswerIsClosedAndKept() throws {
+        let usage = #""promptTokenCount":10,"candidatesTokenCount":512"#
+        let head = #"{"version":1,"read":"what is photosynthesis","readConfidence":0.9,"intent":"continue","blocks":"#
+        let cuts = [
+            head + #"[{"type":"inline","placement":"atAnchor","content":{"kind":"text","text":"the process by wh"#,
+            head + #"[{"type":"inline","placement":"atAnchor","content":{"kind":"text","text":"done"}},"#,
+            head + #"[{"type":"lines","placement":"belowSelection","content":{"lines":"#
+                + #"[{"kind":"text","text":"a"},{"kind":"te"#,
+            head + #"[{"type":"inline","placement":"atAnchor","content":{"kind":"text","text":"esc\"#,
+        ]
+        for cut in cuts {
+            let reply = try GeminiResponseParser.parse(response(text: cut, finish: "MAX_TOKENS", usage: usage))
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: reply.specJSON) as? [String: Any])
+            XCTAssertEqual(object["read"] as? String, "what is photosynthesis", cut)
+            XCTAssertNotNil(object["blocks"] as? [Any], cut)
+            XCTAssertEqual(reply.outputTokens, 512)
+        }
+        expect(.truncated, response(text: #"{"ver"#, finish: "MAX_TOKENS", usage: usage))
+        expect(
+            .truncated, response(text: "not json at all, just prose that goes on", finish: "MAX_TOKENS", usage: usage))
+    }
+
     func testAFencedOrPaddedJSONReplyIsStillRead() throws {
         let usage = #""promptTokenCount":10,"candidatesTokenCount":2"#
         let json = #"{"intent":"answer"}"#
