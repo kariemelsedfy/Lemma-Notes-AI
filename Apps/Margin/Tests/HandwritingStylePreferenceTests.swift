@@ -67,13 +67,14 @@ final class HandwritingStylePreferenceTests: XCTestCase {
         XCTAssertEqual(preference.resolved(bank: Self.fullBank), .mine)
     }
 
-    func testAnExplicitChoiceIsNotOverriddenByCalibrating() {
+    func testAStoredTypesetChoiceIsIgnoredOnceThereIsABank() {
         let preference = HandwritingStylePreference(defaults: defaults)
         preference.choice = .typeset
 
-        // Someone who deliberately picked typeset has said what they want.
-        XCTAssertTrue(preference.isExplicit)
-        XCTAssertEqual(preference.resolved(bank: Self.fullBank), .typeset)
+        // The typeset option left the menu: nobody is kept on a typeface they picked once, and with no bank there
+        // is nothing else to draw in.
+        XCTAssertEqual(preference.resolved(bank: Self.fullBank), .mine)
+        XCTAssertEqual(preference.resolved(bank: nil), .typeset)
     }
 
     // MARK: - The withdrawn neat style (M3-08D)

@@ -40,6 +40,46 @@ struct UpgradeBanner: View {
     }
 }
 
+/// "My handwriting" in the sidebar: the way into the characters the app recorded, or into teaching it.
+struct HandwritingSidebarCard: View {
+    let summary: (characters: Int, variants: Int)?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: MarginSpacing.medium) {
+                Image(systemName: "pencil.and.scribble")
+                    .font(.system(size: 20))
+                    .foregroundStyle(MarginColor.accent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(summary == nil ? "handwriting.card.teach" : "handwriting.card.title")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(MarginColor.secondaryText)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(MarginColor.secondaryText)
+            }
+            .foregroundStyle(MarginColor.primaryText)
+            .padding(MarginSpacing.medium)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MarginColor.surface))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(MarginColor.divider, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, MarginSpacing.medium)
+        .padding(.top, MarginSpacing.medium)
+    }
+
+    private var subtitle: String {
+        guard let summary else { return NSLocalizedString("handwriting.card.teach.subtitle", comment: "") }
+        return String(
+            format: NSLocalizedString("handwriting.card.subtitle", comment: ""), summary.characters, summary.variants)
+    }
+}
+
 /// A compact card for the bottom of the sidebar.
 struct UpgradeSidebarCard: View {
     @EnvironmentObject private var premium: PremiumStore

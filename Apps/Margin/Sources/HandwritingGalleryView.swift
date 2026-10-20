@@ -7,6 +7,13 @@ import SwiftUI
 struct HandwritingGalleryView: View {
     @ObservedObject var store: HandwritingStyleStore
     @Environment(\.dismiss) private var dismiss
+    /// Characters the writer is recording another variant of; set to open the guided writing sheet.
+    @State private var recording: Recording?
+
+    private struct Recording: Identifiable {
+        let id = UUID()
+        let characters: [Character]
+    }
 
     var body: some View {
         NavigationStack {
@@ -25,9 +32,14 @@ struct HandwritingGalleryView: View {
             }
             .navigationDestination(for: HandwritingGallery.Entry.self) { entry in
                 if let bank = store.bank {
-                    VariantsView(entry: entry, lineWidth: HandwritingGallery.lineWidth(for: bank))
+                    VariantsView(entry: entry, lineWidth: HandwritingGallery.lineWidth(for: bank)) {
+                        recording = Recording(characters: $0)
+                    }
                 }
             }
+        }
+        .fullScreenCover(item: $recording) {
+            CalibrationView(store: store, characters: $0.characters, addsVariants: true)
         }
     }
 
@@ -64,6 +76,17 @@ struct HandwritingGalleryView: View {
             .font(.system(size: 17, weight: .semibold))
             Text("gallery.explain")
                 .font(.system(size: 15))
+                .foregroundStyle(MarginColor.secondaryText)
+            Button {
+                let everything = HandwritingGallery.sections(from: bank).flatMap(\.entries).map(\.character)
+                recording = Recording(characters: everything)
+            } label: {
+                Label("gallery.record.all", systemImage: "plus.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .padding(.top, MarginSpacing.small)
+            Text("gallery.record.hint")
+                .font(.system(size: 13))
                 .foregroundStyle(MarginColor.secondaryText)
         }
     }
@@ -110,6 +133,7 @@ struct HandwritingGalleryView: View {
 private struct VariantsView: View {
     let entry: HandwritingGallery.Entry
     let lineWidth: CGFloat
+    let record: ([Character]) -> Void
 
     var body: some View {
         ScrollView {
@@ -117,6 +141,12 @@ private struct VariantsView: View {
                 Text(String(format: NSLocalizedString("gallery.variants", comment: ""), entry.variants.count))
                     .font(.system(size: 16))
                     .foregroundStyle(MarginColor.secondaryText)
+                Button {
+                    record([entry.character])
+                } label: {
+                    Label("gallery.record.one", systemImage: "plus.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 14)], spacing: 14) {
                     ForEach(Array(entry.variants.enumerated()), id: \.offset) { index, glyph in
                         VStack(spacing: 6) {

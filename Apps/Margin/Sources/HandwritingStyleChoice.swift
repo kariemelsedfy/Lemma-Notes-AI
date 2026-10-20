@@ -101,7 +101,9 @@ final class HandwritingStylePreference: ObservableObject {
         // block when an answer uses one. The old alphabet gate made a missing `z` force a
         // known `4` into typeset, so a nearly complete calibration appeared not to work.
         guard let bank, bank.characterCount > 0 else { return .typeset }
-        return isExplicit ? choice : .mine
+        // The typeset option was removed from the menu (it was never the point of the app); a stored choice of it
+        // is ignored, so someone who picked it once is not left on a typeface.
+        return .mine
     }
 
     func status(bank: GlyphBank?) -> HandwritingStyleStatus {

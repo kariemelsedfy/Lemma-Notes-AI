@@ -16,6 +16,9 @@ struct LibrarySidebar: View {
     let onNewFolder: () -> Void
     let onEditFolder: (NotebookFolder) -> Void
     let onDeleteFolder: (NotebookFolder) -> Void
+    /// The writer's taught characters and recorded variants, or nil before they have taught any.
+    var handwriting: (characters: Int, variants: Int)?
+    var onOpenHandwriting: () -> Void = {}
 
     var body: some View {
         List(selection: $selection) {
@@ -58,7 +61,12 @@ struct LibrarySidebar: View {
             }
         }
         .navigationTitle("library.title")
-        .safeAreaInset(edge: .bottom) { UpgradeSidebarCard() }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                HandwritingSidebarCard(summary: handwriting, action: onOpenHandwriting)
+                UpgradeSidebarCard()
+            }
+        }
     }
 
     private func count(_ value: Int) -> some View {
