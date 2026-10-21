@@ -26,8 +26,8 @@ final class AnswerLineSpacingTests: XCTestCase {
 
     /// How many separate bands of ink the strokes make from top to bottom: lines that run into each other merge.
     private func bands(of strokes: [InkStroke]) -> Int {
-        let ys = Set(strokes.flatMap(\.points).map { Int($0.location.y.rounded()) }).sorted()
-        return zip(ys, ys.dropFirst()).filter { $1 - $0 > 1 }.count + 1
+        let rowYs = Set(strokes.flatMap(\.points).map { Int($0.location.y.rounded()) }).sorted()
+        return zip(rowYs, rowYs.dropFirst()).filter { $1 - $0 > 1 }.count + 1
     }
 
     func testRowsOfAnAnswerDoNotRunIntoEachOtherWhenTheWritersMeasuredSpacingIsTight() throws {
