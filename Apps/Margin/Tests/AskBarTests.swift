@@ -168,13 +168,16 @@ final class AskBarTests: XCTestCase {
         }
     }
 
-    func testChoosingThePenOrEraserDropsAWaitingSelectionButNeverWork() {
+    func testChoosingAnyToolDropsAWaitingSelectionButNeverWork() {
         let drop = VirtualizedPageStack.shouldDropSelection
         XCTAssertTrue(drop(.pen, .offeringVerbs, false))
         XCTAssertTrue(drop(.eraser, .offeringVerbs, false))
         XCTAssertTrue(drop(.pen, .hidden, true), "a lasso being drawn")
         XCTAssertFalse(drop(.pen, .hidden, false))
-        XCTAssertFalse(drop(.lasso, .offeringVerbs, false), "the lasso itself keeps its selection")
+        XCTAssertTrue(drop(.lasso, .offeringVerbs, false), "choosing the lasso tool cancels the Ask")
+        XCTAssertTrue(drop(.lasso, .hidden, true), "and an Ask lasso being drawn")
+        XCTAssertFalse(drop(.lasso, .hidden, false), "the lasso tool with nothing to cancel")
+        XCTAssertFalse(drop(.lasso, .working, false), "a request in flight is kept")
         XCTAssertFalse(drop(.eraser, .working, false), "a request in flight is kept")
         XCTAssertFalse(drop(.eraser, .awaitingDecision, false), "an answer waiting for Keep is kept")
     }

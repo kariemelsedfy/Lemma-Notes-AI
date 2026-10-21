@@ -269,3 +269,12 @@
 
 "gallery.after.title" = "Here is what we recorded";
 "gallery.after.body" = "We will keep recording your characters as you write and use Ask, so your answers vary the way real handwriting does. Come back any time from My handwriting to see them.";
+
+"lasso.edit.copy" = "Copy";
+"lasso.edit.cut" = "Cut";
+"lasso.edit.delete" = "Delete";
+"lasso.edit.paste" = "Paste";
+"lasso.edit.hint" = "Draw around ink with the Pencil to select it";
+"lasso.edit.selection" = "Selected ink. Drag to move it.";
+
+"gallery.variant.delete" = "Delete this variant";

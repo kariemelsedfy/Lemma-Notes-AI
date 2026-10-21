@@ -165,4 +165,51 @@ final class GlyphHarvesterConfirmedTests: XCTestCase {
             strokes: writing.strokes, regions: writing.regions, bank: bank, confirmedText: "o+x")
         XCTAssertFalse(outcome.glyphs.contains { $0.character == "+" })
     }
+
+    func testABoxThatHeldTwoCharactersIsNotLearnedAsEitherOfThem() throws {
+        // The recogniser boxed `o` and the `l` beside it together; the model said `o`. The group is an `o` plus a
+        // stroke of the next character, and learning it made every later `o` carry that stroke.
+        let bank = try Self.calibrated("olxn")
+        let writing = Self.line("ol")
+        let merged = CharacterRegion(
+            character: "o", box: writing.regions[0].box.union(writing.regions[1].box))
+        let outcome = GlyphHarvester.harvest(
+            strokes: writing.strokes, regions: [merged], bank: bank, confirmedText: "o")
+        XCTAssertTrue(outcome.glyphs.isEmpty, "a character and a neighbour's stroke is not a sample of the character")
+    }
+
+    func testPruningRemovesLearnedSamplesWiderThanTheCalibratedOneAndKeepsTheRest() throws {
+        func glyph(_ character: String, width: CGFloat, strokes: Int = 1) -> Glyph {
+            func point(_ x: CGFloat, _ y: CGFloat) -> GlyphPoint {
+                GlyphPoint(location: CGPoint(x: x, y: y), timeOffset: 0, force: 0.5, altitude: 1, azimuth: 0)
+            }
+            return Glyph(
+                character: character,
+                strokes: (0..<strokes).map { _ in GlyphStroke(points: [point(0, -1), point(width, 0)]) },
+                advanceWidth: width + 0.2, entryPoint: .zero, exitPoint: .zero)
+        }
+        var bank = GlyphBank(capturedAt: Date(timeIntervalSince1970: 0))
+        for width in [0.3, 0.32, 0.28] as [CGFloat] { bank.add(glyph("1", width: width)) }
+        bank.add(glyph("1", width: 0.75, strokes: 2))  // "1)": wide, and a stroke more than the calibrated "1"
+        bank.add(glyph("1", width: 0.7))  // a slanted but ordinary "1": wide, yet one stroke, so it stays
+        bank.add(glyph("a", width: 0.8))
+        XCTAssertEqual(bank.pruningOutliers(), 1)
+        XCTAssertEqual(bank.samples(for: "1").map { $0.bounds.width }, [0.3, 0.32, 0.28, 0.7])
+        XCTAssertEqual(bank.samples(for: "a").count, 1, "a lone sample is never judged")
+        XCTAssertEqual(bank.pruningOutliers(), 0, "idempotent")
+    }
+
+    func testOneVariantCanBeRemovedAndTheCharacterGoesWhenItsLastIs() throws {
+        var bank = try Self.calibrated("ol")
+        bank.add(
+            try GlyphNormalizer.glyph(
+                for: "o", from: Self.ink("o", at: .init(x: 50, y: 100), size: 20, shear: 0.2), xHeight: 20))
+        XCTAssertEqual(bank.samples(for: "o").count, 2)
+        bank.removeSample(for: "o", at: 1)
+        XCTAssertEqual(bank.samples(for: "o").count, 1)
+        bank.removeSample(for: "o", at: 0)
+        XCTAssertTrue(bank.samples(for: "o").isEmpty)
+        XCTAssertEqual(bank.characterCount, 1)
+        bank.removeSample(for: "o", at: 5)  // out of range: nothing happens
+    }
 }
