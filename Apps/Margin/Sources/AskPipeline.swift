@@ -286,6 +286,7 @@ final class AskPipeline {
     private static func detail(for error: any Error, intent: SpecIntent) -> String {
         let name: String
         switch error {
+        case ProxyProviderFailure.refusedBy(let code): name = code
         case let failure as ProxyProviderFailure: name = "\(failure)"
         case let failure as ProviderError: name = "\(failure)"
         default: name = String(describing: type(of: error))
@@ -321,7 +322,7 @@ final class AskPipeline {
         case .offline: .offline
         case .budgetExceeded: .outOfCredits
         case .invalidResponse, .rejectedSpec, .responseTooLarge, .undecodable, .wrongIntent: .invalidSpec
-        case .invalidRequest, .refused, .unauthorized: .transport
+        case .invalidRequest, .refused, .refusedBy, .unauthorized: .transport
         }
     }
 }

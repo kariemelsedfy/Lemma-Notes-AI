@@ -121,6 +121,24 @@ final class HTTPSProxyTransportTests: XCTestCase {
         XCTAssertTrue(sent.isEmpty, "nothing may be sent without credentials")
     }
 
+    func testARefusalWithACodeCarriesItAndOneWithoutStaysPlain() async throws {
+        let coded = try XCTUnwrap(
+            Self.make(token: Self.secret) { _ in (Data(#"{"reason":"model_http_400"}"#.utf8), Self.reply(422)) })
+        do {
+            _ = try await coded.response(to: Self.request())
+            XCTFail("A refusal must throw")
+        } catch let refusal as ProxyRefusal {
+            XCTAssertEqual(refusal.code, "model_http_400")
+        }
+        await expect(.refused, try XCTUnwrap(Self.make(token: Self.secret) { _ in (Data(), Self.reply(422)) }))
+        for junk in [
+            #"{"reason":"Has Spaces And Content"}"#, #"{"reason":""}"#, #"{"reason":3}"#, "not json",
+            #"{"reason":"\#(String(repeating: "a", count: 60))"}"#,
+        ] {
+            XCTAssertNil(HTTPSProxyTransport.refusalCode(in: Data(junk.utf8)), junk)
+        }
+    }
+
     // MARK: - helpers
 
     private func expect(_ failure: ProxyTransportFailure, _ transport: HTTPSProxyTransport) async {

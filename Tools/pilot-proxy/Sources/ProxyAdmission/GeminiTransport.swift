@@ -60,6 +60,15 @@ struct GeminiHTTPTransport: PilotModelTransport {
         self.send = send
     }
 
+    /// `status: message` from a Google error body, cut short and with anything but printable ASCII dropped.
+    static func reason(in data: Data) -> String {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let error = object["error"] as? [String: Any]
+        else { return "no error body" }
+        let text = "\(error["status"] as? String ?? "?"): \(error["message"] as? String ?? "")"
+        return String(text.unicodeScalars.filter { (32..<127).contains($0.value) }.prefix(160).map(Character.init))
+    }
+
     func complete(_ request: AdmittedRequest) async throws -> GeminiReply {
         var http = URLRequest(url: Self.endpoint, timeoutInterval: Self.timeout)
         http.httpMethod = "POST"
@@ -76,7 +85,12 @@ struct GeminiHTTPTransport: PilotModelTransport {
             throw GeminiTransportError.network
         }
         guard let status = (response as? HTTPURLResponse)?.statusCode else { throw GeminiTransportError.notHTTP }
-        guard status == 200 else { throw GeminiTransportError.status(status) }
+        guard status == 200 else {
+            // What Google said, never what we sent: its message names the problem ("invalid argument", "API key
+            // expired") and does not repeat the request, so the log can say why a call was refused.
+            PilotServer.log("pilot-proxy: model call \(status): \(Self.reason(in: data))")
+            throw GeminiTransportError.status(status)
+        }
         do {
             return try GeminiResponseParser.parse(data)
         } catch let reason as GeminiError {

@@ -60,7 +60,9 @@ final class GeminiCoreTests: XCTestCase {
         let intent = try XCTUnwrap(properties["intent"] as? [String: Any])
         XCTAssertEqual(intent["enum"] as? [String], ["answer"])
         let blocks = try XCTUnwrap(properties["blocks"] as? [String: Any])
-        XCTAssertEqual(blocks["maxItems"] as? Int, 6)
+        XCTAssertEqual(blocks["maxItems"] as? Int, GeminiPrompt.maxBlocks)
+        // Gemini refuses a schema that is too complex; 6 blocks of 16 lines was refused, 48 items in all is fine.
+        XCTAssertLessThanOrEqual(GeminiPrompt.maxBlocks * GeminiPrompt.maxLines, 48)
     }
 
     func testRequestRejectsEmptyInstructionOutputBoundsAndMissingImages() throws {
