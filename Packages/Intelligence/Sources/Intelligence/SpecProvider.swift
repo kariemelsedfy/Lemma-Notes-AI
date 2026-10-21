@@ -104,8 +104,17 @@ public enum ProxyTransportFailure: Error, Equatable, Sendable, CaseIterable {
     case paymentRequired
 }
 
+/// The service refused the request and said why, as a short code such as `model_http_400`.
+public struct ProxyRefusal: Error, Equatable, Sendable {
+    public let code: String
+
+    public init(code: String) { self.code = code }
+}
+
 public enum ProxyProviderFailure: Error, Equatable, Sendable {
     case invalidRequest, invalidResponse, offline, refused, unauthorized, budgetExceeded
+    /// Refused with a reason: the code the service gave (never content).
+    case refusedBy(String)
     /// The reply decoded but broke a spec rule. Carries `SpecValidationError.name` only (never its payload,
     /// which can hold page-derived text), so a debug build can say which rule without leaking content.
     case rejectedSpec(String)
@@ -218,6 +227,8 @@ public struct ProxySpecProvider: SpecProvider {
             return try await transport.response(to: wire)
         } catch is CancellationError {
             throw CancellationError()
+        } catch let refusal as ProxyRefusal {
+            throw ProxyProviderFailure.refusedBy(refusal.code)
         } catch let error as ProxyTransportFailure {
             switch error {
             case .timeout: throw ProviderError.timeout

@@ -70,12 +70,29 @@ public struct HTTPSProxyTransport: ProxyClientTransport {
         } catch {
             throw ProxyTransportFailure.offline
         }
+        return try Self.outcome(of: response, data: data)
+    }
+
+    /// The reply's body when it succeeded; otherwise why it did not.
+    private static func outcome(of response: URLResponse, data: Data) throws -> Data {
         guard let status = (response as? HTTPURLResponse)?.statusCode else { throw ProxyTransportFailure.refused }
         if status == 200 {
-            guard data.count <= Self.maxReplyBytes else { throw ProxyTransportFailure.refused }
+            guard data.count <= maxReplyBytes else { throw ProxyTransportFailure.refused }
             return data
         }
-        throw Self.failure(forStatus: status)
+        // A refusal says why, as a short code (`model_http_400`); an older server sends none.
+        if status == 422, let code = refusalCode(in: data) { throw ProxyRefusal(code: code) }
+        throw failure(forStatus: status)
+    }
+
+    /// The `reason` of `{"reason":"…"}`, only if it is a short snake_case code (so nothing else can be shown).
+    static func refusalCode(in data: Data) -> String? {
+        guard data.count <= 200,
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let code = object["reason"] as? String, (1...48).contains(code.count),
+            code.allSatisfy({ ($0.isASCII && $0.isLowercase) || $0.isNumber || $0 == "_" })
+        else { return nil }
+        return code
     }
 
     private static func failure(forStatus status: Int) -> ProxyTransportFailure {

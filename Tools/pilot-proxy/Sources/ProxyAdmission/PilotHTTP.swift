@@ -148,7 +148,7 @@ struct PilotRouter: Sendable {
         switch outcome.status {
         case .success: return HTTPReply(status: 200, body: outcome.body)
         case .unauthorized: return HTTPReply(status: 401)
-        case .refused: return HTTPReply(status: 422)
+        case .refused: return HTTPReply(status: 422, body: outcome.body)
         case .overBudget: return HTTPReply(status: 429)
         case .paymentRequired: return HTTPReply(status: 402)
         }

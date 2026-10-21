@@ -34,10 +34,30 @@ struct PilotService: Sendable {
 
     /// The outcome for a failed ask, with the reason's name (never its content) written to the server log so a
     /// refusal the app can only call "couldn't answer" can be told apart: a cut-off reply, a block, a dropped call.
+    ///
+    /// A refusal also carries the reason's short code in its body (`{"reason":"model_http_400"}`), which the app shows
+    /// in place of a guess. The code names the kind of failure and never holds a prompt, a reply or a price.
     static func refused(_ error: Error) -> PilotOutcome {
         let status = status(for: error)
         PilotServer.log("pilot-proxy: ask not served: \(status) (\(reasonName(for: error)))")
-        return PilotOutcome(status: status, body: Data())
+        let body = status == .refused ? Data(#"{"reason":"\#(reasonCode(for: error))"}"#.utf8) : Data()
+        return PilotOutcome(status: status, body: body)
+    }
+
+    /// A short snake_case code for a failure: `model_http_400`, `model_truncated`, `admission_unsupported`.
+    static func reasonCode(for error: Error) -> String {
+        let raw: String
+        switch error {
+        case let billed as GeminiBilledFailure: raw = "model_\(billed.reason)"
+        case let model as GeminiError: raw = "model_\(model)"
+        case GeminiTransportError.status(let code): raw = "model_http_\(code)"
+        case let transport as GeminiTransportError: raw = "model_\(transport)"
+        case let admission as AdmissionError: raw = "admission_\(admission)"
+        case let ledger as LedgerError: raw = "ledger_\(ledger)"
+        case let allowance as AllowanceError: raw = "allowance_\(allowance)"
+        default: raw = "server_error"
+        }
+        return String(raw.lowercased().filter { $0.isLetter || $0.isNumber || $0 == "_" }.prefix(48))
     }
 
     static func reasonName(for error: Error) -> String {

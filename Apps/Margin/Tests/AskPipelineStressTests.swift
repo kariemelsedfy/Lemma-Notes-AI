@@ -142,7 +142,8 @@ final class AskPipelineStressTests: XCTestCase {
     func testEveryWayTheProviderCanFailEndsInAFailureTheWriterCanRetry() async throws {
         let failures: [(any Error, AskFailure)] = [
             (ProxyProviderFailure.offline, .offline), (ProxyProviderFailure.budgetExceeded, .outOfCredits),
-            (ProxyProviderFailure.refused, .transport), (ProxyProviderFailure.unauthorized, .transport),
+            (ProxyProviderFailure.refused, .transport), (ProxyProviderFailure.refusedBy("model_http_400"), .transport),
+            (ProxyProviderFailure.unauthorized, .transport),
             (ProxyProviderFailure.invalidResponse, .invalidSpec), (ProxyProviderFailure.undecodable("x"), .invalidSpec),
             (ProxyProviderFailure.rejectedSpec("x"), .invalidSpec),
             (ProxyProviderFailure.responseTooLarge, .invalidSpec),
@@ -215,5 +216,12 @@ final class AskPipelineStressTests: XCTestCase {
         harness.pipeline.run(harness.input, verb: .explain)
         try await harness.settle()
         XCTAssertEqual(seen, [nil])
+    }
+
+    func testTheFailuresNameIsShownForARefusalTheServerExplained() async throws {
+        let harness = Harness(Canned(result: .failure(ProxyProviderFailure.refusedBy("model_http_400"))))
+        harness.pipeline.run(harness.input, verb: .explain)
+        try await harness.settle()
+        XCTAssertEqual(harness.model.failureDetail, "model_http_400 · continue")
     }
 }

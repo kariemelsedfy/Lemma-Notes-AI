@@ -114,8 +114,6 @@ struct AskBar: View {
     /// Set for a free user: a quiet way to the Premium screen (the Explain tag, and a button on a failure).
     var onSeePremium: (() -> Void)?
 
-    @State private var showsDetail = false
-
     var body: some View {
         Group {
             switch phase {
@@ -236,11 +234,10 @@ struct AskBar: View {
                     .foregroundStyle(MarginColor.primaryText.opacity(0.85))
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
-                    // The technical line is for whoever is debugging, so it stays hidden until the message is
-                    // long-pressed, and exists only in debug builds.
-                    .onLongPressGesture { showsDetail.toggle() }
+                // The failure's name (`model_http_400 · explain`) shows under the message in debug builds, so what went
+                // wrong is never a guess. It does not exist in a release build.
                 #if DEBUG
-                    if showsDetail, let failureDetail {
+                    if let failureDetail {
                         Text(verbatim: failureDetail)
                             .font(.caption2.monospaced())
                             .foregroundStyle(MarginColor.secondaryText)

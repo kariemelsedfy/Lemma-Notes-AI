@@ -156,4 +156,20 @@ final class HostedReplyResilienceTests: XCTestCase {
             }
         }
     }
+
+    private actor Refusing: ProxyClientTransport {
+        func response(to request: ProxyClientRequest) async throws -> Data {
+            throw ProxyRefusal(code: "model_http_400")
+        }
+    }
+
+    func testARefusalWithAReasonReachesTheCallerWithItsCode() async throws {
+        let provider = ProxySpecProvider.consentGated(transport: Refusing(), isConsentGranted: { true })
+        do {
+            _ = try await provider.spec(for: try request(.answer))
+            XCTFail("A refusal must throw")
+        } catch {
+            XCTAssertEqual(error as? ProxyProviderFailure, .refusedBy("model_http_400"))
+        }
+    }
 }
