@@ -276,3 +276,5 @@
 "lasso.edit.paste" = "Paste";
 "lasso.edit.hint" = "Draw around ink with the Pencil to select it";
 "lasso.edit.selection" = "Selected ink. Drag to move it.";
+
+"gallery.variant.delete" = "Delete this variant";

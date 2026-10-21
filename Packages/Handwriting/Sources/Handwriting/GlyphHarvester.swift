@@ -88,6 +88,10 @@ public enum GlyphHarvester {
     /// of it, only has to be a sensible size.
     private static func isAcceptable(_ glyph: Glyph, group: Group, existing: [Glyph], bank: GlyphBank) -> Bool {
         if existing.isEmpty { return group.isConfirmed && isPlausibleSize(glyph) }
+        // A box that held two characters (`1)`, `x>`) is the character plus a stroke of its neighbour, and learning
+        // it made every later `1` and `x` carry that stroke (2026-10-21). A sample with more strokes than the writer
+        // has ever drawn that character with is not taken.
+        guard glyph.strokes.count <= (existing.map { $0.strokes.count }.max() ?? 0) else { return false }
         return fitsSize(glyph, among: existing) && (group.isConfirmed || isClosestToClaimed(glyph, in: bank))
     }
 

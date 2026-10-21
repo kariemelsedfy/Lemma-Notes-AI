@@ -6,8 +6,9 @@ import XCTest
 
 /// An answer's lines must not run into each other, however tightly the writer's own lines were measured.
 final class AnswerLineSpacingTests: XCTestCase {
-    func testTheWritersSpacingIsKeptWhereItLeavesRoomAndWidenedWhereItDoesNot() {
-        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 60, xHeight: 14), 60, "roomy: unchanged")
+    func testAnAnswerUsesHalfTheWritersSpacingButNeverLessThanItsLettersNeed() {
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 120, xHeight: 14), 60, "half of a roomy hand")
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 60, xHeight: 14), 14 * 2.5, accuracy: 0.001)
         XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 24, xHeight: 14), 14 * 2.5, accuracy: 0.001)
         XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 0, xHeight: 14), 14 * 2.5, accuracy: 0.001)
     }
