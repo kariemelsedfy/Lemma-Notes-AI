@@ -231,7 +231,7 @@ final class AskPipeline {
     ) -> (PlacementResult, CGFloat) {
         var scale: CGFloat = 1
         var result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes)
-        for smaller: CGFloat in [0.8, 0.65, 0.5] where !fits(result.placements, in: engine.allowedArea) {
+        for smaller: CGFloat in [0.8, 0.65, 0.5, 0.4] where !fits(result.placements, in: engine.allowedArea) {
             scale = smaller
             result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes, textScale: smaller)
         }
