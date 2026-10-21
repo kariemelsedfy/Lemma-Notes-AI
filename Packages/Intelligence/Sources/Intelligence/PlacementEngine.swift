@@ -71,7 +71,7 @@ public struct PlacementEngine: Sendable {
         max(measured, xHeight * minimumLineSpacingRatio)
     }
 
-    static let minimumLineSpacingRatio: CGFloat = 2.7
+    static let minimumLineSpacingRatio: CGFloat = 2.5
 
     public static func usableXHeight(for context: SelectionContext) -> CGFloat {
         let measured = max(context.anchor.xHeight, context.style.xHeight)

@@ -36,10 +36,17 @@ extension VirtualizedPageStack {
             premium.showPaywall()
             return
         }
+        // Asking ends the lasso tool (and its selection): the pen is back in hand once the Ask is done. The tool
+        // change must not cancel the Ask being started, so it is marked as this Ask's own.
+        if selectedTool != .pen {
+            toolChangeIsFromAsk = true
+            selectedTool = .pen
+        }
         askPipeline?.cancel(.superseded)
         suggestions.discard()
         askSelection.clearSelections()
         selectionStore.clear()
+        clearEdit()
         askModel.selectionChanged(hasSelection: false)
         askPath.invoke()
     }
@@ -75,11 +82,12 @@ extension VirtualizedPageStack {
         }
     }
 
-    /// Choosing the pen or the eraser means the writer is done with the lasso: drop a selection that is only
+    /// Choosing a tool means the writer is done with the lasso: drop a selection that is only
     /// waiting for a choice (or a lasso being drawn). A request in flight, or an answer waiting for Keep, is
     /// left alone: switching tools must not throw away work.
     static func shouldDropSelection(whenChoosing tool: CanvasTool, phase: AskBarPhase, lassoArmed: Bool) -> Bool {
-        guard tool != .lasso else { return false }
+        // Every tool cancels an Ask that is only waiting on the writer, the lasso tool included: starting a lasso for
+        // editing ink means they are no longer asking.
         switch phase {
         case .offeringVerbs: return true
         case .hidden: return lassoArmed
