@@ -40,6 +40,7 @@ extension VirtualizedPageStack {
         suggestions.discard()
         askSelection.clearSelections()
         selectionStore.clear()
+        clearEdit()
         askModel.selectionChanged(hasSelection: false)
         askPath.invoke()
     }

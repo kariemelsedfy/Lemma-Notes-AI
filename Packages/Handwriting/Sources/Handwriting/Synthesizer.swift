@@ -290,8 +290,9 @@ public enum Synthesizer {
     /// A word space, in x-heights.
     private static let spaceAdvance: CGFloat = 0.42
 
-    /// Base space between glyphs, in x-heights.
-    private static let letterGap: CGFloat = 0.06
+    /// Base space between glyphs, in x-heights. A little more than the writer's own spacing reads as natural on the
+    /// page: 0.06 looked tight beside their writing (owner, 2026-10-21), so it is 0.095.
+    private static let letterGap: CGFloat = 0.095
     /// Spread of the per-glyph gap. Deliberately small — §4.1 warns that excess noise reads as
     /// "shaky", which is a different tell from "mechanical".
     private static let letterGapJitter: CGFloat = 0.018
