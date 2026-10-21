@@ -41,7 +41,7 @@ public struct PlacementResult: Equatable, Sendable {
 public struct PlacementEngine: Sendable {
     public let allowedArea: CGRect
     private let occupancy: OccupancyGrid
-    private let measurer: any ContentMeasuring
+    let measurer: any ContentMeasuring
 
     public init(
         page: CGRect,
@@ -144,11 +144,14 @@ public struct PlacementEngine: Sendable {
     /// wider than the page wraps through the measurer's width ceiling.
     /// - Parameter textScale: below 1 to draw the answer smaller, for one that would not fit on the page at the
     ///   writer's size. The caller draws it at the same scale.
+    /// - Parameter columns: above 1 to set a long block of lines as that many columns side by side, for an answer
+    ///   that would otherwise be taller than the page.
     public func placeBelowSelection(
         _ spec: ValidatedSpec,
         context: SelectionContext,
         pageStrokes: [InkStroke] = [],
-        textScale: CGFloat = 1
+        textScale: CGFloat = 1,
+        columns: Int = 1
     ) -> PlacementResult {
         let xHeight = Self.usableXHeight(for: context) * textScale
         let margin = max(xHeight, 16)
@@ -168,6 +171,11 @@ public struct PlacementEngine: Sendable {
             }
             guard !page.isNull, page.width > 2 * margin else {
                 unplaced.append(block)
+                continue
+            }
+            if let set = columnSet(block, columns: columns, context: context, textScale: textScale, top: nextY) {
+                placements += set.placements
+                nextY = set.bottom + gap
                 continue
             }
             let size = measurer.size(

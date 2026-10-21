@@ -2514,3 +2514,5 @@ Acceptance:
 - 2026-10-21 M6-WORD-PLACEMENT-2: more variation in where words sit: rise up to 0.32 x-heights (was 0.16), tilt up to 0.04 (was 0.03), and a row may stray 0.35 x-heights past its frame (`extraRoom`), since a row that fills its frame could otherwise only move words up.
 
 - 2026-10-21 M6-SHORT-ANSWERS: a Solve of a zero-sum game came back with so many lines it ran off the page. The prompt now asks for at most 8 lines (key steps and the final answer; the schema still allows 16), and the client tries a 0.4 text scale as a last resort before giving up on fitting. Needs a proxy redeploy to take effect.
+
+- 2026-10-21 M6-ANSWER-COLUMNS: reverted the 8-line prompt cap (answers are not shortened). An answer taller than the page is now set in 2 or 3 columns side by side at the writer's own size (`PlacementEngine.placeBelowSelection(columns:)`, `columnSet` in PlacementEngine+Columns.swift) and only then drawn smaller (0.8, 0.65, 0.5, 0.4); the fit check also requires the right edge to be on the page. Fit logic moved to AskPipeline+Fit.swift. No proxy redeploy needed.

@@ -210,7 +210,7 @@ final class PlacementEngineTests: XCTestCase {
     // MARK: - Fixtures
 
     /// The page grid with the selected ink already registered, as a caller would supply it.
-    private static func grid() -> OccupancyGrid {
+    static func grid() -> OccupancyGrid {
         var grid = OccupancyGrid(pageBounds: CGRect(x: 0, y: 0, width: 1668, height: 2388))
         for stroke in selectedStrokes { grid.add(stroke: stroke) }
         return grid
@@ -295,7 +295,7 @@ final class PlacementEngineTests: XCTestCase {
         XCTAssertEqual(PlacementEngine.usableXHeight(for: context), PlacementEngine.minimumXHeight)
     }
 
-    private static func context() throws -> SelectionContext {
+    static func context() throws -> SelectionContext {
         let strokes = selectedStrokes
         let loop = [
             CGPoint(x: 80, y: 80),
@@ -318,7 +318,7 @@ final class PlacementEngineTests: XCTestCase {
         )
     }
 
-    private static func spec(blocks: [SpecBlock]) -> Spec {
+    static func spec(blocks: [SpecBlock]) -> Spec {
         Spec(read: "2+2=", readConfidence: 0.95, intent: .answer, blocks: blocks)
     }
 }
