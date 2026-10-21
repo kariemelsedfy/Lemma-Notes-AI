@@ -24,6 +24,8 @@ struct VirtualizedPageStack: View {
     @State var editOffset: CGSize = .zero
     @State var editDragging = false
     @State var clipboardVersion = 0
+    /// Set when starting an Ask moved the tool off the lasso or eraser, so that change does not cancel that Ask.
+    @State var toolChangeIsFromAsk = false
     /// The formula being corrected, while the editor is open.
     @State var plotFormula: String?
     /// Which edge the tool board is docked to, and how the pages are fitted to the screen.
@@ -156,9 +158,11 @@ struct VirtualizedPageStack: View {
         .onChange(of: drawingStore.revision) { _, _ in scheduleReturnFromEraser() }
         .onChange(of: selectedTool) { _, tool in
             pencilSwitcher.toolChanged(to: tool)
-            if Self.shouldDropSelection(whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed) {
-                cancelSelection()
-            }
+            let ownChange = toolChangeIsFromAsk
+            toolChangeIsFromAsk = false
+            let dropsAsk = Self.shouldDropSelection(
+                whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed)
+            if dropsAsk && !ownChange { cancelSelection() }
             if tool != .lasso { clearEdit() }
         }
         .modifier(InkPreferenceSaver(ink: selectedInk, recents: recentInks, width: selectedWidth))
