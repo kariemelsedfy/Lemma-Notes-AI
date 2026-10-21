@@ -131,8 +131,17 @@ public struct GlyphBank: Codable, Equatable, Sendable {
     public var sampleCount: Int { samples.values.reduce(0) { $0 + $1.count } }
 
     public func samples(for character: Character) -> [Glyph] {
-        samples[String(character)] ?? []
+        if let own = samples[String(character)], !own.isEmpty { return own }
+        // Calibration asks for the minus sign (`−`); the hyphen-minus (`-`) every answer is written with, and the
+        // dashes,
+        // are the same horizontal stroke in a hand. Until the writer records their own, the minus stands in, instead of
+        // the answer's hyphens being drawn in the typeface.
+        return Self.lookalikes[character].flatMap { samples[String($0)] } ?? []
     }
+
+    private static let lookalikes: [Character: Character] = [
+        "-": "−", "‐": "−", "‑": "−", "–": "−", "—": "−", "‒": "−",
+    ]
 
     public func canRender(_ text: String) -> Bool {
         text.allSatisfy { $0 == " " || !samples(for: $0).isEmpty }

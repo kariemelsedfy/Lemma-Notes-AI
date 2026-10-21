@@ -212,4 +212,22 @@ final class GlyphHarvesterConfirmedTests: XCTestCase {
         XCTAssertEqual(bank.characterCount, 1)
         bank.removeSample(for: "o", at: 5)  // out of range: nothing happens
     }
+
+    func testTheHyphenAndTheDashesUseTheMinusSignTheWriterRecordedUntilTheyRecordTheirOwn() throws {
+        var bank = try Self.calibrated("o")
+        let minus = try GlyphNormalizer.glyph(
+            for: "−", from: Self.ink("l", at: .init(x: 50, y: 100), size: 20), xHeight: 20)
+        bank.add(minus)
+        for character in "-–—‐" as String {
+            XCTAssertEqual(bank.samples(for: character).count, 1, "\(character)")
+            XCTAssertTrue(bank.canRender(String(character)))
+        }
+        XCTAssertTrue(bank.missingCharacters(in: "o-o").isEmpty, "a hyphen is no longer drawn in the typeface")
+        bank.add(
+            try GlyphNormalizer.glyph(
+                for: "-", from: Self.ink("l", at: .init(x: 50, y: 100), size: 20, shear: 0.3), xHeight: 20))
+        XCTAssertEqual(bank.samples(for: "-").count, 1)
+        XCTAssertNotEqual(bank.samples(for: "-").first, bank.samples(for: "−").first, "their own hyphen wins")
+        XCTAssertTrue(bank.samples(for: "+").isEmpty, "other symbols are not stood in for")
+    }
 }
