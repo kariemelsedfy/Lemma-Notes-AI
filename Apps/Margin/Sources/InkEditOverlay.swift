@@ -26,7 +26,6 @@ struct InkEditOverlay: View {
         let rect = bounds.offsetBy(dx: offset.width, dy: offset.height)
         let barFits = rect.minY > Self.barHeight + 24
         ZStack(alignment: .topLeading) {
-            Color.clear.allowsHitTesting(false)
             Rectangle()
                 .fill(MarginColor.accent.opacity(0.07))
                 .overlay(Rectangle().strokeBorder(MarginColor.accent, style: StrokeStyle(lineWidth: 2, dash: [8, 6])))
