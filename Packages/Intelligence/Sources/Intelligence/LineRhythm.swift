@@ -3,8 +3,8 @@ import CoreGraphics
 /// The uneven spacing between the lines of an answer, so a block does not read as a ruled table.
 ///
 /// Placement reserves room for every line at the full spacing; each gap actually drawn is a random share of it, from
-/// two thirds to all (the writer asked for gaps between half and three quarters of their own spacing, and the full
-/// spacing here is three quarters). The gaps are different from one another, fixed by the seed so redrawing the same
+/// two thirds to all (the writer asked for gaps between a third and a half of their own spacing, and the full
+/// spacing here is a half). The gaps are different from one another, fixed by the seed so redrawing the same
 /// answer gives the same page, and never below `floor`, which keeps a descender off the next line's ascenders.
 enum LineRhythm {
     static let smallestShare: CGFloat = 2.0 / 3.0

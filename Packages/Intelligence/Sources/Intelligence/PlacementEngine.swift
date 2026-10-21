@@ -63,8 +63,8 @@ public struct PlacementEngine: Sendable {
     /// not be able to render an answer unreadable (M2-15).
     static let minimumXHeight: CGFloat = 8
 
-    /// The line-to-line distance an answer is laid out and drawn with: at most three quarters of the writer's own
-    /// (`LineRhythm` draws each gap from two thirds of that up to all of it, so from half to three quarters of
+    /// The line-to-line distance an answer is laid out and drawn with: at most half of the writer's own
+    /// (`LineRhythm` draws each gap from two thirds of that up to all of it, so from a third to a half of
     /// theirs), never tighter than `minimumLineSpacingRatio` x-heights. A line holds an ascender above and a
     /// descender below its x-height (about 2.4 of them from top to bottom), so a floor keeps lines from overlapping
     /// however tight the writer's measured spacing is.
@@ -72,11 +72,11 @@ public struct PlacementEngine: Sendable {
         max(measured * measuredShare, xHeight * minimumLineSpacingRatio)
     }
 
-    /// An answer sits closer than the writer's own lines (they write with a lot of room between lines): at most three
-    /// quarters of their measured spacing, never below `minimumLineSpacingRatio`.
-    static let measuredShare: CGFloat = 0.75
+    /// An answer sits closer than the writer's own lines (they write with a lot of room between lines): at most half of
+    /// their measured spacing, never below `minimumLineSpacingRatio`.
+    static let measuredShare: CGFloat = 0.5
 
-    public static let minimumLineSpacingRatio: CGFloat = 2.5
+    public static let minimumLineSpacingRatio: CGFloat = 2.3
 
     public static func usableXHeight(for context: SelectionContext) -> CGFloat {
         let measured = max(context.anchor.xHeight, context.style.xHeight)
