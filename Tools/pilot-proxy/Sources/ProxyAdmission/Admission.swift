@@ -106,8 +106,8 @@ actor AdmissionGate {
         guard (1...1024).contains(request.maxOutputTokens), request.transcript.utf8.count <= 1024 else {
             throw AdmissionError.oversized
         }
-        let crop = try PNG.normalized(request.cropPNG, maxBytes: 2_000_000, maxPixels: 1_500_000)
-        let neighborhood = try PNG.normalized(request.neighborhoodPNG, maxBytes: 500_000, maxPixels: 500_000)
+        let crop = try PNG.normalized(request.cropPNG, maxBytes: 2_000_000, maxPixels: 1_600_000)
+        let neighborhood = try PNG.normalized(request.neighborhoodPNG, maxBytes: 500_000, maxPixels: 550_000)
         return (AdmittedRequest(normalizing: request, cropPNG: crop, neighborhoodPNG: neighborhood), identity)
     }
 }

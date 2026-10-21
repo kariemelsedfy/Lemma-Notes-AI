@@ -63,6 +63,16 @@ public struct PlacementEngine: Sendable {
     /// not be able to render an answer unreadable (M2-15).
     static let minimumXHeight: CGFloat = 8
 
+    /// The line-to-line distance an answer is laid out and drawn with: the writer's own where it leaves room for the
+    /// letters, never tighter than `minimumLineSpacingRatio` x-heights. A line holds an ascender above and a
+    /// descender below its x-height (about 2.4 of them from top to bottom), so the writer's own spacing, measured
+    /// off a couple of lines, can be tighter than their letters need and drew an answer whose lines overlapped.
+    public static func answerLineSpacing(measured: CGFloat, xHeight: CGFloat) -> CGFloat {
+        max(measured, xHeight * minimumLineSpacingRatio)
+    }
+
+    static let minimumLineSpacingRatio: CGFloat = 2.7
+
     public static func usableXHeight(for context: SelectionContext) -> CGFloat {
         let measured = max(context.anchor.xHeight, context.style.xHeight)
         let candidate = measured > 0 ? measured : context.selectionBounds.height
@@ -98,7 +108,7 @@ public struct PlacementEngine: Sendable {
             let size = measurer.size(
                 of: block.content,
                 xHeight: xHeight,
-                lineSpacing: context.style.lineSpacing,
+                lineSpacing: Self.answerLineSpacing(measured: context.style.lineSpacing, xHeight: xHeight),
                 maxWidth: max(allowedArea.width, xHeight)
             )
             guard
@@ -158,7 +168,7 @@ public struct PlacementEngine: Sendable {
             let size = measurer.size(
                 of: block.content,
                 xHeight: xHeight,
-                lineSpacing: context.style.lineSpacing * textScale,
+                lineSpacing: Self.answerLineSpacing(measured: context.style.lineSpacing * textScale, xHeight: xHeight),
                 maxWidth: page.width - 2 * margin
             )
             guard size.width > 0, size.height > 0 else {

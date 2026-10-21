@@ -190,7 +190,8 @@ final class AskPipeline {
         let renderingStyle = StyleStats(
             xHeight: usableXHeight * textScale,
             slant: context.style.slant,
-            lineSpacing: context.style.lineSpacing * textScale,
+            lineSpacing: PlacementEngine.answerLineSpacing(
+                measured: context.style.lineSpacing * textScale, xHeight: usableXHeight * textScale),
             baselineDrift: context.style.baselineDrift,
             meanVelocity: context.style.meanVelocity,
             meanForce: context.style.meanForce,
