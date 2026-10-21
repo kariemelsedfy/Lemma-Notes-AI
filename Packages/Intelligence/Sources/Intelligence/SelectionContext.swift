@@ -109,7 +109,9 @@ public struct SelectionContextLimits: Equatable, Sendable {
     public let cropPadding: CGFloat
     /// Render scale for the crop. Two matches the device scale of every supported iPad.
     public let cropScale: CGFloat
-    /// `AI_PIPELINE.md` §1: bigger crops cost more and do not read better.
+    /// `AI_PIPELINE.md` §1: bigger crops cost more and do not read better. **Kept a few percent under what the service
+    /// accepts (1.5 million pixels):** the export rounds each side up to a whole pixel, which adds a thousand or so
+    /// pixels, so a cap met exactly was refused as oversized for any large selection (2026-10-21).
     public let cropPixelCap: Double
     /// How much page context to include around the selection, as a multiple of its size.
     public let neighborhoodExpansion: CGFloat
@@ -121,10 +123,10 @@ public struct SelectionContextLimits: Equatable, Sendable {
     public init(
         cropPadding: CGFloat = 12,
         cropScale: CGFloat = 2,
-        cropPixelCap: Double = 1_500_000,
+        cropPixelCap: Double = 1_450_000,
         neighborhoodExpansion: CGFloat = 2.5,
         neighborhoodScale: CGFloat = 1,
-        neighborhoodPixelCap: Double = 500_000,
+        neighborhoodPixelCap: Double = 480_000,
         minimumCoverage: Double = SelectionGeometry.defaultMinimumCoverage
     ) {
         self.cropPadding = cropPadding

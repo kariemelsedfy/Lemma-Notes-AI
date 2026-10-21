@@ -64,6 +64,27 @@ final class SelectionContextTests: XCTestCase {
         XCTAssertLessThanOrEqual(context.crop.pixelCount, 1_500_000 + 1)
     }
 
+    func testTheExportedImagesStayUnderWhatTheServiceAcceptsOnceEachSideIsRoundedUp() throws {
+        // The export makes each side a whole number of pixels, rounding up, so a cap met exactly in floating point was
+        // exceeded by a thousand pixels and the service refused the selection as oversized (2026-10-21).
+        let sizes: [(CGFloat, CGFloat)] = [
+            (880, 780), (881, 779), (1_190, 395), (600, 2_000), (1_543, 1_021), (733, 1_333), (1_600, 2_300),
+            (901.3, 777.7),
+        ]
+        for (width, height) in sizes {
+            let rect = CGRect(x: 10, y: 10, width: width, height: height)
+            let context = try XCTUnwrap(
+                SelectionContextBuilder.build(
+                    strokes: [Self.stroke(in: rect)], loop: Self.loop(around: rect), pageSize: pageSize))
+            for (request, limit) in [(context.crop, 1_500_000.0), (context.neighborhood, 500_000.0)] {
+                let pixels =
+                    (request.bounds.width * request.scale).rounded(.up)
+                    * (request.bounds.height * request.scale).rounded(.up)
+                XCTAssertLessThanOrEqual(Double(pixels), limit, "\(width)x\(height)")
+            }
+        }
+    }
+
     func testSmallCropKeepsFullDeviceScale() throws {
         let stroke = Self.stroke(in: CGRect(x: 100, y: 100, width: 60, height: 20))
         let loop = Self.loop(around: CGRect(x: 80, y: 80, width: 100, height: 60))
