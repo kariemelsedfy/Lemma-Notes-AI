@@ -92,7 +92,7 @@ public enum TypesetStyle {
         // nib and re-fit, since the widening changes the width the run needs.
         let bleed = nib / metrics.scale
         let compensated = glyphs.map {
-            GlyphEntry(glyph: $0.glyph, advance: $0.advance + bleed, isBlank: $0.isBlank)
+            GlyphEntry(glyph: $0.glyph, advance: $0.advance + bleed, isBlank: $0.isBlank, font: $0.font)
         }
         metrics = layout(compensated, font: font, in: frame)
         nib = renderableNib(metrics.pointSize * nibRatio)
@@ -103,7 +103,9 @@ public enum TypesetStyle {
 
         for entry in compensated {
             defer { pen.x += entry.advance * metrics.scale }
-            guard !entry.isBlank, let path = CTFontCreatePathForGlyph(font, entry.glyph, nil) else { continue }
+            guard !entry.isBlank, let path = CTFontCreatePathForGlyph(entry.font ?? font, entry.glyph, nil) else {
+                continue
+            }
             let contours = polylines(of: path)
             // Hatch fill only, inset by half a nib. Tracing the outline alone leaves hollow
             // letters, which measured *worse* than the crude placeholder font — Vision is
@@ -147,51 +149,20 @@ public enum TypesetStyle {
 
     // MARK: - Layout
 
-    private static let fontName = "Helvetica"
+    static let fontName = "Helvetica"
     /// Wider than Helvetica's own space (~0.28 em). A stroked glyph eats into the gap on
     /// both sides, and a space that reads as a space to a human still merged words for
     /// Vision at the font's natural value.
-    private static let spaceAdvanceRatio: CGFloat = 0.42
+    static let spaceAdvanceRatio: CGFloat = 0.42
     /// Glyph outlines are traced at this size and scaled; large enough that the flattening
     /// tolerance below is fine relative to the letterforms.
-    private static let referencePointSize: CGFloat = 100
-
-    private struct GlyphEntry {
-        let glyph: CGGlyph
-        let advance: CGFloat
-        /// Advances the pen and draws nothing. **Not** glyph 0 — that is `.notdef`, which
-        /// Helvetica draws as a box, and it was appearing in the output as `[` and `D`.
-        var isBlank = false
-    }
+    static let referencePointSize: CGFloat = 100
 
     private struct Metrics {
         let scale: CGFloat
         let pointSize: CGFloat
         /// The pen position for the first glyph, on the baseline.
         let origin: CGPoint
-    }
-
-    private static func glyphs(for text: String, font: CTFont) throws -> [GlyphEntry] {
-        var entries: [GlyphEntry] = []
-        for character in text {
-            if character == " " {
-                entries.append(GlyphEntry(glyph: 0, advance: referencePointSize * spaceAdvanceRatio, isBlank: true))
-                continue
-            }
-            let scalars = Array(String(character).utf16)
-            var characters = scalars
-            var glyphs = [CGGlyph](repeating: 0, count: scalars.count)
-            guard CTFontGetGlyphsForCharacters(font, &characters, &glyphs, scalars.count), let glyph = glyphs.first,
-                glyph != 0
-            else {
-                throw Error.unsupportedCharacter(character)
-            }
-            var advance = CGSize.zero
-            var single = glyph
-            CTFontGetAdvancesForGlyphs(font, .horizontal, &single, &advance, 1)
-            entries.append(GlyphEntry(glyph: glyph, advance: advance.width))
-        }
-        return entries
     }
 
     /// Fits the run to the frame on both axes and returns the baseline origin.

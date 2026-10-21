@@ -49,6 +49,10 @@ public enum CalibrationSheet {
     /// The pangram, chosen because it covers every letter in one natural sentence.
     public static let pangram = "The quick brown fox jumps over the lazy dog."
 
+    /// Logic, set and proof symbols, plus the ASCII marks the other sheets lack (`~ ^ ! ? * _ | &`). `→` is on the
+    /// maths sheet already. A student who writes `p ∧ ¬q ⇒ r` or `x ∈ A ∪ B` gets them back in their own hand.
+    public static let logicSymbols = "¬∧∨↔⇒⇔⊕∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&"
+
     /// The letters worth a second sample, by frequency. §3.1: this is what kills the
     /// "robot repeating the identical 'e'" tell.
     public static let highFrequencyLetters = "eariotns"
@@ -92,6 +96,13 @@ public enum CalibrationSheet {
             target: "√ ∫ ∑ ∏ π θ α β γ δ λ μ σ φ ω ∞ ∂ ∇ →",
             instruction: "Maths symbols. Skip any you never write.",
             kind: .guideBoxes("√∫∑∏πθαβγδλμσφω∞∂∇→"),
+            isOptional: true
+        ),
+        Sheet(
+            id: 8,
+            target: logicSymbols,
+            instruction: "Logic and set symbols, and a few marks you write in proofs. Skip any you never write.",
+            kind: .guideBoxes(logicSymbols),
             isOptional: true
         ),
         Sheet(

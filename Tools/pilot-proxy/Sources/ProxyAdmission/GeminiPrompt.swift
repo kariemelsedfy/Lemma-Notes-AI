@@ -20,7 +20,8 @@ enum GeminiPrompt {
         Never output coordinates or stroke data. Use "inline" with "atAnchor" for a short completion, and \
         "lines" with "belowSelection" only for multi-step work (at most 16 lines). Write math as plain characters \
         a person would handwrite: digits, letters, + - * / = ( ), ^ for powers, sqrt(...), pi, and function names \
-        such as sin and cos. NEVER LaTeX: no backslashes, braces or dollar signs (write dy/dx, not \\frac{dy}{dx}). \
+        such as sin and cos. For logic and sets use the symbols ¬ ∧ ∨ → ↔ ⇒ ⇔ ∀ ∃ ∈ ∪ ∩ ⊂ ≡ ∴ \
+        (not words, not LaTeX). NEVER LaTeX: no backslashes, braces or dollar signs (write dy/dx, not \\frac{dy}{dx}). \
         Prose is plain text. Each item is at most 400 characters. \
         Keep "explanation" plain and under 240 characters.
 

@@ -19,12 +19,15 @@ final class CalibrationTests: XCTestCase {
         for character in "√∫∑∏πθαβγδλμσφω∞∂∇→" {
             XCTAssertTrue(captured.contains(character), "No sheet asks for '\(character)'")
         }
+        for character in "¬∧∨→↔⇒⇔∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&" {
+            XCTAssertTrue(captured.contains(character), "No sheet asks for the logic symbol '\(character)'")
+        }
     }
 
     func testCalibrationIsAboutSevenScreensLong() {
         // §3.1 budgets ~7 screens and under three minutes. Sheets are cheap to add and
         // each one is another chance for the user to give up.
-        XCTAssertLessThanOrEqual(CalibrationSheet.sheets.count, 8)
+        XCTAssertLessThanOrEqual(CalibrationSheet.sheets.count, 9)
     }
 
     func testTheOnlyOptionalSheetsAreOnesAUserCanReasonablySkip() {
@@ -32,7 +35,7 @@ final class CalibrationTests: XCTestCase {
 
         // Maths symbols (not everyone writes them) and the variation pass (a bonus). The
         // core alphabet is not optional — without it there is no bank worth having.
-        XCTAssertEqual(optional.map(\.id), [4, 7])
+        XCTAssertEqual(optional.map(\.id).sorted(), [4, 7, 8])
     }
 
     func testTheAlphabetComesFirst() {
