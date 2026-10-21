@@ -43,6 +43,58 @@ final class SynthesizerTests: XCTestCase {
         XCTAssertTrue(Synthesizer.canRender("cab abc", bank: bank))
     }
 
+    // MARK: - Where words sit on the line
+
+    /// The lowest ink of each glyph in a run of single-letter words, left to right.
+    private func footOfEachWord(_ strokes: [InkStroke]) -> [CGFloat] {
+        let points = strokes.flatMap(\.points).sorted { $0.location.x < $1.location.x }
+        var feet: [CGFloat] = []
+        var lowest = -CGFloat.infinity
+        var previous = -CGFloat.infinity
+        for point in points {
+            if point.location.x - previous > 2, lowest > -CGFloat.infinity {
+                feet.append(lowest)
+                lowest = -CGFloat.infinity
+            }
+            lowest = max(lowest, point.location.y)
+            previous = point.location.x
+        }
+        if lowest > -CGFloat.infinity { feet.append(lowest) }
+        return feet
+    }
+
+    func testEachWordSitsAtItsOwnHeightOnTheLineAndOnlyWhenThereIsVariation() throws {
+        let bank = try Self.bank(characters: "x", samplesPerCharacter: 1)
+        let wide = CGRect(x: 0, y: 0, width: 900, height: 90)
+        let text = "x x x x x x x x x x"
+
+        let level = try Synthesizer.strokes(
+            for: text, in: wide, bank: bank, variation: Synthesizer.Variation(scale: 0), seed: 3, targetXHeight: 20)
+        let natural = try Synthesizer.strokes(for: text, in: wide, bank: bank, seed: 3, targetXHeight: 20)
+
+        let flat = footOfEachWord(level)
+        let varied = footOfEachWord(natural)
+        XCTAssertEqual(flat.count, 10)
+        XCTAssertEqual(varied.count, 10)
+        XCTAssertLessThan((flat.max() ?? 0) - (flat.min() ?? 0), 0.5, "no variation: every word on one line")
+        let spread = (varied.max() ?? 0) - (varied.min() ?? 0)
+        XCTAssertGreaterThan(spread, 1.5, "words sit at different heights: \(varied)")
+        XCTAssertLessThan(spread, 20, "but only a little: the line is still a line")
+        let again = try Synthesizer.strokes(for: text, in: wide, bank: bank, seed: 3, targetXHeight: 20)
+        XCTAssertEqual(footOfEachWord(again), varied, "the same seed puts every word in the same place")
+        let other = try Synthesizer.strokes(for: text, in: wide, bank: bank, seed: 4, targetXHeight: 20)
+        XCTAssertNotEqual(footOfEachWord(other), varied)
+    }
+
+    func testTheLettersOfOneWordShareItsPlacement() throws {
+        let bank = try Self.bank(characters: "x", samplesPerCharacter: 1)
+        let wide = CGRect(x: 0, y: 0, width: 900, height: 90)
+        let strokes = try Synthesizer.strokes(
+            for: "xxxx", in: wide, bank: bank, variation: Synthesizer.Variation(scale: 1), seed: 8, targetXHeight: 20)
+        let points = strokes.flatMap { $0.points }.map { $0.location.y }
+        XCTAssertLessThan((points.max() ?? 0) - (points.min() ?? 0), 20 * 1.6, "one word stays together")
+    }
+
     // MARK: - Determinism
 
     func testTheSameSeedRendersIdenticalStrokes() throws {

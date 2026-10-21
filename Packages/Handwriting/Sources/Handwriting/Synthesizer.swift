@@ -52,66 +52,18 @@ public enum Synthesizer {
         targetXHeight: CGFloat? = nil,
         baseline: CGFloat? = nil
     ) throws -> [InkStroke] {
-        guard frame.width > 0, frame.height > 0 else { throw Error.degenerateFrame }
-        let missing = bank.missingCharacters(in: text)
-        guard missing.isEmpty else { throw Error.missingGlyphs(missing) }
-        guard !text.isEmpty else { return [] }
-
-        let style = bank.style.stats
-        var generator = SeededGenerator(seed: seed)
-        let chosen = select(text, from: bank, variation: variation, using: &generator)
-        var metrics = layout(chosen, style: style, targetXHeight: targetXHeight, in: frame)
-        // A row drawn in several pieces (a base and its raised exponent) shares one baseline. By default the baseline
-        // depends on how far *this* text's deepest descender falls, so a piece with no descender would otherwise sit
-        // lower than its neighbours.
-        if let baseline {
-            metrics = Metrics(xHeight: metrics.xHeight, origin: CGPoint(x: metrics.origin.x, y: baseline))
-        }
-
-        var strokes: [InkStroke] = []
-        var clock: TimeInterval = 0
-        var pen = metrics.origin
-
-        for entry in chosen {
-            defer {
-                pen.x += (entry.advance + entry.gap) * metrics.xHeight
-            }
-            guard let glyph = entry.glyph else { continue }
-
-            // Per-glyph vertical jitter, drawn from the writer's own variance rather than
-            // a fixed percentage (§4.1). A fixed percentage looks uniform, which is its
-            // own tell.
-            let jitter = generator.symmetric(metrics.xHeight * 0.035 * variation.scale)
-            // Slow sinusoidal drift so the baseline is not laser-straight (§4 step 5).
-            let drift = sin(pen.x / max(metrics.xHeight * 12, 1)) * metrics.xHeight * 0.02 * variation.scale
-            // Per-glyph slant. A writer's letters do not all lean by the same angle, and a
-            // single fixed shear is one of the tells the §7 panel is asked to spot.
-            let lean = tan(style.slant + entry.slantOffset)
-
-            for glyphStroke in glyph.strokes {
-                let points = glyphStroke.points.map { point -> InkPoint in
-                    let height = -point.location.y * metrics.xHeight
-                    return InkPoint(
-                        location: CGPoint(
-                            // Slant shears about the baseline: the top of a letter leans,
-                            // its foot stays put.
-                            x: pen.x + point.location.x * metrics.xHeight + lean * height,
-                            y: pen.y + point.location.y * metrics.xHeight + jitter + drift
-                        ),
-                        timeOffset: clock + point.timeOffset,
-                        force: point.force,
-                        altitude: point.altitude,
-                        azimuth: point.azimuth,
-                        size: nib(for: style)
-                    )
-                }
-                strokes.append(InkStroke(points: points))
-                clock += glyphStroke.points.last?.timeOffset ?? 0
-            }
-            // A pen lift between glyphs.
-            clock += 0.03
-        }
-        return strokes
+        let request = SynthesisRequest(
+            text: text, frame: frame, bank: bank, variation: variation, seed: seed, targetXHeight: targetXHeight,
+            baseline: baseline)
+        // Words are placed at different heights, but only as far as the frame has room: the ink is first laid out level
+        // to see how much room there is above and below it, then again with each word's rise held to that.
+        let level = try compose(request, shiftRange: 0...0)
+        guard baseline == nil, !level.isEmpty else { return level }
+        let box = InkLineGrouping.bounds(of: level)
+        let above = frame.minY - box.minY
+        let below = frame.maxY - box.maxY
+        guard above < 0, below > 0 else { return level }
+        return try compose(request, shiftRange: above...below)
     }
 
     /// How tall this text will be drawn, in x-heights, ascender to descender.
@@ -171,7 +123,7 @@ public enum Synthesizer {
 
     // MARK: - Glyph selection
 
-    private struct Chosen {
+    struct Chosen {
         let glyph: Glyph?
         let advance: CGFloat
         /// Space before the next glyph, in x-heights. Per glyph, not per line: uneven spacing
@@ -195,7 +147,7 @@ public enum Synthesizer {
     /// exactly like a bank with one, and every extra sample calibration collected was dead
     /// weight. Removing this narrowing to "simplify" now that only one scale ships would put
     /// that back.
-    private static func select(
+    static func select(
         _ text: String,
         from bank: GlyphBank,
         variation: Variation,
@@ -301,13 +253,13 @@ public enum Synthesizer {
 
     // MARK: - Layout
 
-    private struct Metrics {
+    struct Metrics {
         let xHeight: CGFloat
         /// Baseline origin.
         let origin: CGPoint
     }
 
-    private static func layout(
+    static func layout(
         _ chosen: [Chosen],
         style: StyleStats,
         targetXHeight: CGFloat?,
@@ -366,7 +318,7 @@ public enum Synthesizer {
     /// letter fills its counters. That wants a **floor relative to the letter**, not a
     /// proportion — and `InkRenderingLimits` already floors what the page can draw at all. If a
     /// small answer still reads as heavy, measure it before reaching for a ratio again.
-    private static func nib(for style: StyleStats) -> CGSize {
+    static func nib(for style: StyleStats) -> CGSize {
         let width = style.strokeWidth > 0 ? style.strokeWidth : InkPoint.defaultSize.width
         return CGSize(width: width, height: width)
     }
