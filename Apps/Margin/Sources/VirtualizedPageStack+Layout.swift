@@ -34,7 +34,7 @@ extension VirtualizedPageStack {
             viewportWidth = $0
         }
         // A drag that starts on the answer's outline moves the answer, not the page.
-        .scrollDisabled(ghostDragging)
+        .scrollDisabled(ghostDragging || editDragging)
         .scrollPosition(id: $visiblePageID)
         // No snapping: the notebook stays wherever it is left, so a page seam can sit mid-screen.
         .scrollIndicators(.hidden)
@@ -53,7 +53,12 @@ extension VirtualizedPageStack {
         }
         .frame(maxWidth: .infinity)
         // The pending answer floats over the whole column so it can be dragged across a page boundary.
-        .overlay(alignment: .topLeading) { ghostOverlay }
+        .overlay(alignment: .topLeading) {
+            ZStack(alignment: .topLeading) {
+                ghostOverlay
+                editOverlay
+            }
+        }
         .scrollTargetLayout()
     }
 
@@ -81,6 +86,7 @@ extension VirtualizedPageStack {
             if askPath.isArmed {
                 LassoHintBar(hint: askPath.stage.hintKey, onCancel: cancelSelection)
             }
+            lassoEditHint
         }
     }
 }

@@ -17,6 +17,9 @@ struct LivePageView: View {
     let captureStage: AskCaptureStage?
     /// A selection that is only waiting for a choice can be resized with its corner handle.
     let canResizeSelection: Bool
+    /// The lasso tool is selected: the Pencil draws a loop around ink to edit.
+    let lassoEditArmed: Bool
+    let onEditLasso: ([CGPoint]) -> Void
     let onAskLasso: ([CGPoint]) -> Void
     let onResizeSelection: (CGFloat) -> Void
 
@@ -45,6 +48,7 @@ struct LivePageView: View {
                     SelectionResizeHandle(selection: selection, pageSize: pageSize, onResize: onResizeSelection)
                 }
             }
+            if lassoEditArmed { PencilLassoCapture(onComplete: onEditLasso) }
             if let captureStage {
                 AskLassoCapture(
                     onComplete: onAskLasso,
