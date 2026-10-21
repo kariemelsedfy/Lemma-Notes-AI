@@ -120,10 +120,13 @@ public struct TypesetInkRenderer: SuggestionInkRendering {
             ? max(frame.height - advance * CGFloat(rows.count - 1), advance * Self.lineFillRatio)
             : advance * Self.lineFillRatio
 
+        let offsets = LineRhythm.offsets(
+            count: rows.count, spacing: advance, floor: style.xHeight * PlacementEngine.minimumLineSpacingRatio,
+            seed: seed)
         return try rows.enumerated().flatMap { index, row -> [InkStroke] in
             let lineFrame = CGRect(
                 x: frame.minX + row.indent,
-                y: frame.minY + advance * CGFloat(index) + (wrapped ? 0 : advance - glyphHeight),
+                y: frame.minY + offsets[index] + (wrapped ? 0 : advance - glyphHeight),
                 width: max(frame.width - row.indent, 1),
                 height: glyphHeight
             )

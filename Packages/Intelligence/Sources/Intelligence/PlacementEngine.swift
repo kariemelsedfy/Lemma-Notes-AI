@@ -41,7 +41,7 @@ public struct PlacementResult: Equatable, Sendable {
 public struct PlacementEngine: Sendable {
     public let allowedArea: CGRect
     private let occupancy: OccupancyGrid
-    private let measurer: any ContentMeasuring
+    let measurer: any ContentMeasuring
 
     public init(
         page: CGRect,
@@ -63,15 +63,20 @@ public struct PlacementEngine: Sendable {
     /// not be able to render an answer unreadable (M2-15).
     static let minimumXHeight: CGFloat = 8
 
-    /// The line-to-line distance an answer is laid out and drawn with: the writer's own where it leaves room for the
-    /// letters, never tighter than `minimumLineSpacingRatio` x-heights. A line holds an ascender above and a
-    /// descender below its x-height (about 2.4 of them from top to bottom), so the writer's own spacing, measured
-    /// off a couple of lines, can be tighter than their letters need and drew an answer whose lines overlapped.
+    /// The line-to-line distance an answer is laid out and drawn with: at most half of the writer's own
+    /// (`LineRhythm` draws each gap from two thirds of that up to all of it, so from a third to a half of
+    /// theirs), never tighter than `minimumLineSpacingRatio` x-heights. A line holds an ascender above and a
+    /// descender below its x-height (about 2.4 of them from top to bottom), so a floor keeps lines from overlapping
+    /// however tight the writer's measured spacing is.
     public static func answerLineSpacing(measured: CGFloat, xHeight: CGFloat) -> CGFloat {
-        max(measured, xHeight * minimumLineSpacingRatio)
+        max(measured * measuredShare, xHeight * minimumLineSpacingRatio)
     }
 
-    static let minimumLineSpacingRatio: CGFloat = 2.7
+    /// An answer sits closer than the writer's own lines (they write with a lot of room between lines): at most half of
+    /// their measured spacing, never below `minimumLineSpacingRatio`.
+    static let measuredShare: CGFloat = 0.5
+
+    public static let minimumLineSpacingRatio: CGFloat = 2.3
 
     public static func usableXHeight(for context: SelectionContext) -> CGFloat {
         let measured = max(context.anchor.xHeight, context.style.xHeight)
@@ -139,11 +144,14 @@ public struct PlacementEngine: Sendable {
     /// wider than the page wraps through the measurer's width ceiling.
     /// - Parameter textScale: below 1 to draw the answer smaller, for one that would not fit on the page at the
     ///   writer's size. The caller draws it at the same scale.
+    /// - Parameter columns: above 1 to set a long block of lines as that many columns side by side, for an answer
+    ///   that would otherwise be taller than the page.
     public func placeBelowSelection(
         _ spec: ValidatedSpec,
         context: SelectionContext,
         pageStrokes: [InkStroke] = [],
-        textScale: CGFloat = 1
+        textScale: CGFloat = 1,
+        columns: Int = 1
     ) -> PlacementResult {
         let xHeight = Self.usableXHeight(for: context) * textScale
         let margin = max(xHeight, 16)
@@ -163,6 +171,11 @@ public struct PlacementEngine: Sendable {
             }
             guard !page.isNull, page.width > 2 * margin else {
                 unplaced.append(block)
+                continue
+            }
+            if let set = columnSet(block, columns: columns, context: context, textScale: textScale, top: nextY) {
+                placements += set.placements
+                nextY = set.bottom + gap
                 continue
             }
             let size = measurer.size(

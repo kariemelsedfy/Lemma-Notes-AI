@@ -18,7 +18,9 @@ enum GeminiPrompt {
 
         Output rules: reply with JSON matching the schema and nothing else. "intent" must be "answer". \
         Never output coordinates or stroke data. Use "inline" with "atAnchor" for a short completion, and \
-        "lines" with "belowSelection" only for multi-step work (at most 16 lines). Write math as plain characters \
+        "lines" with "belowSelection" only for multi-step work: at most 8 lines, so give the key steps and the \
+        final answer, not every intermediate calculation (the answer is handwritten on one page). \
+        Write math as plain characters \
         a person would handwrite: digits, letters, + - * / = ( ), ^ for powers, sqrt(...), pi, and function names \
         such as sin and cos. For logic and sets use the symbols ¬ ∧ ∨ → ↔ ⇒ ⇔ ∀ ∃ ∈ ∪ ∩ ⊂ ≡ ∴ \
         (not words, not LaTeX). NEVER LaTeX: no backslashes, braces or dollar signs (write dy/dx, not \\frac{dy}{dx}). \

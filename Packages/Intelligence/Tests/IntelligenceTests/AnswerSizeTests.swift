@@ -45,15 +45,15 @@ final class AnswerSizeTests: XCTestCase {
     ///
     /// Tolerance is wider here than for a single glyph, and deliberately so: per-glyph vertical
     /// jitter and baseline drift (§4.1) are real ink that a run accumulates, measured at ~5% over
-    /// five letters. Tightening this would be asserting that handwriting is level, which is the
-    /// tell the jitter exists to avoid.
+    /// five letters, and each word's own tilt (up to about two degrees along its length) adds to a long word's height.
+    /// Tightening this would be asserting that handwriting is level, which is the tell the jitter exists to avoid.
     func testXHeightOnlyTextIsUnchanged() throws {
         let renderer = HandwritingInkRenderer(bank: try Self.bank())
 
         let strokes = try renderer.strokes(
             for: Self.placement(text: "xnorm"), style: Self.style(inkHeight: 60), seed: 0)
 
-        XCTAssertEqual(InkLineGrouping.bounds(of: strokes).height, 60, accuracy: 60 * 0.08)
+        XCTAssertEqual(InkLineGrouping.bounds(of: strokes).height, 60, accuracy: 60 * 0.2)
     }
 
     /// And the weight, which the same device recording caught at 1.83×: the writer's own pen,

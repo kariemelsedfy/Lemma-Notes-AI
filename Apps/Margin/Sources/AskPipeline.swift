@@ -225,23 +225,6 @@ final class AskPipeline {
 
     /// The answer's ink from the chosen renderer, or from the typeset one when the chosen one cannot draw it: an answer
     /// the model gave should reach the page in some hand rather than fail.
-    /// The answer placed at the writer's size, or smaller when it would run off the bottom of the page.
-    private static func placedToFit(
-        _ spec: ValidatedSpec, _ engine: PlacementEngine, context: SelectionContext, pageStrokes: [InkStroke]
-    ) -> (PlacementResult, CGFloat) {
-        var scale: CGFloat = 1
-        var result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes)
-        for smaller: CGFloat in [0.8, 0.65, 0.5] where !fits(result.placements, in: engine.allowedArea) {
-            scale = smaller
-            result = engine.placeBelowSelection(spec, context: context, pageStrokes: pageStrokes, textScale: smaller)
-        }
-        return (result, scale)
-    }
-
-    private static func fits(_ placements: [BlockPlacement], in area: CGRect) -> Bool {
-        placements.allSatisfy { $0.frame.maxY <= area.maxY + 1 && $0.frame.minY >= area.minY - 1 }
-    }
-
     private static func drawn(
         _ placements: [BlockPlacement], style: StyleStats, seed: UInt64, by renderer: any SuggestionInkRendering
     ) -> [InkStroke]? {

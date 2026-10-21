@@ -172,10 +172,13 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
             ? max(frame.height - advance * CGFloat(rows.count - 1), advance * Self.lineFillRatio)
             : advance * Self.lineFillRatio
 
+        let offsets = LineRhythm.offsets(
+            count: rows.count, spacing: advance, floor: style.xHeight * PlacementEngine.minimumLineSpacingRatio,
+            seed: seed)
         return try rows.enumerated().flatMap { index, row -> [InkStroke] in
             let lineFrame = CGRect(
                 x: frame.minX + row.indent,
-                y: frame.minY + advance * CGFloat(index) + (wrapped ? 0 : advance - glyphHeight),
+                y: frame.minY + offsets[index] + (wrapped ? 0 : advance - glyphHeight),
                 width: max(frame.width - row.indent, 1),
                 height: glyphHeight
             )
@@ -192,7 +195,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         guard let pieces = ScriptedText.pieces(in: text) else {
             return try Synthesizer.strokes(
                 for: text, in: frame, bank: bank, variation: variation, seed: seed,
-                targetXHeight: targetXHeight(for: text, matching: style.xHeight))
+                targetXHeight: targetXHeight(for: text, matching: style.xHeight), extraRoom: style.xHeight * 0.35)
         }
         let whole = pieces.map(\.text).joined()
         let size = targetXHeight(for: whole, matching: style.xHeight)

@@ -19,7 +19,7 @@ final class CalibrationTests: XCTestCase {
         for character in "√∫∑∏πθαβγδλμσφω∞∂∇→" {
             XCTAssertTrue(captured.contains(character), "No sheet asks for '\(character)'")
         }
-        for character in "¬∧∨→↔⇒⇔∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&" {
+        for character in "¬∧∨→↔⇒⇔∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&-" {
             XCTAssertTrue(captured.contains(character), "No sheet asks for the logic symbol '\(character)'")
         }
     }
