@@ -86,6 +86,23 @@ final class SynthesizerTests: XCTestCase {
         XCTAssertNotEqual(footOfEachWord(other), varied)
     }
 
+    func testWordsMoveFurtherWhenTheRowIsGivenRoomPastItsFrame() throws {
+        let bank = try Self.bank(characters: "x", samplesPerCharacter: 1)
+        // A frame that is only as tall as the ink: nothing can move inside it.
+        let snug = CGRect(x: 0, y: 0, width: 900, height: 28)
+        let text = "x x x x x x x x x x"
+        let inside = try Synthesizer.strokes(for: text, in: snug, bank: bank, seed: 3, targetXHeight: 20)
+        let roomy = try Synthesizer.strokes(for: text, in: snug, bank: bank, seed: 3, targetXHeight: 20, extraRoom: 8)
+        func spread(_ strokes: [InkStroke]) -> CGFloat {
+            let feet = footOfEachWord(strokes)
+            return (feet.max() ?? 0) - (feet.min() ?? 0)
+        }
+        XCTAssertGreaterThan(spread(roomy), spread(inside) + 1, "given room, words rise and fall further")
+        let ink = InkLineGrouping.bounds(of: roomy)
+        XCTAssertGreaterThanOrEqual(ink.minY, snug.minY - 8 - 0.01)
+        XCTAssertLessThanOrEqual(ink.maxY, snug.maxY + 8 + 0.01)
+    }
+
     func testTheLettersOfOneWordShareItsPlacement() throws {
         let bank = try Self.bank(characters: "x", samplesPerCharacter: 1)
         let wide = CGRect(x: 0, y: 0, width: 900, height: 90)

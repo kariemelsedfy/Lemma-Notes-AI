@@ -41,6 +41,7 @@ public enum Synthesizer {
 
     /// Renders `text` into `frame`, sitting on its baseline.
     ///
+    /// - Parameter extraRoom: How far words may stray above and below `frame` when they rise and fall on the line.
     /// - Parameter targetXHeight: The local writing size to match. When omitted, direct
     ///   synthesis uses the size recorded during calibration.
     public static func strokes(
@@ -50,7 +51,8 @@ public enum Synthesizer {
         variation: Variation = .natural,
         seed: UInt64 = 0,
         targetXHeight: CGFloat? = nil,
-        baseline: CGFloat? = nil
+        baseline: CGFloat? = nil,
+        extraRoom: CGFloat = 0
     ) throws -> [InkStroke] {
         let request = SynthesisRequest(
             text: text, frame: frame, bank: bank, variation: variation, seed: seed, targetXHeight: targetXHeight,
@@ -60,8 +62,11 @@ public enum Synthesizer {
         let level = try compose(request, shiftRange: 0...0)
         guard baseline == nil, !level.isEmpty else { return level }
         let box = InkLineGrouping.bounds(of: level)
-        let above = frame.minY - box.minY
-        let below = frame.maxY - box.maxY
+        // `extraRoom` lets words rise and fall a little past the frame: a row's frame is only the slot reserved for it,
+        // and the lines around it are well clear of that. Without it a row that fills its frame (a descender on the
+        // bottom edge) could only move words up.
+        let above = frame.minY - extraRoom - box.minY
+        let below = frame.maxY + extraRoom - box.maxY
         guard above < 0, below > 0 else { return level }
         return try compose(request, shiftRange: above...below)
     }

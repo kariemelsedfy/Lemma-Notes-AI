@@ -17,11 +17,11 @@ struct SynthesisRequest {
 private struct WordPlacement {
     /// In points, positive down.
     let rise: CGFloat
-    /// Points of rise per point along the word, so a word leans a degree or two.
+    /// Points of rise per point along the word, so a word leans up to about two and a third degrees.
     let tilt: CGFloat
 
     static func next(using generator: inout SeededGenerator, xHeight: CGFloat, scale: CGFloat) -> WordPlacement {
-        WordPlacement(rise: generator.symmetric(xHeight * 0.16 * scale), tilt: generator.symmetric(0.03 * scale))
+        WordPlacement(rise: generator.symmetric(xHeight * 0.32 * scale), tilt: generator.symmetric(0.04 * scale))
     }
 }
 

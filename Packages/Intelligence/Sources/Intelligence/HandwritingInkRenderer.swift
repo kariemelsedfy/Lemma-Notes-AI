@@ -195,7 +195,7 @@ public struct HandwritingInkRenderer: SuggestionInkRendering {
         guard let pieces = ScriptedText.pieces(in: text) else {
             return try Synthesizer.strokes(
                 for: text, in: frame, bank: bank, variation: variation, seed: seed,
-                targetXHeight: targetXHeight(for: text, matching: style.xHeight))
+                targetXHeight: targetXHeight(for: text, matching: style.xHeight), extraRoom: style.xHeight * 0.35)
         }
         let whole = pieces.map(\.text).joined()
         let size = targetXHeight(for: whole, matching: style.xHeight)
