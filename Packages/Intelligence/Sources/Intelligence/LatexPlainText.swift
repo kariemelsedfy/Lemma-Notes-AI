@@ -27,12 +27,15 @@ public enum LatexPlainText {
 
     private static let symbols: [String: String] = [
         "cdot": "·", "times": "×", "div": "÷", "pm": "+/-", "mp": "-/+", "leq": "<=", "le": "<=", "geq": ">=",
-        "ge": ">=", "neq": "!=", "ne": "!=", "approx": "≈", "sim": "~", "to": "->", "rightarrow": "->",
-        "Rightarrow": "=>", "leftarrow": "<-", "implies": "=>", "infty": "infinity", "pi": "pi", "theta": "theta",
+        "ge": ">=", "neq": "!=", "ne": "!=", "approx": "≈", "sim": "~", "to": "→", "rightarrow": "→",
+        "Rightarrow": "⇒", "leftarrow": "←", "implies": "⇒", "leftrightarrow": "↔", "Leftrightarrow": "⇔", "iff": "⇔",
+        "land": "∧", "wedge": "∧", "lor": "∨", "vee": "∨", "neg": "¬", "lnot": "¬", "oplus": "⊕", "equiv": "≡",
+        "therefore": "∴", "vdash": "⊢", "notin": "∉", "subset": "⊂", "subseteq": "⊆", "cup": "∪", "cap": "∩",
+        "emptyset": "∅", "varnothing": "∅", "infty": "infinity", "pi": "pi", "theta": "theta",
         "alpha": "alpha", "beta": "beta", "gamma": "gamma", "delta": "delta", "Delta": "Delta", "lambda": "lambda",
         "mu": "mu", "sigma": "sigma", "omega": "omega", "phi": "phi", "epsilon": "epsilon", "partial": "d",
         "int": "∫", "sum": "sum", "prod": "product", "cdots": "...", "ldots": "...", "dots": "...",
-        "degree": "°", "circ": "°", "ell": "l", "in": " in ", "forall": "for all", "exists": "exists",
+        "degree": "°", "circ": "°", "ell": "l", "in": "∈", "forall": "∀", "exists": "∃",
     ]
     private static let wrappers: Set<String> = [
         "text", "mathrm", "mathbf", "mathit", "mathbb", "mathcal", "operatorname", "textbf", "textit", "mbox",

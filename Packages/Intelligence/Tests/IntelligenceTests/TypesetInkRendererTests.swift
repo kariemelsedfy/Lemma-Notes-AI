@@ -125,9 +125,9 @@ final class TypesetInkRendererTests: XCTestCase {
     }
 
     func testContentOutsideTheFontStillFailsClosed() {
-        // Still fails closed on what the font genuinely lacks, rather than dropping a
+        // Still fails closed on what no font can outline (a colour emoji), rather than dropping a
         // glyph and quietly changing the answer.
-        let placement = Self.placement(.inline(SpecRun(kind: .text, value: "answer: 漢字")), frame: frame)
+        let placement = Self.placement(.inline(SpecRun(kind: .text, value: "answer: 😀")), frame: frame)
 
         XCTAssertThrowsError(try TypesetInkRenderer().strokes(for: placement, style: .unmeasured, seed: 0)) { error in
             XCTAssertEqual(error as? SuggestionRenderError, .unsupportedContent)
@@ -216,7 +216,30 @@ final class TypesetSubstitutionTests: XCTestCase {
         XCTAssertThrowsError(try renderer.strokes(for: placement, style: .unmeasured, seed: 0))
         let fixed = renderer.substitutingUnsupportedCharacters(in: placement)
         guard case .lines(let lines) = fixed.block.content else { return XCTFail("Lines were lost") }
-        XCTAssertEqual(lines.map(\.run.value), ["answer: ?? ? √2", "x²"])
+        XCTAssertEqual(
+            lines.map(\.run.value), ["answer: 漢字 ? √2", "x²"], "CJK has a system font; a colour emoji does not")
         XCTAssertFalse(try renderer.strokes(for: fixed, style: .unmeasured, seed: 0).isEmpty)
+    }
+}
+
+final class LogicSymbolDrawingTests: XCTestCase {
+    func testTheTypefaceDrawsEveryLogicSymbolSoABorrowedGlyphIsNeverAQuestionMark() throws {
+        let symbols = "¬∧∨→↔⇒⇔⊕∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&"
+        let content = SpecBlockContent.inline(SpecRun(kind: .text, value: symbols))
+        let placement = BlockPlacement(
+            block: SpecBlock(placement: .belowSelection, content: content),
+            frame: CGRect(x: 0, y: 0, width: 900, height: 40),
+            requested: .belowSelection, usedFallback: false)
+        let renderer = TypesetInkRenderer()
+        let fixed = renderer.substitutingUnsupportedCharacters(in: placement)
+        guard case .inline(let run) = fixed.block.content else { return XCTFail("Content was lost") }
+        XCTAssertEqual(run.value, symbols, "none of them needed replacing: \(run.value)")
+    }
+
+    func testLatexLogicCommandsBecomeTheRealSymbols() {
+        XCTAssertEqual(LatexPlainText.plain(#"p \land \neg q \Rightarrow r"#), "p ∧ ¬ q ⇒ r")
+        XCTAssertEqual(LatexPlainText.plain(#"A \cup B \subseteq C"#), "A ∪ B ⊆ C")
+        XCTAssertEqual(LatexPlainText.plain(#"\forall x \in S"#), "∀ x ∈ S")
+        XCTAssertEqual(LatexPlainText.plain(#"p \leftrightarrow q"#), "p ↔ q")
     }
 }

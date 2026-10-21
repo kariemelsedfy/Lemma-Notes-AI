@@ -125,8 +125,8 @@ final class HandwritingInkRendererTests: XCTestCase {
         XCTAssertTrue(renderer.canRender("sums"))
         // Typeset stands in for a character the writer never wrote...
         XCTAssertTrue(renderer.canRender("sum x"))
-        // ...unless the typeface cannot draw it either.
-        XCTAssertFalse(renderer.canRender("sum \u{1F700}"))
+        // ...unless no font can outline it either.
+        XCTAssertFalse(renderer.canRender("sum \u{1F600}"), "a colour emoji has no outline in any font")
     }
 
     // MARK: - Fixtures
