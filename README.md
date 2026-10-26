@@ -86,7 +86,8 @@ Everything else is a real notebook, not a demo:
 <img src="docs/media/demo-poster.png" alt="Watch the full walkthrough" width="340">
 </a>
 
-**[▶ Watch the walkthrough, under two minutes (MP4)](docs/media/demo.mp4)**
+**[▶ Watch the walkthrough, under two minutes (MP4)](docs/media/demo.mp4)**  
+**[Full-resolution recording (Dropbox)](https://www.dropbox.com/scl/fi/vs6c4finbs2v4bm7gpcic/ScreenRecording_10-26-2026-10-46-24_1.MP4?rlkey=dwyoquf8dinhjdljx8x3nkykd&st=jyqr6r72&dl=0)**
 
 <sub>Recorded on an iPad mini, from the very start of the first run: the welcome card, teaching it a handwriting, then Explain, Solve and Plot on a fresh note, ending at the subscribe screen.</sub>
 
