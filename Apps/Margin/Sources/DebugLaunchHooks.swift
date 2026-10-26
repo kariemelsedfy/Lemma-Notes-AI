@@ -65,7 +65,7 @@ extension View {
 
     /// Debug builds only: `-margin.scenario <name>` stages the app for a Simulator screenshot or recording with no taps
     /// (README media). `seed` fills the library with sample notes and folders; `paywall` opens Premium;
-    /// `tour-handwriting`, `tour-disclosure` and `tour-subscribe` jump to a step of the first-run tour.
+    /// `tour-welcome`, `tour-handwriting`, `tour-disclosure` and `tour-subscribe` jump to a step of the first-run tour.
     private struct SampleNote {
         let title: String
         let paper: PaperStyle
@@ -102,6 +102,7 @@ extension View {
             case "gallery":
                 handwriting.save(DebugBank.sample())
                 showGallery()
+            case "tour-welcome": jump(to: .welcome)
             case "tour-handwriting": jump(to: .handwriting)
             case "tour-disclosure": jump(to: .disclosure)
             case "tour-subscribe": jump(to: .subscribe)
