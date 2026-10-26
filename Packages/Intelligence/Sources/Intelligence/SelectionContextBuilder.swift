@@ -129,7 +129,19 @@ public enum SelectionContextBuilder {
     private static func xHeight(of strokes: [InkStroke], lineBounds: CGRect, fallback: CGRect) -> CGFloat {
         let measured = StyleStatsEstimator.estimate(from: strokes).xHeight
         let visibleLineHeight = lineBounds.height > 0 ? lineBounds.height : fallback.height
-        return max(measured, visibleLineHeight)
+        return max(measured, min(visibleLineHeight, typicalStrokeHeight(of: strokes) * 1.25))
+    }
+
+    /// How tall most of the strokes are: the height three quarters of them stay under. A line is not always one row of
+    /// writing: a matrix's brackets, or a fraction's bar and its stacked terms, make the "line" several times taller
+    /// than its letters, and an answer sized to that is several times too big. A few tall strokes do not move this;
+    /// flat ink (the bars of `+` and `=`) sits below it, so it never pulls the size under the writing itself.
+    private static func typicalStrokeHeight(of strokes: [InkStroke]) -> CGFloat {
+        let heights = strokes.map { boundingBox(of: $0.points.map(\.location)).height }.sorted()
+        guard !heights.isEmpty else { return .greatestFiniteMagnitude }
+        let typical = heights[min(heights.count * 3 / 4, heights.count - 1)]
+        // Ink with no height of its own (generated hatching) says nothing about the size of the writing.
+        return typical > 1 ? typical : .greatestFiniteMagnitude
     }
 
     private static func boundingBox(of points: [CGPoint]) -> CGRect {

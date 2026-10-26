@@ -34,9 +34,12 @@ struct HandwritingGalleryView: View {
             }
             .navigationDestination(for: HandwritingGallery.Entry.self) { entry in
                 if let bank = store.bank {
-                    VariantsView(entry: entry, lineWidth: HandwritingGallery.lineWidth(for: bank)) {
-                        recording = Recording(characters: $0)
-                    }
+                    VariantsView(
+                        entry: HandwritingGallery.Entry(
+                            character: entry.character, variants: bank.samples(for: entry.character)),
+                        lineWidth: HandwritingGallery.lineWidth(for: bank),
+                        record: { recording = Recording(characters: $0) },
+                        remove: { store.removeVariant(of: entry.character, at: $0) })
                 }
             }
         }
@@ -152,6 +155,7 @@ private struct VariantsView: View {
     let entry: HandwritingGallery.Entry
     let lineWidth: CGFloat
     let record: ([Character]) -> Void
+    let remove: (Int) -> Void
 
     var body: some View {
         ScrollView {
@@ -169,9 +173,18 @@ private struct VariantsView: View {
                     ForEach(Array(entry.variants.enumerated()), id: \.offset) { index, glyph in
                         VStack(spacing: 6) {
                             GlyphThumbnail(glyph: glyph, lineWidth: lineWidth, showsGuides: true).frame(height: 170)
-                            Text(String(format: NSLocalizedString("gallery.variant", comment: ""), index + 1))
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(MarginColor.secondaryText)
+                            HStack {
+                                Text(String(format: NSLocalizedString("gallery.variant", comment: ""), index + 1))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(MarginColor.secondaryText)
+                                Button(role: .destructive) {
+                                    remove(index)
+                                } label: {
+                                    Image(systemName: "trash").font(.system(size: 13))
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("gallery.variant.delete")
+                            }
                         }
                         .padding(.vertical, 10)
                         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(MarginColor.paper))

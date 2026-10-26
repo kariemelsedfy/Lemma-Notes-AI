@@ -131,8 +131,17 @@ public struct GlyphBank: Codable, Equatable, Sendable {
     public var sampleCount: Int { samples.values.reduce(0) { $0 + $1.count } }
 
     public func samples(for character: Character) -> [Glyph] {
-        samples[String(character)] ?? []
+        if let own = samples[String(character)], !own.isEmpty { return own }
+        // Calibration asks for the minus sign (`−`); the hyphen-minus (`-`) every answer is written with, and the
+        // dashes,
+        // are the same horizontal stroke in a hand. Until the writer records their own, the minus stands in, instead of
+        // the answer's hyphens being drawn in the typeface.
+        return Self.lookalikes[character].flatMap { samples[String($0)] } ?? []
     }
+
+    private static let lookalikes: [Character: Character] = [
+        "-": "−", "‐": "−", "‑": "−", "–": "−", "—": "−", "‒": "−",
+    ]
 
     public func canRender(_ text: String) -> Bool {
         text.allSatisfy { $0 == " " || !samples(for: $0).isEmpty }
@@ -163,6 +172,34 @@ public struct GlyphBank: Codable, Equatable, Sendable {
         for (character, glyphs) in other.samples where !glyphs.isEmpty {
             samples[character] = Array(((samples[character] ?? []) + glyphs).suffix(limit))
         }
+    }
+
+    /// Drops one recorded variant of a character (the writer deleting a bad one from the gallery).
+    public mutating func removeSample(for character: Character, at index: Int) {
+        guard var glyphs = samples[String(character)], glyphs.indices.contains(index) else { return }
+        glyphs.remove(at: index)
+        samples[String(character)] = glyphs.isEmpty ? nil : glyphs
+    }
+
+    /// Drops samples that are both much wider than the sample the writer calibrated with (the first of each character)
+    /// and made of more strokes than it.
+    ///
+    /// A learned sample whose box had held a neighbouring character (`1)`, `x>`) is a character plus a stroke of the
+    /// next one, and every later answer drew that extra stroke. Learning no longer takes such samples; this removes
+    /// the ones an earlier version did. Returns how many were removed.
+    @discardableResult
+    public mutating func pruningOutliers() -> Int {
+        var removed = 0
+        for (character, glyphs) in samples where glyphs.count > 1 {
+            let reference = glyphs[0].bounds.width
+            let kept = glyphs.enumerated().filter { index, glyph in
+                index == 0 || glyph.bounds.isNull
+                    || !(glyph.bounds.width > reference * 1.4 + 0.1 && glyph.strokes.count > glyphs[0].strokes.count)
+            }.map(\.element)
+            removed += glyphs.count - kept.count
+            samples[character] = kept
+        }
+        return removed
     }
 
     /// Drops every sample of a character, for the "retap any glyph to rewrite it" flow

@@ -81,6 +81,18 @@ final class HandwritingStyleStore: ObservableObject {
     private func load() {
         guard store.exists(at: url) else { return }
         bank = try? store.read(from: url)
+        // Variants that swallowed a neighbour's stroke (learned by an earlier version) are dropped for good.
+        if var cleaned = bank, cleaned.pruningOutliers() > 0 {
+            bank = cleaned
+            try? GlyphBankStore().write(cleaned, to: url)
+        }
+    }
+
+    /// Deletes one recorded variant (from the gallery); the character stays if it has others.
+    func removeVariant(of character: Character, at index: Int) {
+        guard var updated = bank else { return }
+        updated.removeSample(for: character, at: index)
+        save(updated)
     }
 
     private static func defaultURL() -> URL {

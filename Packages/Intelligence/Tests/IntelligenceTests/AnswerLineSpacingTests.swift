@@ -6,10 +6,11 @@ import XCTest
 
 /// An answer's lines must not run into each other, however tightly the writer's own lines were measured.
 final class AnswerLineSpacingTests: XCTestCase {
-    func testTheWritersSpacingIsKeptWhereItLeavesRoomAndWidenedWhereItDoesNot() {
-        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 60, xHeight: 14), 60, "roomy: unchanged")
-        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 24, xHeight: 14), 14 * 2.7, accuracy: 0.001)
-        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 0, xHeight: 14), 14 * 2.7, accuracy: 0.001)
+    func testAnAnswerUsesHalfTheWritersSpacingAtMostButNeverLessThanItsLettersNeed() {
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 120, xHeight: 14), 60, "half of theirs")
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 40, xHeight: 14), 14 * 2.3, accuracy: 0.001)
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 24, xHeight: 14), 14 * 2.3, accuracy: 0.001)
+        XCTAssertEqual(PlacementEngine.answerLineSpacing(measured: 0, xHeight: 14), 14 * 2.3, accuracy: 0.001)
     }
 
     /// A bank of the typeface's letters, so descenders and ascenders are real.

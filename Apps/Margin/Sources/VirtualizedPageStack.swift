@@ -18,6 +18,14 @@ struct VirtualizedPageStack: View {
     /// How far the writer has resized the pending answer with its corner handle.
     @State var ghostScale: CGFloat = 1
     @State var ghostDragging = false
+    /// The ink the lasso tool has selected, how far its outline is being dragged, and a counter that refreshes the
+    /// Paste button when something is copied (`VirtualizedPageStack+LassoEdit.swift`).
+    @State var editSelection: InkEditSelection?
+    @State var editOffset: CGSize = .zero
+    @State var editDragging = false
+    @State var clipboardVersion = 0
+    /// Set when starting an Ask moved the tool off the lasso or eraser, so that change does not cancel that Ask.
+    @State var toolChangeIsFromAsk = false
     /// The formula being corrected, while the editor is open.
     @State var plotFormula: String?
     /// Which edge the tool board is docked to, and how the pages are fitted to the screen.
@@ -139,16 +147,23 @@ struct VirtualizedPageStack: View {
         .toolbar { ToolbarItem(placement: .topBarTrailing) { pageOptionsMenu } }
         .background { PencilInteractionHost(tool: $selectedTool, switcher: $pencilSwitcher) }
         .onAppear {
-            visiblePageID = pageIDs.first
+            visiblePageID = Self.landingPage(
+                in: pageIDs, lastPageHasInk: pageIDs.last.map(drawingStore.hasInk) ?? false)
             undoController.configure(store: drawingStore)
+            #if DEBUG
+                debugLassoDemo()
+            #endif
             ensureTrailingBlankPage()
         }
         .onChange(of: drawingStore.revision) { _, _ in scheduleReturnFromEraser() }
         .onChange(of: selectedTool) { _, tool in
             pencilSwitcher.toolChanged(to: tool)
-            if Self.shouldDropSelection(whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed) {
-                cancelSelection()
-            }
+            let ownChange = toolChangeIsFromAsk
+            toolChangeIsFromAsk = false
+            let dropsAsk = Self.shouldDropSelection(
+                whenChoosing: tool, phase: askModel.phase, lassoArmed: askPath.isArmed)
+            if dropsAsk && !ownChange { cancelSelection() }
+            if tool != .lasso { clearEdit() }
         }
         .modifier(InkPreferenceSaver(ink: selectedInk, recents: recentInks, width: selectedWidth))
         .onChange(of: askModel.phase) { _, phase in
@@ -176,6 +191,14 @@ struct VirtualizedPageStack: View {
         }
     }
 
+    /// Where a notebook opens: on the page before the last. The last page is the spare blank one the notebook keeps at
+    /// its end, so that is where the writing left off; a notebook whose last page already has writing is about to
+    /// get its spare (`ensureTrailingBlankPage`), which makes that page the one before the last as well.
+    static func landingPage(in pageIDs: [UUID], lastPageHasInk: Bool) -> UUID? {
+        guard pageIDs.count >= 2 else { return pageIDs.first }
+        return lastPageHasInk ? pageIDs[pageIDs.count - 1] : pageIDs[pageIDs.count - 2]
+    }
+
     @ViewBuilder
     func pageView(for pageID: UUID) -> some View {
         if let index = pageIDs.firstIndex(of: pageID), livePageIndices.contains(index) {
@@ -191,6 +214,8 @@ struct VirtualizedPageStack: View {
                 askSelection: askSelection,
                 captureStage: captureStage(for: pageID),
                 canResizeSelection: askModel.phase == .offeringVerbs,
+                lassoEditArmed: lassoEditArmed,
+                onEditLasso: { beginEdit(loop: $0, on: pageID) },
                 onAskLasso: { loop in
                     capture(loop, on: pageID)
                 },

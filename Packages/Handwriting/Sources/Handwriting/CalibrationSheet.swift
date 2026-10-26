@@ -51,7 +51,7 @@ public enum CalibrationSheet {
 
     /// Logic, set and proof symbols, plus the ASCII marks the other sheets lack (`~ ^ ! ? * _ | &`). `→` is on the
     /// maths sheet already. A student who writes `p ∧ ¬q ⇒ r` or `x ∈ A ∪ B` gets them back in their own hand.
-    public static let logicSymbols = "¬∧∨↔⇒⇔⊕∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&"
+    public static let logicSymbols = "¬∧∨↔⇒⇔⊕∀∃∈∉⊂⊆∪∩∅≡∴⊢~^!?*_|&-"
 
     /// The letters worth a second sample, by frequency. §3.1: this is what kills the
     /// "robot repeating the identical 'e'" tell.
